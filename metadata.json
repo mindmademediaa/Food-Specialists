@@ -1,0 +1,6 @@
+{
+  "name": "Food Specialists",
+  "description": "A dedicated career portal, multi-horizon task compliance manager, multi-year career roadmap, and CV builder tailored for Food Safety, QA/QC, and Food Science professionals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

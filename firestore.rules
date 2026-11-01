@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'mindmademedia9@gmail.com' && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
+      );
+    }
+
+    function isValidPrivacySettings(ps) {
+      return ps is map &&
+        ps.keys().hasAll([
+          'qualification_public',
+          'experience_public',
+          'currentRole_public',
+          'location_public',
+          'email_public',
+          'phone_public'
+        ]) &&
+        ps.qualification_public is bool &&
+        ps.experience_public is bool &&
+        ps.currentRole_public is bool &&
+        ps.location_public is bool &&
+        ps.email_public is bool &&
+        ps.phone_public is bool &&
+        (!('hireMe_public' in ps) || ps.hireMe_public is bool);
+    }
+
+    function isValidUser(data, uid) {
+      return data is map &&
+        data.keys().hasAll(['uid', 'name', 'privacySettings']) &&
+        data.uid == uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        (!('profilePicUrl' in data) || (data.profilePicUrl is string && data.profilePicUrl.size() <= 200000)) &&
+        (!('qualification' in data) || (data.qualification is string && data.qualification.size() <= 300)) &&
+        (!('experience' in data) || (data.experience is string && data.experience.size() <= 3000)) &&
+        (!('currentRole' in data) || (data.currentRole is string && data.currentRole.size() <= 200)) &&
+        (!('company' in data) || (data.company is string && data.company.size() <= 200)) &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 200)) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 200)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 60)) &&
+        (!('skills' in data) || (data.skills is list && data.skills.size() <= 30)) &&
+        (!('cvUrl' in data) || (data.cvUrl is string && data.cvUrl.size() <= 350000)) &&
+        (!('isPaid' in data) || data.isPaid is bool) &&
+        (!('isAdmin' in data) || data.isAdmin is bool) &&
+        isValidPrivacySettings(data.privacySettings);
+    }
+
+    function isValidJob(data) {
+      return data is map &&
+        data.keys().hasAll(['title', 'company', 'category', 'isActive']) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.company is string && data.company.size() >= 1 && data.company.size() <= 200 &&
+        data.category in ['Production', 'R&D Lab', 'Quality & Safety'] &&
+        data.isActive is bool &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 200)) &&
+        (!('experienceRequired' in data) || (data.experienceRequired is string && data.experienceRequired.size() <= 120)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
+        (!('requirements' in data) || (data.requirements is string && data.requirements.size() <= 4000)) &&
+        (!('applyLink' in data) || (data.applyLink is string && data.applyLink.size() <= 500)) &&
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 20));
+    }
+
+    function isValidScholarship(data) {
+      return data is map &&
+        data.keys().hasAll(['title', 'organization', 'country', 'isActive']) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 240 &&
+        data.organization is string && data.organization.size() >= 1 && data.organization.size() <= 240 &&
+        data.country is string && data.country.size() >= 1 && data.country.size() <= 120 &&
+        data.isActive is bool &&
+        (!('deadline' in data) || (data.deadline is string && data.deadline.size() <= 64)) &&
+        (!('fundingType' in data) || (data.fundingType is string && data.fundingType.size() <= 120)) &&
+        (!('degreeLevel' in data) || (data.degreeLevel is string && data.degreeLevel.size() <= 120)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
+        (!('eligibility' in data) || (data.eligibility is string && data.eligibility.size() <= 4000)) &&
+        (!('applyLink' in data) || (data.applyLink is string && data.applyLink.size() <= 500));
+    }
+
+    function isValidTraining(data) {
+      return data is map &&
+        data.keys().hasAll(['category', 'title', 'isActive']) &&
+        data.category in ['Highfield', 'Lead Auditor'] &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.isActive is bool &&
+        (!('subType' in data) || data.subType == null || (data.subType is string && data.subType.size() <= 100)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 3000)) &&
+        (!('duration' in data) || (data.duration is string && data.duration.size() <= 120)) &&
+        (!('fees' in data) || (data.fees is string && data.fees.size() <= 120)) &&
+        (!('enrollLink' in data) || (data.enrollLink is string && data.enrollLink.size() <= 500));
+    }
+
+    match /users/{uid} {
+      allow get: if isValidId(uid);
+      allow list: if true;
+      allow create: if isValidId(uid) && isValidUser(request.resource.data, uid);
+      allow update: if isValidId(uid) && isValidUser(request.resource.data, uid);
+      allow delete: if isValidId(uid);
+    }
+
+    match /jobs/{jobId} {
+      allow get: if isValidId(jobId);
+      allow list: if true;
+      allow create, update: if isValidId(jobId) && isValidJob(request.resource.data);
+      allow delete: if isValidId(jobId);
+    }
+
+    match /scholarships/{scholarshipId} {
+      allow get: if isValidId(scholarshipId);
+      allow list: if true;
+      allow create, update: if isValidId(scholarshipId) && isValidScholarship(request.resource.data);
+      allow delete: if isValidId(scholarshipId);
+    }
+
+    match /trainings/{trainingId} {
+      allow get: if isValidId(trainingId);
+      allow list: if true;
+      allow create, update: if isValidId(trainingId) && isValidTraining(request.resource.data);
+      allow delete: if isValidId(trainingId);
+    }
+  }
+}

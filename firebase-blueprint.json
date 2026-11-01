@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Authenticated community member profile, paid membership status, hireMe flag, and privacy settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 120 },
+        "profilePicUrl": { "type": "string", "maxLength": 200000 },
+        "qualification": { "type": "string", "maxLength": 300 },
+        "experience": { "type": "string", "maxLength": 3000 },
+        "currentRole": { "type": "string", "maxLength": 200 },
+        "company": { "type": "string", "maxLength": 200 },
+        "location": { "type": "string", "maxLength": 200 },
+        "email": { "type": "string", "maxLength": 200 },
+        "phone": { "type": "string", "maxLength": 60 },
+        "skills": { "type": "array" },
+        "cvUrl": { "type": "string", "maxLength": 350000 },
+        "privacySettings": { "type": "object" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "isAdmin": { "type": "boolean" },
+        "isPaid": { "type": "boolean" }
+      },
+      "required": ["uid", "name", "privacySettings"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "Food Safety, Quality, R&D Lab, and Production job listings",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "company": { "type": "string", "maxLength": 200 },
+        "location": { "type": "string", "maxLength": 200 },
+        "experienceRequired": { "type": "string", "maxLength": 120 },
+        "category": { "type": "string", "enum": ["Production", "R&D Lab", "Quality & Safety"] },
+        "description": { "type": "string", "maxLength": 4000 },
+        "requirements": { "type": "string", "maxLength": 4000 },
+        "applyLink": { "type": "string", "maxLength": 500 },
+        "tags": { "type": "array" },
+        "postedAt": { "type": "string", "maxLength": 64 },
+        "expiryAt": { "type": "string", "maxLength": 64 },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["title", "company", "category", "isActive"]
+    },
+    "Scholarship": {
+      "title": "Scholarship",
+      "description": "Food Science & Technology scholarships, fellowships, and grants",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 240 },
+        "organization": { "type": "string", "maxLength": 240 },
+        "country": { "type": "string", "maxLength": 120 },
+        "deadline": { "type": "string", "maxLength": 64 },
+        "fundingType": { "type": "string", "maxLength": 120 },
+        "degreeLevel": { "type": "string", "maxLength": 120 },
+        "description": { "type": "string", "maxLength": 4000 },
+        "eligibility": { "type": "string", "maxLength": 4000 },
+        "applyLink": { "type": "string", "maxLength": 500 },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["title", "organization", "country", "isActive"]
+    },
+    "Training": {
+      "title": "Training",
+      "description": "Highfield and Lead Auditor (Exemplar Global & IRCA CQI) trainings",
+      "type": "object",
+      "properties": {
+        "category": { "type": "string", "enum": ["Highfield", "Lead Auditor"] },
+        "title": { "type": "string", "maxLength": 200 },
+        "subType": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 3000 },
+        "duration": { "type": "string", "maxLength": 120 },
+        "fees": { "type": "string", "maxLength": 120 },
+        "enrollLink": { "type": "string", "maxLength": 500 },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["category", "title", "isActive"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Community member profiles with granular privacy settings and paid membership flag"
+    },
+    "/jobs/{jobId}": {
+      "schema": { "$ref": "#/entities/Job" },
+      "description": "Food Science & Technology job openings"
+    },
+    "/scholarships/{scholarshipId}": {
+      "schema": { "$ref": "#/entities/Scholarship" },
+      "description": "Food Science & Technology scholarships and fellowships"
+    },
+    "/trainings/{trainingId}": {
+      "schema": { "$ref": "#/entities/Training" },
+      "description": "Highfield and Lead Auditor training programs"
+    }
+  }
+}
