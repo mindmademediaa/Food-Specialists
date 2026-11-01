@@ -8,7 +8,20 @@ export interface PrivacySettings {
   hireMe_public?: boolean;
 }
 
+export type DevRole = 'Guest' | 'Free Member' | 'Paid Member';
+
 export type PaymentVerificationStatus = 'none' | 'pending' | 'verified' | 'rejected';
+
+export type SpecializationTag =
+  | 'QA/QC'
+  | 'Food Safety'
+  | 'Dairy'
+  | 'Bakery'
+  | 'Nutrition'
+  | 'R&D'
+  | 'HACCP'
+  | 'ISO 22000'
+  | 'Food Chemistry';
 
 export interface HubUser {
   uid: string;
@@ -19,9 +32,14 @@ export interface HubUser {
   currentRole: string;
   company: string;
   location: string;
+  country?: string;
+  bio?: string;
   email: string;
   phone: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
   skills: string[];
+  specializations?: string[];
   cvUrl: string;
   privacySettings: PrivacySettings;
   createdAt: string;
@@ -31,6 +49,19 @@ export interface HubUser {
   paymentMethod?: string;
   paymentReference?: string;
   paymentAmount?: string;
+}
+
+export interface HubCommunityThread {
+  id: string;
+  authorName: string;
+  authorRole: string;
+  authorAvatar: string;
+  topicTag: string;
+  title: string;
+  preview: string;
+  repliesCount: number;
+  likesCount: number;
+  postedAgo: string;
 }
 
 export interface HubPaymentRequest {
@@ -68,10 +99,15 @@ export interface HubJob {
   title: string;
   company: string;
   location: string;
+  country?: string;
+  specialization?: string;
   experienceRequired: string;
   category: JobCategory;
   description: string;
   requirements: string;
+  hrEmail?: string;
+  emailSubject?: string;
+  applicationGuidelines?: string;
   applyLink: string;
   tags: string[];
   postedAt: string;
@@ -84,11 +120,15 @@ export interface HubScholarship {
   title: string;
   organization: string;
   country: string;
+  specialization?: string;
   deadline: string;
   fundingType: 'Fellowships' | 'International' | 'Grants';
   degreeLevel: string;
   description: string;
   eligibility: string;
+  hrEmail?: string;
+  emailSubject?: string;
+  applicationGuidelines?: string;
   applyLink: string;
   isActive: boolean;
 }
@@ -107,3 +147,4 @@ export interface HubTraining {
 }
 
 export type NavTab = 'home' | 'search' | 'communities' | 'trainings' | 'profile' | 'admin';
+
