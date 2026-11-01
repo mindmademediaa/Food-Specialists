@@ -1,4 +1,11 @@
-import { HubUser, HubJob, HubScholarship, HubTraining } from '../types/hub';
+import {
+  HubUser,
+  HubJob,
+  HubScholarship,
+  HubTraining,
+  HubPaymentRequest,
+  HubChatMessage
+} from '../types/hub';
 
 export function makeAvatarSvg(initials: string, bg = '#E2F5E7', text = '#14532D'): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(`
@@ -23,7 +30,7 @@ export const INITIAL_USERS: HubUser[] = [
     location: 'Lahore, Pakistan',
     email: 'alex.tariq@foodspecialists.org',
     phone: '+92 300 8429104',
-    skills: ['HACCP', 'ISO 22000', 'FSSC 22000', 'BRCGS', 'ISO 9001'],
+    skills: [],
     cvUrl: 'Alex_Tariq_FSQA_Lead_Auditor_CV.pdf',
     privacySettings: {
       qualification_public: true,
@@ -31,10 +38,16 @@ export const INITIAL_USERS: HubUser[] = [
       currentRole_public: true,
       location_public: true,
       email_public: false,
-      phone_public: false
+      phone_public: false,
+      hireMe_public: true
     },
     createdAt: '2026-10-15T08:00:00Z',
-    isAdmin: true
+    isAdmin: true,
+    isPaid: true,
+    paymentStatus: 'verified',
+    paymentMethod: 'EasyPaisa',
+    paymentReference: 'EP-99284102',
+    paymentAmount: 'PKR 1,500'
   },
   {
     uid: 'user-sara-2',
@@ -48,7 +61,7 @@ export const INITIAL_USERS: HubUser[] = [
     location: 'Karachi, Pakistan',
     email: 'sara.mahmood@foodspecialists.org',
     phone: '+92 321 4491022',
-    skills: ['ISO 22000', 'FSSC 22000', 'HACCP', 'ISO 9001'],
+    skills: [],
     cvUrl: 'Dr_Sara_Mahmood_CV.pdf',
     privacySettings: {
       qualification_public: true,
@@ -56,10 +69,16 @@ export const INITIAL_USERS: HubUser[] = [
       currentRole_public: true,
       location_public: true,
       email_public: true,
-      phone_public: false
+      phone_public: false,
+      hireMe_public: true
     },
     createdAt: '2026-10-18T10:30:00Z',
-    isAdmin: false
+    isAdmin: false,
+    isPaid: true,
+    paymentStatus: 'verified',
+    paymentMethod: 'Bank Transfer',
+    paymentReference: 'HBL-8841209',
+    paymentAmount: 'PKR 1,500'
   },
   {
     uid: 'user-usman-3',
@@ -73,18 +92,24 @@ export const INITIAL_USERS: HubUser[] = [
     location: 'Sahiwal, Pakistan',
     email: 'usman.farooq@foodspecialists.org',
     phone: '+92 333 9182736',
-    skills: ['HACCP', 'FSSC 22000', 'ISO 9001'],
+    skills: [],
     cvUrl: '',
     privacySettings: {
       qualification_public: true,
-      experience_public: false, // Hidden by member's privacy toggle
+      experience_public: false,
       currentRole_public: true,
       location_public: true,
       email_public: false,
-      phone_public: false
+      phone_public: false,
+      hireMe_public: false
     },
     createdAt: '2026-10-20T14:15:00Z',
-    isAdmin: false
+    isAdmin: false,
+    isPaid: true,
+    paymentStatus: 'verified',
+    paymentMethod: 'JazzCash',
+    paymentReference: 'JC-77419023',
+    paymentAmount: 'PKR 1,500'
   },
   {
     uid: 'user-ayesha-4',
@@ -98,68 +123,125 @@ export const INITIAL_USERS: HubUser[] = [
     location: 'Dubai, UAE',
     email: 'ayesha.siddiqui@foodspecialists.org',
     phone: '+971 50 4829103',
-    skills: ['HACCP', 'BRCGS', 'ISO 22000'],
+    skills: [],
     cvUrl: 'Ayesha_Siddiqui_RD_CV.pdf',
     privacySettings: {
       qualification_public: true,
       experience_public: true,
       currentRole_public: true,
-      location_public: false, // Hidden by member's privacy toggle
+      location_public: false,
       email_public: true,
-      phone_public: false
+      phone_public: false,
+      hireMe_public: true
     },
     createdAt: '2026-10-22T09:00:00Z',
-    isAdmin: false
+    isAdmin: false,
+    isPaid: true,
+    paymentStatus: 'verified',
+    paymentMethod: 'Bank Transfer',
+    paymentReference: 'ENBD-552910',
+    paymentAmount: 'PKR 1,500'
   },
   {
-    uid: 'user-bilal-5',
-    name: 'Bilal Ahmed Khan',
-    profilePicUrl: makeAvatarSvg('BK', '#DCFCE7', '#166534'),
-    qualification: 'MS Food Safety & Halal Regulatory Affairs — IIUM Malaysia',
+    uid: 'user-hamza-free-5',
+    name: 'Hamza Nawaz (Fresh Graduate)',
+    profilePicUrl: makeAvatarSvg('HN', '#F3E8FF', '#6B21A8'),
+    qualification: 'BS (Hons.) Food Science & Technology — UVAS Lahore',
     experience:
-      '6 years auditing slaughterhouses, flavor manufacturers, and GCC retail private-label suppliers against GSO 2055-1, MS 1500, and BRCGS Issue 9.',
-    currentRole: 'Regional Halal & BRCGS Lead Auditor',
-    company: 'Almarai Food Group',
-    location: 'Riyadh, Saudi Arabia',
-    email: 'bilal.khan@foodspecialists.org',
-    phone: '+966 54 3198201',
-    skills: ['BRCGS', 'FSSC 22000', 'ISO 22000', 'HACCP', 'ISO 9001'],
-    cvUrl: 'Bilal_Khan_Halal_Auditor_CV.pdf',
+      'Fresh Graduate with 6-month QA & HACCP line hygiene internship in dairy processing.',
+    currentRole: 'Junior QA Intern (Seeking Full-Time Role)',
+    company: '',
+    location: 'Lahore, Pakistan',
+    email: 'hamza.nawaz@foodspecialists.org',
+    phone: '+92 312 4901823',
+    skills: [],
+    cvUrl: 'Hamza_Nawaz_Fresh_Grad_CV.pdf',
     privacySettings: {
       qualification_public: true,
       experience_public: true,
       currentRole_public: true,
       location_public: true,
       email_public: true,
-      phone_public: true
+      phone_public: true,
+      hireMe_public: true
     },
-    createdAt: '2026-10-25T11:20:00Z',
-    isAdmin: false
+    createdAt: '2026-10-30T11:20:00Z',
+    isAdmin: false,
+    isPaid: false,
+    paymentStatus: 'pending',
+    paymentMethod: 'EasyPaisa',
+    paymentReference: 'TID-883920144',
+    paymentAmount: 'PKR 1,500'
   },
   {
-    uid: 'user-zainab-6',
+    uid: 'user-zainab-free-6',
     name: 'Zainab Raza',
-    profilePicUrl: makeAvatarSvg('ZR', '#F3E8FF', '#6B21A8'),
+    profilePicUrl: makeAvatarSvg('ZR', '#FCE7F3', '#9D174D'),
     qualification: 'BS (Hons.) Food Science & Technology — Karachi University',
     experience:
-      '2 years in poultry further-processing IQF line sanitation, ATP swab verification, and pre-operational SSOP compliance.',
+      '1.5 years in poultry further-processing IQF line sanitation and pre-operational SSOP compliance.',
     currentRole: 'Hygiene & HACCP Officer',
     company: 'K&N’s Foods',
     location: 'Karachi, Pakistan',
     email: 'zainab.raza@foodspecialists.org',
     phone: '+92 345 2109832',
-    skills: ['HACCP', 'ISO 22000'],
+    skills: [],
     cvUrl: '',
     privacySettings: {
-      qualification_public: false, // Hidden by member's privacy toggle
+      qualification_public: true,
       experience_public: true,
       currentRole_public: true,
       location_public: true,
       email_public: false,
-      phone_public: false
+      phone_public: false,
+      hireMe_public: true
     },
-    createdAt: '2026-10-28T16:45:00Z',
-    isAdmin: false
+    createdAt: '2026-10-31T16:45:00Z',
+    isAdmin: false,
+    isPaid: false,
+    paymentStatus: 'none'
+  }
+];
+
+export const INITIAL_PAYMENT_REQUESTS: HubPaymentRequest[] = [
+  {
+    id: 'req-hamza-1',
+    uid: 'user-hamza-free-5',
+    userName: 'Hamza Nawaz (Fresh Graduate)',
+    userEmail: 'hamza.nawaz@foodspecialists.org',
+    userPhone: '+92 312 4901823',
+    qualification: 'BS (Hons.) Food Science & Technology — UVAS Lahore',
+    currentRole: 'Junior QA Intern (Seeking Full-Time Role)',
+    paymentMethod: 'EasyPaisa',
+    transactionId: 'TID-883920144',
+    amount: 'PKR 1,500',
+    notes: 'Paid membership fee sent via EasyPaisa. Please verify and add my profile to Communities.',
+    status: 'pending',
+    submittedAt: '2026-11-01 09:30 AM'
+  }
+];
+
+export const INITIAL_CHATS: HubChatMessage[] = [
+  {
+    id: 'chat-1',
+    senderUid: 'user-hamza-free-5',
+    senderName: 'Hamza Nawaz',
+    senderPhone: '+92 312 4901823',
+    recipientName: 'Admin Support (Muneeb Khan)',
+    chatType: 'admin_support',
+    message: 'Assalam-o-Alaikum Sir, mainay EasyPaisa TID-883920144 ke zariye Paid Membership fee bhej di hai. Kindly verify kar ke mera profile Communities may activate kar dein.',
+    adminReply: 'Wa-Alaikum-Salaam Hamza! Aapki request Admin Panel may receive ho gayi hai, payment verify hotay hi aapka profile Communities may live ho jayega.',
+    createdAt: '2026-11-01 09:35 AM'
+  },
+  {
+    id: 'chat-2',
+    senderUid: 'employer-dairy-1',
+    senderName: 'HR Manager — Dairy Pure Foods',
+    senderPhone: '+92 300 4112233',
+    recipientName: 'Dr. Sara Mahmood',
+    chatType: 'hiring_contact',
+    message: 'Hello Dr. Sara, we reviewed your qualification and ISO 17025 lab experience in the Communities directory and would like to schedule an interview for QA Lead.',
+    createdAt: '2026-11-01 10:15 AM'
   }
 ];
 

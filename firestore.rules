@@ -9,18 +9,6 @@ service cloud.firestore {
       return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && (
-        (request.auth.token.email == 'mindmademedia9@gmail.com' && request.auth.token.email_verified == true) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
-      );
-    }
-
     function isValidPrivacySettings(ps) {
       return ps is map &&
         ps.keys().hasAll([
@@ -57,7 +45,43 @@ service cloud.firestore {
         (!('cvUrl' in data) || (data.cvUrl is string && data.cvUrl.size() <= 350000)) &&
         (!('isPaid' in data) || data.isPaid is bool) &&
         (!('isAdmin' in data) || data.isAdmin is bool) &&
+        (!('paymentStatus' in data) || data.paymentStatus in ['none', 'pending', 'verified', 'rejected']) &&
+        (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod.size() <= 80)) &&
+        (!('paymentReference' in data) || (data.paymentReference is string && data.paymentReference.size() <= 120)) &&
+        (!('paymentAmount' in data) || (data.paymentAmount is string && data.paymentAmount.size() <= 80)) &&
         isValidPrivacySettings(data.privacySettings);
+    }
+
+    function isValidPaymentRequest(data) {
+      return data is map &&
+        data.keys().hasAll(['id', 'uid', 'userName', 'paymentMethod', 'transactionId', 'status']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.userName is string && data.userName.size() >= 1 && data.userName.size() <= 120 &&
+        data.paymentMethod is string && data.paymentMethod.size() >= 1 && data.paymentMethod.size() <= 80 &&
+        data.transactionId is string && data.transactionId.size() >= 1 && data.transactionId.size() <= 120 &&
+        data.status in ['pending', 'verified', 'rejected'] &&
+        (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 200)) &&
+        (!('userPhone' in data) || (data.userPhone is string && data.userPhone.size() <= 60)) &&
+        (!('qualification' in data) || (data.qualification is string && data.qualification.size() <= 300)) &&
+        (!('currentRole' in data) || (data.currentRole is string && data.currentRole.size() <= 200)) &&
+        (!('amount' in data) || (data.amount is string && data.amount.size() <= 80)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000)) &&
+        (!('submittedAt' in data) || (data.submittedAt is string && data.submittedAt.size() <= 64));
+    }
+
+    function isValidChatMessage(data) {
+      return data is map &&
+        data.keys().hasAll(['id', 'senderName', 'recipientName', 'chatType', 'message']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 120 &&
+        data.recipientName is string && data.recipientName.size() >= 1 && data.recipientName.size() <= 120 &&
+        data.chatType in ['admin_support', 'hiring_contact'] &&
+        data.message is string && data.message.size() >= 1 && data.message.size() <= 2000 &&
+        (!('senderUid' in data) || (data.senderUid is string && data.senderUid.size() <= 128)) &&
+        (!('senderPhone' in data) || (data.senderPhone is string && data.senderPhone.size() <= 60)) &&
+        (!('adminReply' in data) || (data.adminReply is string && data.adminReply.size() <= 2000)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
     }
 
     function isValidJob(data) {
@@ -106,9 +130,22 @@ service cloud.firestore {
     match /users/{uid} {
       allow get: if isValidId(uid);
       allow list: if true;
-      allow create: if isValidId(uid) && isValidUser(request.resource.data, uid);
-      allow update: if isValidId(uid) && isValidUser(request.resource.data, uid);
+      allow create, update: if isValidId(uid) && isValidUser(request.resource.data, uid);
       allow delete: if isValidId(uid);
+    }
+
+    match /paymentRequests/{requestId} {
+      allow get: if isValidId(requestId);
+      allow list: if true;
+      allow create, update: if isValidId(requestId) && isValidPaymentRequest(request.resource.data);
+      allow delete: if isValidId(requestId);
+    }
+
+    match /chats/{chatId} {
+      allow get: if isValidId(chatId);
+      allow list: if true;
+      allow create, update: if isValidId(chatId) && isValidChatMessage(request.resource.data);
+      allow delete: if isValidId(chatId);
     }
 
     match /jobs/{jobId} {

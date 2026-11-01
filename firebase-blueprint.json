@@ -2,7 +2,7 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Authenticated community member profile, paid membership status, hireMe flag, and privacy settings",
+      "description": "Community member profile, free vs paid membership status, payment verification state, hireMe flag, and privacy settings",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "maxLength": 128 },
@@ -20,9 +20,51 @@
         "privacySettings": { "type": "object" },
         "createdAt": { "type": "string", "maxLength": 64 },
         "isAdmin": { "type": "boolean" },
-        "isPaid": { "type": "boolean" }
+        "isPaid": { "type": "boolean" },
+        "paymentStatus": { "type": "string", "enum": ["none", "pending", "verified", "rejected"] },
+        "paymentMethod": { "type": "string", "maxLength": 80 },
+        "paymentReference": { "type": "string", "maxLength": 120 },
+        "paymentAmount": { "type": "string", "maxLength": 80 }
       },
       "required": ["uid", "name", "privacySettings"]
+    },
+    "PaymentRequest": {
+      "title": "PaymentRequest",
+      "description": "Paid membership and payment verification request sent by a user to Admin Control Panel",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 120 },
+        "userEmail": { "type": "string", "maxLength": 200 },
+        "userPhone": { "type": "string", "maxLength": 60 },
+        "qualification": { "type": "string", "maxLength": 300 },
+        "currentRole": { "type": "string", "maxLength": 200 },
+        "paymentMethod": { "type": "string", "maxLength": 80 },
+        "transactionId": { "type": "string", "maxLength": 120 },
+        "amount": { "type": "string", "maxLength": 80 },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["pending", "verified", "rejected"] },
+        "submittedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "uid", "userName", "paymentMethod", "transactionId", "status"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "User-to-Admin support chat and member hiring inquiry messages visible in Admin Backend",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "senderUid": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 120 },
+        "senderPhone": { "type": "string", "maxLength": 60 },
+        "recipientName": { "type": "string", "maxLength": 120 },
+        "chatType": { "type": "string", "enum": ["admin_support", "hiring_contact"] },
+        "message": { "type": "string", "maxLength": 2000 },
+        "adminReply": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "senderName", "recipientName", "chatType", "message"]
     },
     "Job": {
       "title": "Job",
@@ -82,7 +124,15 @@
   "firestore": {
     "/users/{uid}": {
       "schema": { "$ref": "#/entities/User" },
-      "description": "Community member profiles with granular privacy settings and paid membership flag"
+      "description": "Free and Premium (Paid) user records with payment verification state"
+    },
+    "/paymentRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/PaymentRequest" },
+      "description": "Membership payment verification requests submitted to Admin Control Panel"
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Support chats and member hiring messages visible in Admin Control Panel"
     },
     "/jobs/{jobId}": {
       "schema": { "$ref": "#/entities/Job" },

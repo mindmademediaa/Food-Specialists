@@ -42,7 +42,6 @@ import {
   Crown,
   UserPlus
 } from 'lucide-react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
   collection,
   doc,
@@ -52,10 +51,6 @@ import {
 } from 'firebase/firestore';
 import {
   db,
-  auth,
-  googleProvider,
-  signInWithPopup,
-  signOut,
   OperationType,
   handleFirestoreError
 } from './lib/firebase';
@@ -64,13 +59,18 @@ import {
   HubJob,
   HubScholarship,
   HubTraining,
+  HubPaymentRequest,
+  HubChatMessage,
   JobCategory,
   NavTab
 } from './types/hub';
 import {
+  INITIAL_USERS,
   INITIAL_JOBS,
   INITIAL_SCHOLARSHIPS,
   INITIAL_TRAININGS,
+  INITIAL_PAYMENT_REQUESTS,
+  INITIAL_CHATS,
   makeAvatarSvg
 } from './data/mockHubData';
 import { Header } from './components/Header';
@@ -249,17 +249,17 @@ function getDaysRemaining(deadlineStr: string): number {
   return diff > 0 ? diff : 0;
 }
 
-const DEFAULT_EMPTY_PROFILE: HubUser = {
-  uid: '',
-  name: '',
-  profilePicUrl: '',
+const DEFAULT_CURRENT_USER_PROFILE: HubUser = {
+  uid: 'user-alex-morgan',
+  name: 'Alex Morgan',
+  profilePicUrl: makeAvatarSvg('AM', '#DCFCE7', '#14532D'),
   qualification: 'BS (Hons.) Food Science & Technology',
   experience: 'Fresh Graduate / 1 Year Food Quality & Safety Internship',
   currentRole: 'Food Safety & QA Specialist',
   company: '',
   location: 'Lahore, Pakistan',
-  email: '',
-  phone: '+92 300 0000000',
+  email: 'alex.morgan@email.com',
+  phone: '+92 300 1234567',
   skills: [],
   cvUrl: '',
   privacySettings: {
@@ -271,50 +271,65 @@ const DEFAULT_EMPTY_PROFILE: HubUser = {
     phone_public: true,
     hireMe_public: true
   },
-  createdAt: '',
+  createdAt: '2026-11-01T08:00:00Z',
   isAdmin: false,
-  isPaid: false
+  isPaid: false,
+  paymentStatus: 'none'
 };
 
 export default function App() {
   // Navigation & Route Stack
   const [route, setRoute] = useState<RouteView>({ name: 'home' });
 
-  // Firebase Auth & Account Session State
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [authReady, setAuthReady] = useState<boolean>(false);
-  const [isUserSignedIn, setIsUserSignedIn] = useState<boolean>(false);
-
-  // Sign Up / Sign In Form State (shown on /profile before authentication)
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
-  const [authNameInput, setAuthNameInput] = useState<string>('');
-  const [authEmailInput, setAuthEmailInput] = useState<string>('');
-  const [authPasswordInput, setAuthPasswordInput] = useState<string>('');
-  const [authPhoneInput, setAuthPhoneInput] = useState<string>('');
-  const [authErrorMsg, setAuthErrorMsg] = useState<string | null>(null);
-
-  // Collections State:
-  // IMPORTANT: `users` starts empty `[]` (NO pre-populated fake names in Communities!)
-  // Only real signed-up users from Firestore who are Paid Members (`isPaid === true`) appear in Communities.
-  const [users, setUsers] = useState<HubUser[]>([]);
+  // Collections State (Synced with Firestore Backend)
+  const [users, setUsers] = useState<HubUser[]>(INITIAL_USERS);
+  const [paymentRequests, setPaymentRequests] = useState<HubPaymentRequest[]>(
+    INITIAL_PAYMENT_REQUESTS
+  );
+  const [chats, setChats] = useState<HubChatMessage[]>(INITIAL_CHATS);
   const [jobs, setJobs] = useState<HubJob[]>(INITIAL_JOBS);
-  const [scholarships, setScholarships] = useState<HubScholarship[]>(INITIAL_SCHOLARSHIPS);
+  const [scholarships, setScholarships] = useState<HubScholarship[]>(
+    INITIAL_SCHOLARSHIPS
+  );
   const [trainings, setTrainings] = useState<HubTraining[]>(INITIAL_TRAININGS);
 
   // Applied Jobs & Saved Scholarships Tracking
   const [appliedJobIds, setAppliedJobIds] = useState<string[]>([]);
   const [savedScholarshipIds, setSavedScholarshipIds] = useState<string[]>([]);
 
-  // Current Logged-In User Profile
-  const [myProfile, setMyProfile] = useState<HubUser>(DEFAULT_EMPTY_PROFILE);
+  // Current User Profile (Starts as Free Member until Admin verifies payment in Part 2)
+  const [myProfile, setMyProfile] = useState<HubUser>(
+    DEFAULT_CURRENT_USER_PROFILE
+  );
   const [profileSaveMsg, setProfileSaveMsg] = useState<string | null>(null);
 
+  // Payment Verification Request Form State (on /profile)
+  const [payMethod, setPayMethod] = useState<
+    'EasyPaisa' | 'JazzCash' | 'Bank Transfer'
+  >('EasyPaisa');
+  const [payTxId, setPayTxId] = useState<string>('');
+  const [payAmount, setPayAmount] = useState<string>('PKR 1,500');
+  const [payNotes, setPayNotes] = useState<string>(
+    'Paid membership fee submitted. Please verify payment and approve my profile for Communities.'
+  );
+  const [paySubmitBanner, setPaySubmitBanner] = useState<string | null>(null);
+
+  // User-to-Admin Support Chat Box State
+  const [supportChatInput, setSupportChatInput] = useState<string>('');
+  const [supportChatSentMsg, setSupportChatSentMsg] = useState<string | null>(
+    null
+  );
+
   // Hire / Contact Modal State for Communities
-  const [contactModalMember, setContactModalMember] = useState<HubUser | null>(null);
+  const [contactModalMember, setContactModalMember] = useState<HubUser | null>(
+    null
+  );
   const [contactCustomMsg, setContactCustomMsg] = useState<string>(
     'Assalam-o-Alaikum, I saw your profile on Food Specialists Hub and would like to connect regarding a Food Science / QA role.'
   );
-  const [contactSentBanner, setContactSentBanner] = useState<string | null>(null);
+  const [contactSentBanner, setContactSentBanner] = useState<string | null>(
+    null
+  );
 
   // Filters for /jobs
   const [jobCategoryFilter, setJobCategoryFilter] = useState<string>('All');
@@ -340,56 +355,74 @@ export default function App() {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const cvInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Admin Panel State
+  // Admin Panel (Part 2 Backend) State
   const [adminTab, setAdminTab] = useState<
-    'users' | 'jobs' | 'scholarships' | 'trainings'
-  >('users');
+    'requests' | 'chats' | 'users' | 'jobs' | 'scholarships' | 'trainings'
+  >('requests');
   const [adminStatusMsg, setAdminStatusMsg] = useState<string | null>(null);
 
-  // Listen to Firebase Auth State
+  // Real-time Firestore Listeners for Backend Collections
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setFirebaseUser(u);
-      setAuthReady(true);
-      if (u) {
-        setIsUserSignedIn(true);
-        const cleanUid = u.uid.replace(/[^a-zA-Z0-9_-]/g, '');
-        setMyProfile((prev) => ({
-          ...prev,
-          uid: cleanUid,
-          name: prev.name || u.displayName || 'Food Specialist',
-          email: prev.email || u.email || '',
-          profilePicUrl:
-            prev.profilePicUrl ||
-            u.photoURL ||
-            makeAvatarSvg((u.displayName || 'FS').slice(0, 2).toUpperCase()),
-          isAdmin: u.email === 'mindmademedia9@gmail.com' ? true : prev.isAdmin
-        }));
-      }
-    });
-    return () => unsub();
-  }, []);
-
-  // Real-time Firestore Listeners
-  useEffect(() => {
-    if (!authReady) return;
-
     const unsubUsers = onSnapshot(
       collection(db, 'users'),
       (snap) => {
-        const fsUsers = snap.docs.map((d) => d.data() as HubUser);
-        setUsers(fsUsers);
-        // Sync current user's profile from Firestore if they exist in DB
-        if (myProfile.uid) {
-          const matched = fsUsers.find((u) => u.uid === myProfile.uid);
-          if (matched) {
-            setMyProfile(matched);
+        if (!snap.empty) {
+          const fsUsers = snap.docs.map((d) => d.data() as HubUser);
+          setUsers(() => {
+            const map = new Map<string, HubUser>();
+            INITIAL_USERS.forEach((u) => map.set(u.uid, u));
+            fsUsers.forEach((u) => map.set(u.uid, u));
+            return Array.from(map.values());
+          });
+          const matchedMe = fsUsers.find((u) => u.uid === myProfile.uid);
+          if (matchedMe) {
+            setMyProfile(matchedMe);
           }
         }
       },
       (err) => {
         try {
           handleFirestoreError(err, OperationType.LIST, 'users');
+        } catch {}
+      }
+    );
+
+    const unsubRequests = onSnapshot(
+      collection(db, 'paymentRequests'),
+      (snap) => {
+        if (!snap.empty) {
+          const fsReqs = snap.docs.map((d) => d.data() as HubPaymentRequest);
+          setPaymentRequests(() => {
+            const map = new Map<string, HubPaymentRequest>();
+            INITIAL_PAYMENT_REQUESTS.forEach((r) => map.set(r.id, r));
+            fsReqs.forEach((r) => map.set(r.id, r));
+            return Array.from(map.values());
+          });
+        }
+      },
+      (err) => {
+        try {
+          handleFirestoreError(err, OperationType.LIST, 'paymentRequests');
+        } catch {}
+      }
+    );
+
+    const unsubChats = onSnapshot(
+      collection(db, 'chats'),
+      (snap) => {
+        if (!snap.empty) {
+          const fsChats = snap.docs.map((d) => d.data() as HubChatMessage);
+          setChats(() => {
+            const map = new Map<string, HubChatMessage>();
+            INITIAL_CHATS.forEach((c) => map.set(c.id, c));
+            fsChats.forEach((c) => map.set(c.id, c));
+            return Array.from(map.values());
+          });
+        }
+      },
+      (err) => {
+        try {
+          handleFirestoreError(err, OperationType.LIST, 'chats');
         } catch {}
       }
     );
@@ -465,11 +498,13 @@ export default function App() {
 
     return () => {
       unsubUsers();
+      unsubRequests();
+      unsubChats();
       unsubJobs();
       unsubSch();
       unsubTr();
     };
-  }, [authReady, myProfile.uid]);
+  }, [myProfile.uid]);
 
   // Determine active BottomNav tab from current route (4 tabs: home, communities, trainings, profile)
   const activeBottomTab: NavTab = useMemo(() => {
@@ -529,7 +564,7 @@ export default function App() {
     );
   };
 
-  // Is Current User Paid?
+  // Is Current User a Verified Paid Member?
   const isCurrentUserPaid = Boolean(myProfile.isPaid);
 
   // Filtered Jobs for /jobs
@@ -594,7 +629,7 @@ export default function App() {
   }, [filteredScholarships, isCurrentUserPaid]);
 
   // Filtered Members for /communities:
-  // ONLY Paid Members (`u.isPaid === true`) who have signed up & saved their profile in the backend are shown!
+  // ONLY Paid Members (`u.isPaid === true`) verified by Admin are shown in Communities!
   const paidCommunityMembers = useMemo(
     () => users.filter((u) => u.isPaid === true && u.uid && u.name),
     [users]
@@ -629,7 +664,10 @@ export default function App() {
   );
 
   const haccpTrainings = useMemo(
-    () => highfieldTrainings.filter((t) => t.title.toLowerCase().includes('haccp')),
+    () =>
+      highfieldTrainings.filter((t) =>
+        t.title.toLowerCase().includes('haccp')
+      ),
     [highfieldTrainings]
   );
 
@@ -702,132 +740,21 @@ export default function App() {
     paidCommunityMembers
   ]);
 
-  // Sign Up / Sign In Handler (Persists user to Firestore backend)
-  const handleManualAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthErrorMsg(null);
-    const emailClean = authEmailInput.trim().toLowerCase();
-    if (!emailClean) {
-      setAuthErrorMsg('Please enter your email address.');
-      return;
-    }
-
-    // Generate deterministic safe UID from email so user can sign back in anytime
-    const derivedUid =
-      'user-' + emailClean.replace(/[^a-z0-9]/g, '-').slice(0, 80);
-
-    // Check if user already exists in Firestore `users`
-    const existingUser = users.find(
-      (u) => u.uid === derivedUid || u.email.toLowerCase() === emailClean
-    );
-
-    if (existingUser) {
-      setMyProfile(existingUser);
-      setIsUserSignedIn(true);
-      return;
-    }
-
-    const displayName =
-      authNameInput.trim() || emailClean.split('@')[0] || 'Food Specialist';
-    const initials = displayName
-      .split(' ')
-      .slice(0, 2)
-      .map((w) => w.charAt(0))
-      .join('')
-      .toUpperCase();
-
-    const newUser: HubUser = {
-      uid: derivedUid,
-      name: displayName,
-      profilePicUrl: makeAvatarSvg(initials || 'FS'),
-      qualification: 'BS (Hons.) Food Science & Technology',
-      experience: 'Fresh Graduate / Food Safety & QA Internship',
-      currentRole: 'Food Safety & QA Officer',
-      company: '',
-      location: 'Lahore, Pakistan',
-      email: emailClean,
-      phone: authPhoneInput.trim() || '+92 300 0000000',
-      skills: [],
-      cvUrl: '',
-      privacySettings: {
-        qualification_public: true,
-        experience_public: true,
-        currentRole_public: true,
-        location_public: true,
-        email_public: true,
-        phone_public: true,
-        hireMe_public: true
-      },
-      createdAt: new Date().toISOString().slice(0, 19) + 'Z',
-      isAdmin: emailClean === 'mindmademedia9@gmail.com',
-      isPaid: false
-    };
-
-    setMyProfile(newUser);
-    setIsUserSignedIn(true);
-    setUsers((prev) => [newUser, ...prev.filter((u) => u.uid !== newUser.uid)]);
-
-    try {
-      await setDoc(doc(db, 'users', newUser.uid), newUser, { merge: true });
-    } catch (err) {
-      console.error('Error creating user in Firestore:', err);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setAuthErrorMsg(null);
-    try {
-      const cred = await signInWithPopup(auth, googleProvider);
-      const u = cred.user;
-      const cleanUid = u.uid.replace(/[^a-zA-Z0-9_-]/g, '');
-      const existing = users.find((item) => item.uid === cleanUid);
-      if (existing) {
-        setMyProfile(existing);
-        setIsUserSignedIn(true);
-      } else {
-        const displayName = u.displayName || 'Food Specialist';
-        const initials = displayName
-          .split(' ')
-          .slice(0, 2)
-          .map((w) => w.charAt(0))
-          .join('')
-          .toUpperCase();
-        const newUser: HubUser = {
-          ...DEFAULT_EMPTY_PROFILE,
-          uid: cleanUid,
-          name: displayName,
-          email: u.email || '',
-          profilePicUrl: u.photoURL || makeAvatarSvg(initials || 'FS'),
-          createdAt: new Date().toISOString().slice(0, 19) + 'Z',
-          isAdmin: u.email === 'mindmademedia9@gmail.com',
-          isPaid: false
-        };
-        setMyProfile(newUser);
-        setIsUserSignedIn(true);
-        await setDoc(doc(db, 'users', cleanUid), newUser, { merge: true });
-      }
-    } catch (err) {
-      setAuthErrorMsg(
-        'Google popup could not complete in preview. Please use the Sign Up / Sign In form below.'
-      );
-    }
-  };
-
-  const handleFullSignOut = async () => {
-    try {
-      await signOut(auth);
-    } catch {}
-    setIsUserSignedIn(false);
-    setMyProfile(DEFAULT_EMPTY_PROFILE);
-  };
-
-  // Profile Save Handler (saves to local state AND Firestore users/{uid})
+  // Profile Save Handler — Saves user record to Backend `users` collection.
+  // IMPORTANT: Saving profile does NOT automatically add user to Communities unless Admin verifies payment!
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!myProfile.uid) return;
+    const cleanUid =
+      myProfile.uid ||
+      'user-' +
+        (myProfile.name || 'specialist')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-')
+          .slice(0, 60);
 
     const updatedUser: HubUser = {
       ...myProfile,
+      uid: cleanUid,
       name: myProfile.name.trim() || 'Food Specialist',
       createdAt:
         myProfile.createdAt || new Date().toISOString().slice(0, 19) + 'Z'
@@ -846,27 +773,51 @@ export default function App() {
       await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, {
         merge: true
       });
-      setProfileSaveMsg(
-        updatedUser.isPaid
-          ? 'Profile saved to backend! Your permitted details are now live in Communities.'
-          : 'Profile saved! Activate Paid Membership (or Admin approval) to appear in Communities.'
-      );
-    } catch {
-      setProfileSaveMsg('Profile saved to active session!');
-    }
-    setTimeout(() => setProfileSaveMsg(null), 4500);
+    } catch {}
+
+    setProfileSaveMsg(
+      updatedUser.isPaid
+        ? 'Profile saved! Since your payment is verified by Admin, your permitted details are live in Communities.'
+        : 'Profile saved to Backend Free User Record! To appear in Communities, submit your Payment Request below for Admin verification.'
+    );
+    setTimeout(() => setProfileSaveMsg(null), 5000);
   };
 
-  // Toggle Paid Membership for Current User (and persist to Firestore)
-  const handleToggleMyPaidStatus = async (nextPaid: boolean) => {
-    if (!isUserSignedIn || !myProfile.uid) {
-      setRoute({ name: 'profile' });
-      return;
-    }
+  // Submit Paid Membership & Payment Verification Request to Admin Backend (Part 2)
+  const handleSubmitPaymentRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payTxId.trim()) return;
+
+    const cleanUid = myProfile.uid || 'user-alex-morgan';
+    const reqId = 'req-' + Date.now();
+    const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+
+    const newReq: HubPaymentRequest = {
+      id: reqId,
+      uid: cleanUid,
+      userName: myProfile.name || 'Alex Morgan',
+      userEmail: myProfile.email || 'alex.morgan@email.com',
+      userPhone: myProfile.phone || '+92 300 1234567',
+      qualification: myProfile.qualification,
+      currentRole: myProfile.currentRole,
+      paymentMethod: payMethod,
+      transactionId: payTxId.trim(),
+      amount: payAmount.trim() || 'PKR 1,500',
+      notes: payNotes.trim(),
+      status: 'pending',
+      submittedAt: nowStr
+    };
+
     const updatedUser: HubUser = {
       ...myProfile,
-      isPaid: nextPaid
+      uid: cleanUid,
+      isPaid: false, // Remains false until Admin verifies in Part 2!
+      paymentStatus: 'pending',
+      paymentMethod: payMethod,
+      paymentReference: payTxId.trim(),
+      paymentAmount: payAmount.trim() || 'PKR 1,500'
     };
+
     setMyProfile(updatedUser);
     setUsers((prev) => {
       const exists = prev.some((u) => u.uid === updatedUser.uid);
@@ -874,16 +825,49 @@ export default function App() {
         ? prev.map((u) => (u.uid === updatedUser.uid ? updatedUser : u))
         : [updatedUser, ...prev];
     });
+    setPaymentRequests((prev) => [newReq, ...prev]);
+
     try {
       await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, {
         merge: true
       });
-      setProfileSaveMsg(
-        nextPaid
-          ? 'Paid Membership Activated! All daily Jobs, Scholarships & Communities visibility unlocked.'
-          : 'Switched to Free Member tier (1 Job & 1 Scholarship/day).'
-      );
-      setTimeout(() => setProfileSaveMsg(null), 4000);
+      await setDoc(doc(db, 'paymentRequests', newReq.id), newReq, {
+        merge: true
+      });
+    } catch {}
+
+    setPayTxId('');
+    setPaySubmitBanner(
+      'Payment verification request sent to Admin Backend Control Panel! Once Admin verifies your payment, your Paid Access & Communities listing will be activated.'
+    );
+    setTimeout(() => setPaySubmitBanner(null), 6000);
+  };
+
+  // Send Support Chat Message to Admin Backend
+  const handleSendSupportChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supportChatInput.trim()) return;
+
+    const chatMsg: HubChatMessage = {
+      id: 'chat-' + Date.now(),
+      senderUid: myProfile.uid || 'user-alex-morgan',
+      senderName: myProfile.name || 'Alex Morgan',
+      senderPhone: myProfile.phone || '+92 300 1234567',
+      recipientName: 'Admin Support (Muneeb Khan)',
+      chatType: 'admin_support',
+      message: supportChatInput.trim(),
+      createdAt: new Date().toISOString().slice(0, 16).replace('T', ' ')
+    };
+
+    setChats((prev) => [chatMsg, ...prev]);
+    setSupportChatInput('');
+    setSupportChatSentMsg(
+      'Message sent to Admin Backend! Check Part 2 (Admin Panel -> Chats) for replies.'
+    );
+    setTimeout(() => setSupportChatSentMsg(null), 4000);
+
+    try {
+      await setDoc(doc(db, 'chats', chatMsg.id), chatMsg, { merge: true });
     } catch {}
   };
 
@@ -909,16 +893,95 @@ export default function App() {
   };
 
   const firstName = useMemo(() => {
-    if (!isUserSignedIn || !myProfile.name) return 'Alex';
+    if (!myProfile.name) return 'Alex';
     return myProfile.name.split(' ')[0].replace(/,/g, '') || 'Alex';
-  }, [isUserSignedIn, myProfile.name]);
+  }, [myProfile.name]);
 
   const userInitial = firstName.charAt(0).toUpperCase() || 'A';
+
+  const pendingReqCount = useMemo(
+    () => paymentRequests.filter((r) => r.status === 'pending').length,
+    [paymentRequests]
+  );
 
   return (
     <div className="min-h-screen bg-[#F0FDF4] text-gray-900 flex flex-col items-center justify-start py-0 sm:py-6 px-0 sm:px-4">
       {/* Mobile-First App Container — NO extra empty white space at bottom */}
       <div className="w-full max-w-[480px] bg-[#EEF7F0] sm:rounded-[38px] sm:border-[1.5px] sm:border-[#9EC4A7] sm:shadow-xl flex flex-col relative overflow-hidden">
+        {/* TOP ARCHITECTURE SWITCHER: PART 1 (USER FRONTEND) vs PART 2 (ADMIN BACKEND CONTROL PANEL) */}
+        <div className="bg-[#0D2E1B] text-white px-3.5 py-2.5 flex flex-col gap-2 border-b border-emerald-800">
+          <div className="grid grid-cols-2 gap-1.5 bg-white/10 p-1 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                if (route.name === 'admin') setRoute({ name: 'home' });
+              }}
+              className={`py-2 px-2.5 rounded-xl text-[11.5px] font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                route.name !== 'admin'
+                  ? 'bg-[#16A34A] text-white shadow-xs'
+                  : 'text-emerald-100 hover:text-white'
+              }`}
+            >
+              <span>Part 1: User Frontend</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRoute({ name: 'admin' })}
+              className={`py-2 px-2.5 rounded-xl text-[11.5px] font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                route.name === 'admin'
+                  ? 'bg-[#16A34A] text-white shadow-xs'
+                  : 'text-emerald-100 hover:text-white'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>Part 2: Admin Backend</span>
+              {pendingReqCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-[#0D2E1B] text-[10px] font-black">
+                  {pendingReqCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* User Preview Tier Bar (Free Member vs Verified Paid Member) */}
+          {route.name !== 'admin' && (
+            <div className="flex items-center justify-between gap-2 px-1 text-[11px]">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isCurrentUserPaid ? 'bg-emerald-400' : 'bg-amber-400'
+                  }`}
+                />
+                <span className="text-emerald-100 font-semibold">
+                  Current Access:{' '}
+                  <strong className="text-white">
+                    {isCurrentUserPaid
+                      ? 'Verified Paid Member'
+                      : myProfile.paymentStatus === 'pending'
+                      ? 'Free User (Payment Pending Admin)'
+                      : 'Free User (Communities Blurred)'}
+                  </strong>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setMyProfile((prev) => ({
+                    ...prev,
+                    isPaid: !prev.isPaid,
+                    paymentStatus: !prev.isPaid ? 'verified' : 'none'
+                  }))
+                }
+                className="px-2.5 py-0.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-bold cursor-pointer shrink-0"
+              >
+                {isCurrentUserPaid ? 'Preview Free View' : 'Preview Paid View'}
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="p-3.5 sm:p-5 pb-5 space-y-5">
           {/* TOP ROUNDED GREEN HEADER */}
           <Header
@@ -945,7 +1008,7 @@ export default function App() {
             onAdminClick={() => setRoute({ name: 'admin' })}
             isAdmin={true}
             userInitial={userInitial}
-            notificationCount={appliedJobIds.length}
+            notificationCount={pendingReqCount}
           />
 
           {/* ==================== 1. HOME SCREEN (/) — TIGHT FIT WITHOUT EXTRA WHITE SCREEN ==================== */}
@@ -1888,8 +1951,8 @@ export default function App() {
                     <h1 className="text-[26px] font-extrabold text-[#0D2E1B] leading-tight tracking-tight">
                       Members Directory
                     </h1>
-                    <p className="text-[13.5px] text-gray-600 font-medium mt-0.5">
-                      {paidCommunityMembers.length} verified paid members • Hire fresh graduates &amp; specialists
+                    <p className="text-[13px] text-gray-600 font-medium mt-0.5">
+                      {paidCommunityMembers.length} verified paid members • Direct add disabled (Admin payment verification required)
                     </p>
                   </div>
 
@@ -1941,23 +2004,92 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Member Cards List (Only Paid Registered Members from Backend) */}
+              {/* FREE USER BLUR BANNER: If user is NOT a verified Paid Member, explain that cards are blurred */}
+              {!isCurrentUserPaid && (
+                <div className="bg-white border-2 border-[#16A34A] rounded-[24px] p-4 shadow-sm space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center shrink-0">
+                        <Lock className="w-4 h-4" />
+                      </span>
+                      <div>
+                        <h2 className="text-sm font-extrabold text-[#0D2E1B]">
+                          Blurred for Free Members (Paid Access Only)
+                        </h2>
+                        <p className="text-[11.5px] text-gray-600">
+                          {myProfile.paymentStatus === 'pending'
+                            ? 'Your Payment Request is pending in Admin Control Panel. Once verified, profiles will unblur.'
+                            : 'Community profiles are blurred for Free users. Submit payment in Profile for Admin verification.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setRoute({ name: 'profile' })}
+                      className="px-4 py-2 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer transition-colors"
+                    >
+                      Submit Payment Request in Profile →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminTab('requests');
+                        setRoute({ name: 'admin' });
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-[#EAF3EC] text-[#0D2E1B] text-xs font-bold cursor-pointer"
+                    >
+                      Open Part 2: Admin Panel →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Member Cards List (Only Paid Verified Members from Backend) */}
               {filteredMembers.length > 0 ? (
-                <div className="space-y-3.5">
-                  {filteredMembers.map((member) => (
-                    <MemberCard
-                      key={member.uid}
-                      member={member}
-                      onHireOrContact={(mem, e) => {
-                        e.stopPropagation();
-                        setContactModalMember(mem);
-                      }}
-                      onClick={(m) => {
-                        setRoute({ name: 'community-member', uid: m.uid });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                    />
-                  ))}
+                <div className="relative">
+                  <div
+                    className={`space-y-3.5 transition-all ${
+                      !isCurrentUserPaid
+                        ? 'blur-[5px] select-none pointer-events-none opacity-85'
+                        : ''
+                    }`}
+                  >
+                    {filteredMembers.map((member) => (
+                      <MemberCard
+                        key={member.uid}
+                        member={member}
+                        onHireOrContact={(mem, e) => {
+                          e.stopPropagation();
+                          if (!isCurrentUserPaid) return;
+                          setContactModalMember(mem);
+                        }}
+                        onClick={(m) => {
+                          if (!isCurrentUserPaid) return;
+                          setRoute({ name: 'community-member', uid: m.uid });
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Floating Unlock Card over Blurred List for Free Users */}
+                  {!isCurrentUserPaid && (
+                    <div className="inset-x-0 top-16 flex justify-center pointer-events-auto mt-3">
+                      <div className="bg-[#0D2E1B]/95 text-white rounded-[24px] p-4 shadow-xl border border-emerald-500/40 text-center max-w-[380px] space-y-2">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[11px] font-bold">
+                          <Crown className="w-3.5 h-3.5" />
+                          <span>Verified Paid Members Only</span>
+                        </div>
+                        <p className="text-xs text-emerald-50 leading-relaxed">
+                          Direct profile addition is disabled. When you create your profile and
+                          submit payment, your request goes to the <strong>Admin Control Panel</strong>.
+                          Once payment is verified, you get full access &amp; listing here.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="bg-white border border-[#B8D3BE] rounded-[26px] p-6 text-center space-y-3 shadow-xs">
@@ -1965,34 +2097,12 @@ export default function App() {
                     <UserPlus className="w-7 h-7" />
                   </div>
                   <h2 className="text-[19px] font-extrabold text-[#0D2E1B]">
-                    No Paid Member Profiles Listed Yet
+                    No Matching Paid Member Profiles
                   </h2>
                   <p className="text-[13px] text-gray-600 leading-relaxed">
-                    Profiles only appear in Communities after a user signs up, configures
-                    their permitted public fields, and activates <strong>Paid Membership</strong>{' '}
-                    (or is approved by the Admin).
+                    Only Paid Members whose payment is verified by Admin appear in
+                    Communities.
                   </p>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setRoute({ name: 'profile' })}
-                      className="w-full sm:w-auto px-5 py-3 rounded-[18px] bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer transition-colors"
-                    >
-                      {isUserSignedIn
-                        ? 'Go to My Profile & Activate Paid Status →'
-                        : 'Sign Up / Sign In to Create Profile →'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdminTab('users');
-                        setRoute({ name: 'admin' });
-                      }}
-                      className="w-full sm:w-auto px-4 py-3 rounded-[18px] bg-[#EAF3EC] text-[#0D2E1B] text-xs font-bold cursor-pointer"
-                    >
-                      Admin Member Control
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
@@ -2004,7 +2114,7 @@ export default function App() {
               const member =
                 paidCommunityMembers.find((u) => u.uid === route.uid) ||
                 users.find((u) => u.uid === route.uid) ||
-                (isUserSignedIn ? myProfile : null);
+                myProfile;
 
               if (!member) return null;
               const ps = member.privacySettings;
@@ -2551,699 +2661,748 @@ export default function App() {
               );
             })()}
 
-          {/* ==================== 7. PROFILE & PRIVACY PAGE (/profile) ==================== */}
-          {/* Profile details ONLY shown after the individual signs up / signs in! */}
-          {route.name === 'profile' && !isUserSignedIn && (
-            <div className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[28px] p-6 shadow-sm space-y-5">
-              <div className="text-center space-y-1.5">
-                <div className="w-14 h-14 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto mb-2">
-                  <Lock className="w-7 h-7" />
+          {/* ==================== 7. PROFILE & PRIVACY PAGE (/profile) — NO SIGN IN / SIGN UP ==================== */}
+          {route.name === 'profile' && (
+            <div className="space-y-5 px-1">
+              <form onSubmit={handleSaveProfile} className="space-y-5">
+                {/* Top Profile Hero Card with Sage-Green Gradient Backdrop */}
+                <div className="rounded-[28px] overflow-hidden bg-gradient-to-b from-[#6FA57C] via-[#9FC4A7]/60 to-white border border-[#B5D6BB] shadow-sm p-5 text-center relative">
+                  <div className="bg-white rounded-[18px] px-4 py-2.5 flex items-center justify-between shadow-xs mb-5">
+                    <span className="text-[18px] font-extrabold text-[#0D2E1B]">
+                      Profile &amp; Privacy
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRoute({ name: 'community-member', uid: myProfile.uid })
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-[#EAF5EC] text-[#15803D] text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Preview</span>
+                      </button>
+                      <Lock className="w-5 h-5 text-[#15803D]" />
+                    </div>
+                  </div>
+
+                  {/* Large Centered Circular Avatar + Floating Green Edit Badge */}
+                  <div className="relative inline-block">
+                    <img
+                      src={myProfile.profilePicUrl || makeAvatarSvg('FS')}
+                      alt={myProfile.name}
+                      className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md bg-[#F0FDF4]"
+                    />
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="absolute -bottom-1 -right-1 px-2.5 py-1 rounded-full bg-[#228B4E] hover:bg-[#15803D] text-white text-[11px] font-bold border-2 border-white shadow-sm flex items-center gap-1 cursor-pointer"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                  </div>
+
+                  <h2 className="text-[22px] font-extrabold text-[#0D2E1B] mt-3 leading-tight">
+                    {myProfile.name}
+                  </h2>
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#DCEFE0] text-[#138A3E] text-[12px] font-bold mt-1">
+                    <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
+                    <span>{myProfile.currentRole || 'Food Safety Specialist'}</span>
+                  </div>
+                  <p className="text-[12.5px] font-bold text-[#0D2E1B] mt-2">
+                    Control what others can see on your profile. Saving stores your record in Backend; Admin adds you to Communities after Payment Verification.
+                  </p>
                 </div>
-                <h1 className="text-[24px] font-extrabold text-[#0D2E1B]">
-                  {authMode === 'signup'
-                    ? 'Create Specialist Profile'
-                    : 'Sign In to Your Profile'}
-                </h1>
-                <p className="text-[13px] text-gray-600 leading-relaxed">
-                  Sign up or sign in first to build your profile, choose which details to
-                  share publicly, and appear in the Communities directory.
-                </p>
-              </div>
 
-              {/* Toggle Sign Up / Sign In */}
-              <div className="grid grid-cols-2 gap-1.5 bg-[#EAF3EC] p-1 rounded-2xl">
-                <button
-                  type="button"
-                  onClick={() => setAuthMode('signup')}
-                  className={`py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
-                    authMode === 'signup'
-                      ? 'bg-[#15803D] text-white shadow-xs'
-                      : 'text-[#0D2E1B]'
-                  }`}
-                >
-                  Sign Up (New Profile)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAuthMode('signin')}
-                  className={`py-2.5 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
-                    authMode === 'signin'
-                      ? 'bg-[#15803D] text-white shadow-xs'
-                      : 'text-[#0D2E1B]'
-                  }`}
-                >
-                  Sign In
-                </button>
-              </div>
+                {/* MEMBERSHIP STATUS & HIRE ME CARD */}
+                <div className="bg-white border-2 border-[#16A34A] rounded-[24px] p-4 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <Crown className="w-4 h-4 text-[#15803D]" />
+                        <span className="text-sm font-extrabold text-[#0D2E1B]">
+                          Account Status:{' '}
+                          {myProfile.isPaid
+                            ? 'Verified Paid Member'
+                            : myProfile.paymentStatus === 'pending'
+                            ? 'Payment Pending Admin Verification'
+                            : 'Free User (Not in Communities Yet)'}
+                        </span>
+                      </div>
+                      <p className="text-[11.5px] text-gray-600 mt-0.5">
+                        {myProfile.isPaid
+                          ? 'Admin verified your payment! Your profile is live in Communities + all Jobs & Scholarships are unlocked.'
+                          : 'Free users see 1 Job & 1 Scholarship/day and blurred Communities. Submit payment below for Admin approval.'}
+                      </p>
+                    </div>
 
-              {authErrorMsg && (
-                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold">
-                  {authErrorMsg}
+                    <span
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold shrink-0 ${
+                        myProfile.isPaid
+                          ? 'bg-[#DCF2E3] text-[#0D2E1B] border border-[#16A34A]'
+                          : myProfile.paymentStatus === 'pending'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {myProfile.isPaid
+                        ? 'Paid Verified ✓'
+                        : myProfile.paymentStatus === 'pending'
+                        ? 'Pending Admin'
+                        : 'Free Tier'}
+                    </span>
+                  </div>
+
+                  {/* HIRE ME TOGGLE (For Fresh Graduates & Specialists) */}
+                  <div className="pt-3 border-t border-emerald-100 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-extrabold text-[#0D2E1B] flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-[#15803D]" />
+                        <span>&ldquo;Hire Me&rdquo; Button Visible on My Profile</span>
+                      </div>
+                      <p className="text-[11px] text-gray-600">
+                        Allow community members &amp; employers to hire you based on your
+                        Education &amp; Experience once approved
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={Boolean(myProfile.privacySettings.hireMe_public)}
+                        onClick={() =>
+                          setMyProfile({
+                            ...myProfile,
+                            privacySettings: {
+                              ...myProfile.privacySettings,
+                              hireMe_public: !myProfile.privacySettings.hireMe_public
+                            }
+                          })
+                        }
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                          myProfile.privacySettings.hireMe_public
+                            ? 'bg-[#228B4E] justify-end'
+                            : 'bg-gray-300 justify-start'
+                        }`}
+                      >
+                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                      </button>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                          myProfile.privacySettings.hireMe_public
+                            ? 'bg-[#68B678]'
+                            : 'bg-[#A6ABA8]'
+                        }`}
+                      >
+                        {myProfile.privacySettings.hireMe_public ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              )}
 
-              <form onSubmit={handleManualAuthSubmit} className="space-y-3.5">
-                {authMode === 'signup' && (
-                  <div>
-                    <label className="block text-xs font-bold text-[#0D2E1B] mb-1">
-                      Full Name
+                {profileSaveMsg && (
+                  <div className="bg-[#15803D] text-white rounded-2xl p-3.5 text-xs font-bold flex items-center justify-between gap-2 shadow-sm">
+                    <span>{profileSaveMsg}</span>
+                    <button
+                      type="button"
+                      onClick={() => setRoute({ name: 'communities' })}
+                      className="px-2.5 py-1 rounded-lg bg-white text-[#0D2E1B] font-bold shrink-0 cursor-pointer"
+                    >
+                      Communities →
+                    </button>
+                  </div>
+                )}
+
+                {/* ✨ PROFILE DETAILS WHITE CARD */}
+                <div className="bg-white border border-emerald-100 rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.08)] space-y-3.5">
+                  <div className="flex items-center justify-center gap-1.5 pb-1">
+                    <Sparkles className="w-5 h-5 text-[#15803D]" />
+                    <h3 className="text-[20px] font-extrabold text-[#0D2E1B]">
+                      Profile Details
+                    </h3>
+                  </div>
+
+                  {/* Row 1: Name */}
+                  <div className="flex items-center gap-2.5">
+                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                      Name
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g., Alex Morgan"
-                      value={authNameInput}
-                      onChange={(e) => setAuthNameInput(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-[#F2F7F3] border border-[#AECBB5] text-sm font-medium focus:bg-white focus:outline-none focus:border-[#16A34A]"
+                      value={myProfile.name}
+                      onChange={(e) =>
+                        setMyProfile({ ...myProfile, name: e.target.value })
+                      }
+                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
                     />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="w-11 h-6 rounded-full bg-[#228B4E] p-0.5 flex items-center justify-end">
+                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-[#68B678] text-white text-[10px] font-bold">
+                        Public
+                      </span>
+                    </div>
                   </div>
-                )}
 
-                <div>
-                  <label className="block text-xs font-bold text-[#0D2E1B] mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="you@example.com"
-                    value={authEmailInput}
-                    onChange={(e) => setAuthEmailInput(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-[#F2F7F3] border border-[#AECBB5] text-sm font-medium focus:bg-white focus:outline-none focus:border-[#16A34A]"
-                  />
-                </div>
-
-                {authMode === 'signup' && (
-                  <div>
-                    <label className="block text-xs font-bold text-[#0D2E1B] mb-1">
-                      WhatsApp / Phone Number
+                  {/* Row 2: Qualification (Education) */}
+                  <div className="flex items-center gap-2.5">
+                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                      Qualification
                     </label>
                     <input
                       type="text"
-                      placeholder="+92 300 1234567"
-                      value={authPhoneInput}
-                      onChange={(e) => setAuthPhoneInput(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-[#F2F7F3] border border-[#AECBB5] text-sm font-medium focus:bg-white focus:outline-none focus:border-[#16A34A]"
+                      value={myProfile.qualification}
+                      onChange={(e) =>
+                        setMyProfile({
+                          ...myProfile,
+                          qualification: e.target.value
+                        })
+                      }
+                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
                     />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={myProfile.privacySettings.qualification_public}
+                        onClick={() =>
+                          setMyProfile({
+                            ...myProfile,
+                            privacySettings: {
+                              ...myProfile.privacySettings,
+                              qualification_public:
+                                !myProfile.privacySettings.qualification_public
+                            }
+                          })
+                        }
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                          myProfile.privacySettings.qualification_public
+                            ? 'bg-[#228B4E] justify-end'
+                            : 'bg-gray-300 justify-start'
+                        }`}
+                      >
+                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                      </button>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                          myProfile.privacySettings.qualification_public
+                            ? 'bg-[#68B678]'
+                            : 'bg-[#A6ABA8]'
+                        }`}
+                      >
+                        {myProfile.privacySettings.qualification_public
+                          ? 'Public'
+                          : 'Private'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Experience */}
+                  <div className="flex items-center gap-2.5">
+                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                      Experience
+                    </label>
+                    <input
+                      type="text"
+                      value={myProfile.experience}
+                      onChange={(e) =>
+                        setMyProfile({ ...myProfile, experience: e.target.value })
+                      }
+                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={myProfile.privacySettings.experience_public}
+                        onClick={() =>
+                          setMyProfile({
+                            ...myProfile,
+                            privacySettings: {
+                              ...myProfile.privacySettings,
+                              experience_public:
+                                !myProfile.privacySettings.experience_public
+                            }
+                          })
+                        }
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                          myProfile.privacySettings.experience_public
+                            ? 'bg-[#228B4E] justify-end'
+                            : 'bg-gray-300 justify-start'
+                        }`}
+                      >
+                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                      </button>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                          myProfile.privacySettings.experience_public
+                            ? 'bg-[#68B678]'
+                            : 'bg-[#A6ABA8]'
+                        }`}
+                      >
+                        {myProfile.privacySettings.experience_public
+                          ? 'Public'
+                          : 'Private'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 4: Current Role */}
+                  <div className="flex items-center gap-2.5">
+                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                      Current Role
+                    </label>
+                    <input
+                      type="text"
+                      value={myProfile.currentRole}
+                      onChange={(e) =>
+                        setMyProfile({
+                          ...myProfile,
+                          currentRole: e.target.value
+                        })
+                      }
+                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={myProfile.privacySettings.currentRole_public}
+                        onClick={() =>
+                          setMyProfile({
+                            ...myProfile,
+                            privacySettings: {
+                              ...myProfile.privacySettings,
+                              currentRole_public:
+                                !myProfile.privacySettings.currentRole_public
+                            }
+                          })
+                        }
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                          myProfile.privacySettings.currentRole_public
+                            ? 'bg-[#228B4E] justify-end'
+                            : 'bg-gray-300 justify-start'
+                        }`}
+                      >
+                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                      </button>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                          myProfile.privacySettings.currentRole_public
+                            ? 'bg-[#68B678]'
+                            : 'bg-[#A6ABA8]'
+                        }`}
+                      >
+                        {myProfile.privacySettings.currentRole_public
+                          ? 'Public'
+                          : 'Private'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 5: Location */}
+                  <div className="flex items-center gap-2.5">
+                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={myProfile.location}
+                      onChange={(e) =>
+                        setMyProfile({ ...myProfile, location: e.target.value })
+                      }
+                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={myProfile.privacySettings.location_public}
+                        onClick={() =>
+                          setMyProfile({
+                            ...myProfile,
+                            privacySettings: {
+                              ...myProfile.privacySettings,
+                              location_public:
+                                !myProfile.privacySettings.location_public
+                            }
+                          })
+                        }
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                          myProfile.privacySettings.location_public
+                            ? 'bg-[#228B4E] justify-end'
+                            : 'bg-gray-300 justify-start'
+                        }`}
+                      >
+                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                      </button>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                          myProfile.privacySettings.location_public
+                            ? 'bg-[#68B678]'
+                            : 'bg-[#A6ABA8]'
+                        }`}
+                      >
+                        {myProfile.privacySettings.location_public
+                          ? 'Public'
+                          : 'Private'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 6: Email */}
+                  <div className="flex items-center gap-2.5">
+                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={myProfile.email}
+                      onChange={(e) =>
+                        setMyProfile({ ...myProfile, email: e.target.value })
+                      }
+                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={myProfile.privacySettings.email_public}
+                        onClick={() =>
+                          setMyProfile({
+                            ...myProfile,
+                            privacySettings: {
+                              ...myProfile.privacySettings,
+                              email_public: !myProfile.privacySettings.email_public
+                            }
+                          })
+                        }
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                          myProfile.privacySettings.email_public
+                            ? 'bg-[#228B4E] justify-end'
+                            : 'bg-gray-300 justify-start'
+                        }`}
+                      >
+                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                      </button>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                          myProfile.privacySettings.email_public
+                            ? 'bg-[#68B678]'
+                            : 'bg-[#A6ABA8]'
+                        }`}
+                      >
+                        {myProfile.privacySettings.email_public
+                          ? 'Public'
+                          : 'Private'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 7: Phone */}
+                  <div className="flex items-center gap-2.5">
+                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                      Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={myProfile.phone}
+                      onChange={(e) =>
+                        setMyProfile({ ...myProfile, phone: e.target.value })
+                      }
+                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={myProfile.privacySettings.phone_public}
+                        onClick={() =>
+                          setMyProfile({
+                            ...myProfile,
+                            privacySettings: {
+                              ...myProfile.privacySettings,
+                              phone_public: !myProfile.privacySettings.phone_public
+                            }
+                          })
+                        }
+                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                          myProfile.privacySettings.phone_public
+                            ? 'bg-[#228B4E] justify-end'
+                            : 'bg-gray-300 justify-start'
+                        }`}
+                      >
+                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                      </button>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                          myProfile.privacySettings.phone_public
+                            ? 'bg-[#68B678]'
+                            : 'bg-[#A6ABA8]'
+                        }`}
+                      >
+                        {myProfile.privacySettings.phone_public
+                          ? 'Public'
+                          : 'Private'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CV Upload PDF */}
+                <div className="bg-white border border-emerald-100 rounded-[24px] p-4 flex items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <FileText className="w-5 h-5 text-[#16A34A] shrink-0" />
+                    <div className="min-w-0 text-xs">
+                      <div className="font-bold text-gray-900 truncate">
+                        {myProfile.cvUrl || 'No CV PDF uploaded yet'}
+                      </div>
+                      <div className="text-[11px] text-gray-500">
+                        Upload CV PDF for Hiring &amp; QA Roles
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    ref={cvInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleCvUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => cvInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-xl bg-[#EAF3EC] text-[#15803D] text-xs font-bold shrink-0 cursor-pointer"
+                  >
+                    Upload PDF
+                  </button>
+                </div>
+
+                {/* Full-Width Green "Save Changes" Button */}
+                <button
+                  type="submit"
+                  className="w-full py-4 px-5 rounded-[18px] bg-[#168A42] hover:bg-[#117035] text-white font-extrabold text-[16px] shadow-md transition-colors cursor-pointer"
+                >
+                  Save Profile Details
+                </button>
+              </form>
+
+              {/* ==================== REQUEST PAID MEMBERSHIP & PAYMENT VERIFICATION CARD ==================== */}
+              <form
+                onSubmit={handleSubmitPaymentRequest}
+                className="bg-white border-2 border-[#15803D] rounded-[26px] p-5 shadow-sm space-y-3.5"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] text-[10.5px] font-extrabold uppercase tracking-wide">
+                      Step 2 • Admin Payment Verification
+                    </span>
+                    <h3 className="text-[18px] font-extrabold text-[#0D2E1B] mt-1">
+                      Request Paid Member Access
+                    </h3>
+                    <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                      Submit your payment details below. Your request goes to the{' '}
+                      <strong>Admin Backend Control Panel</strong>. Once Admin verifies
+                      your payment, your profile will be added to Communities and all
+                      blurred cards will unlock.
+                    </p>
+                  </div>
+                  <Crown className="w-6 h-6 text-[#15803D] shrink-0" />
+                </div>
+
+                <div className="bg-[#F0FDF4] border border-emerald-200 rounded-2xl p-3 text-xs space-y-1">
+                  <div className="font-extrabold text-[#0D2E1B]">
+                    Official Payment Account (Muneeb Khan):
+                  </div>
+                  <div className="text-gray-700 font-semibold">
+                    EasyPaisa / JazzCash / WhatsApp: <span className="text-[#15803D] font-extrabold">+92 324 0906384</span>
+                  </div>
+                  <div className="text-[11px] text-gray-500">
+                    Membership Fee: PKR 1,500 (Unlocks Communities Directory + Unlimited Daily Jobs &amp; Scholarships)
+                  </div>
+                </div>
+
+                {paySubmitBanner && (
+                  <div className="p-3.5 rounded-2xl bg-[#15803D] text-white text-xs font-bold leading-relaxed">
+                    {paySubmitBanner}
                   </div>
                 )}
 
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
+                      Payment Method
+                    </label>
+                    <select
+                      value={payMethod}
+                      onChange={(e) =>
+                        setPayMethod(
+                          e.target.value as
+                            | 'EasyPaisa'
+                            | 'JazzCash'
+                            | 'Bank Transfer'
+                        )
+                      }
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-bold text-[#0D2E1B]"
+                    >
+                      <option value="EasyPaisa">EasyPaisa</option>
+                      <option value="JazzCash">JazzCash</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
+                      Amount Sent
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={payAmount}
+                      onChange={(e) => setPayAmount(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-bold text-[#0D2E1B]"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-[#0D2E1B] mb-1">
-                    Password
+                  <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
+                    Transaction ID / TID Reference Number *
                   </label>
                   <input
-                    type="password"
+                    type="text"
                     required
-                    placeholder="••••••••"
-                    value={authPasswordInput}
-                    onChange={(e) => setAuthPasswordInput(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-[#F2F7F3] border border-[#AECBB5] text-sm font-medium focus:bg-white focus:outline-none focus:border-[#16A34A]"
+                    placeholder="e.g., TID-88492019482 (Required for Admin Verification)"
+                    value={payTxId}
+                    onChange={(e) => setPayTxId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#16A34A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
+                    Note for Admin
+                  </label>
+                  <input
+                    type="text"
+                    value={payNotes}
+                    onChange={(e) => setPayNotes(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-medium text-gray-800"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-5 rounded-[18px] bg-[#168A42] hover:bg-[#117035] text-white font-extrabold text-sm shadow-md transition-colors cursor-pointer"
+                  className="w-full py-3.5 px-5 rounded-[18px] bg-[#0D2E1B] hover:bg-[#15803D] text-white font-extrabold text-xs shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
                 >
-                  {authMode === 'signup'
-                    ? 'Create Account & Open Profile →'
-                    : 'Sign In to My Profile →'}
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Submit Payment Request to Admin Backend →</span>
                 </button>
               </form>
 
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-emerald-100" />
-                <span className="shrink mx-3 text-xs text-gray-400 font-semibold">
-                  OR
-                </span>
-                <div className="flex-grow border-t border-emerald-100" />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="w-full py-3 px-4 rounded-[18px] bg-white border-2 border-[#16A34A] text-[#0D2E1B] font-extrabold text-xs flex items-center justify-center gap-2 hover:bg-[#F0FDF4] transition-colors cursor-pointer"
+              {/* ==================== DIRECT SUPPORT CHAT WITH ADMIN ==================== */}
+              <form
+                onSubmit={handleSendSupportChat}
+                className="bg-white border border-emerald-200 rounded-[26px] p-5 shadow-xs space-y-3"
               >
-                <LogIn className="w-4 h-4 text-[#16A34A]" />
-                <span>Continue with Google Account</span>
-              </button>
-            </div>
-          )}
-
-          {/* AUTHENTICATED USER PROFILE & PRIVACY EDITOR */}
-          {route.name === 'profile' && isUserSignedIn && (
-            <form onSubmit={handleSaveProfile} className="space-y-5 px-1">
-              {/* Top Profile Hero Card with Sage-Green Gradient Backdrop */}
-              <div className="rounded-[28px] overflow-hidden bg-gradient-to-b from-[#6FA57C] via-[#9FC4A7]/60 to-white border border-[#B5D6BB] shadow-sm p-5 text-center relative">
-                <div className="bg-white rounded-[18px] px-4 py-2.5 flex items-center justify-between shadow-xs mb-5">
-                  <span className="text-[18px] font-extrabold text-[#0D2E1B]">
-                    Profile &amp; Privacy
-                  </span>
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRoute({ name: 'community-member', uid: myProfile.uid })
-                      }
-                      className="px-2.5 py-1 rounded-lg bg-[#EAF5EC] text-[#15803D] text-xs font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Preview</span>
-                    </button>
-                    <Lock className="w-5 h-5 text-[#15803D]" />
+                    <MessageSquare className="w-5 h-5 text-[#15803D]" />
+                    <div>
+                      <h3 className="text-sm font-extrabold text-[#0D2E1B]">
+                        Chat with Admin Support
+                      </h3>
+                      <p className="text-[11px] text-gray-500">
+                        Messages appear live in Part 2 (Admin Control Panel &rarr; Chats)
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Large Centered Circular Avatar + Floating Green Edit Badge */}
-                <div className="relative inline-block">
-                  <img
-                    src={myProfile.profilePicUrl || makeAvatarSvg('FS')}
-                    alt={myProfile.name}
-                    className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md bg-[#F0FDF4]"
-                  />
+                {/* Show recent messages from this user & Admin replies */}
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {chats
+                    .filter(
+                      (c) =>
+                        c.senderUid === myProfile.uid ||
+                        c.senderName.toLowerCase() ===
+                          myProfile.name.toLowerCase()
+                    )
+                    .map((c) => (
+                      <div
+                        key={c.id}
+                        className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100 text-xs space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between text-[10.5px] text-gray-500 font-bold">
+                          <span>You ({c.senderName})</span>
+                          <span>{c.createdAt}</span>
+                        </div>
+                        <p className="text-gray-800 font-medium">{c.message}</p>
+                        {c.adminReply && (
+                          <div className="p-2 rounded-xl bg-[#DCFCE7] text-[#0D2E1B] text-[11px] font-bold">
+                            Admin Reply: {c.adminReply}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+
+                {supportChatSentMsg && (
+                  <div className="p-2.5 rounded-xl bg-[#DCFCE7] text-[#0D2E1B] text-xs font-bold">
+                    {supportChatSentMsg}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
                   <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
+                    type="text"
+                    placeholder="Write message to Admin regarding membership, jobs, or verification..."
+                    value={supportChatInput}
+                    onChange={(e) => setSupportChatInput(e.target.value)}
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-medium text-gray-900 focus:bg-white focus:outline-none"
                   />
                   <button
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 px-2.5 py-1 rounded-full bg-[#228B4E] hover:bg-[#15803D] text-white text-[11px] font-bold border-2 border-white shadow-sm flex items-center gap-1 cursor-pointer"
+                    type="submit"
+                    className="px-4 py-2.5 rounded-xl bg-[#15803D] text-white text-xs font-extrabold shrink-0 cursor-pointer"
                   >
-                    <Pencil className="w-3 h-3" />
-                    <span>Edit</span>
+                    Send
                   </button>
                 </div>
+              </form>
 
-                <h2 className="text-[22px] font-extrabold text-[#0D2E1B] mt-3 leading-tight">
-                  {myProfile.name}
-                </h2>
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#DCEFE0] text-[#138A3E] text-[12px] font-bold mt-1">
-                  <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-                  <span>{myProfile.currentRole || 'Food Safety Specialist'}</span>
-                </div>
-                <p className="text-[13px] font-bold text-[#0D2E1B] mt-2">
-                  Control what others can see on your profile
-                </p>
-              </div>
-
-              {/* MEMBERSHIP STATUS & HIRE ME CARD */}
-              <div className="bg-white border-2 border-[#16A34A] rounded-[24px] p-4 shadow-xs space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <Crown className="w-4 h-4 text-[#15803D]" />
-                      <span className="text-sm font-extrabold text-[#0D2E1B]">
-                        Membership Tier:{' '}
-                        {myProfile.isPaid ? 'Paid Member (Pro)' : 'Free Member'}
-                      </span>
-                    </div>
-                    <p className="text-[11.5px] text-gray-600 mt-0.5">
-                      {myProfile.isPaid
-                        ? 'Your profile is visible in Communities + all daily Jobs & Scholarships unlocked.'
-                        : 'Free members see 1 Job & 1 Scholarship/day. Upgrade to appear in Communities.'}
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleToggleMyPaidStatus(!myProfile.isPaid)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold shrink-0 cursor-pointer transition-colors ${
-                      myProfile.isPaid
-                        ? 'bg-[#DCF2E3] text-[#0D2E1B] border border-[#16A34A]'
-                        : 'bg-[#15803D] text-white'
-                    }`}
-                  >
-                    {myProfile.isPaid ? 'Paid Active ✓' : 'Upgrade to Paid'}
-                  </button>
-                </div>
-
-                {/* HIRE ME TOGGLE (For Fresh Graduates & Specialists) */}
-                <div className="pt-3 border-t border-emerald-100 flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-extrabold text-[#0D2E1B] flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-[#15803D]" />
-                      <span>&ldquo;Hire Me&rdquo; Button Visible on My Profile</span>
-                    </div>
-                    <p className="text-[11px] text-gray-600">
-                      Allow community members &amp; employers to hire you based on your
-                      Education &amp; Experience
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={Boolean(myProfile.privacySettings.hireMe_public)}
-                      onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            hireMe_public: !myProfile.privacySettings.hireMe_public
-                          }
-                        })
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.hireMe_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.hireMe_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.hireMe_public ? 'ON' : 'OFF'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {profileSaveMsg && (
-                <div className="bg-[#15803D] text-white rounded-2xl p-3.5 text-xs font-bold flex items-center justify-between gap-2 shadow-sm">
-                  <span>{profileSaveMsg}</span>
-                  <button
-                    type="button"
-                    onClick={() => setRoute({ name: 'communities' })}
-                    className="px-2.5 py-1 rounded-lg bg-white text-[#0D2E1B] font-bold shrink-0 cursor-pointer"
-                  >
-                    Open Communities →
-                  </button>
-                </div>
-              )}
-
-              {/* ✨ PROFILE DETAILS WHITE CARD */}
-              <div className="bg-white border border-emerald-100 rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.08)] space-y-3.5">
-                <div className="flex items-center justify-center gap-1.5 pb-1">
-                  <Sparkles className="w-5 h-5 text-[#15803D]" />
-                  <h3 className="text-[20px] font-extrabold text-[#0D2E1B]">
-                    Profile Details
-                  </h3>
-                </div>
-
-                {/* Row 1: Name */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={myProfile.name}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, name: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="w-11 h-6 rounded-full bg-[#228B4E] p-0.5 flex items-center justify-end">
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#68B678] text-white text-[10px] font-bold">
-                      Public
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 2: Qualification (Education) */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Qualification
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.qualification}
-                    onChange={(e) =>
-                      setMyProfile({
-                        ...myProfile,
-                        qualification: e.target.value
-                      })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.qualification_public}
-                      onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            qualification_public:
-                              !myProfile.privacySettings.qualification_public
-                          }
-                        })
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.qualification_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.qualification_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.qualification_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 3: Experience */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Experience
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.experience}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, experience: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.experience_public}
-                      onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            experience_public:
-                              !myProfile.privacySettings.experience_public
-                          }
-                        })
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.experience_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.experience_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.experience_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 4: Current Role */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Current Role
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.currentRole}
-                    onChange={(e) =>
-                      setMyProfile({
-                        ...myProfile,
-                        currentRole: e.target.value
-                      })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.currentRole_public}
-                      onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            currentRole_public:
-                              !myProfile.privacySettings.currentRole_public
-                          }
-                        })
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.currentRole_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.currentRole_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.currentRole_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 5: Location */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.location}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, location: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.location_public}
-                      onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            location_public:
-                              !myProfile.privacySettings.location_public
-                          }
-                        })
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.location_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.location_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.location_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 6: Email */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={myProfile.email}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, email: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.email_public}
-                      onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            email_public: !myProfile.privacySettings.email_public
-                          }
-                        })
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.email_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.email_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.email_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 7: Phone */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Phone
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.phone}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, phone: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.phone_public}
-                      onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            phone_public: !myProfile.privacySettings.phone_public
-                          }
-                        })
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.phone_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.phone_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.phone_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* CV Upload PDF */}
-              <div className="bg-white border border-emerald-100 rounded-[24px] p-4 flex items-center justify-between gap-3 shadow-xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <FileText className="w-5 h-5 text-[#16A34A] shrink-0" />
-                  <div className="min-w-0 text-xs">
-                    <div className="font-bold text-gray-900 truncate">
-                      {myProfile.cvUrl || 'No CV PDF uploaded yet'}
-                    </div>
-                    <div className="text-[11px] text-gray-500">
-                      Upload CV PDF for Hiring &amp; QA Roles
-                    </div>
-                  </div>
-                </div>
-                <input
-                  ref={cvInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleCvUpload}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => cvInputRef.current?.click()}
-                  className="px-3 py-1.5 rounded-xl bg-[#EAF3EC] text-[#15803D] text-xs font-bold shrink-0 cursor-pointer"
-                >
-                  Upload PDF
-                </button>
-              </div>
-
-              {/* Full-Width Green "Save Changes" Button */}
-              <button
-                type="submit"
-                className="w-full py-4 px-5 rounded-[18px] bg-[#168A42] hover:bg-[#117035] text-white font-extrabold text-[16px] shadow-md transition-colors cursor-pointer"
-              >
-                Save Changes
-              </button>
-
-              {/* Auth & Admin Footer Bar */}
-              <div className="bg-white border border-emerald-100 rounded-[22px] p-3.5 flex items-center justify-between gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={handleFullSignOut}
-                  className="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-700 font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out</span>
-                </button>
-
+              {/* Quick Switch to Part 2 Admin Backend Control Panel */}
+              <div className="bg-white border border-emerald-200 rounded-[22px] p-3.5 flex items-center justify-between gap-2 text-xs">
+                <span className="font-bold text-gray-600">
+                  Want to verify payments &amp; manage requests?
+                </span>
                 <button
                   type="button"
                   onClick={() => setRoute({ name: 'admin' })}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#0D2E1B] text-white font-bold cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-[#0D2E1B] text-white font-extrabold cursor-pointer shrink-0"
                 >
-                  Admin Backend Control →
+                  Open Part 2: Admin Backend →
                 </button>
               </div>
-            </form>
+            </div>
           )}
 
-          {/* ==================== 8. ADMIN PANEL (/admin) — INCLUDES BACKEND MEMBER CONTROL ==================== */}
+          {/* ==================== 8. PART 2: ADMIN BACKEND CONTROL PANEL (/admin) ==================== */}
           {route.name === 'admin' && (
             <AdminPanelView
               users={users}
+              paymentRequests={paymentRequests}
+              chats={chats}
               jobs={jobs}
               scholarships={scholarships}
               trainings={trainings}
@@ -3251,8 +3410,115 @@ export default function App() {
               setAdminTab={setAdminTab}
               adminStatusMsg={adminStatusMsg}
               setAdminStatusMsg={setAdminStatusMsg}
+              onVerifyPaymentRequest={async (reqItem, approve) => {
+                const newStatus = approve ? 'verified' : 'rejected';
+                const updatedReq: HubPaymentRequest = {
+                  ...reqItem,
+                  status: newStatus
+                };
+                setPaymentRequests((prev) =>
+                  prev.map((r) => (r.id === reqItem.id ? updatedReq : r))
+                );
+                try {
+                  await setDoc(doc(db, 'paymentRequests', reqItem.id), updatedReq, {
+                    merge: true
+                  });
+                } catch {}
+
+                // Also update or create the corresponding user in `users` collection
+                const existingUser = users.find((u) => u.uid === reqItem.uid);
+                const updatedUser: HubUser = existingUser
+                  ? {
+                      ...existingUser,
+                      isPaid: approve,
+                      paymentStatus: newStatus,
+                      paymentMethod: reqItem.paymentMethod,
+                      paymentReference: reqItem.transactionId,
+                      paymentAmount: reqItem.amount
+                    }
+                  : {
+                      uid: reqItem.uid,
+                      name: reqItem.userName,
+                      profilePicUrl: makeAvatarSvg(
+                        reqItem.userName.slice(0, 2).toUpperCase(),
+                        '#DCFCE7',
+                        '#14532D'
+                      ),
+                      qualification:
+                        reqItem.qualification || 'BS Food Science & Technology',
+                      experience: 'Food Safety & Quality Specialist',
+                      currentRole:
+                        reqItem.currentRole || 'Food Safety Specialist',
+                      company: '',
+                      location: 'Pakistan',
+                      email: reqItem.userEmail,
+                      phone: reqItem.userPhone,
+                      skills: [],
+                      cvUrl: '',
+                      privacySettings: {
+                        qualification_public: true,
+                        experience_public: true,
+                        currentRole_public: true,
+                        location_public: true,
+                        email_public: true,
+                        phone_public: true,
+                        hireMe_public: true
+                      },
+                      createdAt: new Date().toISOString(),
+                      isAdmin: false,
+                      isPaid: approve,
+                      paymentStatus: newStatus,
+                      paymentMethod: reqItem.paymentMethod,
+                      paymentReference: reqItem.transactionId,
+                      paymentAmount: reqItem.amount
+                    };
+
+                setUsers((prev) => {
+                  const exists = prev.some((u) => u.uid === updatedUser.uid);
+                  return exists
+                    ? prev.map((u) =>
+                        u.uid === updatedUser.uid ? updatedUser : u
+                      )
+                    : [updatedUser, ...prev];
+                });
+
+                if (myProfile.uid === updatedUser.uid) {
+                  setMyProfile(updatedUser);
+                }
+
+                try {
+                  await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, {
+                    merge: true
+                  });
+                } catch {}
+              }}
+              onReplyChat={async (chatItem, replyText) => {
+                const updatedChat: HubChatMessage = {
+                  ...chatItem,
+                  adminReply: replyText
+                };
+                setChats((prev) =>
+                  prev.map((c) => (c.id === chatItem.id ? updatedChat : c))
+                );
+                try {
+                  await setDoc(doc(db, 'chats', chatItem.id), updatedChat, {
+                    merge: true
+                  });
+                } catch {}
+              }}
+              onDeleteChat={async (chatId) => {
+                setChats((prev) => prev.filter((c) => c.id !== chatId));
+                try {
+                  await deleteDoc(doc(db, 'chats', chatId));
+                } catch {}
+              }}
               onToggleUserPaid={async (u) => {
-                const updated: HubUser = { ...u, isPaid: !u.isPaid };
+                const nextPaid = !u.isPaid;
+                const updated: HubUser = {
+                  ...u,
+                  isPaid: nextPaid,
+                  paymentStatus: nextPaid ? 'verified' : 'none'
+                };
                 setUsers((prev) =>
                   prev.map((item) => (item.uid === u.uid ? updated : item))
                 );
@@ -3410,11 +3676,30 @@ export default function App() {
 
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={async () => {
+                    const newHireChat: HubChatMessage = {
+                      id: 'chat-hire-' + Date.now(),
+                      senderUid: myProfile.uid || 'user-alex-morgan',
+                      senderName: myProfile.name || 'Alex Morgan',
+                      senderPhone: myProfile.phone || '+92 300 1234567',
+                      recipientName: contactModalMember.name,
+                      chatType: 'hiring_contact',
+                      message: contactCustomMsg.trim(),
+                      createdAt: new Date()
+                        .toISOString()
+                        .slice(0, 16)
+                        .replace('T', ' ')
+                    };
+                    setChats((prev) => [newHireChat, ...prev]);
                     setContactSentBanner(
-                      `Your hiring request has been sent to ${contactModalMember.name}!`
-                    )
-                  }
+                      `Your hiring request has been sent to ${contactModalMember.name} and logged in the Admin Backend!`
+                    );
+                    try {
+                      await setDoc(doc(db, 'chats', newHireChat.id), newHireChat, {
+                        merge: true
+                      });
+                    } catch {}
+                  }}
                   className="w-full py-2.5 px-4 rounded-2xl border border-emerald-200 text-[#15803D] text-xs font-bold cursor-pointer hover:bg-[#F0FDF4]"
                 >
                   Send Direct In-App Hire Request
@@ -3434,16 +3719,29 @@ export default function App() {
   );
 }
 
-// ==================== ADMIN PANEL SUB-COMPONENT ====================
+// ==================== PART 2: ADMIN BACKEND CONTROL PANEL SUB-COMPONENT ====================
+type AdminTabType =
+  | 'requests'
+  | 'chats'
+  | 'users'
+  | 'jobs'
+  | 'scholarships'
+  | 'trainings';
+
 interface AdminPanelViewProps {
   users: HubUser[];
+  paymentRequests: HubPaymentRequest[];
+  chats: HubChatMessage[];
   jobs: HubJob[];
   scholarships: HubScholarship[];
   trainings: HubTraining[];
-  adminTab: 'users' | 'jobs' | 'scholarships' | 'trainings';
-  setAdminTab: (t: 'users' | 'jobs' | 'scholarships' | 'trainings') => void;
+  adminTab: AdminTabType;
+  setAdminTab: (t: AdminTabType) => void;
   adminStatusMsg: string | null;
   setAdminStatusMsg: (m: string | null) => void;
+  onVerifyPaymentRequest: (reqItem: HubPaymentRequest, approve: boolean) => void;
+  onReplyChat: (chatItem: HubChatMessage, replyText: string) => void;
+  onDeleteChat: (chatId: string) => void;
   onToggleUserPaid: (u: HubUser) => void;
   onDeleteUser: (uid: string) => void;
   onSaveJob: (j: HubJob) => void;
@@ -3456,6 +3754,8 @@ interface AdminPanelViewProps {
 
 const AdminPanelView: React.FC<AdminPanelViewProps> = ({
   users,
+  paymentRequests,
+  chats,
   jobs,
   scholarships,
   trainings,
@@ -3463,6 +3763,9 @@ const AdminPanelView: React.FC<AdminPanelViewProps> = ({
   setAdminTab,
   adminStatusMsg,
   setAdminStatusMsg,
+  onVerifyPaymentRequest,
+  onReplyChat,
+  onDeleteChat,
   onToggleUserPaid,
   onDeleteUser,
   onSaveJob,
@@ -3472,6 +3775,15 @@ const AdminPanelView: React.FC<AdminPanelViewProps> = ({
   onSaveTraining,
   onDeleteTraining
 }) => {
+  // Filter state for Paid vs Free user records
+  const [userRecordFilter, setUserRecordFilter] = useState<
+    'all' | 'paid' | 'free'
+  >('all');
+
+  // Admin Reply Inputs Map by chat ID
+  const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
+
+  // Job Form State
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [jTitle, setJTitle] = useState('');
   const [jCompany, setJCompany] = useState('');
@@ -3483,124 +3795,463 @@ const AdminPanelView: React.FC<AdminPanelViewProps> = ({
   const [jReqs, setJReqs] = useState('');
   const [jLink, setJLink] = useState('https://');
 
+  // Scholarship Form State
   const [editingSchId, setEditingSchId] = useState<string | null>(null);
   const [sTitle, setSTitle] = useState('');
   const [sOrg, setSOrg] = useState('');
   const [sCountry, setSCountry] = useState('Europe / Global');
   const [sDeadline, setSDeadline] = useState('2027-01-30');
-  const [sFunding, setSFunding] = useState<'Fellowships' | 'International' | 'Grants'>(
-    'Fellowships'
-  );
+  const [sFunding, setSFunding] = useState<
+    'Fellowships' | 'International' | 'Grants'
+  >('Fellowships');
   const [sDegree, setSDegree] = useState('MS / PhD');
   const [sDesc, setSDesc] = useState('');
   const [sElig, setSElig] = useState('');
   const [sLink, setSLink] = useState('https://');
 
+  // Training Form State
   const [editingTrId, setEditingTrId] = useState<string | null>(null);
-  const [tCategory, setTCategory] = useState<'Highfield' | 'Lead Auditor'>('Highfield');
+  const [tCategory, setTCategory] = useState<'Highfield' | 'Lead Auditor'>(
+    'Highfield'
+  );
   const [tTitle, setTTitle] = useState('HACCP Level 3');
-  const [tSubType, setTSubType] = useState<'' | 'Exemplar Global' | 'IRCA | CQI'>('');
+  const [tSubType, setTSubType] = useState<
+    '' | 'Exemplar Global' | 'IRCA | CQI'
+  >('');
   const [tDuration, setTDuration] = useState('3 Days (18 Hours)');
   const [tFees, setTFees] = useState('PKR 28,000');
   const [tDesc, setTDesc] = useState('');
-  const [tEnroll, setTEnroll] = useState('https://wa.me/923008429104');
+  const [tEnroll, setTEnroll] = useState('https://wa.me/923240906384');
 
   const notify = (msg: string) => {
     setAdminStatusMsg(msg);
-    setTimeout(() => setAdminStatusMsg(null), 3500);
+    setTimeout(() => setAdminStatusMsg(null), 4000);
   };
+
+  const paidMembersList = useMemo(
+    () => users.filter((u) => u.isPaid === true),
+    [users]
+  );
+  const freeUsersList = useMemo(
+    () => users.filter((u) => !u.isPaid),
+    [users]
+  );
+  const pendingPaymentsCount = useMemo(
+    () => paymentRequests.filter((r) => r.status === 'pending').length,
+    [paymentRequests]
+  );
+
+  const displayedUsersRecord = useMemo(() => {
+    if (userRecordFilter === 'paid') return paidMembersList;
+    if (userRecordFilter === 'free') return freeUsersList;
+    return users;
+  }, [users, paidMembersList, freeUsersList, userRecordFilter]);
 
   return (
     <div className="space-y-4 px-1">
-      <div>
-        <h1 className="text-2xl font-extrabold text-[#0D2E1B]">
-          Admin Backend Control
+      {/* Admin Header Banner */}
+      <div className="bg-[#0D2E1B] text-white rounded-[26px] p-5 shadow-md space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-[10.5px] font-extrabold uppercase tracking-wider">
+            Part 2 • Backend Control Panel
+          </span>
+          <ShieldCheck className="w-5 h-5 text-[#4ADE80]" />
+        </div>
+        <h1 className="text-[22px] font-extrabold leading-tight">
+          Admin Backend &amp; Database
         </h1>
-        <p className="text-xs text-gray-500">
-          Approve Paid Members for Communities &amp; manage Jobs, Scholarships, Trainings
+        <p className="text-xs text-emerald-100/90 leading-relaxed">
+          Verify incoming Payments, approve Paid Members for Communities, reply to
+          User Chats, and manage Premium &amp; Free User records.
         </p>
-      </div>
 
-      {/* Dashboard Counts */}
-      <div className="grid grid-cols-4 gap-2 text-center">
-        <div className="bg-white border border-emerald-200 rounded-2xl p-2.5">
-          <div className="text-lg font-bold text-[#16A34A] tabular-nums">
-            {users.length}
+        {/* Summary Metrics Grid */}
+        <div className="grid grid-cols-4 gap-2 pt-2 text-center">
+          <div className="bg-white/10 rounded-2xl p-2.5">
+            <div className="text-lg font-extrabold text-[#4ADE80] tabular-nums">
+              {pendingPaymentsCount}
+            </div>
+            <div className="text-[10px] font-bold text-emerald-100">
+              Pending Pay
+            </div>
           </div>
-          <div className="text-[10px] font-semibold text-gray-500">Users</div>
-        </div>
-        <div className="bg-white border border-emerald-200 rounded-2xl p-2.5">
-          <div className="text-lg font-bold text-[#16A34A] tabular-nums">
-            {jobs.length}
+          <div className="bg-white/10 rounded-2xl p-2.5">
+            <div className="text-lg font-extrabold text-white tabular-nums">
+              {chats.length}
+            </div>
+            <div className="text-[10px] font-bold text-emerald-100">Chats</div>
           </div>
-          <div className="text-[10px] font-semibold text-gray-500">Jobs</div>
-        </div>
-        <div className="bg-white border border-emerald-200 rounded-2xl p-2.5">
-          <div className="text-lg font-bold text-[#16A34A] tabular-nums">
-            {scholarships.length}
+          <div className="bg-white/10 rounded-2xl p-2.5">
+            <div className="text-lg font-extrabold text-[#4ADE80] tabular-nums">
+              {paidMembersList.length}
+            </div>
+            <div className="text-[10px] font-bold text-emerald-100">
+              Paid Members
+            </div>
           </div>
-          <div className="text-[10px] font-semibold text-gray-500">Grants</div>
-        </div>
-        <div className="bg-white border border-emerald-200 rounded-2xl p-2.5">
-          <div className="text-lg font-bold text-[#16A34A] tabular-nums">
-            {trainings.length}
+          <div className="bg-white/10 rounded-2xl p-2.5">
+            <div className="text-lg font-extrabold text-amber-300 tabular-nums">
+              {freeUsersList.length}
+            </div>
+            <div className="text-[10px] font-bold text-emerald-100">
+              Free Users
+            </div>
           </div>
-          <div className="text-[10px] font-semibold text-gray-500">Trainings</div>
         </div>
       </div>
 
       {adminStatusMsg && (
-        <div className="bg-[#16A34A] text-white rounded-2xl p-3 text-xs font-bold">
+        <div className="bg-[#15803D] text-white rounded-2xl p-3.5 text-xs font-extrabold shadow-sm">
           {adminStatusMsg}
         </div>
       )}
 
-      {/* Admin Collection Tabs */}
-      <div className="grid grid-cols-4 gap-1 bg-white p-1 rounded-2xl border border-emerald-200">
-        {(['users', 'jobs', 'scholarships', 'trainings'] as const).map((t) => (
+      {/* 6 Backend Control Tabs */}
+      <div className="grid grid-cols-3 gap-1.5 bg-white p-1.5 rounded-2xl border border-emerald-200 shadow-2xs">
+        {(
+          [
+            { id: 'requests', label: `Payments (${paymentRequests.length})` },
+            { id: 'chats', label: `Chats (${chats.length})` },
+            { id: 'users', label: `Users (${users.length})` },
+            { id: 'jobs', label: `Jobs (${jobs.length})` },
+            { id: 'scholarships', label: `Grants (${scholarships.length})` },
+            { id: 'trainings', label: `Trainings (${trainings.length})` }
+          ] as { id: AdminTabType; label: string }[]
+        ).map((t) => (
           <button
-            key={t}
+            key={t.id}
             type="button"
-            onClick={() => setAdminTab(t)}
-            className={`py-2 rounded-xl text-[11px] font-bold capitalize transition-colors cursor-pointer ${
-              adminTab === t ? 'bg-[#16A34A] text-white' : 'text-gray-600'
+            onClick={() => setAdminTab(t.id)}
+            className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-colors cursor-pointer ${
+              adminTab === t.id
+                ? 'bg-[#15803D] text-white shadow-xs'
+                : 'text-[#0D2E1B] hover:bg-emerald-50'
             }`}
           >
-            {t === 'users' ? 'Members' : t}
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* MANAGE MEMBERS (USERS) — ADMIN CONTROL FOR COMMUNITIES VISIBILITY */}
-      {adminTab === 'users' && (
+      {/* ==================== TAB 1: PAYMENTS RECEIVED & MEMBERSHIP REQUESTS ==================== */}
+      {adminTab === 'requests' && (
         <div className="space-y-3">
           <div className="bg-white border border-emerald-200 rounded-[22px] p-4 text-xs space-y-1">
-            <div className="font-extrabold text-[#0D2E1B]">
-              Signed-Up Users &amp; Paid Member Approval
+            <div className="font-extrabold text-[#0D2E1B] text-sm">
+              Payments Received &amp; Paid Membership Verification
             </div>
-            <p className="text-gray-500">
-              Only users marked as <strong>Paid Member</strong> appear in the
-              Communities directory with their permitted profile fields.
+            <p className="text-gray-600 leading-relaxed">
+              When a user creates their profile and sends payment, their request
+              appears below. Click <strong>Verify Payment &amp; Grant Access</strong>{' '}
+              to unlock their Paid account and publish their profile in Communities.
             </p>
           </div>
 
-          {users.length === 0 ? (
+          {paymentRequests.length === 0 ? (
+            <div className="bg-white border border-emerald-200 rounded-2xl p-6 text-center text-xs text-gray-500">
+              No payment requests received yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {paymentRequests.map((reqItem) => (
+                <div
+                  key={reqItem.id}
+                  className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[24px] p-4 shadow-xs space-y-3 text-xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-extrabold text-[#0D2E1B]">
+                          {reqItem.userName}
+                        </span>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                            reqItem.status === 'verified'
+                              ? 'bg-[#DCFCE7] text-[#15803D]'
+                              : reqItem.status === 'rejected'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-amber-100 text-amber-900'
+                          }`}
+                        >
+                          {reqItem.status === 'verified'
+                            ? 'Payment Verified ✓'
+                            : reqItem.status === 'rejected'
+                            ? 'Rejected'
+                            : 'Pending Verification'}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 font-medium mt-0.5">
+                        {reqItem.currentRole || 'Food Specialist'} •{' '}
+                        {reqItem.qualification || 'Food Science'}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        {reqItem.userEmail} • {reqItem.userPhone}
+                      </p>
+                    </div>
+                    <span className="text-[10.5px] font-bold text-gray-400 shrink-0">
+                      {reqItem.submittedAt}
+                    </span>
+                  </div>
+
+                  {/* Payment Receipt Box */}
+                  <div className="bg-[#F2F7F3] border border-emerald-200 rounded-2xl p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-gray-600">
+                        Method &amp; Amount:
+                      </span>
+                      <span className="font-extrabold text-[#0D2E1B]">
+                        {reqItem.paymentMethod} • {reqItem.amount}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-gray-600">
+                        Transaction ID (TID):
+                      </span>
+                      <span className="font-mono font-extrabold text-[#15803D]">
+                        {reqItem.transactionId}
+                      </span>
+                    </div>
+                    {reqItem.notes && (
+                      <p className="text-[11px] text-gray-600 pt-1 border-t border-emerald-100">
+                        Note: &ldquo;{reqItem.notes}&rdquo;
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Admin Verification Action Buttons */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onVerifyPaymentRequest(reqItem, true);
+                        notify(
+                          `Payment verified for ${reqItem.userName}! Added to Paid Members & Communities directory.`
+                        );
+                      }}
+                      className={`flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                        reqItem.status === 'verified'
+                          ? 'bg-[#DCFCE7] text-[#15803D] border border-[#16A34A]'
+                          : 'bg-[#15803D] hover:bg-[#0D2E1B] text-white'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>
+                        {reqItem.status === 'verified'
+                          ? 'Verified & Added to Communities ✓'
+                          : 'Verify Payment & Grant Paid Access'}
+                      </span>
+                    </button>
+
+                    {reqItem.status !== 'rejected' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onVerifyPaymentRequest(reqItem, false);
+                          notify(
+                            `Payment request for ${reqItem.userName} marked as unverified/free.`
+                          );
+                        }}
+                        className="px-3 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs cursor-pointer"
+                      >
+                        Reject / Revoke
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ==================== TAB 2: CHATS & HIRING INQUIRIES ==================== */}
+      {adminTab === 'chats' && (
+        <div className="space-y-3">
+          <div className="bg-white border border-emerald-200 rounded-[22px] p-4 text-xs space-y-1">
+            <div className="font-extrabold text-[#0D2E1B] text-sm">
+              User Support Chats &amp; Hiring Inquiries
+            </div>
+            <p className="text-gray-600">
+              All messages sent by users to Admin Support or to Community Members for
+              hiring appear here. You can reply directly to any conversation.
+            </p>
+          </div>
+
+          {chats.length === 0 ? (
+            <div className="bg-white border border-emerald-200 rounded-2xl p-6 text-center text-xs text-gray-500">
+              No chats recorded yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {chats.map((chatItem) => (
+                <div
+                  key={chatItem.id}
+                  className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[24px] p-4 shadow-xs space-y-3 text-xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-extrabold text-[#0D2E1B] text-sm">
+                          {chatItem.senderName}
+                        </span>
+                        <span className="text-gray-400">&rarr;</span>
+                        <span className="font-bold text-[#15803D]">
+                          {chatItem.recipientName}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            chatItem.chatType === 'hiring_contact'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-blue-50 text-blue-700'
+                          }`}
+                        >
+                          {chatItem.chatType === 'hiring_contact'
+                            ? 'Hiring Contact'
+                            : 'Admin Support'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-gray-500 mt-0.5">
+                        WhatsApp / Phone: {chatItem.senderPhone} • {chatItem.createdAt}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteChat(chatItem.id)}
+                      className="p-1.5 rounded-lg bg-red-50 text-red-600 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-[#F2F7F3] text-gray-900 font-medium leading-relaxed">
+                    {chatItem.message}
+                  </div>
+
+                  {chatItem.adminReply && (
+                    <div className="p-3 rounded-2xl bg-[#DCFCE7] border border-emerald-200 text-[#0D2E1B] font-bold">
+                      Admin Reply: {chatItem.adminReply}
+                    </div>
+                  )}
+
+                  {/* Admin Reply Input */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Write Admin reply to this user..."
+                      value={replyInputs[chatItem.id] || ''}
+                      onChange={(e) =>
+                        setReplyInputs((prev) => ({
+                          ...prev,
+                          [chatItem.id]: e.target.value
+                        }))
+                      }
+                      className="flex-1 px-3 py-2 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const txt = (replyInputs[chatItem.id] || '').trim();
+                        if (!txt) return;
+                        onReplyChat(chatItem, txt);
+                        setReplyInputs((prev) => ({ ...prev, [chatItem.id]: '' }));
+                        notify(`Reply sent to ${chatItem.senderName}!`);
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-[#15803D] text-white font-extrabold cursor-pointer shrink-0"
+                    >
+                      Reply
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ==================== TAB 3: PREMIUM (PAID) & FREE USERS DATABASE RECORD ==================== */}
+      {adminTab === 'users' && (
+        <div className="space-y-3">
+          <div className="bg-white border border-emerald-200 rounded-[22px] p-4 text-xs space-y-2.5">
+            <div>
+              <div className="font-extrabold text-[#0D2E1B] text-sm">
+                Premium (Paid) &amp; Free Users Database Record
+              </div>
+              <p className="text-gray-500 mt-0.5">
+                Complete backend record of all <strong>Premium Paid Members</strong>{' '}
+                (visible in Communities) and <strong>Free Users</strong> (stored in
+                backend until payment is verified).
+              </p>
+            </div>
+
+            {/* Filter Pills: All | Paid Members | Free Users */}
+            <div className="grid grid-cols-3 gap-1.5 bg-[#EAF3EC] p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setUserRecordFilter('all')}
+                className={`py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
+                  userRecordFilter === 'all'
+                    ? 'bg-[#0D2E1B] text-white'
+                    : 'text-[#0D2E1B]'
+                }`}
+              >
+                All ({users.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserRecordFilter('paid')}
+                className={`py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
+                  userRecordFilter === 'paid'
+                    ? 'bg-[#15803D] text-white'
+                    : 'text-[#0D2E1B]'
+                }`}
+              >
+                Paid ({paidMembersList.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserRecordFilter('free')}
+                className={`py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
+                  userRecordFilter === 'free'
+                    ? 'bg-amber-600 text-white'
+                    : 'text-[#0D2E1B]'
+                }`}
+              >
+                Free ({freeUsersList.length})
+              </button>
+            </div>
+          </div>
+
+          {displayedUsersRecord.length === 0 ? (
             <div className="bg-white border border-emerald-200 rounded-2xl p-5 text-center text-xs text-gray-500">
-              No users have signed up yet. Go to the Profile tab to sign up a user!
+              No user records match this filter.
             </div>
           ) : (
             <div className="space-y-2.5">
-              {users.map((u) => (
+              {displayedUsersRecord.map((u) => (
                 <div
                   key={u.uid}
                   className="bg-white border border-emerald-200 rounded-2xl p-3.5 flex items-center justify-between gap-2 text-xs"
                 >
-                  <div className="min-w-0">
-                    <div className="font-extrabold text-[#0D2E1B] truncate">
-                      {u.name}
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-extrabold text-[#0D2E1B] truncate">
+                        {u.name}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[9.5px] font-extrabold ${
+                          u.isPaid
+                            ? 'bg-[#DCFCE7] text-[#15803D]'
+                            : 'bg-amber-100 text-amber-900'
+                        }`}
+                      >
+                        {u.isPaid ? 'PAID MEMBER' : 'FREE USER'}
+                      </span>
                     </div>
-                    <div className="text-gray-500 truncate">
-                      {u.email || u.uid} •{' '}
+                    <div className="text-gray-600 truncate font-medium">
+                      {u.currentRole} • {u.qualification}
+                    </div>
+                    <div className="text-gray-400 text-[11px] truncate">
+                      {u.email} • {u.phone} •{' '}
                       {u.privacySettings?.hireMe_public ? 'Hire Me ON' : 'Standard'}
                     </div>
                   </div>
@@ -3611,17 +4262,17 @@ const AdminPanelView: React.FC<AdminPanelViewProps> = ({
                         onToggleUserPaid(u);
                         notify(
                           !u.isPaid
-                            ? `${u.name} approved as Paid Member (Visible in Communities)!`
-                            : `${u.name} set to Free Member (Hidden from Communities).`
+                            ? `${u.name} upgraded to Paid Member (Added to Communities)!`
+                            : `${u.name} moved to Free User record (Removed from Communities).`
                         );
                       }}
-                      className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-xl font-extrabold cursor-pointer ${
                         u.isPaid
                           ? 'bg-[#15803D] text-white'
-                          : 'bg-gray-100 text-gray-700'
+                          : 'bg-gray-100 hover:bg-emerald-50 text-[#0D2E1B] border border-emerald-300'
                       }`}
                     >
-                      {u.isPaid ? 'Paid (Visible) ✓' : 'Free (Approve Paid)'}
+                      {u.isPaid ? 'Paid (In Communities) ✓' : 'Approve Paid'}
                     </button>
                     <button
                       type="button"
@@ -3971,7 +4622,10 @@ const AdminPanelView: React.FC<AdminPanelViewProps> = ({
                 id: editingTrId || `tr-${Date.now()}`,
                 category: tCategory,
                 title: tTitle.trim(),
-                subType: tCategory === 'Lead Auditor' ? (tSubType || 'Exemplar Global') : null,
+                subType:
+                  tCategory === 'Lead Auditor'
+                    ? tSubType || 'Exemplar Global'
+                    : null,
                 description: tDesc.trim(),
                 duration: tDuration.trim(),
                 fees: tFees.trim(),
