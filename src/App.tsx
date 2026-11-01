@@ -908,80 +908,6 @@ export default function App() {
     <div className="min-h-screen bg-[#F0FDF4] text-gray-900 flex flex-col items-center justify-start py-0 sm:py-6 px-0 sm:px-4">
       {/* Mobile-First App Container — NO extra empty white space at bottom */}
       <div className="w-full max-w-[480px] bg-[#EEF7F0] sm:rounded-[38px] sm:border-[1.5px] sm:border-[#9EC4A7] sm:shadow-xl flex flex-col relative overflow-hidden">
-        {/* TOP ARCHITECTURE SWITCHER: PART 1 (USER FRONTEND) vs PART 2 (ADMIN BACKEND CONTROL PANEL) */}
-        <div className="bg-[#0D2E1B] text-white px-3.5 py-2.5 flex flex-col gap-2 border-b border-emerald-800">
-          <div className="grid grid-cols-2 gap-1.5 bg-white/10 p-1 rounded-2xl">
-            <button
-              type="button"
-              onClick={() => {
-                if (route.name === 'admin') setRoute({ name: 'home' });
-              }}
-              className={`py-2 px-2.5 rounded-xl text-[11.5px] font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                route.name !== 'admin'
-                  ? 'bg-[#16A34A] text-white shadow-xs'
-                  : 'text-emerald-100 hover:text-white'
-              }`}
-            >
-              <span>Part 1: User Frontend</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRoute({ name: 'admin' })}
-              className={`py-2 px-2.5 rounded-xl text-[11.5px] font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                route.name === 'admin'
-                  ? 'bg-[#16A34A] text-white shadow-xs'
-                  : 'text-emerald-100 hover:text-white'
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Part 2: Admin Backend</span>
-              {pendingReqCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-[#0D2E1B] text-[10px] font-black">
-                  {pendingReqCount}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* User Preview Tier Bar (Free Member vs Verified Paid Member) */}
-          {route.name !== 'admin' && (
-            <div className="flex items-center justify-between gap-2 px-1 text-[11px]">
-              <div className="flex items-center gap-1.5">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isCurrentUserPaid ? 'bg-emerald-400' : 'bg-amber-400'
-                  }`}
-                />
-                <span className="text-emerald-100 font-semibold">
-                  Current Access:{' '}
-                  <strong className="text-white">
-                    {isCurrentUserPaid
-                      ? 'Verified Paid Member'
-                      : myProfile.paymentStatus === 'pending'
-                      ? 'Free User (Payment Pending Admin)'
-                      : 'Free User (Communities Blurred)'}
-                  </strong>
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setMyProfile((prev) => ({
-                    ...prev,
-                    isPaid: !prev.isPaid,
-                    paymentStatus: !prev.isPaid ? 'verified' : 'none'
-                  }))
-                }
-                className="px-2.5 py-0.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-bold cursor-pointer shrink-0"
-              >
-                {isCurrentUserPaid ? 'Preview Free View' : 'Preview Paid View'}
-              </button>
-            </div>
-          )}
-        </div>
-
         <div className="p-3.5 sm:p-5 pb-5 space-y-5">
           {/* TOP ROUNDED GREEN HEADER */}
           <Header
@@ -1005,10 +931,8 @@ export default function App() {
             onSearchClick={() => setRoute({ name: 'search' })}
             onBellClick={() => navigateToJobs('All')}
             onProfileClick={() => setRoute({ name: 'profile' })}
-            onAdminClick={() => setRoute({ name: 'admin' })}
-            isAdmin={true}
+            isAdmin={false}
             userInitial={userInitial}
-            notificationCount={pendingReqCount}
           />
 
           {/* ==================== 1. HOME SCREEN (/) — TIGHT FIT WITHOUT EXTRA WHITE SCREEN ==================== */}
@@ -1360,18 +1284,10 @@ export default function App() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!isUserSignedIn) {
-                          setRoute({ name: 'profile' });
-                        } else {
-                          handleToggleMyPaidStatus(true);
-                        }
-                      }}
+                      onClick={() => setRoute({ name: 'profile' })}
                       className="w-full py-3.5 px-5 rounded-[18px] bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-sm shadow-sm transition-colors cursor-pointer"
                     >
-                      {isUserSignedIn
-                        ? 'Activate Paid Membership Now →'
-                        : 'Sign In & Upgrade to Paid Member →'}
+                      Go to Profile →
                     </button>
                   </div>
                 )}
@@ -1696,18 +1612,10 @@ export default function App() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!isUserSignedIn) {
-                          setRoute({ name: 'profile' });
-                        } else {
-                          handleToggleMyPaidStatus(true);
-                        }
-                      }}
+                      onClick={() => setRoute({ name: 'profile' })}
                       className="w-full py-3.5 px-5 rounded-[18px] bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-sm shadow-sm transition-colors cursor-pointer"
                     >
-                      {isUserSignedIn
-                        ? 'Activate Paid Membership Now →'
-                        : 'Sign In & Upgrade to Paid Member →'}
+                      Go to Profile →
                     </button>
                   </div>
                 )}
@@ -2004,49 +1912,26 @@ export default function App() {
                 </div>
               </div>
 
-              {/* FREE USER BLUR BANNER: If user is NOT a verified Paid Member, explain that cards are blurred */}
+              {/* FREE USER BLUR BANNER: Only Admin-approved Premium Members are shown */}
               {!isCurrentUserPaid && (
-                <div className="bg-white border-2 border-[#16A34A] rounded-[24px] p-4 shadow-sm space-y-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center shrink-0">
-                        <Lock className="w-4 h-4" />
-                      </span>
-                      <div>
-                        <h2 className="text-sm font-extrabold text-[#0D2E1B]">
-                          Blurred for Free Members (Paid Access Only)
-                        </h2>
-                        <p className="text-[11.5px] text-gray-600">
-                          {myProfile.paymentStatus === 'pending'
-                            ? 'Your Payment Request is pending in Admin Control Panel. Once verified, profiles will unblur.'
-                            : 'Community profiles are blurred for Free users. Submit payment in Profile for Admin verification.'}
-                        </p>
-                      </div>
+                <div className="bg-white border-2 border-[#16A34A] rounded-[24px] p-4 shadow-sm space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center shrink-0">
+                      <Lock className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h2 className="text-sm font-extrabold text-[#0D2E1B]">
+                        Premium Members Directory (Admin Approved Only)
+                      </h2>
+                      <p className="text-[11.5px] text-gray-600">
+                        Community profiles are blurred for Free users. Only Premium members approved by Admin appear here.
+                      </p>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setRoute({ name: 'profile' })}
-                      className="px-4 py-2 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer transition-colors"
-                    >
-                      Submit Payment Request in Profile →
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdminTab('requests');
-                        setRoute({ name: 'admin' });
-                      }}
-                      className="px-3.5 py-2 rounded-xl bg-[#EAF3EC] text-[#0D2E1B] text-xs font-bold cursor-pointer"
-                    >
-                      Open Part 2: Admin Panel →
-                    </button>
                   </div>
                 </div>
               )}
 
-              {/* Member Cards List (Only Paid Verified Members from Backend) */}
+              {/* Member Cards List (Only Paid Verified Members Approved by Admin) */}
               {filteredMembers.length > 0 ? (
                 <div className="relative">
                   <div
@@ -2073,23 +1958,6 @@ export default function App() {
                       />
                     ))}
                   </div>
-
-                  {/* Floating Unlock Card over Blurred List for Free Users */}
-                  {!isCurrentUserPaid && (
-                    <div className="inset-x-0 top-16 flex justify-center pointer-events-auto mt-3">
-                      <div className="bg-[#0D2E1B]/95 text-white rounded-[24px] p-4 shadow-xl border border-emerald-500/40 text-center max-w-[380px] space-y-2">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-[11px] font-bold">
-                          <Crown className="w-3.5 h-3.5" />
-                          <span>Verified Paid Members Only</span>
-                        </div>
-                        <p className="text-xs text-emerald-50 leading-relaxed">
-                          Direct profile addition is disabled. When you create your profile and
-                          submit payment, your request goes to the <strong>Admin Control Panel</strong>.
-                          Once payment is verified, you get full access &amp; listing here.
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="bg-white border border-[#B8D3BE] rounded-[26px] p-6 text-center space-y-3 shadow-xs">
@@ -2661,936 +2529,494 @@ export default function App() {
               );
             })()}
 
-          {/* ==================== 7. PROFILE & PRIVACY PAGE (/profile) — NO SIGN IN / SIGN UP ==================== */}
+          {/* ==================== 7. PROFILE & PRIVACY PAGE (/profile) — CLEAN PROFILE PAGE ONLY ==================== */}
           {route.name === 'profile' && (
-            <div className="space-y-5 px-1">
-              <form onSubmit={handleSaveProfile} className="space-y-5">
-                {/* Top Profile Hero Card with Sage-Green Gradient Backdrop */}
-                <div className="rounded-[28px] overflow-hidden bg-gradient-to-b from-[#6FA57C] via-[#9FC4A7]/60 to-white border border-[#B5D6BB] shadow-sm p-5 text-center relative">
-                  <div className="bg-white rounded-[18px] px-4 py-2.5 flex items-center justify-between shadow-xs mb-5">
-                    <span className="text-[18px] font-extrabold text-[#0D2E1B]">
-                      Profile &amp; Privacy
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRoute({ name: 'community-member', uid: myProfile.uid })
-                        }
-                        className="px-2.5 py-1 rounded-lg bg-[#EAF5EC] text-[#15803D] text-xs font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Preview</span>
-                      </button>
-                      <Lock className="w-5 h-5 text-[#15803D]" />
-                    </div>
-                  </div>
-
-                  {/* Large Centered Circular Avatar + Floating Green Edit Badge */}
-                  <div className="relative inline-block">
-                    <img
-                      src={myProfile.profilePicUrl || makeAvatarSvg('FS')}
-                      alt={myProfile.name}
-                      className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md bg-[#F0FDF4]"
-                    />
-                    <input
-                      ref={avatarInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                      className="hidden"
-                    />
+            <form onSubmit={handleSaveProfile} className="space-y-5 px-1">
+              {/* Top Profile Hero Card with Sage-Green Gradient Backdrop */}
+              <div className="rounded-[28px] overflow-hidden bg-gradient-to-b from-[#6FA57C] via-[#9FC4A7]/60 to-white border border-[#B5D6BB] shadow-sm p-5 text-center relative">
+                <div className="bg-white rounded-[18px] px-4 py-2.5 flex items-center justify-between shadow-xs mb-5">
+                  <span className="text-[18px] font-extrabold text-[#0D2E1B]">
+                    Profile &amp; Privacy
+                  </span>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => avatarInputRef.current?.click()}
-                      className="absolute -bottom-1 -right-1 px-2.5 py-1 rounded-full bg-[#228B4E] hover:bg-[#15803D] text-white text-[11px] font-bold border-2 border-white shadow-sm flex items-center gap-1 cursor-pointer"
+                      onClick={() =>
+                        setRoute({ name: 'community-member', uid: myProfile.uid })
+                      }
+                      className="px-2.5 py-1 rounded-lg bg-[#EAF5EC] text-[#15803D] text-xs font-bold flex items-center gap-1 cursor-pointer"
                     >
-                      <Pencil className="w-3 h-3" />
-                      <span>Edit</span>
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Preview</span>
                     </button>
-                  </div>
-
-                  <h2 className="text-[22px] font-extrabold text-[#0D2E1B] mt-3 leading-tight">
-                    {myProfile.name}
-                  </h2>
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#DCEFE0] text-[#138A3E] text-[12px] font-bold mt-1">
-                    <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-                    <span>{myProfile.currentRole || 'Food Safety Specialist'}</span>
-                  </div>
-                  <p className="text-[12.5px] font-bold text-[#0D2E1B] mt-2">
-                    Control what others can see on your profile. Saving stores your record in Backend; Admin adds you to Communities after Payment Verification.
-                  </p>
-                </div>
-
-                {/* MEMBERSHIP STATUS & HIRE ME CARD */}
-                <div className="bg-white border-2 border-[#16A34A] rounded-[24px] p-4 shadow-xs space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <Crown className="w-4 h-4 text-[#15803D]" />
-                        <span className="text-sm font-extrabold text-[#0D2E1B]">
-                          Account Status:{' '}
-                          {myProfile.isPaid
-                            ? 'Verified Paid Member'
-                            : myProfile.paymentStatus === 'pending'
-                            ? 'Payment Pending Admin Verification'
-                            : 'Free User (Not in Communities Yet)'}
-                        </span>
-                      </div>
-                      <p className="text-[11.5px] text-gray-600 mt-0.5">
-                        {myProfile.isPaid
-                          ? 'Admin verified your payment! Your profile is live in Communities + all Jobs & Scholarships are unlocked.'
-                          : 'Free users see 1 Job & 1 Scholarship/day and blurred Communities. Submit payment below for Admin approval.'}
-                      </p>
-                    </div>
-
-                    <span
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold shrink-0 ${
-                        myProfile.isPaid
-                          ? 'bg-[#DCF2E3] text-[#0D2E1B] border border-[#16A34A]'
-                          : myProfile.paymentStatus === 'pending'
-                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {myProfile.isPaid
-                        ? 'Paid Verified ✓'
-                        : myProfile.paymentStatus === 'pending'
-                        ? 'Pending Admin'
-                        : 'Free Tier'}
-                    </span>
-                  </div>
-
-                  {/* HIRE ME TOGGLE (For Fresh Graduates & Specialists) */}
-                  <div className="pt-3 border-t border-emerald-100 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-xs font-extrabold text-[#0D2E1B] flex items-center gap-1.5">
-                        <Sparkles className="w-4 h-4 text-[#15803D]" />
-                        <span>&ldquo;Hire Me&rdquo; Button Visible on My Profile</span>
-                      </div>
-                      <p className="text-[11px] text-gray-600">
-                        Allow community members &amp; employers to hire you based on your
-                        Education &amp; Experience once approved
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={Boolean(myProfile.privacySettings.hireMe_public)}
-                        onClick={() =>
-                          setMyProfile({
-                            ...myProfile,
-                            privacySettings: {
-                              ...myProfile.privacySettings,
-                              hireMe_public: !myProfile.privacySettings.hireMe_public
-                            }
-                          })
-                        }
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                          myProfile.privacySettings.hireMe_public
-                            ? 'bg-[#228B4E] justify-end'
-                            : 'bg-gray-300 justify-start'
-                        }`}
-                      >
-                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                      </button>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                          myProfile.privacySettings.hireMe_public
-                            ? 'bg-[#68B678]'
-                            : 'bg-[#A6ABA8]'
-                        }`}
-                      >
-                        {myProfile.privacySettings.hireMe_public ? 'ON' : 'OFF'}
-                      </span>
-                    </div>
+                    <Lock className="w-5 h-5 text-[#15803D]" />
                   </div>
                 </div>
 
-                {profileSaveMsg && (
-                  <div className="bg-[#15803D] text-white rounded-2xl p-3.5 text-xs font-bold flex items-center justify-between gap-2 shadow-sm">
-                    <span>{profileSaveMsg}</span>
-                    <button
-                      type="button"
-                      onClick={() => setRoute({ name: 'communities' })}
-                      className="px-2.5 py-1 rounded-lg bg-white text-[#0D2E1B] font-bold shrink-0 cursor-pointer"
-                    >
-                      Communities →
-                    </button>
-                  </div>
-                )}
-
-                {/* ✨ PROFILE DETAILS WHITE CARD */}
-                <div className="bg-white border border-emerald-100 rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.08)] space-y-3.5">
-                  <div className="flex items-center justify-center gap-1.5 pb-1">
-                    <Sparkles className="w-5 h-5 text-[#15803D]" />
-                    <h3 className="text-[20px] font-extrabold text-[#0D2E1B]">
-                      Profile Details
-                    </h3>
-                  </div>
-
-                  {/* Row 1: Name */}
-                  <div className="flex items-center gap-2.5">
-                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={myProfile.name}
-                      onChange={(e) =>
-                        setMyProfile({ ...myProfile, name: e.target.value })
-                      }
-                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                    />
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="w-11 h-6 rounded-full bg-[#228B4E] p-0.5 flex items-center justify-end">
-                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-[#68B678] text-white text-[10px] font-bold">
-                        Public
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Row 2: Qualification (Education) */}
-                  <div className="flex items-center gap-2.5">
-                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                      Qualification
-                    </label>
-                    <input
-                      type="text"
-                      value={myProfile.qualification}
-                      onChange={(e) =>
-                        setMyProfile({
-                          ...myProfile,
-                          qualification: e.target.value
-                        })
-                      }
-                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                    />
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={myProfile.privacySettings.qualification_public}
-                        onClick={() =>
-                          setMyProfile({
-                            ...myProfile,
-                            privacySettings: {
-                              ...myProfile.privacySettings,
-                              qualification_public:
-                                !myProfile.privacySettings.qualification_public
-                            }
-                          })
-                        }
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                          myProfile.privacySettings.qualification_public
-                            ? 'bg-[#228B4E] justify-end'
-                            : 'bg-gray-300 justify-start'
-                        }`}
-                      >
-                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                      </button>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                          myProfile.privacySettings.qualification_public
-                            ? 'bg-[#68B678]'
-                            : 'bg-[#A6ABA8]'
-                        }`}
-                      >
-                        {myProfile.privacySettings.qualification_public
-                          ? 'Public'
-                          : 'Private'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Row 3: Experience */}
-                  <div className="flex items-center gap-2.5">
-                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                      Experience
-                    </label>
-                    <input
-                      type="text"
-                      value={myProfile.experience}
-                      onChange={(e) =>
-                        setMyProfile({ ...myProfile, experience: e.target.value })
-                      }
-                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                    />
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={myProfile.privacySettings.experience_public}
-                        onClick={() =>
-                          setMyProfile({
-                            ...myProfile,
-                            privacySettings: {
-                              ...myProfile.privacySettings,
-                              experience_public:
-                                !myProfile.privacySettings.experience_public
-                            }
-                          })
-                        }
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                          myProfile.privacySettings.experience_public
-                            ? 'bg-[#228B4E] justify-end'
-                            : 'bg-gray-300 justify-start'
-                        }`}
-                      >
-                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                      </button>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                          myProfile.privacySettings.experience_public
-                            ? 'bg-[#68B678]'
-                            : 'bg-[#A6ABA8]'
-                        }`}
-                      >
-                        {myProfile.privacySettings.experience_public
-                          ? 'Public'
-                          : 'Private'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Row 4: Current Role */}
-                  <div className="flex items-center gap-2.5">
-                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                      Current Role
-                    </label>
-                    <input
-                      type="text"
-                      value={myProfile.currentRole}
-                      onChange={(e) =>
-                        setMyProfile({
-                          ...myProfile,
-                          currentRole: e.target.value
-                        })
-                      }
-                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                    />
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={myProfile.privacySettings.currentRole_public}
-                        onClick={() =>
-                          setMyProfile({
-                            ...myProfile,
-                            privacySettings: {
-                              ...myProfile.privacySettings,
-                              currentRole_public:
-                                !myProfile.privacySettings.currentRole_public
-                            }
-                          })
-                        }
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                          myProfile.privacySettings.currentRole_public
-                            ? 'bg-[#228B4E] justify-end'
-                            : 'bg-gray-300 justify-start'
-                        }`}
-                      >
-                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                      </button>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                          myProfile.privacySettings.currentRole_public
-                            ? 'bg-[#68B678]'
-                            : 'bg-[#A6ABA8]'
-                        }`}
-                      >
-                        {myProfile.privacySettings.currentRole_public
-                          ? 'Public'
-                          : 'Private'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Row 5: Location */}
-                  <div className="flex items-center gap-2.5">
-                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      value={myProfile.location}
-                      onChange={(e) =>
-                        setMyProfile({ ...myProfile, location: e.target.value })
-                      }
-                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                    />
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={myProfile.privacySettings.location_public}
-                        onClick={() =>
-                          setMyProfile({
-                            ...myProfile,
-                            privacySettings: {
-                              ...myProfile.privacySettings,
-                              location_public:
-                                !myProfile.privacySettings.location_public
-                            }
-                          })
-                        }
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                          myProfile.privacySettings.location_public
-                            ? 'bg-[#228B4E] justify-end'
-                            : 'bg-gray-300 justify-start'
-                        }`}
-                      >
-                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                      </button>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                          myProfile.privacySettings.location_public
-                            ? 'bg-[#68B678]'
-                            : 'bg-[#A6ABA8]'
-                        }`}
-                      >
-                        {myProfile.privacySettings.location_public
-                          ? 'Public'
-                          : 'Private'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Row 6: Email */}
-                  <div className="flex items-center gap-2.5">
-                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={myProfile.email}
-                      onChange={(e) =>
-                        setMyProfile({ ...myProfile, email: e.target.value })
-                      }
-                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                    />
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={myProfile.privacySettings.email_public}
-                        onClick={() =>
-                          setMyProfile({
-                            ...myProfile,
-                            privacySettings: {
-                              ...myProfile.privacySettings,
-                              email_public: !myProfile.privacySettings.email_public
-                            }
-                          })
-                        }
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                          myProfile.privacySettings.email_public
-                            ? 'bg-[#228B4E] justify-end'
-                            : 'bg-gray-300 justify-start'
-                        }`}
-                      >
-                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                      </button>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                          myProfile.privacySettings.email_public
-                            ? 'bg-[#68B678]'
-                            : 'bg-[#A6ABA8]'
-                        }`}
-                      >
-                        {myProfile.privacySettings.email_public
-                          ? 'Public'
-                          : 'Private'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Row 7: Phone */}
-                  <div className="flex items-center gap-2.5">
-                    <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                      Phone
-                    </label>
-                    <input
-                      type="text"
-                      value={myProfile.phone}
-                      onChange={(e) =>
-                        setMyProfile({ ...myProfile, phone: e.target.value })
-                      }
-                      className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                    />
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={myProfile.privacySettings.phone_public}
-                        onClick={() =>
-                          setMyProfile({
-                            ...myProfile,
-                            privacySettings: {
-                              ...myProfile.privacySettings,
-                              phone_public: !myProfile.privacySettings.phone_public
-                            }
-                          })
-                        }
-                        className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                          myProfile.privacySettings.phone_public
-                            ? 'bg-[#228B4E] justify-end'
-                            : 'bg-gray-300 justify-start'
-                        }`}
-                      >
-                        <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                      </button>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                          myProfile.privacySettings.phone_public
-                            ? 'bg-[#68B678]'
-                            : 'bg-[#A6ABA8]'
-                        }`}
-                      >
-                        {myProfile.privacySettings.phone_public
-                          ? 'Public'
-                          : 'Private'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CV Upload PDF */}
-                <div className="bg-white border border-emerald-100 rounded-[24px] p-4 flex items-center justify-between gap-3 shadow-xs">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <FileText className="w-5 h-5 text-[#16A34A] shrink-0" />
-                    <div className="min-w-0 text-xs">
-                      <div className="font-bold text-gray-900 truncate">
-                        {myProfile.cvUrl || 'No CV PDF uploaded yet'}
-                      </div>
-                      <div className="text-[11px] text-gray-500">
-                        Upload CV PDF for Hiring &amp; QA Roles
-                      </div>
-                    </div>
-                  </div>
+                {/* Large Centered Circular Avatar + Floating Green Edit Badge */}
+                <div className="relative inline-block">
+                  <img
+                    src={myProfile.profilePicUrl || makeAvatarSvg('FS')}
+                    alt={myProfile.name}
+                    className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md bg-[#F0FDF4]"
+                  />
                   <input
-                    ref={cvInputRef}
+                    ref={avatarInputRef}
                     type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleCvUpload}
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
                     className="hidden"
                   />
                   <button
                     type="button"
-                    onClick={() => cvInputRef.current?.click()}
-                    className="px-3 py-1.5 rounded-xl bg-[#EAF3EC] text-[#15803D] text-xs font-bold shrink-0 cursor-pointer"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 px-2.5 py-1 rounded-full bg-[#228B4E] hover:bg-[#15803D] text-white text-[11px] font-bold border-2 border-white shadow-sm flex items-center gap-1 cursor-pointer"
                   >
-                    Upload PDF
+                    <Pencil className="w-3 h-3" />
+                    <span>Edit</span>
                   </button>
                 </div>
 
-                {/* Full-Width Green "Save Changes" Button */}
-                <button
-                  type="submit"
-                  className="w-full py-4 px-5 rounded-[18px] bg-[#168A42] hover:bg-[#117035] text-white font-extrabold text-[16px] shadow-md transition-colors cursor-pointer"
-                >
-                  Save Profile Details
-                </button>
-              </form>
-
-              {/* ==================== REQUEST PAID MEMBERSHIP & PAYMENT VERIFICATION CARD ==================== */}
-              <form
-                onSubmit={handleSubmitPaymentRequest}
-                className="bg-white border-2 border-[#15803D] rounded-[26px] p-5 shadow-sm space-y-3.5"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] text-[10.5px] font-extrabold uppercase tracking-wide">
-                      Step 2 • Admin Payment Verification
-                    </span>
-                    <h3 className="text-[18px] font-extrabold text-[#0D2E1B] mt-1">
-                      Request Paid Member Access
-                    </h3>
-                    <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                      Submit your payment details below. Your request goes to the{' '}
-                      <strong>Admin Backend Control Panel</strong>. Once Admin verifies
-                      your payment, your profile will be added to Communities and all
-                      blurred cards will unlock.
-                    </p>
-                  </div>
-                  <Crown className="w-6 h-6 text-[#15803D] shrink-0" />
+                <h2 className="text-[22px] font-extrabold text-[#0D2E1B] mt-3 leading-tight">
+                  {myProfile.name}
+                </h2>
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#DCEFE0] text-[#138A3E] text-[12px] font-bold mt-1">
+                  <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
+                  <span>{myProfile.currentRole || 'Food Safety Specialist'}</span>
                 </div>
+                <p className="text-[13px] font-bold text-[#0D2E1B] mt-2">
+                  Control what others can see on your profile
+                </p>
+              </div>
 
-                <div className="bg-[#F0FDF4] border border-emerald-200 rounded-2xl p-3 text-xs space-y-1">
-                  <div className="font-extrabold text-[#0D2E1B]">
-                    Official Payment Account (Muneeb Khan):
-                  </div>
-                  <div className="text-gray-700 font-semibold">
-                    EasyPaisa / JazzCash / WhatsApp: <span className="text-[#15803D] font-extrabold">+92 324 0906384</span>
-                  </div>
-                  <div className="text-[11px] text-gray-500">
-                    Membership Fee: PKR 1,500 (Unlocks Communities Directory + Unlimited Daily Jobs &amp; Scholarships)
-                  </div>
-                </div>
-
-                {paySubmitBanner && (
-                  <div className="p-3.5 rounded-2xl bg-[#15803D] text-white text-xs font-bold leading-relaxed">
-                    {paySubmitBanner}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
-                      Payment Method
-                    </label>
-                    <select
-                      value={payMethod}
-                      onChange={(e) =>
-                        setPayMethod(
-                          e.target.value as
-                            | 'EasyPaisa'
-                            | 'JazzCash'
-                            | 'Bank Transfer'
-                        )
-                      }
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-bold text-[#0D2E1B]"
-                    >
-                      <option value="EasyPaisa">EasyPaisa</option>
-                      <option value="JazzCash">JazzCash</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
-                      Amount Sent
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={payAmount}
-                      onChange={(e) => setPayAmount(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-bold text-[#0D2E1B]"
-                    />
-                  </div>
-                </div>
-
+              {/* HIRE ME TOGGLE CARD */}
+              <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs flex items-center justify-between gap-3">
                 <div>
-                  <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
-                    Transaction ID / TID Reference Number *
+                  <div className="text-xs font-extrabold text-[#0D2E1B] flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-[#15803D]" />
+                    <span>&ldquo;Hire Me&rdquo; Button Visible on My Profile</span>
+                  </div>
+                  <p className="text-[11px] text-gray-600">
+                    Allow community members &amp; employers to hire you based on your
+                    Education &amp; Experience
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={Boolean(myProfile.privacySettings.hireMe_public)}
+                    onClick={() =>
+                      setMyProfile({
+                        ...myProfile,
+                        privacySettings: {
+                          ...myProfile.privacySettings,
+                          hireMe_public: !myProfile.privacySettings.hireMe_public
+                        }
+                      })
+                    }
+                    className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                      myProfile.privacySettings.hireMe_public
+                        ? 'bg-[#228B4E] justify-end'
+                        : 'bg-gray-300 justify-start'
+                    }`}
+                  >
+                    <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                  </button>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                      myProfile.privacySettings.hireMe_public
+                        ? 'bg-[#68B678]'
+                        : 'bg-[#A6ABA8]'
+                    }`}
+                  >
+                    {myProfile.privacySettings.hireMe_public ? 'ON' : 'OFF'}
+                  </span>
+                </div>
+              </div>
+
+              {profileSaveMsg && (
+                <div className="bg-[#15803D] text-white rounded-2xl p-3.5 text-xs font-bold flex items-center justify-between gap-2 shadow-sm">
+                  <span>{profileSaveMsg}</span>
+                </div>
+              )}
+
+              {/* ✨ PROFILE DETAILS WHITE CARD */}
+              <div className="bg-white border border-emerald-100 rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.08)] space-y-3.5">
+                <div className="flex items-center justify-center gap-1.5 pb-1">
+                  <Sparkles className="w-5 h-5 text-[#15803D]" />
+                  <h3 className="text-[20px] font-extrabold text-[#0D2E1B]">
+                    Profile Details
+                  </h3>
+                </div>
+
+                {/* Row 1: Name */}
+                <div className="flex items-center gap-2.5">
+                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                    Name
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g., TID-88492019482 (Required for Admin Verification)"
-                    value={payTxId}
-                    onChange={(e) => setPayTxId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#16A34A]"
+                    value={myProfile.name}
+                    onChange={(e) =>
+                      setMyProfile({ ...myProfile, name: e.target.value })
+                    }
+                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
                   />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="w-11 h-6 rounded-full bg-[#228B4E] p-0.5 flex items-center justify-end">
+                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#68B678] text-white text-[10px] font-bold">
+                      Public
+                    </span>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
-                    Note for Admin
+                {/* Row 2: Qualification (Education) */}
+                <div className="flex items-center gap-2.5">
+                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                    Qualification
                   </label>
                   <input
                     type="text"
-                    value={payNotes}
-                    onChange={(e) => setPayNotes(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-medium text-gray-800"
+                    value={myProfile.qualification}
+                    onChange={(e) =>
+                      setMyProfile({
+                        ...myProfile,
+                        qualification: e.target.value
+                      })
+                    }
+                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
                   />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={myProfile.privacySettings.qualification_public}
+                      onClick={() =>
+                        setMyProfile({
+                          ...myProfile,
+                          privacySettings: {
+                            ...myProfile.privacySettings,
+                            qualification_public:
+                              !myProfile.privacySettings.qualification_public
+                          }
+                        })
+                      }
+                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                        myProfile.privacySettings.qualification_public
+                          ? 'bg-[#228B4E] justify-end'
+                          : 'bg-gray-300 justify-start'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                    </button>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                        myProfile.privacySettings.qualification_public
+                          ? 'bg-[#68B678]'
+                          : 'bg-[#A6ABA8]'
+                      }`}
+                    >
+                      {myProfile.privacySettings.qualification_public
+                        ? 'Public'
+                        : 'Private'}
+                    </span>
+                  </div>
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full py-3.5 px-5 rounded-[18px] bg-[#0D2E1B] hover:bg-[#15803D] text-white font-extrabold text-xs shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Submit Payment Request to Admin Backend →</span>
-                </button>
-              </form>
+                {/* Row 3: Experience */}
+                <div className="flex items-center gap-2.5">
+                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                    Experience
+                  </label>
+                  <input
+                    type="text"
+                    value={myProfile.experience}
+                    onChange={(e) =>
+                      setMyProfile({ ...myProfile, experience: e.target.value })
+                    }
+                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                  />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={myProfile.privacySettings.experience_public}
+                      onClick={() =>
+                        setMyProfile({
+                          ...myProfile,
+                          privacySettings: {
+                            ...myProfile.privacySettings,
+                            experience_public:
+                              !myProfile.privacySettings.experience_public
+                          }
+                        })
+                      }
+                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                        myProfile.privacySettings.experience_public
+                          ? 'bg-[#228B4E] justify-end'
+                          : 'bg-gray-300 justify-start'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                    </button>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                        myProfile.privacySettings.experience_public
+                          ? 'bg-[#68B678]'
+                          : 'bg-[#A6ABA8]'
+                      }`}
+                    >
+                      {myProfile.privacySettings.experience_public
+                        ? 'Public'
+                        : 'Private'}
+                    </span>
+                  </div>
+                </div>
 
-              {/* ==================== DIRECT SUPPORT CHAT WITH ADMIN ==================== */}
-              <form
-                onSubmit={handleSendSupportChat}
-                className="bg-white border border-emerald-200 rounded-[26px] p-5 shadow-xs space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-[#15803D]" />
-                    <div>
-                      <h3 className="text-sm font-extrabold text-[#0D2E1B]">
-                        Chat with Admin Support
-                      </h3>
-                      <p className="text-[11px] text-gray-500">
-                        Messages appear live in Part 2 (Admin Control Panel &rarr; Chats)
-                      </p>
+                {/* Row 4: Current Role */}
+                <div className="flex items-center gap-2.5">
+                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                    Current Role
+                  </label>
+                  <input
+                    type="text"
+                    value={myProfile.currentRole}
+                    onChange={(e) =>
+                      setMyProfile({
+                        ...myProfile,
+                        currentRole: e.target.value
+                      })
+                    }
+                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                  />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={myProfile.privacySettings.currentRole_public}
+                      onClick={() =>
+                        setMyProfile({
+                          ...myProfile,
+                          privacySettings: {
+                            ...myProfile.privacySettings,
+                            currentRole_public:
+                              !myProfile.privacySettings.currentRole_public
+                          }
+                        })
+                      }
+                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                        myProfile.privacySettings.currentRole_public
+                          ? 'bg-[#228B4E] justify-end'
+                          : 'bg-gray-300 justify-start'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                    </button>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                        myProfile.privacySettings.currentRole_public
+                          ? 'bg-[#68B678]'
+                          : 'bg-[#A6ABA8]'
+                      }`}
+                    >
+                      {myProfile.privacySettings.currentRole_public
+                        ? 'Public'
+                        : 'Private'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Row 5: Location */}
+                <div className="flex items-center gap-2.5">
+                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={myProfile.location}
+                    onChange={(e) =>
+                      setMyProfile({ ...myProfile, location: e.target.value })
+                    }
+                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                  />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={myProfile.privacySettings.location_public}
+                      onClick={() =>
+                        setMyProfile({
+                          ...myProfile,
+                          privacySettings: {
+                            ...myProfile.privacySettings,
+                            location_public:
+                              !myProfile.privacySettings.location_public
+                          }
+                        })
+                      }
+                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                        myProfile.privacySettings.location_public
+                          ? 'bg-[#228B4E] justify-end'
+                          : 'bg-gray-300 justify-start'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                    </button>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                        myProfile.privacySettings.location_public
+                          ? 'bg-[#68B678]'
+                          : 'bg-[#A6ABA8]'
+                      }`}
+                    >
+                      {myProfile.privacySettings.location_public
+                        ? 'Public'
+                        : 'Private'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Row 6: Email */}
+                <div className="flex items-center gap-2.5">
+                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={myProfile.email}
+                    onChange={(e) =>
+                      setMyProfile({ ...myProfile, email: e.target.value })
+                    }
+                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                  />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={myProfile.privacySettings.email_public}
+                      onClick={() =>
+                        setMyProfile({
+                          ...myProfile,
+                          privacySettings: {
+                            ...myProfile.privacySettings,
+                            email_public: !myProfile.privacySettings.email_public
+                          }
+                        })
+                      }
+                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                        myProfile.privacySettings.email_public
+                          ? 'bg-[#228B4E] justify-end'
+                          : 'bg-gray-300 justify-start'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                    </button>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                        myProfile.privacySettings.email_public
+                          ? 'bg-[#68B678]'
+                          : 'bg-[#A6ABA8]'
+                      }`}
+                    >
+                      {myProfile.privacySettings.email_public
+                        ? 'Public'
+                        : 'Private'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Row 7: Phone */}
+                <div className="flex items-center gap-2.5">
+                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
+                    Phone
+                  </label>
+                  <input
+                    type="text"
+                    value={myProfile.phone}
+                    onChange={(e) =>
+                      setMyProfile({ ...myProfile, phone: e.target.value })
+                    }
+                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                  />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={myProfile.privacySettings.phone_public}
+                      onClick={() =>
+                        setMyProfile({
+                          ...myProfile,
+                          privacySettings: {
+                            ...myProfile.privacySettings,
+                            phone_public: !myProfile.privacySettings.phone_public
+                          }
+                        })
+                      }
+                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+                        myProfile.privacySettings.phone_public
+                          ? 'bg-[#228B4E] justify-end'
+                          : 'bg-gray-300 justify-start'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                    </button>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
+                        myProfile.privacySettings.phone_public
+                          ? 'bg-[#68B678]'
+                          : 'bg-[#A6ABA8]'
+                      }`}
+                    >
+                      {myProfile.privacySettings.phone_public
+                        ? 'Public'
+                        : 'Private'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* CV Upload PDF */}
+              <div className="bg-white border border-emerald-100 rounded-[24px] p-4 flex items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <FileText className="w-5 h-5 text-[#16A34A] shrink-0" />
+                  <div className="min-w-0 text-xs">
+                    <div className="font-bold text-gray-900 truncate">
+                      {myProfile.cvUrl || 'No CV PDF uploaded yet'}
+                    </div>
+                    <div className="text-[11px] text-gray-500">
+                      Upload CV PDF for Hiring &amp; QA Roles
                     </div>
                   </div>
                 </div>
-
-                {/* Show recent messages from this user & Admin replies */}
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {chats
-                    .filter(
-                      (c) =>
-                        c.senderUid === myProfile.uid ||
-                        c.senderName.toLowerCase() ===
-                          myProfile.name.toLowerCase()
-                    )
-                    .map((c) => (
-                      <div
-                        key={c.id}
-                        className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100 text-xs space-y-1.5"
-                      >
-                        <div className="flex items-center justify-between text-[10.5px] text-gray-500 font-bold">
-                          <span>You ({c.senderName})</span>
-                          <span>{c.createdAt}</span>
-                        </div>
-                        <p className="text-gray-800 font-medium">{c.message}</p>
-                        {c.adminReply && (
-                          <div className="p-2 rounded-xl bg-[#DCFCE7] text-[#0D2E1B] text-[11px] font-bold">
-                            Admin Reply: {c.adminReply}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-
-                {supportChatSentMsg && (
-                  <div className="p-2.5 rounded-xl bg-[#DCFCE7] text-[#0D2E1B] text-xs font-bold">
-                    {supportChatSentMsg}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Write message to Admin regarding membership, jobs, or verification..."
-                    value={supportChatInput}
-                    onChange={(e) => setSupportChatInput(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-medium text-gray-900 focus:bg-white focus:outline-none"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2.5 rounded-xl bg-[#15803D] text-white text-xs font-extrabold shrink-0 cursor-pointer"
-                  >
-                    Send
-                  </button>
-                </div>
-              </form>
-
-              {/* Quick Switch to Part 2 Admin Backend Control Panel */}
-              <div className="bg-white border border-emerald-200 rounded-[22px] p-3.5 flex items-center justify-between gap-2 text-xs">
-                <span className="font-bold text-gray-600">
-                  Want to verify payments &amp; manage requests?
-                </span>
+                <input
+                  ref={cvInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleCvUpload}
+                  className="hidden"
+                />
                 <button
                   type="button"
-                  onClick={() => setRoute({ name: 'admin' })}
-                  className="px-3.5 py-2 rounded-xl bg-[#0D2E1B] text-white font-extrabold cursor-pointer shrink-0"
+                  onClick={() => cvInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-xl bg-[#EAF3EC] text-[#15803D] text-xs font-bold shrink-0 cursor-pointer"
                 >
-                  Open Part 2: Admin Backend →
+                  Upload PDF
                 </button>
               </div>
-            </div>
-          )}
 
-          {/* ==================== 8. PART 2: ADMIN BACKEND CONTROL PANEL (/admin) ==================== */}
-          {route.name === 'admin' && (
-            <AdminPanelView
-              users={users}
-              paymentRequests={paymentRequests}
-              chats={chats}
-              jobs={jobs}
-              scholarships={scholarships}
-              trainings={trainings}
-              adminTab={adminTab}
-              setAdminTab={setAdminTab}
-              adminStatusMsg={adminStatusMsg}
-              setAdminStatusMsg={setAdminStatusMsg}
-              onVerifyPaymentRequest={async (reqItem, approve) => {
-                const newStatus = approve ? 'verified' : 'rejected';
-                const updatedReq: HubPaymentRequest = {
-                  ...reqItem,
-                  status: newStatus
-                };
-                setPaymentRequests((prev) =>
-                  prev.map((r) => (r.id === reqItem.id ? updatedReq : r))
-                );
-                try {
-                  await setDoc(doc(db, 'paymentRequests', reqItem.id), updatedReq, {
-                    merge: true
-                  });
-                } catch {}
-
-                // Also update or create the corresponding user in `users` collection
-                const existingUser = users.find((u) => u.uid === reqItem.uid);
-                const updatedUser: HubUser = existingUser
-                  ? {
-                      ...existingUser,
-                      isPaid: approve,
-                      paymentStatus: newStatus,
-                      paymentMethod: reqItem.paymentMethod,
-                      paymentReference: reqItem.transactionId,
-                      paymentAmount: reqItem.amount
-                    }
-                  : {
-                      uid: reqItem.uid,
-                      name: reqItem.userName,
-                      profilePicUrl: makeAvatarSvg(
-                        reqItem.userName.slice(0, 2).toUpperCase(),
-                        '#DCFCE7',
-                        '#14532D'
-                      ),
-                      qualification:
-                        reqItem.qualification || 'BS Food Science & Technology',
-                      experience: 'Food Safety & Quality Specialist',
-                      currentRole:
-                        reqItem.currentRole || 'Food Safety Specialist',
-                      company: '',
-                      location: 'Pakistan',
-                      email: reqItem.userEmail,
-                      phone: reqItem.userPhone,
-                      skills: [],
-                      cvUrl: '',
-                      privacySettings: {
-                        qualification_public: true,
-                        experience_public: true,
-                        currentRole_public: true,
-                        location_public: true,
-                        email_public: true,
-                        phone_public: true,
-                        hireMe_public: true
-                      },
-                      createdAt: new Date().toISOString(),
-                      isAdmin: false,
-                      isPaid: approve,
-                      paymentStatus: newStatus,
-                      paymentMethod: reqItem.paymentMethod,
-                      paymentReference: reqItem.transactionId,
-                      paymentAmount: reqItem.amount
-                    };
-
-                setUsers((prev) => {
-                  const exists = prev.some((u) => u.uid === updatedUser.uid);
-                  return exists
-                    ? prev.map((u) =>
-                        u.uid === updatedUser.uid ? updatedUser : u
-                      )
-                    : [updatedUser, ...prev];
-                });
-
-                if (myProfile.uid === updatedUser.uid) {
-                  setMyProfile(updatedUser);
-                }
-
-                try {
-                  await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, {
-                    merge: true
-                  });
-                } catch {}
-              }}
-              onReplyChat={async (chatItem, replyText) => {
-                const updatedChat: HubChatMessage = {
-                  ...chatItem,
-                  adminReply: replyText
-                };
-                setChats((prev) =>
-                  prev.map((c) => (c.id === chatItem.id ? updatedChat : c))
-                );
-                try {
-                  await setDoc(doc(db, 'chats', chatItem.id), updatedChat, {
-                    merge: true
-                  });
-                } catch {}
-              }}
-              onDeleteChat={async (chatId) => {
-                setChats((prev) => prev.filter((c) => c.id !== chatId));
-                try {
-                  await deleteDoc(doc(db, 'chats', chatId));
-                } catch {}
-              }}
-              onToggleUserPaid={async (u) => {
-                const nextPaid = !u.isPaid;
-                const updated: HubUser = {
-                  ...u,
-                  isPaid: nextPaid,
-                  paymentStatus: nextPaid ? 'verified' : 'none'
-                };
-                setUsers((prev) =>
-                  prev.map((item) => (item.uid === u.uid ? updated : item))
-                );
-                if (myProfile.uid === u.uid) {
-                  setMyProfile(updated);
-                }
-                try {
-                  await setDoc(doc(db, 'users', u.uid), updated, { merge: true });
-                } catch {}
-              }}
-              onDeleteUser={async (uid) => {
-                setUsers((prev) => prev.filter((u) => u.uid !== uid));
-                try {
-                  await deleteDoc(doc(db, 'users', uid));
-                } catch {}
-              }}
-              onSaveJob={async (job) => {
-                setJobs((prev) => {
-                  const exists = prev.some((j) => j.id === job.id);
-                  return exists
-                    ? prev.map((j) => (j.id === job.id ? job : j))
-                    : [job, ...prev];
-                });
-                try {
-                  await setDoc(doc(db, 'jobs', job.id), job, { merge: true });
-                } catch {}
-              }}
-              onDeleteJob={async (id) => {
-                setJobs((prev) => prev.filter((j) => j.id !== id));
-                try {
-                  await deleteDoc(doc(db, 'jobs', id));
-                } catch {}
-              }}
-              onSaveScholarship={async (sch) => {
-                setScholarships((prev) => {
-                  const exists = prev.some((s) => s.id === sch.id);
-                  return exists
-                    ? prev.map((s) => (s.id === sch.id ? sch : s))
-                    : [sch, ...prev];
-                });
-                try {
-                  await setDoc(doc(db, 'scholarships', sch.id), sch, {
-                    merge: true
-                  });
-                } catch {}
-              }}
-              onDeleteScholarship={async (id) => {
-                setScholarships((prev) => prev.filter((s) => s.id !== id));
-                try {
-                  await deleteDoc(doc(db, 'scholarships', id));
-                } catch {}
-              }}
-              onSaveTraining={async (tr) => {
-                setTrainings((prev) => {
-                  const exists = prev.some((t) => t.id === tr.id);
-                  return exists
-                    ? prev.map((t) => (t.id === tr.id ? tr : t))
-                    : [tr, ...prev];
-                });
-                try {
-                  await setDoc(doc(db, 'trainings', tr.id), tr, {
-                    merge: true
-                  });
-                } catch {}
-              }}
-              onDeleteTraining={async (id) => {
-                setTrainings((prev) => prev.filter((t) => t.id !== id));
-                try {
-                  await deleteDoc(doc(db, 'trainings', id));
-                } catch {}
-              }}
-            />
+              {/* Full-Width Green "Save Changes" Button */}
+              <button
+                type="submit"
+                className="w-full py-4 px-5 rounded-[18px] bg-[#168A42] hover:bg-[#117035] text-white font-extrabold text-[16px] shadow-md transition-colors cursor-pointer"
+              >
+                Save Changes
+              </button>
+            </form>
           )}
         </div>
 
@@ -3676,30 +3102,11 @@ export default function App() {
 
                 <button
                   type="button"
-                  onClick={async () => {
-                    const newHireChat: HubChatMessage = {
-                      id: 'chat-hire-' + Date.now(),
-                      senderUid: myProfile.uid || 'user-alex-morgan',
-                      senderName: myProfile.name || 'Alex Morgan',
-                      senderPhone: myProfile.phone || '+92 300 1234567',
-                      recipientName: contactModalMember.name,
-                      chatType: 'hiring_contact',
-                      message: contactCustomMsg.trim(),
-                      createdAt: new Date()
-                        .toISOString()
-                        .slice(0, 16)
-                        .replace('T', ' ')
-                    };
-                    setChats((prev) => [newHireChat, ...prev]);
+                  onClick={() =>
                     setContactSentBanner(
-                      `Your hiring request has been sent to ${contactModalMember.name} and logged in the Admin Backend!`
-                    );
-                    try {
-                      await setDoc(doc(db, 'chats', newHireChat.id), newHireChat, {
-                        merge: true
-                      });
-                    } catch {}
-                  }}
+                      `Your hiring request has been sent to ${contactModalMember.name}!`
+                    )
+                  }
                   className="w-full py-2.5 px-4 rounded-2xl border border-emerald-200 text-[#15803D] text-xs font-bold cursor-pointer hover:bg-[#F0FDF4]"
                 >
                   Send Direct In-App Hire Request
@@ -3719,1042 +3126,3 @@ export default function App() {
   );
 }
 
-// ==================== PART 2: ADMIN BACKEND CONTROL PANEL SUB-COMPONENT ====================
-type AdminTabType =
-  | 'requests'
-  | 'chats'
-  | 'users'
-  | 'jobs'
-  | 'scholarships'
-  | 'trainings';
-
-interface AdminPanelViewProps {
-  users: HubUser[];
-  paymentRequests: HubPaymentRequest[];
-  chats: HubChatMessage[];
-  jobs: HubJob[];
-  scholarships: HubScholarship[];
-  trainings: HubTraining[];
-  adminTab: AdminTabType;
-  setAdminTab: (t: AdminTabType) => void;
-  adminStatusMsg: string | null;
-  setAdminStatusMsg: (m: string | null) => void;
-  onVerifyPaymentRequest: (reqItem: HubPaymentRequest, approve: boolean) => void;
-  onReplyChat: (chatItem: HubChatMessage, replyText: string) => void;
-  onDeleteChat: (chatId: string) => void;
-  onToggleUserPaid: (u: HubUser) => void;
-  onDeleteUser: (uid: string) => void;
-  onSaveJob: (j: HubJob) => void;
-  onDeleteJob: (id: string) => void;
-  onSaveScholarship: (s: HubScholarship) => void;
-  onDeleteScholarship: (id: string) => void;
-  onSaveTraining: (t: HubTraining) => void;
-  onDeleteTraining: (id: string) => void;
-}
-
-const AdminPanelView: React.FC<AdminPanelViewProps> = ({
-  users,
-  paymentRequests,
-  chats,
-  jobs,
-  scholarships,
-  trainings,
-  adminTab,
-  setAdminTab,
-  adminStatusMsg,
-  setAdminStatusMsg,
-  onVerifyPaymentRequest,
-  onReplyChat,
-  onDeleteChat,
-  onToggleUserPaid,
-  onDeleteUser,
-  onSaveJob,
-  onDeleteJob,
-  onSaveScholarship,
-  onDeleteScholarship,
-  onSaveTraining,
-  onDeleteTraining
-}) => {
-  // Filter state for Paid vs Free user records
-  const [userRecordFilter, setUserRecordFilter] = useState<
-    'all' | 'paid' | 'free'
-  >('all');
-
-  // Admin Reply Inputs Map by chat ID
-  const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
-
-  // Job Form State
-  const [editingJobId, setEditingJobId] = useState<string | null>(null);
-  const [jTitle, setJTitle] = useState('');
-  const [jCompany, setJCompany] = useState('');
-  const [jLoc, setJLoc] = useState('Lahore, Pakistan');
-  const [jExp, setJExp] = useState('2–4 Years');
-  const [jCat, setJCat] = useState<JobCategory>('Quality & Safety');
-  const [jTags, setJTags] = useState('HACCP, FSSC 22000');
-  const [jDesc, setJDesc] = useState('');
-  const [jReqs, setJReqs] = useState('');
-  const [jLink, setJLink] = useState('https://');
-
-  // Scholarship Form State
-  const [editingSchId, setEditingSchId] = useState<string | null>(null);
-  const [sTitle, setSTitle] = useState('');
-  const [sOrg, setSOrg] = useState('');
-  const [sCountry, setSCountry] = useState('Europe / Global');
-  const [sDeadline, setSDeadline] = useState('2027-01-30');
-  const [sFunding, setSFunding] = useState<
-    'Fellowships' | 'International' | 'Grants'
-  >('Fellowships');
-  const [sDegree, setSDegree] = useState('MS / PhD');
-  const [sDesc, setSDesc] = useState('');
-  const [sElig, setSElig] = useState('');
-  const [sLink, setSLink] = useState('https://');
-
-  // Training Form State
-  const [editingTrId, setEditingTrId] = useState<string | null>(null);
-  const [tCategory, setTCategory] = useState<'Highfield' | 'Lead Auditor'>(
-    'Highfield'
-  );
-  const [tTitle, setTTitle] = useState('HACCP Level 3');
-  const [tSubType, setTSubType] = useState<
-    '' | 'Exemplar Global' | 'IRCA | CQI'
-  >('');
-  const [tDuration, setTDuration] = useState('3 Days (18 Hours)');
-  const [tFees, setTFees] = useState('PKR 28,000');
-  const [tDesc, setTDesc] = useState('');
-  const [tEnroll, setTEnroll] = useState('https://wa.me/923240906384');
-
-  const notify = (msg: string) => {
-    setAdminStatusMsg(msg);
-    setTimeout(() => setAdminStatusMsg(null), 4000);
-  };
-
-  const paidMembersList = useMemo(
-    () => users.filter((u) => u.isPaid === true),
-    [users]
-  );
-  const freeUsersList = useMemo(
-    () => users.filter((u) => !u.isPaid),
-    [users]
-  );
-  const pendingPaymentsCount = useMemo(
-    () => paymentRequests.filter((r) => r.status === 'pending').length,
-    [paymentRequests]
-  );
-
-  const displayedUsersRecord = useMemo(() => {
-    if (userRecordFilter === 'paid') return paidMembersList;
-    if (userRecordFilter === 'free') return freeUsersList;
-    return users;
-  }, [users, paidMembersList, freeUsersList, userRecordFilter]);
-
-  return (
-    <div className="space-y-4 px-1">
-      {/* Admin Header Banner */}
-      <div className="bg-[#0D2E1B] text-white rounded-[26px] p-5 shadow-md space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-[10.5px] font-extrabold uppercase tracking-wider">
-            Part 2 • Backend Control Panel
-          </span>
-          <ShieldCheck className="w-5 h-5 text-[#4ADE80]" />
-        </div>
-        <h1 className="text-[22px] font-extrabold leading-tight">
-          Admin Backend &amp; Database
-        </h1>
-        <p className="text-xs text-emerald-100/90 leading-relaxed">
-          Verify incoming Payments, approve Paid Members for Communities, reply to
-          User Chats, and manage Premium &amp; Free User records.
-        </p>
-
-        {/* Summary Metrics Grid */}
-        <div className="grid grid-cols-4 gap-2 pt-2 text-center">
-          <div className="bg-white/10 rounded-2xl p-2.5">
-            <div className="text-lg font-extrabold text-[#4ADE80] tabular-nums">
-              {pendingPaymentsCount}
-            </div>
-            <div className="text-[10px] font-bold text-emerald-100">
-              Pending Pay
-            </div>
-          </div>
-          <div className="bg-white/10 rounded-2xl p-2.5">
-            <div className="text-lg font-extrabold text-white tabular-nums">
-              {chats.length}
-            </div>
-            <div className="text-[10px] font-bold text-emerald-100">Chats</div>
-          </div>
-          <div className="bg-white/10 rounded-2xl p-2.5">
-            <div className="text-lg font-extrabold text-[#4ADE80] tabular-nums">
-              {paidMembersList.length}
-            </div>
-            <div className="text-[10px] font-bold text-emerald-100">
-              Paid Members
-            </div>
-          </div>
-          <div className="bg-white/10 rounded-2xl p-2.5">
-            <div className="text-lg font-extrabold text-amber-300 tabular-nums">
-              {freeUsersList.length}
-            </div>
-            <div className="text-[10px] font-bold text-emerald-100">
-              Free Users
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {adminStatusMsg && (
-        <div className="bg-[#15803D] text-white rounded-2xl p-3.5 text-xs font-extrabold shadow-sm">
-          {adminStatusMsg}
-        </div>
-      )}
-
-      {/* 6 Backend Control Tabs */}
-      <div className="grid grid-cols-3 gap-1.5 bg-white p-1.5 rounded-2xl border border-emerald-200 shadow-2xs">
-        {(
-          [
-            { id: 'requests', label: `Payments (${paymentRequests.length})` },
-            { id: 'chats', label: `Chats (${chats.length})` },
-            { id: 'users', label: `Users (${users.length})` },
-            { id: 'jobs', label: `Jobs (${jobs.length})` },
-            { id: 'scholarships', label: `Grants (${scholarships.length})` },
-            { id: 'trainings', label: `Trainings (${trainings.length})` }
-          ] as { id: AdminTabType; label: string }[]
-        ).map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setAdminTab(t.id)}
-            className={`py-2 px-2 rounded-xl text-[11px] font-extrabold transition-colors cursor-pointer ${
-              adminTab === t.id
-                ? 'bg-[#15803D] text-white shadow-xs'
-                : 'text-[#0D2E1B] hover:bg-emerald-50'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ==================== TAB 1: PAYMENTS RECEIVED & MEMBERSHIP REQUESTS ==================== */}
-      {adminTab === 'requests' && (
-        <div className="space-y-3">
-          <div className="bg-white border border-emerald-200 rounded-[22px] p-4 text-xs space-y-1">
-            <div className="font-extrabold text-[#0D2E1B] text-sm">
-              Payments Received &amp; Paid Membership Verification
-            </div>
-            <p className="text-gray-600 leading-relaxed">
-              When a user creates their profile and sends payment, their request
-              appears below. Click <strong>Verify Payment &amp; Grant Access</strong>{' '}
-              to unlock their Paid account and publish their profile in Communities.
-            </p>
-          </div>
-
-          {paymentRequests.length === 0 ? (
-            <div className="bg-white border border-emerald-200 rounded-2xl p-6 text-center text-xs text-gray-500">
-              No payment requests received yet.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {paymentRequests.map((reqItem) => (
-                <div
-                  key={reqItem.id}
-                  className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[24px] p-4 shadow-xs space-y-3 text-xs"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-extrabold text-[#0D2E1B]">
-                          {reqItem.userName}
-                        </span>
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                            reqItem.status === 'verified'
-                              ? 'bg-[#DCFCE7] text-[#15803D]'
-                              : reqItem.status === 'rejected'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-amber-100 text-amber-900'
-                          }`}
-                        >
-                          {reqItem.status === 'verified'
-                            ? 'Payment Verified ✓'
-                            : reqItem.status === 'rejected'
-                            ? 'Rejected'
-                            : 'Pending Verification'}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 font-medium mt-0.5">
-                        {reqItem.currentRole || 'Food Specialist'} •{' '}
-                        {reqItem.qualification || 'Food Science'}
-                      </p>
-                      <p className="text-[11px] text-gray-500">
-                        {reqItem.userEmail} • {reqItem.userPhone}
-                      </p>
-                    </div>
-                    <span className="text-[10.5px] font-bold text-gray-400 shrink-0">
-                      {reqItem.submittedAt}
-                    </span>
-                  </div>
-
-                  {/* Payment Receipt Box */}
-                  <div className="bg-[#F2F7F3] border border-emerald-200 rounded-2xl p-3 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-600">
-                        Method &amp; Amount:
-                      </span>
-                      <span className="font-extrabold text-[#0D2E1B]">
-                        {reqItem.paymentMethod} • {reqItem.amount}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-600">
-                        Transaction ID (TID):
-                      </span>
-                      <span className="font-mono font-extrabold text-[#15803D]">
-                        {reqItem.transactionId}
-                      </span>
-                    </div>
-                    {reqItem.notes && (
-                      <p className="text-[11px] text-gray-600 pt-1 border-t border-emerald-100">
-                        Note: &ldquo;{reqItem.notes}&rdquo;
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Admin Verification Action Buttons */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onVerifyPaymentRequest(reqItem, true);
-                        notify(
-                          `Payment verified for ${reqItem.userName}! Added to Paid Members & Communities directory.`
-                        );
-                      }}
-                      className={`flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-                        reqItem.status === 'verified'
-                          ? 'bg-[#DCFCE7] text-[#15803D] border border-[#16A34A]'
-                          : 'bg-[#15803D] hover:bg-[#0D2E1B] text-white'
-                      }`}
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>
-                        {reqItem.status === 'verified'
-                          ? 'Verified & Added to Communities ✓'
-                          : 'Verify Payment & Grant Paid Access'}
-                      </span>
-                    </button>
-
-                    {reqItem.status !== 'rejected' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onVerifyPaymentRequest(reqItem, false);
-                          notify(
-                            `Payment request for ${reqItem.userName} marked as unverified/free.`
-                          );
-                        }}
-                        className="px-3 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs cursor-pointer"
-                      >
-                        Reject / Revoke
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ==================== TAB 2: CHATS & HIRING INQUIRIES ==================== */}
-      {adminTab === 'chats' && (
-        <div className="space-y-3">
-          <div className="bg-white border border-emerald-200 rounded-[22px] p-4 text-xs space-y-1">
-            <div className="font-extrabold text-[#0D2E1B] text-sm">
-              User Support Chats &amp; Hiring Inquiries
-            </div>
-            <p className="text-gray-600">
-              All messages sent by users to Admin Support or to Community Members for
-              hiring appear here. You can reply directly to any conversation.
-            </p>
-          </div>
-
-          {chats.length === 0 ? (
-            <div className="bg-white border border-emerald-200 rounded-2xl p-6 text-center text-xs text-gray-500">
-              No chats recorded yet.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {chats.map((chatItem) => (
-                <div
-                  key={chatItem.id}
-                  className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[24px] p-4 shadow-xs space-y-3 text-xs"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-extrabold text-[#0D2E1B] text-sm">
-                          {chatItem.senderName}
-                        </span>
-                        <span className="text-gray-400">&rarr;</span>
-                        <span className="font-bold text-[#15803D]">
-                          {chatItem.recipientName}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            chatItem.chatType === 'hiring_contact'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-blue-50 text-blue-700'
-                          }`}
-                        >
-                          {chatItem.chatType === 'hiring_contact'
-                            ? 'Hiring Contact'
-                            : 'Admin Support'}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-gray-500 mt-0.5">
-                        WhatsApp / Phone: {chatItem.senderPhone} • {chatItem.createdAt}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteChat(chatItem.id)}
-                      className="p-1.5 rounded-lg bg-red-50 text-red-600 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-[#F2F7F3] text-gray-900 font-medium leading-relaxed">
-                    {chatItem.message}
-                  </div>
-
-                  {chatItem.adminReply && (
-                    <div className="p-3 rounded-2xl bg-[#DCFCE7] border border-emerald-200 text-[#0D2E1B] font-bold">
-                      Admin Reply: {chatItem.adminReply}
-                    </div>
-                  )}
-
-                  {/* Admin Reply Input */}
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Write Admin reply to this user..."
-                      value={replyInputs[chatItem.id] || ''}
-                      onChange={(e) =>
-                        setReplyInputs((prev) => ({
-                          ...prev,
-                          [chatItem.id]: e.target.value
-                        }))
-                      }
-                      className="flex-1 px-3 py-2 rounded-xl bg-[#EAF3EC] border border-[#AECBB5] text-xs font-medium"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const txt = (replyInputs[chatItem.id] || '').trim();
-                        if (!txt) return;
-                        onReplyChat(chatItem, txt);
-                        setReplyInputs((prev) => ({ ...prev, [chatItem.id]: '' }));
-                        notify(`Reply sent to ${chatItem.senderName}!`);
-                      }}
-                      className="px-3.5 py-2 rounded-xl bg-[#15803D] text-white font-extrabold cursor-pointer shrink-0"
-                    >
-                      Reply
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ==================== TAB 3: PREMIUM (PAID) & FREE USERS DATABASE RECORD ==================== */}
-      {adminTab === 'users' && (
-        <div className="space-y-3">
-          <div className="bg-white border border-emerald-200 rounded-[22px] p-4 text-xs space-y-2.5">
-            <div>
-              <div className="font-extrabold text-[#0D2E1B] text-sm">
-                Premium (Paid) &amp; Free Users Database Record
-              </div>
-              <p className="text-gray-500 mt-0.5">
-                Complete backend record of all <strong>Premium Paid Members</strong>{' '}
-                (visible in Communities) and <strong>Free Users</strong> (stored in
-                backend until payment is verified).
-              </p>
-            </div>
-
-            {/* Filter Pills: All | Paid Members | Free Users */}
-            <div className="grid grid-cols-3 gap-1.5 bg-[#EAF3EC] p-1 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setUserRecordFilter('all')}
-                className={`py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
-                  userRecordFilter === 'all'
-                    ? 'bg-[#0D2E1B] text-white'
-                    : 'text-[#0D2E1B]'
-                }`}
-              >
-                All ({users.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserRecordFilter('paid')}
-                className={`py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
-                  userRecordFilter === 'paid'
-                    ? 'bg-[#15803D] text-white'
-                    : 'text-[#0D2E1B]'
-                }`}
-              >
-                Paid ({paidMembersList.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserRecordFilter('free')}
-                className={`py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
-                  userRecordFilter === 'free'
-                    ? 'bg-amber-600 text-white'
-                    : 'text-[#0D2E1B]'
-                }`}
-              >
-                Free ({freeUsersList.length})
-              </button>
-            </div>
-          </div>
-
-          {displayedUsersRecord.length === 0 ? (
-            <div className="bg-white border border-emerald-200 rounded-2xl p-5 text-center text-xs text-gray-500">
-              No user records match this filter.
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {displayedUsersRecord.map((u) => (
-                <div
-                  key={u.uid}
-                  className="bg-white border border-emerald-200 rounded-2xl p-3.5 flex items-center justify-between gap-2 text-xs"
-                >
-                  <div className="min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-extrabold text-[#0D2E1B] truncate">
-                        {u.name}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[9.5px] font-extrabold ${
-                          u.isPaid
-                            ? 'bg-[#DCFCE7] text-[#15803D]'
-                            : 'bg-amber-100 text-amber-900'
-                        }`}
-                      >
-                        {u.isPaid ? 'PAID MEMBER' : 'FREE USER'}
-                      </span>
-                    </div>
-                    <div className="text-gray-600 truncate font-medium">
-                      {u.currentRole} • {u.qualification}
-                    </div>
-                    <div className="text-gray-400 text-[11px] truncate">
-                      {u.email} • {u.phone} •{' '}
-                      {u.privacySettings?.hireMe_public ? 'Hire Me ON' : 'Standard'}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onToggleUserPaid(u);
-                        notify(
-                          !u.isPaid
-                            ? `${u.name} upgraded to Paid Member (Added to Communities)!`
-                            : `${u.name} moved to Free User record (Removed from Communities).`
-                        );
-                      }}
-                      className={`px-3 py-1.5 rounded-xl font-extrabold cursor-pointer ${
-                        u.isPaid
-                          ? 'bg-[#15803D] text-white'
-                          : 'bg-gray-100 hover:bg-emerald-50 text-[#0D2E1B] border border-emerald-300'
-                      }`}
-                    >
-                      {u.isPaid ? 'Paid (In Communities) ✓' : 'Approve Paid'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteUser(u.uid)}
-                      className="p-1.5 rounded-lg bg-red-50 text-red-600 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* MANAGE JOBS */}
-      {adminTab === 'jobs' && (
-        <div className="space-y-4">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!jTitle.trim() || !jCompany.trim()) return;
-              onSaveJob({
-                id: editingJobId || `job-${Date.now()}`,
-                title: jTitle.trim(),
-                company: jCompany.trim(),
-                location: jLoc.trim(),
-                experienceRequired: jExp.trim(),
-                category: jCat,
-                description: jDesc.trim(),
-                requirements: jReqs.trim(),
-                applyLink: jLink.trim() || 'https://foodspecialists.org',
-                tags: jTags
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-                postedAt: 'Just now',
-                expiryAt: '2026-12-30',
-                isActive: true
-              });
-              notify(editingJobId ? 'Job updated!' : 'New job published!');
-              setEditingJobId(null);
-              setJTitle('');
-              setJCompany('');
-              setJDesc('');
-              setJReqs('');
-            }}
-            className="bg-white border border-emerald-200 rounded-[24px] p-4 space-y-3 text-xs"
-          >
-            <h3 className="font-bold text-sm text-gray-900">
-              {editingJobId ? 'Edit Job' : 'Add New Job'}
-            </h3>
-            <input
-              type="text"
-              required
-              placeholder="Job Title"
-              value={jTitle}
-              onChange={(e) => setJTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                required
-                placeholder="Company"
-                value={jCompany}
-                onChange={(e) => setJCompany(e.target.value)}
-                className="px-3 py-2 border border-emerald-200 rounded-xl"
-              />
-              <select
-                value={jCat}
-                onChange={(e) => setJCat(e.target.value as JobCategory)}
-                className="px-3 py-2 border border-emerald-200 rounded-xl bg-white"
-              >
-                <option value="Quality & Safety">Quality &amp; Safety</option>
-                <option value="R&D Lab">R&amp;D Lab</option>
-                <option value="Production">Production</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                placeholder="Location"
-                value={jLoc}
-                onChange={(e) => setJLoc(e.target.value)}
-                className="px-3 py-2 border border-emerald-200 rounded-xl"
-              />
-              <input
-                type="text"
-                placeholder="Experience Required"
-                value={jExp}
-                onChange={(e) => setJExp(e.target.value)}
-                className="px-3 py-2 border border-emerald-200 rounded-xl"
-              />
-            </div>
-            <input
-              type="text"
-              placeholder="Tags (comma-separated: HACCP, FSSC 22000)"
-              value={jTags}
-              onChange={(e) => setJTags(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <textarea
-              rows={2}
-              placeholder="Job Description"
-              value={jDesc}
-              onChange={(e) => setJDesc(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <textarea
-              rows={2}
-              placeholder="Requirements"
-              value={jReqs}
-              onChange={(e) => setJReqs(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <input
-              type="text"
-              placeholder="Apply Link URL"
-              value={jLink}
-              onChange={(e) => setJLink(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <button
-              type="submit"
-              className="w-full py-2.5 rounded-xl bg-[#16A34A] text-white font-bold cursor-pointer"
-            >
-              {editingJobId ? 'Update Job' : 'Publish Job'}
-            </button>
-          </form>
-
-          <div className="space-y-2">
-            {jobs.map((j) => (
-              <div
-                key={j.id}
-                className="bg-white border border-emerald-200 rounded-2xl p-3 flex items-center justify-between gap-2 text-xs"
-              >
-                <div className="truncate">
-                  <div className="font-bold text-gray-900 truncate">{j.title}</div>
-                  <div className="text-gray-500">
-                    {j.company} • {j.category}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingJobId(j.id);
-                      setJTitle(j.title);
-                      setJCompany(j.company);
-                      setJLoc(j.location);
-                      setJExp(j.experienceRequired);
-                      setJCat(j.category);
-                      setJTags(j.tags.join(', '));
-                      setJDesc(j.description);
-                      setJReqs(j.requirements);
-                      setJLink(j.applyLink);
-                    }}
-                    className="p-1.5 rounded-lg bg-gray-100 text-gray-700"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteJob(j.id)}
-                    className="p-1.5 rounded-lg bg-red-50 text-red-600"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* MANAGE SCHOLARSHIPS */}
-      {adminTab === 'scholarships' && (
-        <div className="space-y-4">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!sTitle.trim() || !sOrg.trim()) return;
-              onSaveScholarship({
-                id: editingSchId || `sch-${Date.now()}`,
-                title: sTitle.trim(),
-                organization: sOrg.trim(),
-                country: sCountry.trim(),
-                deadline: sDeadline,
-                fundingType: sFunding,
-                degreeLevel: sDegree.trim(),
-                description: sDesc.trim(),
-                eligibility: sElig.trim(),
-                applyLink: sLink.trim() || 'https://',
-                isActive: true
-              });
-              notify(
-                editingSchId ? 'Scholarship updated!' : 'New scholarship published!'
-              );
-              setEditingSchId(null);
-              setSTitle('');
-              setSOrg('');
-              setSDesc('');
-              setSElig('');
-            }}
-            className="bg-white border border-emerald-200 rounded-[24px] p-4 space-y-3 text-xs"
-          >
-            <h3 className="font-bold text-sm text-gray-900">
-              {editingSchId ? 'Edit Scholarship' : 'Add New Scholarship'}
-            </h3>
-            <input
-              type="text"
-              required
-              placeholder="Scholarship Title"
-              value={sTitle}
-              onChange={(e) => setSTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <input
-              type="text"
-              required
-              placeholder="Organization / University"
-              value={sOrg}
-              onChange={(e) => setSOrg(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                placeholder="Country"
-                value={sCountry}
-                onChange={(e) => setSCountry(e.target.value)}
-                className="px-3 py-2 border border-emerald-200 rounded-xl"
-              />
-              <input
-                type="date"
-                value={sDeadline}
-                onChange={(e) => setSDeadline(e.target.value)}
-                className="px-3 py-2 border border-emerald-200 rounded-xl"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                value={sFunding}
-                onChange={(e) =>
-                  setSFunding(
-                    e.target.value as 'Fellowships' | 'International' | 'Grants'
-                  )
-                }
-                className="px-3 py-2 border border-emerald-200 rounded-xl bg-white"
-              >
-                <option value="Fellowships">Fellowships</option>
-                <option value="International">International</option>
-                <option value="Grants">Grants</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Degree Level (MS / PhD)"
-                value={sDegree}
-                onChange={(e) => setSDegree(e.target.value)}
-                className="px-3 py-2 border border-emerald-200 rounded-xl"
-              />
-            </div>
-            <textarea
-              rows={2}
-              placeholder="Description"
-              value={sDesc}
-              onChange={(e) => setSDesc(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <textarea
-              rows={2}
-              placeholder="Eligibility"
-              value={sElig}
-              onChange={(e) => setSElig(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <input
-              type="text"
-              placeholder="Apply Link URL"
-              value={sLink}
-              onChange={(e) => setSLink(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <button
-              type="submit"
-              className="w-full py-2.5 rounded-xl bg-[#16A34A] text-white font-bold cursor-pointer"
-            >
-              {editingSchId ? 'Update Scholarship' : 'Publish Scholarship'}
-            </button>
-          </form>
-
-          <div className="space-y-2">
-            {scholarships.map((s) => (
-              <div
-                key={s.id}
-                className="bg-white border border-emerald-200 rounded-2xl p-3 flex items-center justify-between gap-2 text-xs"
-              >
-                <div className="truncate">
-                  <div className="font-bold text-gray-900 truncate">{s.title}</div>
-                  <div className="text-gray-500">
-                    {s.country} • {s.deadline}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingSchId(s.id);
-                      setSTitle(s.title);
-                      setSOrg(s.organization);
-                      setSCountry(s.country);
-                      setSDeadline(s.deadline);
-                      setSFunding(s.fundingType);
-                      setSDegree(s.degreeLevel);
-                      setSDesc(s.description);
-                      setSElig(s.eligibility);
-                      setSLink(s.applyLink);
-                    }}
-                    className="p-1.5 rounded-lg bg-gray-100 text-gray-700"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteScholarship(s.id)}
-                    className="p-1.5 rounded-lg bg-red-50 text-red-600"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* MANAGE TRAININGS */}
-      {adminTab === 'trainings' && (
-        <div className="space-y-4">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!tTitle.trim()) return;
-              onSaveTraining({
-                id: editingTrId || `tr-${Date.now()}`,
-                category: tCategory,
-                title: tTitle.trim(),
-                subType:
-                  tCategory === 'Lead Auditor'
-                    ? tSubType || 'Exemplar Global'
-                    : null,
-                description: tDesc.trim(),
-                duration: tDuration.trim(),
-                fees: tFees.trim(),
-                enrollLink: tEnroll.trim(),
-                isActive: true
-              });
-              notify(editingTrId ? 'Training updated!' : 'New training added!');
-              setEditingTrId(null);
-            }}
-            className="bg-white border border-emerald-200 rounded-[24px] p-4 space-y-3 text-xs"
-          >
-            <h3 className="font-bold text-sm text-gray-900">
-              {editingTrId ? 'Edit Training' : 'Add New Training'}
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                value={tCategory}
-                onChange={(e) =>
-                  setTCategory(e.target.value as 'Highfield' | 'Lead Auditor')
-                }
-                className="px-3 py-2 border border-emerald-200 rounded-xl bg-white"
-              >
-                <option value="Highfield">Highfield</option>
-                <option value="Lead Auditor">Lead Auditor</option>
-              </select>
-              <select
-                value={tSubType}
-                onChange={(e) =>
-                  setTSubType(
-                    e.target.value as '' | 'Exemplar Global' | 'IRCA | CQI'
-                  )
-                }
-                className="px-3 py-2 border border-emerald-200 rounded-xl bg-white"
-              >
-                <option value="">None (Highfield)</option>
-                <option value="Exemplar Global">Exemplar Global</option>
-                <option value="IRCA | CQI">IRCA | CQI</option>
-              </select>
-            </div>
-            <input
-              type="text"
-              required
-              placeholder="Title (e.g. HACCP Level 3 or FSSC 22000)"
-              value={tTitle}
-              onChange={(e) => setTTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                placeholder="Duration"
-                value={tDuration}
-                onChange={(e) => setTDuration(e.target.value)}
-                className="px-3 py-2 border border-emerald-200 rounded-xl"
-              />
-              <input
-                type="text"
-                placeholder="Fees"
-                value={tFees}
-                onChange={(e) => setTFees(e.target.value)}
-                className="px-3 py-2 border border-emerald-200 rounded-xl"
-              />
-            </div>
-            <textarea
-              rows={2}
-              placeholder="Description"
-              value={tDesc}
-              onChange={(e) => setTDesc(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <input
-              type="text"
-              placeholder="WhatsApp Enroll Link"
-              value={tEnroll}
-              onChange={(e) => setTEnroll(e.target.value)}
-              className="w-full px-3 py-2 border border-emerald-200 rounded-xl"
-            />
-            <button
-              type="submit"
-              className="w-full py-2.5 rounded-xl bg-[#16A34A] text-white font-bold cursor-pointer"
-            >
-              {editingTrId ? 'Update Training' : 'Publish Training'}
-            </button>
-          </form>
-
-          <div className="space-y-2">
-            {trainings.map((t) => (
-              <div
-                key={t.id}
-                className="bg-white border border-emerald-200 rounded-2xl p-3 flex items-center justify-between gap-2 text-xs"
-              >
-                <div className="truncate">
-                  <div className="font-bold text-gray-900 truncate">
-                    {t.title} {t.subType ? `(${t.subType})` : ''}
-                  </div>
-                  <div className="text-gray-500">
-                    {t.category} • {t.fees}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingTrId(t.id);
-                      setTCategory(t.category);
-                      setTTitle(t.title);
-                      setTSubType(t.subType || '');
-                      setTDuration(t.duration);
-                      setTFees(t.fees);
-                      setTDesc(t.description);
-                      setTEnroll(t.enrollLink);
-                    }}
-                    className="p-1.5 rounded-lg bg-gray-100 text-gray-700"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteTraining(t.id)}
-                    className="p-1.5 rounded-lg bg-red-50 text-red-600"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
