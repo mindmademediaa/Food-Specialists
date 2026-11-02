@@ -135,10 +135,12 @@ export interface HubScholarship {
 
 export interface HubTraining {
   id: string;
-  category: 'Highfield' | 'Lead Auditor';
+  category: string; // 'Highfield' | 'Lead Auditor' | or any custom category created by admin
   title: string;
   standardCode?: string;
-  subType: null | 'Exemplar Global' | 'IRCA | CQI';
+  subType: null | 'Exemplar Global' | 'IRCA | CQI' | string;
+  provider?: string;
+  certificateUrl?: string; // Sample certificate image data URL or external link
   description: string;
   duration: string;
   fees: string;
