@@ -1,12 +1,12 @@
 {
-  "projectId": "gen-lang-client-0214656202",
-  "appId": "1:776069097700:web:5b68a4c00e044e2677e4f1",
-  "apiKey": "AIzaSyCNnN3uUnuFXOuLi-Z3StsRVlNNjde6TN0",
-  "authDomain": "gen-lang-client-0214656202.firebaseapp.com",
+  "projectId": "food-specialist-3e294",
+  "appId": "1:198607039485:web:0ca78b0fa191d6f35c4794",
+  "apiKey": "AIzaSyByvLEnS_aDcsOxzhTrGPxNRAjK5WYQWx0",
+  "authDomain": "food-specialist-3e294.firebaseapp.com",
   "firestoreDatabaseId": "ai-studio-foodspecialists-35276f34-d7c0-4ee2-a240-91a0957cf049",
-  "storageBucket": "gen-lang-client-0214656202.firebasestorage.app",
-  "messagingSenderId": "776069097700",
+  "storageBucket": "food-specialist-3e294.firebasestorage.app",
+  "messagingSenderId": "198607039485",
   "measurementId": "",
-  "oAuthClientId": "776069097700-c69fkfbhbn5ln4gob0rtvdf07m53ge4f.apps.googleusercontent.com",
+  "oAuthClientId": "198607039485-gr2khbikm3fjp3ikblmsutqh8mjp9cur.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

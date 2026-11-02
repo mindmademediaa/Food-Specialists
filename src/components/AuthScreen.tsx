@@ -118,11 +118,27 @@ export const AuthScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isUnauthorizedDomainError, setIsUnauthorizedDomainError] =
+    useState(false);
+  const [copiedDomain, setCopiedDomain] = useState(false);
+
+  const currentDomain =
+    typeof window !== 'undefined' && window.location.hostname
+      ? window.location.hostname
+      : 'mindmademediaa.github.io';
 
   useEffect(() => {
     let active = true;
     getRedirectResult(auth).catch((err) => {
       if (active && err) {
+        const code = (err as { code?: string })?.code || '';
+        const raw = err instanceof Error ? err.message : String(err);
+        if (
+          code === 'auth/unauthorized-domain' ||
+          raw.includes('auth/unauthorized-domain')
+        ) {
+          setIsUnauthorizedDomainError(true);
+        }
         setErrorMessage(getFriendlyFirebaseAuthError(err));
       }
     });
@@ -134,16 +150,32 @@ export const AuthScreen: React.FC = () => {
   const switchMode = (nextMode: 'signin' | 'signup') => {
     setMode(nextMode);
     setErrorMessage(null);
+    setIsUnauthorizedDomainError(false);
+  };
+
+  const handleCopyDomain = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(currentDomain);
+      setCopiedDomain(true);
+      setTimeout(() => setCopiedDomain(false), 2500);
+    }
   };
 
   const handleGoogleSignIn = async () => {
     setErrorMessage(null);
+    setIsUnauthorizedDomainError(false);
     setIsGoogleSubmitting(true);
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
       const code = (err as { code?: string })?.code || '';
       const raw = err instanceof Error ? err.message : String(err);
+      if (
+        code === 'auth/unauthorized-domain' ||
+        raw.includes('auth/unauthorized-domain')
+      ) {
+        setIsUnauthorizedDomainError(true);
+      }
       if (
         code === 'auth/popup-blocked' ||
         raw.includes('auth/popup-blocked') ||
@@ -153,6 +185,17 @@ export const AuthScreen: React.FC = () => {
           await signInWithRedirect(auth, googleProvider);
           return;
         } catch (redirectErr) {
+          const rCode = (redirectErr as { code?: string })?.code || '';
+          const rRaw =
+            redirectErr instanceof Error
+              ? redirectErr.message
+              : String(redirectErr);
+          if (
+            rCode === 'auth/unauthorized-domain' ||
+            rRaw.includes('auth/unauthorized-domain')
+          ) {
+            setIsUnauthorizedDomainError(true);
+          }
           setErrorMessage(getFriendlyFirebaseAuthError(redirectErr));
         }
       } else {
@@ -166,6 +209,7 @@ export const AuthScreen: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setIsUnauthorizedDomainError(false);
 
     const trimmedEmail = email.trim();
     const trimmedName = fullName.trim();
@@ -283,10 +327,39 @@ export const AuthScreen: React.FC = () => {
           {errorMessage && (
             <div
               role="alert"
-              className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-start gap-2.5"
+              className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold space-y-2.5"
             >
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+              {isUnauthorizedDomainError && (
+                <div className="pt-2 border-t border-red-200/80 space-y-2 text-[11px] text-red-900">
+                  <p className="font-bold">
+                    1-Minute Fix in Firebase Console (One-Time Only):
+                  </p>
+                  <div className="flex items-center justify-between gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-red-200">
+                    <code className="font-mono font-bold text-gray-800 truncate">
+                      {currentDomain}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={handleCopyDomain}
+                      className="px-2.5 py-1 rounded-lg bg-[#15803D] text-white font-bold text-[10.5px] shrink-0 cursor-pointer"
+                    >
+                      {copiedDomain ? 'Copied!' : 'Copy Domain'}
+                    </button>
+                  </div>
+                  <a
+                    href="https://console.firebase.google.com/project/food-specialist-3e294/authentication/settings"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center py-2 px-3 rounded-xl bg-red-100 hover:bg-red-200/80 text-red-900 font-extrabold underline"
+                  >
+                    Open Firebase Auth Settings &rarr; Add Domain
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
