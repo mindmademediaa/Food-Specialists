@@ -8,8 +8,7 @@ import {
   EyeOff,
   ArrowRight,
   AlertCircle,
-  Loader2,
-  Leaf
+  Loader2
 } from 'lucide-react';
 import {
   auth,
@@ -256,74 +255,60 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0FDF4] text-gray-900 flex flex-col items-center justify-center py-6 px-4">
-      <div className="w-full max-w-[440px] bg-[#EEF7F0] rounded-[34px] border-[1.5px] border-[#9EC4A7] shadow-xl overflow-hidden p-5 sm:p-6 space-y-5">
-        {/* Top Green Branding Banner */}
-        <div className="bg-[#16A34A] text-white rounded-[24px] p-5 shadow-sm relative overflow-hidden">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/30 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-7 h-7 text-white stroke-[2.2]" />
-            </div>
-            <div>
-              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 text-[10.5px] font-extrabold uppercase tracking-wider">
-                <Leaf className="w-3 h-3" />
-                <span>Food Specialists Portal</span>
+    <div className="min-h-screen bg-[#F4F9F5] text-gray-900 flex flex-col items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-[420px] space-y-4">
+        {/* Main Clean Auth Card */}
+        <div className="bg-white rounded-[28px] border border-[#CFE5D6] shadow-[0_16px_50px_rgba(21,128,61,0.08)] p-6 sm:p-7 space-y-5">
+          {/* Top Brand & Icon Header */}
+          <div className="flex flex-col items-center text-center space-y-2.5">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EBF7EE] border border-[#BDE3C6] text-[#15803D]">
+              <div className="w-5 h-5 rounded-md bg-[#15803D] flex items-center justify-center text-white shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 stroke-[2.5]" />
               </div>
-              <h1 className="text-[23px] font-extrabold tracking-tight leading-tight mt-0.5">
-                Food Careers &amp; Safety Hub
+              <span className="text-[11.5px] font-extrabold uppercase tracking-wider">
+                Food Specialists Portal
+              </span>
+            </div>
+
+            <div>
+              <h1 className="text-2xl font-black text-[#0D2E1B] tracking-tight">
+                {mode === 'signin' ? 'Sign In' : 'Create Account'}
               </h1>
+              <p className="text-xs text-gray-500 font-medium mt-1">
+                {mode === 'signin'
+                  ? 'Sign in to access your specialist account'
+                  : 'Register to unlock jobs, scholarships & directory'}
+              </p>
             </div>
           </div>
-          <p className="text-xs text-emerald-50 font-medium mt-2.5 leading-relaxed">
-            Sign in to access Food Science &amp; QA/QC jobs, international scholarships, accredited trainings, and the Specialist Directory.
-          </p>
-        </div>
 
-        {/* Mode Switcher Tabs: Sign In / Sign Up */}
-        <div className="grid grid-cols-2 gap-1.5 bg-[#D8ECD9] p-1.5 rounded-[20px] border border-[#B5D6BB]">
-          <button
-            type="button"
-            onClick={() => switchMode('signin')}
-            className={`py-2.5 rounded-[15px] text-xs font-extrabold transition-all cursor-pointer ${
-              mode === 'signin'
-                ? 'bg-[#15803D] text-white shadow-xs'
-                : 'text-[#0D2E1B] hover:bg-white/50'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('signup')}
-            className={`py-2.5 rounded-[15px] text-xs font-extrabold transition-all cursor-pointer ${
-              mode === 'signup'
-                ? 'bg-[#15803D] text-white shadow-xs'
-                : 'text-[#0D2E1B] hover:bg-white/50'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
-
-        {/* Auth Form Card */}
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          className="bg-white border border-[#B8D3BE] rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.07)] space-y-4"
-        >
-          <div>
-            <h2 className="text-[20px] font-extrabold text-[#0D2E1B]">
-              {mode === 'signin'
-                ? 'Welcome Back, Specialist'
-                : 'Create Your Specialist Account'}
-            </h2>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">
-              {mode === 'signin'
-                ? 'Sign in with Google or enter your registered email'
-                : 'Sign up quickly with Google or register with your email'}
-            </p>
+          {/* Mode Switcher Tabs */}
+          <div className="grid grid-cols-2 p-1 bg-[#EEF7F0] rounded-2xl border border-[#CCE4D2]">
+            <button
+              type="button"
+              onClick={() => switchMode('signin')}
+              className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                mode === 'signin'
+                  ? 'bg-white text-[#15803D] shadow-xs font-extrabold'
+                  : 'text-gray-600 hover:text-[#0D2E1B]'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode('signup')}
+              className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                mode === 'signup'
+                  ? 'bg-white text-[#15803D] shadow-xs font-extrabold'
+                  : 'text-gray-600 hover:text-[#0D2E1B]'
+              }`}
+            >
+              Sign Up
+            </button>
           </div>
 
+          {/* Error Message Box */}
           {errorMessage && (
             <div
               role="alert"
@@ -363,156 +348,118 @@ export const AuthScreen: React.FC = () => {
             </div>
           )}
 
-          {/* SIGN IN WITH GOOGLE BUTTON */}
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={isGoogleSubmitting || isSubmitting}
-            className="w-full py-3.5 px-4 rounded-[18px] bg-white hover:bg-[#F2F7F3] border-2 border-[#9EC4A7] hover:border-[#16A34A] disabled:opacity-60 text-[#0D2E1B] font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer"
-          >
-            {isGoogleSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 text-[#15803D] animate-spin" />
-                <span>Connecting to Google...</span>
-              </>
-            ) : (
-              <>
-                <GoogleLogoIcon />
-                <span>
-                  {mode === 'signin'
-                    ? 'Sign in with Google'
-                    : 'Sign up with Google'}
-                </span>
-              </>
+          {/* Sign In / Sign Up Form */}
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            {/* Google Sign In Button */}
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleSubmitting || isSubmitting}
+              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 disabled:opacity-60 text-gray-800 font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer"
+            >
+              {isGoogleSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-[#15803D] animate-spin" />
+                  <span>Connecting to Google...</span>
+                </>
+              ) : (
+                <>
+                  <GoogleLogoIcon />
+                  <span>
+                    {mode === 'signin'
+                      ? 'Sign in with Google'
+                      : 'Sign up with Google'}
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="relative flex items-center justify-center py-0.5">
+              <div className="border-t border-gray-200 w-full" />
+              <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 shrink-0">
+                or continue with email
+              </span>
+              <div className="border-t border-gray-200 w-full" />
+            </div>
+
+            {/* Full Name (Sign Up only) */}
+            {mode === 'signup' && (
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="auth-fullname"
+                  className="block text-xs font-bold text-[#0D2E1B]"
+                >
+                  Full Name
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    id="auth-fullname"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g., Muneeb Khan"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F8FAF8] border border-[#CFE0D3] text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#15803D] transition-colors"
+                  />
+                </div>
+              </div>
             )}
-          </button>
 
-          {/* Divider */}
-          <div className="relative flex items-center justify-center py-0.5">
-            <div className="border-t border-emerald-100 w-full" />
-            <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 shrink-0">
-              or continue with email
-            </span>
-            <div className="border-t border-emerald-100 w-full" />
-          </div>
-
-          {/* Full Name (Sign Up only) */}
-          {mode === 'signup' && (
+            {/* Email Address */}
             <div className="space-y-1.5">
               <label
-                htmlFor="auth-fullname"
-                className="block text-xs font-extrabold text-[#0D2E1B]"
+                htmlFor="auth-email"
+                className="block text-xs font-bold text-[#0D2E1B]"
               >
-                Full Name
+                Email Address
               </label>
               <div className="relative">
-                <UserIcon className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
-                  id="auth-fullname"
-                  type="text"
-                  autoComplete="name"
+                  id="auth-email"
+                  type="email"
+                  autoComplete="email"
                   required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g., Muneeb Khan"
-                  className="w-full pl-10 pr-4 py-3 rounded-[16px] bg-[#F2F7F3] border border-[#AECBB5] text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#16A34A]"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="specialist@example.com"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F8FAF8] border border-[#CFE0D3] text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#15803D] transition-colors"
                 />
               </div>
             </div>
-          )}
 
-          {/* Email Address */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="auth-email"
-              className="block text-xs font-extrabold text-[#0D2E1B]"
-            >
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                id="auth-email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="specialist@example.com"
-                className="w-full pl-10 pr-4 py-3 rounded-[16px] bg-[#F2F7F3] border border-[#AECBB5] text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#16A34A]"
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="auth-password"
-              className="block text-xs font-extrabold text-[#0D2E1B]"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                id="auth-password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete={
-                  mode === 'signin' ? 'current-password' : 'new-password'
-                }
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimum 6 characters"
-                className="w-full pl-10 pr-10 py-3 rounded-[16px] bg-[#F2F7F3] border border-[#AECBB5] text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#16A34A]"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#0D2E1B] p-1 cursor-pointer"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Confirm Password (Sign Up only) */}
-          {mode === 'signup' && (
+            {/* Password */}
             <div className="space-y-1.5">
               <label
-                htmlFor="auth-confirm-password"
-                className="block text-xs font-extrabold text-[#0D2E1B]"
+                htmlFor="auth-password"
+                className="block text-xs font-bold text-[#0D2E1B]"
               >
-                Confirm Password
+                Password
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
-                  id="auth-confirm-password"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
+                  id="auth-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={
+                    mode === 'signin' ? 'current-password' : 'new-password'
+                  }
                   required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter your password"
-                  className="w-full pl-10 pr-10 py-3 rounded-[16px] bg-[#F2F7F3] border border-[#AECBB5] text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#16A34A]"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Minimum 6 characters"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F8FAF8] border border-[#CFE0D3] text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#15803D] transition-colors"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
-                  aria-label={
-                    showConfirmPassword
-                      ? 'Hide confirm password'
-                      : 'Show confirm password'
-                  }
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#0D2E1B] p-1 cursor-pointer"
                 >
-                  {showConfirmPassword ? (
+                  {showPassword ? (
                     <EyeOff className="w-4 h-4" />
                   ) : (
                     <Eye className="w-4 h-4" />
@@ -520,63 +467,104 @@ export const AuthScreen: React.FC = () => {
                 </button>
               </div>
             </div>
-          )}
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting || isGoogleSubmitting}
-            className="w-full py-3.5 px-5 rounded-[18px] bg-[#15803D] hover:bg-[#0D2E1B] disabled:opacity-65 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md transition-colors cursor-pointer"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>
-                  {mode === 'signin'
-                    ? 'Signing In...'
-                    : 'Creating Specialist Account...'}
-                </span>
-              </>
-            ) : (
-              <>
-                <span>
-                  {mode === 'signin' ? 'Sign In with Email' : 'Create Account'}
-                </span>
-                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-              </>
+            {/* Confirm Password (Sign Up only) */}
+            {mode === 'signup' && (
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="auth-confirm-password"
+                  className="block text-xs font-bold text-[#0D2E1B]"
+                >
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    id="auth-confirm-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter your password"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F8FAF8] border border-[#CFE0D3] text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#15803D] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    aria-label={
+                      showConfirmPassword
+                        ? 'Hide confirm password'
+                        : 'Show confirm password'
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#0D2E1B] p-1 cursor-pointer"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
             )}
-          </button>
 
-          {/* Toggle Mode Footer */}
-          <div className="pt-2 border-t border-emerald-100 text-center">
-            {mode === 'signin' ? (
-              <p className="text-xs text-gray-600 font-medium">
-                Don&apos;t have an account yet?{' '}
-                <button
-                  type="button"
-                  onClick={() => switchMode('signup')}
-                  className="font-extrabold text-[#15803D] hover:underline cursor-pointer"
-                >
-                  Sign Up Now
-                </button>
-              </p>
-            ) : (
-              <p className="text-xs text-gray-600 font-medium">
-                Already have a registered account?{' '}
-                <button
-                  type="button"
-                  onClick={() => switchMode('signin')}
-                  className="font-extrabold text-[#15803D] hover:underline cursor-pointer"
-                >
-                  Sign In
-                </button>
-              </p>
-            )}
-          </div>
-        </form>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting || isGoogleSubmitting}
+              className="w-full py-3 px-5 rounded-xl bg-[#15803D] hover:bg-[#166534] disabled:opacity-65 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>
+                    {mode === 'signin'
+                      ? 'Signing In...'
+                      : 'Creating Specialist Account...'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>
+                    {mode === 'signin' ? 'Sign In with Email' : 'Create Account'}
+                  </span>
+                  <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                </>
+              )}
+            </button>
+
+            {/* Toggle Mode Footer */}
+            <div className="pt-2 border-t border-gray-100 text-center">
+              {mode === 'signin' ? (
+                <p className="text-xs text-gray-600 font-medium">
+                  Don&apos;t have an account yet?{' '}
+                  <button
+                    type="button"
+                    onClick={() => switchMode('signup')}
+                    className="font-extrabold text-[#15803D] hover:underline cursor-pointer"
+                  >
+                    Sign Up Now
+                  </button>
+                </p>
+              ) : (
+                <p className="text-xs text-gray-600 font-medium">
+                  Already have a registered account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => switchMode('signin')}
+                    className="font-extrabold text-[#15803D] hover:underline cursor-pointer"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              )}
+            </div>
+          </form>
+        </div>
 
         {/* Footer Branding */}
-        <div className="text-center pt-1">
+        <div className="text-center">
           <p className="text-[11px] font-semibold text-[#14532D]">
             Developed by Muneeb Khan, Food Safety Specialist, +923240906384
           </p>
