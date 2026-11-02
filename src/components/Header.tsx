@@ -13,6 +13,7 @@ interface HeaderProps {
   onAdminClick?: () => void;
   isAdmin?: boolean;
   userInitial?: string;
+  userAvatarUrl?: string;
   notificationCount?: number;
 }
 
@@ -28,11 +29,12 @@ export const Header: React.FC<HeaderProps> = ({
   onAdminClick,
   isAdmin = false,
   userInitial = 'A',
+  userAvatarUrl,
   notificationCount = 1
 }) => {
   return (
-    <header className="bg-[#16A34A] text-white rounded-[24px] px-4 sm:px-5 py-3.5 flex items-center justify-between shadow-sm">
-      <div className="flex items-center gap-2 min-w-0">
+    <header className="bg-[#16A34A] text-white rounded-[24px] px-3.5 sm:px-5 py-3.5 flex items-center justify-between shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
         {showBack && onBack && (
           <button
             type="button"
@@ -43,18 +45,41 @@ export const Header: React.FC<HeaderProps> = ({
             <ArrowLeft className="w-4 h-4 text-white" />
           </button>
         )}
+
+        {/* Small Avatar next to Food Specialists Portal */}
+        <button
+          type="button"
+          onClick={onProfileClick}
+          aria-label="My Profile"
+          title="Open Profile"
+          className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#EBF5ED] border-2 border-white flex items-center justify-center overflow-hidden shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer"
+        >
+          {userAvatarUrl ? (
+            <img
+              src={userAvatarUrl}
+              alt="User Avatar"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="w-full h-full flex items-center justify-center text-xs font-bold text-[#14532D]">
+              {userInitial}
+            </span>
+          )}
+          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#B9E29A] border-2 border-[#16A34A]" />
+        </button>
+
         <div className="min-w-0">
           <button
             type="button"
             onClick={onHomeClick}
-            className="text-[22px] sm:text-[24px] font-bold tracking-tight text-white font-display leading-none truncate block cursor-pointer"
+            className="text-[16px] sm:text-[19px] font-bold tracking-tight text-white font-display leading-tight truncate block cursor-pointer text-left"
           >
-            Food Careers
+            Food Specialists Portal
           </button>
           {userEmail && (
             <div
               title={userEmail}
-              className="flex items-center gap-1 text-[10px] font-semibold text-emerald-100 truncate max-w-[145px] sm:max-w-[180px] mt-0.5"
+              className="flex items-center gap-1 text-[10px] font-semibold text-emerald-100 truncate max-w-[130px] sm:max-w-[200px] mt-0.5"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#B9E29A] shrink-0" />
               <span className="truncate">{userEmail}</span>
@@ -97,18 +122,6 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={onProfileClick}
-          aria-label="Profile"
-          title="My Profile"
-          className="w-9 h-9 rounded-full bg-[#EBF5ED] border-2 border-white flex items-center justify-center shadow-xs hover:scale-105 transition-transform cursor-pointer"
-        >
-          <span className="w-6 h-6 rounded-full border-2 border-[#16A34A] flex items-center justify-center text-xs font-bold text-[#14532D]">
-            {userInitial}
-          </span>
-        </button>
-
         {onSignOutClick && (
           <button
             type="button"
@@ -118,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="px-2.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
+            <span className="hidden sm:inline">Sign Out</span>
           </button>
         )}
       </div>

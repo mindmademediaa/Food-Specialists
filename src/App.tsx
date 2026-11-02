@@ -987,6 +987,7 @@ export default function App() {
             userEmail={authUser.email}
             isAdmin={false}
             userInitial={userInitial}
+            userAvatarUrl={myProfile.profilePicUrl || authUser.photoURL || undefined}
           />
 
           {/* ==================== 1. HOME SCREEN (/) ==================== */}
