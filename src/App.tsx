@@ -602,6 +602,24 @@ export default function App() {
     );
   };
 
+  // 1-Click Copy Generic Text Helper (Email / Phone / Link)
+  const handleCopyText = async (text: string, identifier: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopiedId(identifier);
+    setTimeout(() => {
+      setCopiedId((prev) => (prev === identifier ? null : prev));
+    }, 3500);
+  };
+
   // 1-Click Copy Contact Email & Subject Helper
   const handleCopyEmailAndSubject = async (
     id: string,
@@ -1256,25 +1274,58 @@ export default function App() {
                 jobs.find((j) => j.id === route.jobId) || activeJobs[0];
               if (!job) return null;
               const isApplied = appliedJobIds.includes(job.id);
-              const hrEmail =
-                job.hrEmail || 'careers.fsqa@foodspecialists.org';
+
+              // Auto-extract email, phone/WhatsApp, and links from job fields or text
+              const detectedEmail =
+                job.hrEmail ||
+                job.description?.match(
+                  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+                )?.[0] ||
+                job.requirements?.match(
+                  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+                )?.[0] ||
+                '';
+
+              const detectedPhone =
+                (job as any).contactPhone ||
+                (job as any).phone ||
+                job.description?.match(
+                  /(?:\+?92|0092|0)?\s?3\d{2}[ -]?\d{7}/
+                )?.[0] ||
+                job.requirements?.match(
+                  /(?:\+?92|0092|0)?\s?3\d{2}[ -]?\d{7}/
+                )?.[0] ||
+                '';
+
+              const detectedLink =
+                job.applyLink && !job.applyLink.includes('#')
+                  ? job.applyLink
+                  : job.description?.match(/https?:\/\/[^\s]+/)?.[0] || '';
+
               const emailSubject =
                 job.emailSubject || `Application for ${job.title} — ${job.company}`;
-              const guidelines =
-                job.applicationGuidelines ||
-                'This platform does not process internal job applications. Please send your CV and cover letter directly via your personal email (Gmail / Outlook) to the employer HR address below using the recommended subject line, or apply on the company portal.';
+
+              const displayCategory = job.category || job.specialization || '';
+              const displayCountry =
+                job.country ||
+                (job.location ? job.location.split(',').pop()?.trim() : '');
 
               return (
                 <div className="bg-white border border-emerald-200 rounded-[26px] p-5 shadow-sm space-y-4">
                   <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-4">
                     <div className="space-y-1">
+                      {/* Top tags: Only Category & Country */}
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-block px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-xs font-bold">
-                          {job.specialization || job.category}
-                        </span>
-                        <span className="inline-block px-3 py-1 rounded-[10px] bg-[#EAF5EC] text-[#15803D] text-xs font-bold">
-                          {job.country || job.location}
-                        </span>
+                        {displayCategory && (
+                          <span className="inline-block px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-xs font-bold">
+                            {displayCategory}
+                          </span>
+                        )}
+                        {displayCountry && (
+                          <span className="inline-block px-3 py-1 rounded-[10px] bg-[#EAF5EC] text-[#15803D] text-xs font-bold">
+                            {displayCountry}
+                          </span>
+                        )}
                       </div>
                       <h1 className="text-[22px] font-extrabold text-[#0B3B1E] leading-snug pt-1">
                         {job.title}
@@ -1285,6 +1336,7 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* Location & Experience Details */}
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div className="p-3.5 rounded-2xl bg-[#F0FDF4]">
                       <div className="text-gray-500 flex items-center gap-1">
@@ -1292,7 +1344,7 @@ export default function App() {
                         <span>Location</span>
                       </div>
                       <div className="font-bold text-gray-900 mt-0.5">
-                        {job.location}
+                        {job.location || 'As mentioned in post'}
                       </div>
                     </div>
 
@@ -1302,126 +1354,163 @@ export default function App() {
                         <span>Experience &amp; Deadline</span>
                       </div>
                       <div className="font-bold text-gray-900 mt-0.5">
-                        {job.experienceRequired} • Due {job.expiryAt}
+                        {job.experienceRequired || 'As per post'}
+                        {job.expiryAt ? ` • Due ${job.expiryAt}` : ''}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5">
-                    {job.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-xs font-semibold"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
+                  {/* Full Job Description */}
                   <div>
                     <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                      Role Summary
+                      Description
                     </h2>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                      {job.description}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                      Requirements &amp; Qualifications
-                    </h2>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                      {job.requirements}
-                    </p>
-                  </div>
-
-                  {/* ==================== HOW TO APPLY BOX (EXTERNAL GUIDELINES ONLY) ==================== */}
-                  <div className="rounded-[22px] bg-[#F0FDF4] border-2 border-[#16A34A] p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-xl bg-[#15803D] text-white flex items-center justify-center shrink-0">
-                          <Mail className="w-4 h-4" />
-                        </span>
-                        <div>
-                          <h3 className="text-sm font-extrabold text-[#0B3B1E]">
-                            How to Apply (External Submission)
+                    <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line space-y-3">
+                      <p>{job.description}</p>
+                      {job.requirements && (
+                        <div className="pt-2">
+                          <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">
+                            Requirements &amp; Qualifications:
                           </h3>
-                          <p className="text-[11px] text-[#15803D] font-semibold">
-                            Apply directly via your personal Gmail / Outlook
-                          </p>
+                          <p>{job.requirements}</p>
                         </div>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      {guidelines}
-                    </p>
-
-                    <div className="bg-white rounded-2xl p-3 border border-emerald-200 space-y-2 text-xs">
-                      <div>
-                        <span className="text-[11px] font-bold uppercase text-gray-400 block">
-                          Employer HR Contact Email
-                        </span>
-                        <span className="font-extrabold text-[#0B3B1E] select-all break-all">
-                          {hrEmail}
-                        </span>
-                      </div>
-                      <div className="border-t border-emerald-100 pt-2">
-                        <span className="text-[11px] font-bold uppercase text-gray-400 block">
-                          Recommended Email Subject Line
-                        </span>
-                        <span className="font-bold text-[#14532D] select-all">
-                          {emailSubject}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 1-Click Copy Contact Email & Subject Helper Button */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleCopyEmailAndSubject(job.id, hrEmail, emailSubject)
-                      }
-                      className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
-                    >
-                      {copiedId === job.id ? (
-                        <>
-                          <Check className="w-4 h-4 stroke-[2.5]" />
-                          <span>Copied Contact Email &amp; Subject!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          <span>Copy Contact Email &amp; Subject</span>
-                        </>
                       )}
-                    </button>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <a
-                        href={`mailto:${hrEmail}?subject=${encodeURIComponent(
-                          emailSubject
-                        )}`}
-                        className="py-2.5 px-3 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-[#0B3B1E] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <Mail className="w-3.5 h-3.5 text-[#15803D]" />
-                        <span>Open in Email App</span>
-                      </a>
-
-                      <a
-                        href={job.applyLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="py-2.5 px-3 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-[#0B3B1E] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <span>Company Portal</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-[#15803D]" />
-                      </a>
                     </div>
                   </div>
 
-                  {/* Personal 'Mark as Applied' Checkbox */}
+                  {/* ==================== HOW TO APPLY BOX & VERIFICATION DISCLAIMER ==================== */}
+                  <div className="rounded-[22px] bg-[#F0FDF4] border-2 border-[#16A34A] p-4 space-y-3.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-xl bg-[#15803D] text-white flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4" />
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-extrabold text-[#0B3B1E]">
+                          How to Apply &amp; Verification Disclaimer
+                        </h3>
+                        <p className="text-[11px] text-[#15803D] font-semibold">
+                          Official Application Guidelines
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Professional, Short & Precise Disclaimer */}
+                    <div className="space-y-2 text-xs text-gray-700 leading-relaxed bg-white/80 p-3 rounded-xl border border-emerald-100">
+                      <p>
+                        <strong>Disclaimer:</strong> We curate and share professional opportunities from credible food industry sources. However, it is each applicant&apos;s responsibility to independently verify all company, position, and location details before applying or attending an interview.
+                      </p>
+                      <p>
+                        <strong>How to Apply:</strong> Send your updated CV, academic credentials, and certifications directly to the contact email below, or apply through the official link if provided in the post.
+                      </p>
+                    </div>
+
+                    {/* Contact Details Box */}
+                    {(detectedEmail || detectedPhone) && (
+                      <div className="bg-white rounded-2xl p-3 border border-emerald-200 space-y-2 text-xs">
+                        {detectedEmail && (
+                          <div>
+                            <span className="text-[11px] font-bold uppercase text-gray-400 block">
+                              Employer HR Contact Email
+                            </span>
+                            <span className="font-extrabold text-[#0B3B1E] select-all break-all text-[13px]">
+                              {detectedEmail}
+                            </span>
+                          </div>
+                        )}
+
+                        {detectedPhone && (
+                          <div
+                            className={
+                              detectedEmail ? 'border-t border-emerald-100 pt-2' : ''
+                            }
+                          >
+                            <span className="text-[11px] font-bold uppercase text-gray-400 block">
+                              Contact / WhatsApp Number
+                            </span>
+                            <span className="font-extrabold text-[#0B3B1E] select-all text-[13px]">
+                              {detectedPhone}
+                            </span>
+                          </div>
+                        )}
+
+                        {emailSubject && detectedEmail && (
+                          <div className="border-t border-emerald-100 pt-2">
+                            <span className="text-[11px] font-bold uppercase text-gray-400 block">
+                              Recommended Email Subject Line
+                            </span>
+                            <span className="font-bold text-[#14532D] select-all text-xs">
+                              {emailSubject}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Dynamic Action Buttons */}
+                    <div className="space-y-2 pt-1">
+                      {detectedEmail && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(detectedEmail, 'job-email')}
+                          className="w-full py-2.5 px-4 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                        >
+                          {copiedId === 'job-email' ? (
+                            <>
+                              <Check className="w-4 h-4 stroke-[2.5]" />
+                              <span>Copied Contact Email!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4" />
+                              <span>Copy Contact Email</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {detectedPhone && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(detectedPhone, 'job-phone')}
+                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-emerald-50 border-2 border-[#16A34A] text-[#0B3B1E] font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                        >
+                          {copiedId === 'job-phone' ? (
+                            <>
+                              <Check className="w-4 h-4 stroke-[2.5] text-[#16A34A]" />
+                              <span>Copied Contact Number!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Phone className="w-4 h-4 text-[#16A34A]" />
+                              <span>Copy Contact Number</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {detectedLink && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(detectedLink, 'job-link')}
+                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-[#0B3B1E] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                        >
+                          {copiedId === 'job-link' ? (
+                            <>
+                              <Check className="w-4 h-4 stroke-[2.5] text-[#16A34A]" />
+                              <span>Copied Application Link!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 text-[#16A34A]" />
+                              <span>Copy Application Link</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Personal 'Mark as Applied' Checkbox (Preserved) */}
                   <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#EAF5EC] border border-[#9EC4A7] cursor-pointer select-none">
                     <div className="flex items-center gap-3">
                       <input
