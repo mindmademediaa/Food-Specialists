@@ -40,7 +40,8 @@ import {
   UserPlus,
   Copy,
   MessageCircle,
-  ThumbsUp
+  ThumbsUp,
+  Loader2
 } from 'lucide-react';
 import {
   collection,
@@ -50,6 +51,10 @@ import {
 } from 'firebase/firestore';
 import {
   db,
+  auth,
+  signOut,
+  onAuthStateChanged,
+  type User,
   OperationType,
   handleFirestoreError
 } from './lib/firebase';
@@ -74,6 +79,7 @@ import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { JobCard } from './components/JobCard';
 import { MemberCard } from './components/MemberCard';
+import { AuthScreen } from './components/AuthScreen';
 
 // Custom Duotone SVGs & Botanical Watermarks for the Home Screen Cards
 const DuotoneBriefcaseIcon = () => (
@@ -300,6 +306,10 @@ const DEFAULT_CURRENT_USER_PROFILE: HubUser = {
 };
 
 export default function App() {
+  // Firebase Authentication State (Strict Gate)
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+
   // Navigation & Route Stack
   const [route, setRoute] = useState<RouteView>({ name: 'home' });
   const [hasSavedProfile, setHasSavedProfile] = useState<boolean>(true);
@@ -374,8 +384,49 @@ export default function App() {
     return 'Guest';
   }, [myProfile.isPaid, myProfile.name, hasSavedProfile]);
 
+  // Monitor real-time Firebase Authentication state
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      setAuthUser(firebaseUser);
+      if (firebaseUser) {
+        const displayName =
+          firebaseUser.displayName?.trim() ||
+          firebaseUser.email?.split('@')[0] ||
+          'Food Specialist';
+        const initials = displayName
+          .split(' ')
+          .slice(0, 2)
+          .map((part) => part.charAt(0))
+          .join('')
+          .toUpperCase() || 'FS';
+
+        setMyProfile((prev) => ({
+          ...prev,
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName?.trim() || prev.name || displayName,
+          email: firebaseUser.email || prev.email,
+          profilePicUrl:
+            prev.profilePicUrl || makeAvatarSvg(initials, '#DCFCE7', '#14532D')
+        }));
+      }
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setRoute({ name: 'home' });
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
+  };
+
   // Real-time Firestore Listeners (with graceful fallback to local state)
   useEffect(() => {
+    if (!authUser) return;
     const unsubUsers = onSnapshot(
       collection(db, 'users'),
       (snap) => {
@@ -482,7 +533,7 @@ export default function App() {
       unsubSch();
       unsubTr();
     };
-  }, []);
+  }, [authUser]);
 
   // Determine active BottomNav tab from current route
   const activeBottomTab: NavTab = useMemo(() => {
@@ -881,6 +932,30 @@ export default function App() {
 
   const userInitial = firstName.charAt(0).toUpperCase() || 'G';
 
+  // 1. While checking Firebase Auth state on page load, show a clean loading screen
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#F0FDF4] flex flex-col items-center justify-center p-4">
+        <div className="bg-white border-[1.5px] border-[#9EC4A7] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-xs w-full">
+          <div className="w-12 h-12 rounded-2xl bg-[#DCFCE7] text-[#15803D] flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+          <h2 className="text-base font-extrabold text-[#0D2E1B]">
+            Food Specialists Portal
+          </h2>
+          <p className="text-xs font-medium text-gray-500">
+            Verifying your authentication session...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Strict Authentication Gate: If NOT signed in, hide the app and show ONLY AuthScreen
+  if (!authUser) {
+    return <AuthScreen />;
+  }
+
   return (
     <div className="min-h-screen bg-[#F0FDF4] text-gray-900 flex flex-col items-center justify-start py-0 sm:py-6 px-0 sm:px-4">
       {/* Mobile-First App Container — Tight fit with zero unnecessary white space */}
@@ -908,6 +983,8 @@ export default function App() {
             onSearchClick={() => setRoute({ name: 'search' })}
             onBellClick={() => navigateToJobs('All')}
             onProfileClick={() => setRoute({ name: 'profile' })}
+            onSignOutClick={handleSignOut}
+            userEmail={authUser.email}
             isAdmin={false}
             userInitial={userInitial}
           />

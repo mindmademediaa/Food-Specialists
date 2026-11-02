@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, ArrowLeft, Shield } from 'lucide-react';
+import { Search, Bell, ArrowLeft, Shield, LogOut } from 'lucide-react';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -8,6 +8,8 @@ interface HeaderProps {
   onSearchClick: () => void;
   onBellClick: () => void;
   onProfileClick: () => void;
+  onSignOutClick?: () => void;
+  userEmail?: string | null;
   onAdminClick?: () => void;
   isAdmin?: boolean;
   userInitial?: string;
@@ -21,40 +23,53 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchClick,
   onBellClick,
   onProfileClick,
+  onSignOutClick,
+  userEmail,
   onAdminClick,
   isAdmin = false,
   userInitial = 'A',
   notificationCount = 1
 }) => {
   return (
-    <header className="bg-[#16A34A] text-white rounded-[24px] px-5 py-3.5 flex items-center justify-between shadow-sm">
-      <div className="flex items-center gap-2.5 min-w-0">
+    <header className="bg-[#16A34A] text-white rounded-[24px] px-4 sm:px-5 py-3.5 flex items-center justify-between shadow-sm">
+      <div className="flex items-center gap-2 min-w-0">
         {showBack && onBack && (
           <button
             type="button"
             onClick={onBack}
             aria-label="Go Back"
-            className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors shrink-0"
+            className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 text-white" />
           </button>
         )}
-        <button
-          type="button"
-          onClick={onHomeClick}
-          className="text-[24px] font-bold tracking-tight text-white font-display leading-none truncate"
-        >
-          Food Careers
-        </button>
+        <div className="min-w-0">
+          <button
+            type="button"
+            onClick={onHomeClick}
+            className="text-[22px] sm:text-[24px] font-bold tracking-tight text-white font-display leading-none truncate block cursor-pointer"
+          >
+            Food Careers
+          </button>
+          {userEmail && (
+            <div
+              title={userEmail}
+              className="flex items-center gap-1 text-[10px] font-semibold text-emerald-100 truncate max-w-[145px] sm:max-w-[180px] mt-0.5"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#B9E29A] shrink-0" />
+              <span className="truncate">{userEmail}</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {isAdmin && onAdminClick && (
           <button
             type="button"
             onClick={onAdminClick}
             title="Open Admin Panel"
-            className="px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-[11px] font-bold text-white flex items-center gap-1 transition-colors"
+            className="px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-[11px] font-bold text-white flex items-center gap-1 transition-colors cursor-pointer"
           >
             <Shield className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Admin</span>
@@ -65,19 +80,19 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           onClick={onSearchClick}
           aria-label="Search"
-          className="w-9 h-9 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors cursor-pointer"
         >
-          <Search className="w-5 h-5 text-white stroke-[2.2]" />
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[2.2]" />
         </button>
 
         <button
           type="button"
           onClick={onBellClick}
           aria-label="Notifications"
-          className="relative w-9 h-9 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors"
+          className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors cursor-pointer"
         >
-          <Bell className="w-5 h-5 text-white fill-white" />
-          <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-[#B9E29A] text-[#0D2E1B] text-[10px] font-bold flex items-center justify-center tabular-nums">
+          <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white" />
+          <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#B9E29A] text-[#0D2E1B] text-[9.5px] font-bold flex items-center justify-center tabular-nums">
             {notificationCount}
           </span>
         </button>
@@ -86,12 +101,26 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           onClick={onProfileClick}
           aria-label="Profile"
-          className="w-10 h-10 rounded-full bg-[#EBF5ED] border-2 border-white flex items-center justify-center shadow-xs hover:scale-105 transition-transform"
+          title="My Profile"
+          className="w-9 h-9 rounded-full bg-[#EBF5ED] border-2 border-white flex items-center justify-center shadow-xs hover:scale-105 transition-transform cursor-pointer"
         >
-          <span className="w-7 h-7 rounded-full border-2 border-[#16A34A] flex items-center justify-center text-sm font-bold text-[#14532D]">
+          <span className="w-6 h-6 rounded-full border-2 border-[#16A34A] flex items-center justify-center text-xs font-bold text-[#14532D]">
             {userInitial}
           </span>
         </button>
+
+        {onSignOutClick && (
+          <button
+            type="button"
+            onClick={onSignOutClick}
+            aria-label="Sign Out"
+            title="Sign Out"
+            className="px-2.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
+          </button>
+        )}
       </div>
     </header>
   );

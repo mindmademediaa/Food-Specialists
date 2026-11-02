@@ -1,15 +1,44 @@
+// Import the functions you need from the SDKs you need
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 import {
-  getFirestore,
-  doc,
-  getDocFromServer
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
+  type User
+} from 'firebase/auth';
+import {
+  getFirestore
 } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyByvLEnS_aDcsOxzhTrGPxNRAjK5WYQWx0",
+  authDomain: "food-specialist-3e294.firebaseapp.com",
+  projectId: "food-specialist-3e294",
+  storageBucket: "food-specialist-3e294.firebasestorage.app",
+  messagingSenderId: "198607039485",
+  appId: "1:198607039485:web:d568c1e3665e83935c4794",
+  measurementId: "G-4MR4S86VQS"
+};
+
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const analytics =
+  typeof window !== 'undefined'
+    ? isSupported()
+        .then((yes) => (yes ? getAnalytics(app) : null))
+        .catch(() => null)
+    : null;
+
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
 export enum OperationType {
@@ -64,16 +93,12 @@ export function handleFirestoreError(
   throw new Error(JSON.stringify(errInfo));
 }
 
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
-    }
-  }
-}
-
-testConnection();
-
-export { signInWithPopup, signOut };
+export {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  signInWithPopup,
+  type User
+};
