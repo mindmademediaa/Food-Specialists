@@ -1001,30 +1001,31 @@ export default function App() {
               </div>
 
               {/* CARD 1 - JOBS */}
-              <div
-                onClick={() => navigateToJobs('All')}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    navigateToJobs('All');
-                  }
-                }}
-                className="relative bg-white border-[1.5px] border-[#78AF88] hover:border-[#16A34A] rounded-[24px] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
-              >
+              <div className="relative bg-white border-[1.5px] border-[#78AF88] rounded-[24px] p-5 shadow-sm overflow-hidden">
                 <LeafWatermark className="w-8 h-8 absolute left-5 top-[108px] opacity-65 pointer-events-none" />
                 <AppleWatermark className="w-8 h-8 absolute right-6 top-[110px] opacity-55 pointer-events-none" />
                 <TestTubeWatermark className="w-9 h-9 absolute right-14 bottom-3.5 opacity-75 pointer-events-none" />
                 <WheatWatermark className="w-9 h-9 absolute right-4 bottom-3.5 opacity-75 pointer-events-none" />
 
-                <div className="flex items-start justify-between gap-3">
+                {/* Clickable Header Area */}
+                <div
+                  onClick={() => navigateToJobs('All')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigateToJobs('All');
+                    }
+                  }}
+                  className="flex items-start justify-between gap-3 cursor-pointer group"
+                >
                   <div className="flex items-start gap-4">
-                    <div className="w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#D0ECDA] to-[#EAF6EE] flex items-center justify-center shrink-0">
+                    <div className="w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#D0ECDA] to-[#EAF6EE] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                       <DuotoneBriefcaseIcon />
                     </div>
                     <div className="pt-1">
-                      <h2 className="text-[28px] font-bold text-[#0D2E1B] leading-none tracking-tight">
+                      <h2 className="text-[28px] font-bold text-[#0D2E1B] leading-none tracking-tight group-hover:text-[#16A34A] transition-colors">
                         Jobs
                       </h2>
                       <p className="text-[14.5px] text-[#2F4737] mt-2 leading-snug max-w-[210px]">
@@ -1033,16 +1034,13 @@ export default function App() {
                     </div>
                   </div>
 
-                  <span className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] flex items-center justify-center shrink-0">
+                  <span className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] group-hover:bg-[#16A34A] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
                     <ArrowRight className="w-5 h-5 stroke-[2.4]" />
                   </span>
                 </div>
 
-                {/* Middle row 3 icons: Production, R&D Lab, Quality & Safety (Strictly non-clickable display only) */}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none cursor-default pointer-events-auto"
-                >
+                {/* Middle row 3 tags: Production, R&D Lab, Quality & Safety (100% NON-CLICKABLE, display only) */}
+                <div className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none cursor-default">
                   <div className="flex flex-col items-center gap-1.5 py-1">
                     <Wheat className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737]">
@@ -1067,30 +1065,31 @@ export default function App() {
               </div>
 
               {/* CARD 2 - SCHOLARSHIPS */}
-              <div
-                onClick={() => navigateToScholarships('All')}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    navigateToScholarships('All');
-                  }
-                }}
-                className="relative bg-white border-[1.5px] border-[#78AF88] hover:border-[#16A34A] rounded-[24px] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
-              >
+              <div className="relative bg-white border-[1.5px] border-[#78AF88] rounded-[24px] p-5 shadow-sm overflow-hidden">
                 <LeafWatermark className="w-8 h-8 absolute left-5 top-[112px] opacity-65 pointer-events-none" />
                 <TestTubeWatermark className="w-9 h-9 absolute right-5 top-[106px] opacity-45 pointer-events-none" />
                 <WheatWatermark className="w-9 h-9 absolute right-14 bottom-3.5 opacity-75 pointer-events-none" />
                 <AppleWatermark className="w-8 h-8 absolute right-4 bottom-3.5 opacity-75 pointer-events-none" />
 
-                <div className="flex items-start justify-between gap-3">
+                {/* Clickable Header Area */}
+                <div
+                  onClick={() => navigateToScholarships('All')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigateToScholarships('All');
+                    }
+                  }}
+                  className="flex items-start justify-between gap-3 cursor-pointer group"
+                >
                   <div className="flex items-start gap-4">
-                    <div className="w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#D0ECDA] to-[#EAF6EE] flex items-center justify-center shrink-0">
+                    <div className="w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#D0ECDA] to-[#EAF6EE] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                       <DuotoneGradCapIcon />
                     </div>
                     <div className="pt-1">
-                      <h2 className="text-[28px] font-bold text-[#0D2E1B] leading-none tracking-tight">
+                      <h2 className="text-[28px] font-bold text-[#0D2E1B] leading-none tracking-tight group-hover:text-[#16A34A] transition-colors">
                         Scholarships
                       </h2>
                       <p className="text-[14.5px] text-[#2F4737] mt-2 leading-snug max-w-[215px]">
@@ -1099,16 +1098,13 @@ export default function App() {
                     </div>
                   </div>
 
-                  <span className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] flex items-center justify-center shrink-0">
+                  <span className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] group-hover:bg-[#16A34A] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
                     <ArrowRight className="w-5 h-5 stroke-[2.4]" />
                   </span>
                 </div>
 
-                {/* Middle row 3 icons: Fellowships, International, Grants (Strictly non-clickable display only) */}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none cursor-default pointer-events-auto"
-                >
+                {/* Middle row 3 tags: Fellowships, International, Grants (100% NON-CLICKABLE, display only) */}
+                <div className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none cursor-default">
                   <div className="flex flex-col items-center gap-1.5 py-1">
                     <BookOpen className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737]">
