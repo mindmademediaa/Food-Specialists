@@ -1038,8 +1038,11 @@ export default function App() {
                   </span>
                 </div>
 
-                {/* Middle row 3 icons: Production, R&D Lab, Quality & Safety (Non-clickable, display only) */}
-                <div className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none pointer-events-none">
+                {/* Middle row 3 icons: Production, R&D Lab, Quality & Safety (Strictly non-clickable display only) */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none cursor-default pointer-events-auto"
+                >
                   <div className="flex flex-col items-center gap-1.5 py-1">
                     <Wheat className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737]">
@@ -1077,7 +1080,7 @@ export default function App() {
                 className="relative bg-white border-[1.5px] border-[#78AF88] hover:border-[#16A34A] rounded-[24px] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
               >
                 <LeafWatermark className="w-8 h-8 absolute left-5 top-[112px] opacity-65 pointer-events-none" />
-                <TestTubeWatermark className="w-8 h-8 absolute right-5 top-[106px] opacity-45 pointer-events-none" />
+                <TestTubeWatermark className="w-9 h-9 absolute right-5 top-[106px] opacity-45 pointer-events-none" />
                 <WheatWatermark className="w-9 h-9 absolute right-14 bottom-3.5 opacity-75 pointer-events-none" />
                 <AppleWatermark className="w-8 h-8 absolute right-4 bottom-3.5 opacity-75 pointer-events-none" />
 
@@ -1101,8 +1104,11 @@ export default function App() {
                   </span>
                 </div>
 
-                {/* Middle row 3 icons: Fellowships, International, Grants (Non-clickable, display only) */}
-                <div className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none pointer-events-none">
+                {/* Middle row 3 icons: Fellowships, International, Grants (Strictly non-clickable display only) */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none cursor-default pointer-events-auto"
+                >
                   <div className="flex flex-col items-center gap-1.5 py-1">
                     <BookOpen className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737]">
