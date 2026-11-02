@@ -62,17 +62,9 @@ export const JobCard: React.FC<JobCardProps> = ({
             {job.company} • {job.location} • Full-time
           </p>
 
-          {/* Green Tag Chips + Bookmark / Applied Icon Row */}
-          <div className="flex items-center justify-between gap-2 mt-3">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {job.tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-[12px] font-semibold leading-none"
-                >
-                  {tag}
-                </span>
-              ))}
+          {/* Status & Metadata Row without tags */}
+          <div className="flex items-center justify-between gap-2 mt-3 pt-1">
+            <div>
               {isApplied && (
                 <span className="px-2.5 py-1 rounded-[10px] bg-[#16A34A] text-white text-[11px] font-bold leading-none inline-flex items-center gap-1">
                   <Check className="w-3 h-3 stroke-[2.5]" />
@@ -81,27 +73,26 @@ export const JobCard: React.FC<JobCardProps> = ({
               )}
             </div>
 
-            {onToggleApplied && (
-              <button
-                type="button"
-                title={isApplied ? 'Marked as Applied / Saved' : 'Save / Mark Applied'}
-                onClick={(e) => onToggleApplied(job.id, e)}
-                className="p-1.5 rounded-xl text-[#15803D] hover:bg-emerald-50 transition-colors shrink-0 cursor-pointer"
-              >
-                <Bookmark
-                  className={`w-6 h-6 stroke-[2.2] ${
-                    isApplied ? 'fill-[#15803D] text-[#15803D]' : 'text-[#15803D]'
-                  }`}
-                />
-              </button>
-            )}
-          </div>
+            <div className="flex items-center gap-2.5">
+              <span className="text-[12.5px] font-semibold text-[#15803D]">
+                Posted {job.postedAt} • {job.experienceRequired}
+              </span>
 
-          {/* Bottom-Right Posted & Experience Metadata */}
-          <div className="flex items-center justify-end mt-2.5">
-            <span className="text-[12.5px] font-semibold text-[#15803D]">
-              Posted {job.postedAt} • {job.experienceRequired}
-            </span>
+              {onToggleApplied && (
+                <button
+                  type="button"
+                  title={isApplied ? 'Marked as Applied / Saved' : 'Save / Mark Applied'}
+                  onClick={(e) => onToggleApplied(job.id, e)}
+                  className="p-1 rounded-lg text-[#15803D] hover:bg-emerald-50 transition-colors shrink-0 cursor-pointer"
+                >
+                  <Bookmark
+                    className={`w-5 h-5 stroke-[2.2] ${
+                      isApplied ? 'fill-[#15803D] text-[#15803D]' : 'text-[#15803D]'
+                    }`}
+                  />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

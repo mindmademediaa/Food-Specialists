@@ -628,12 +628,42 @@ export default function App() {
   // Is Current User a Paid Member? (Driven by their Profile record)
   const isCurrentUserPaid = Boolean(myProfile.isPaid);
 
-  // Filtered Jobs for /jobs (Specialization + Country + Category)
+  // Filtered Jobs for /jobs (Country + Category)
   const activeJobs = useMemo(() => jobs.filter((j) => j.isActive), [jobs]);
+
+  // Dynamically extract unique countries from active jobs (auto-updates when any job is posted)
+  const availableJobCountries = useMemo(() => {
+    const set = new Set<string>();
+    activeJobs.forEach((j) => {
+      if (j.country?.trim()) set.add(j.country.trim());
+      else if (j.location?.trim()) {
+        const parts = j.location.split(',');
+        const last = parts[parts.length - 1].trim();
+        if (last) set.add(last);
+      }
+    });
+    return Array.from(set).sort();
+  }, [activeJobs]);
+
+  // Dynamically extract unique categories/specializations from active jobs
+  const availableJobCategories = useMemo(() => {
+    const set = new Set<string>();
+    activeJobs.forEach((j) => {
+      if (j.category?.trim()) set.add(j.category.trim());
+      if (j.specialization?.trim()) set.add(j.specialization.trim());
+    });
+    return Array.from(set).sort();
+  }, [activeJobs]);
+
   const filteredJobs = useMemo(() => {
     return activeJobs.filter((j) => {
-      if (jobCategoryFilter !== 'All' && j.category !== jobCategoryFilter) {
-        return false;
+      if (jobCategoryFilter !== 'All') {
+        const target = jobCategoryFilter.toLowerCase();
+        const catMatch =
+          j.category?.toLowerCase() === target ||
+          j.specialization?.toLowerCase() === target ||
+          j.tags?.some((t) => t.toLowerCase() === target);
+        if (!catMatch) return false;
       }
       if (jobSpecFilter !== 'All') {
         const specMatch =
@@ -653,20 +683,24 @@ export default function App() {
     });
   }, [activeJobs, jobCategoryFilter, jobSpecFilter, jobCountryFilter]);
 
-  // Free Members & Guests see ONLY 1 Job per day; remaining jobs are locked teaser cards
-  const visibleJobs = useMemo(() => {
-    return isCurrentUserPaid ? filteredJobs : filteredJobs.slice(0, 1);
-  }, [filteredJobs, isCurrentUserPaid]);
-
-  const lockedJobs = useMemo(() => {
-    return isCurrentUserPaid ? [] : filteredJobs.slice(1);
-  }, [filteredJobs, isCurrentUserPaid]);
+  // All jobs are visible to everyone without restriction (1-job limit removed)
+  const visibleJobs = filteredJobs;
+  const lockedJobs: HubJob[] = [];
 
   // Filtered Scholarships for /scholarships (Specialization + Country + Funding)
   const activeScholarships = useMemo(
     () => scholarships.filter((s) => s.isActive),
     [scholarships]
   );
+
+  // Dynamically extract unique countries from active scholarships
+  const availableScholarshipCountries = useMemo(() => {
+    const set = new Set<string>();
+    activeScholarships.forEach((s) => {
+      if (s.country?.trim()) set.add(s.country.trim());
+    });
+    return Array.from(set).sort();
+  }, [activeScholarships]);
   const filteredScholarships = useMemo(() => {
     return activeScholarships.filter((s) => {
       if (schFundingFilter !== 'All' && s.fundingType !== schFundingFilter) {
@@ -689,16 +723,9 @@ export default function App() {
     });
   }, [activeScholarships, schFundingFilter, schSpecFilter, schCountryFilter]);
 
-  // Free Members & Guests see ONLY 1 Scholarship per day; remaining are locked teaser cards
-  const visibleScholarships = useMemo(() => {
-    return isCurrentUserPaid
-      ? filteredScholarships
-      : filteredScholarships.slice(0, 1);
-  }, [filteredScholarships, isCurrentUserPaid]);
-
-  const lockedScholarships = useMemo(() => {
-    return isCurrentUserPaid ? [] : filteredScholarships.slice(1);
-  }, [filteredScholarships, isCurrentUserPaid]);
+  // All scholarships are visible to everyone without restriction
+  const visibleScholarships = filteredScholarships;
+  const lockedScholarships: HubScholarship[] = [];
 
   // Filtered Members for /communities:
   // ONLY Paid Members (`u.isPaid === true`) are shown in the Specialist Directory!
@@ -1138,10 +1165,6 @@ export default function App() {
                   <h1 className="text-[28px] font-extrabold text-[#0B3B1E] tracking-tight leading-tight">
                     Jobs for you
                   </h1>
-                  <p className="text-xs font-semibold text-gray-600">
-                    External HR Email &amp; Direct Portal Guidelines •{' '}
-                    {appliedJobIds.length} Tracked as Applied
-                  </p>
                 </div>
                 <button
                   type="button"
@@ -1157,36 +1180,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Specialization Filter Chips: QA/QC, Food Safety, Dairy, Bakery, Nutrition, R&D */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                <button
-                  type="button"
-                  onClick={() => setJobSpecFilter('All')}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-colors cursor-pointer ${
-                    jobSpecFilter === 'All'
-                      ? 'bg-[#15803D] text-white shadow-xs'
-                      : 'bg-white border border-emerald-200 text-[#0B3B1E]'
-                  }`}
-                >
-                  All Specializations
-                </button>
-                {JOB_SCH_SPECIALIZATIONS.map((spec) => (
-                  <button
-                    key={spec}
-                    type="button"
-                    onClick={() => setJobSpecFilter(spec)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-colors cursor-pointer ${
-                      jobSpecFilter === spec
-                        ? 'bg-[#15803D] text-white shadow-xs'
-                        : 'bg-white border border-emerald-200 text-[#0B3B1E]'
-                    }`}
-                  >
-                    {spec}
-                  </button>
-                ))}
-              </div>
-
-              {/* 2 Pill Dropdowns: Country & Category */}
+              {/* 2 Dropdowns: Country & Category (Dynamically Populated from Posted Jobs) */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="relative">
                   <select
@@ -1196,10 +1190,11 @@ export default function App() {
                     className="w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[18px] bg-[#15803D] text-white text-[13.5px] font-bold shadow-xs focus:outline-none cursor-pointer truncate"
                   >
                     <option value="All">All Countries</option>
-                    <option value="Pakistan">Pakistan</option>
-                    <option value="UAE">UAE (Dubai)</option>
-                    <option value="Saudi Arabia">Saudi Arabia</option>
-                    <option value="Qatar">Qatar</option>
+                    {availableJobCountries.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="w-4 h-4 text-white stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
@@ -1216,9 +1211,11 @@ export default function App() {
                     }`}
                   >
                     <option value="All">All Categories</option>
-                    <option value="Quality & Safety">Quality &amp; Safety</option>
-                    <option value="R&D Lab">R&amp;D Lab</option>
-                    <option value="Production">Production</option>
+                    {availableJobCategories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown
                     className={`w-4 h-4 stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${
@@ -1228,99 +1225,25 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Jobs Card List (1 Job for Free/Guest, All Jobs for Paid Members) */}
+              {/* Jobs Card List (All Jobs accessible to everyone) */}
               <div className="space-y-4 pt-1">
-                {visibleJobs.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    isApplied={appliedJobIds.includes(job.id)}
-                    onToggleApplied={handleToggleAppliedJob}
-                    onClick={(j) => {
-                      setRoute({ name: 'job-detail', jobId: j.id });
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                  />
-                ))}
-
-                {/* Locked Teaser Cards for Remaining Jobs when Free Member / Guest */}
-                {!isCurrentUserPaid && lockedJobs.length > 0 && (
-                  <div className="space-y-3.5 pt-1">
-                    {/* Prominent Daily Limit Teaser Card */}
-                    <div className="bg-white border-2 border-[#16A34A] rounded-[26px] p-5 shadow-md text-center space-y-3">
-                      <div className="w-12 h-12 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
-                        <Lock className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-[17px] font-extrabold text-[#0B3B1E] leading-snug">
-                        Free daily limit reached. Upgrade to Premium for unlimited access to all opportunities.
-                      </h3>
-                      <p className="text-[12.5px] text-gray-600 leading-relaxed">
-                        You are viewing <strong>1 of {filteredJobs.length}</strong>{' '}
-                        matching jobs as a <strong>{membershipStatus}</strong>. Upgrade to{' '}
-                        <strong>Paid Member</strong> to unlock {lockedJobs.length}{' '}
-                        more openings with direct HR emails.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setRoute({ name: 'profile' })}
-                        className="w-full py-3 px-4 rounded-[16px] bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-xs shadow-sm transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5"
-                      >
-                        <Crown className="w-4 h-4 text-amber-300" />
-                        <span>Go to My Profile</span>
-                      </button>
-                    </div>
-
-                    {/* Individual Locked Job Teaser Cards */}
-                    {lockedJobs.slice(0, 3).map((lockedJob) => (
-                      <div
-                        key={lockedJob.id}
-                        className="relative bg-white/90 border border-emerald-200 rounded-[24px] p-4 shadow-xs overflow-hidden"
-                      >
-                        <div className="blur-[4px] select-none pointer-events-none opacity-60">
-                          <div className="text-base font-extrabold text-[#0B3B1E]">
-                            {lockedJob.title}
-                          </div>
-                          <div className="text-xs text-gray-600 mt-0.5">
-                            {lockedJob.company} • {lockedJob.location}
-                          </div>
-                          <div className="flex gap-1.5 mt-2">
-                            {lockedJob.tags.slice(0, 3).map((t) => (
-                              <span
-                                key={t}
-                                className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-xs"
-                              >
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="absolute inset-0 bg-white/65 backdrop-blur-[2px] flex items-center justify-between px-4 py-3 gap-3">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="w-9 h-9 rounded-full bg-[#14532D] text-white flex items-center justify-center shrink-0">
-                              <Lock className="w-4 h-4" />
-                            </span>
-                            <div className="min-w-0">
-                              <div className="text-xs font-extrabold text-[#0B3B1E] truncate">
-                                {lockedJob.specialization || lockedJob.category} Role •{' '}
-                                {lockedJob.country || lockedJob.location}
-                              </div>
-                              <div className="text-[11px] font-semibold text-gray-700 line-clamp-1">
-                                Free daily limit reached. Upgrade to Premium for unlimited access to all opportunities.
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setRoute({ name: 'profile' })}
-                            className="px-3 py-1.5 rounded-full bg-[#15803D] hover:bg-[#0D2E1B] text-white text-[11px] font-extrabold shrink-0 cursor-pointer"
-                          >
-                            Profile
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                {visibleJobs.length === 0 ? (
+                  <div className="bg-white border border-emerald-100 rounded-[24px] p-8 text-center text-gray-500 font-medium">
+                    No jobs match the selected filters.
                   </div>
+                ) : (
+                  visibleJobs.map((job) => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      isApplied={appliedJobIds.includes(job.id)}
+                      onToggleApplied={handleToggleAppliedJob}
+                      onClick={(j) => {
+                        setRoute({ name: 'job-detail', jobId: j.id });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    />
+                  ))
                 )}
               </div>
             </div>
@@ -1534,10 +1457,6 @@ export default function App() {
                   <h1 className="text-[26px] sm:text-[28px] font-extrabold text-[#0B3B1E] tracking-tight leading-tight">
                     Scholarships for you
                   </h1>
-                  <p className="text-xs font-semibold text-gray-600">
-                    External University &amp; Fellowship Guidelines •{' '}
-                    {appliedScholarshipIds.length} Tracked as Applied
-                  </p>
                 </div>
                 <button
                   type="button"
@@ -1553,36 +1472,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Specialization Filter Chips */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                <button
-                  type="button"
-                  onClick={() => setSchSpecFilter('All')}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-colors cursor-pointer ${
-                    schSpecFilter === 'All'
-                      ? 'bg-[#15803D] text-white shadow-xs'
-                      : 'bg-white border border-emerald-200 text-[#0B3B1E]'
-                  }`}
-                >
-                  All Specializations
-                </button>
-                {JOB_SCH_SPECIALIZATIONS.map((spec) => (
-                  <button
-                    key={spec}
-                    type="button"
-                    onClick={() => setSchSpecFilter(spec)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-colors cursor-pointer ${
-                      schSpecFilter === spec
-                        ? 'bg-[#15803D] text-white shadow-xs'
-                        : 'bg-white border border-emerald-200 text-[#0B3B1E]'
-                    }`}
-                  >
-                    {spec}
-                  </button>
-                ))}
-              </div>
-
-              {/* 2 Pill Filter Dropdowns: Country & Funding */}
+              {/* 2 Dropdowns: Country & Funding */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="relative">
                   <select
@@ -1592,10 +1482,11 @@ export default function App() {
                     className="w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[18px] bg-[#15803D] text-white text-[13.5px] font-bold shadow-xs focus:outline-none cursor-pointer truncate"
                   >
                     <option value="All">All Countries</option>
-                    <option value="Europe">Europe (EU)</option>
-                    <option value="Netherlands">Netherlands</option>
-                    <option value="United States">United States</option>
-                    <option value="United Kingdom">United Kingdom</option>
+                    {availableScholarshipCountries.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="w-4 h-4 text-white stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
@@ -1624,180 +1515,119 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Scholarships Card List (1 Scholarship for Free/Guest, All for Paid Members) */}
+              {/* Scholarships Card List (All Scholarships accessible to everyone) */}
               <div className="space-y-4 pt-1">
-                {visibleScholarships.map((sch) => {
-                  const daysLeft = getDaysRemaining(sch.deadline);
-                  const isSaved = savedScholarshipIds.includes(sch.id);
-                  const isApplied = appliedScholarshipIds.includes(sch.id);
-                  const orgInitials =
-                    sch.organization
-                      .split(' ')
-                      .filter((w) => /^[A-Za-z]/.test(w))
-                      .slice(0, 2)
-                      .map((w) => w.charAt(0))
-                      .join('')
-                      .toUpperCase() || 'FS';
+                {visibleScholarships.length === 0 ? (
+                  <div className="bg-white border border-emerald-100 rounded-[24px] p-8 text-center text-gray-500 font-medium">
+                    No scholarships match the selected filters.
+                  </div>
+                ) : (
+                  visibleScholarships.map((sch) => {
+                    const daysLeft = getDaysRemaining(sch.deadline);
+                    const isSaved = savedScholarshipIds.includes(sch.id);
+                    const isApplied = appliedScholarshipIds.includes(sch.id);
+                    const orgInitials =
+                      sch.organization
+                        .split(' ')
+                        .filter((w) => /^[A-Za-z]/.test(w))
+                        .slice(0, 2)
+                        .map((w) => w.charAt(0))
+                        .join('')
+                        .toUpperCase() || 'FS';
 
-                  const BadgeIcon =
-                    sch.fundingType === 'International'
-                      ? Globe
-                      : sch.fundingType === 'Grants'
-                      ? Trophy
-                      : GraduationCap;
+                    const BadgeIcon =
+                      sch.fundingType === 'International'
+                        ? Globe
+                        : sch.fundingType === 'Grants'
+                        ? Trophy
+                        : GraduationCap;
 
-                  return (
-                    <div
-                      key={sch.id}
-                      onClick={() => {
-                        setRoute({
-                          name: 'scholarship-detail',
-                          scholarshipId: sch.id
-                        });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
+                    return (
+                      <div
+                        key={sch.id}
+                        onClick={() => {
                           setRoute({
                             name: 'scholarship-detail',
                             scholarshipId: sch.id
                           });
-                        }
-                      }}
-                      className="bg-white border border-emerald-100/90 hover:border-[#16A34A] rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.07)] hover:shadow-[0_10px_28px_rgba(22,163,74,0.13)] transition-all cursor-pointer"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 rounded-[18px] bg-gradient-to-b from-[#49A55E] to-[#2F8944] border-2 border-white shadow-[0_4px_12px_rgba(22,163,74,0.22)] ring-2 ring-emerald-50 flex flex-col items-center justify-center text-white shrink-0 mt-1">
-                          <BadgeIcon className="w-5 h-5 stroke-[2.2] mb-0.5" />
-                          <span className="text-[12px] font-extrabold tracking-wider leading-none">
-                            {orgInitials}
-                          </span>
-                        </div>
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setRoute({
+                              name: 'scholarship-detail',
+                              scholarshipId: sch.id
+                            });
+                          }
+                        }}
+                        className="bg-white border border-emerald-100/90 hover:border-[#16A34A] rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.07)] hover:shadow-[0_10px_28px_rgba(22,163,74,0.13)] transition-all cursor-pointer"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="w-14 h-14 rounded-[18px] bg-gradient-to-b from-[#49A55E] to-[#2F8944] border-2 border-white shadow-[0_4px_12px_rgba(22,163,74,0.22)] ring-2 ring-emerald-50 flex flex-col items-center justify-center text-white shrink-0 mt-1">
+                            <BadgeIcon className="w-5 h-5 stroke-[2.2] mb-0.5" />
+                            <span className="text-[12px] font-extrabold tracking-wider leading-none">
+                              {orgInitials}
+                            </span>
+                          </div>
 
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-[19px] font-extrabold text-[#0B3B1E] leading-snug">
-                            {sch.title}
-                          </h3>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-[19px] font-extrabold text-[#0B3B1E] leading-snug">
+                              {sch.title}
+                            </h3>
 
-                          <p className="text-[13.5px] font-medium text-gray-700 mt-1 leading-snug">
-                            {sch.organization} • {sch.country}
-                          </p>
+                            <p className="text-[13.5px] font-medium text-gray-700 mt-1 leading-snug">
+                              {sch.organization} • {sch.country}
+                            </p>
 
-                          <div className="flex items-center justify-between gap-2 mt-3">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              {sch.specialization && (
+                            <div className="flex items-center justify-between gap-2 mt-3">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {sch.specialization && (
+                                  <span className="px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-[12px] font-semibold leading-none">
+                                    {sch.specialization}
+                                  </span>
+                                )}
                                 <span className="px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-[12px] font-semibold leading-none">
-                                  {sch.specialization}
+                                  {sch.fundingType}
                                 </span>
-                              )}
-                              <span className="px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-[12px] font-semibold leading-none">
-                                {sch.fundingType}
-                              </span>
-                              <span className="px-3 py-1 rounded-[10px] bg-[#D8ECD9] text-[#0B3B1E] text-[12px] font-semibold leading-none">
-                                {sch.degreeLevel}
-                              </span>
-                              {isApplied && (
-                                <span className="px-2.5 py-1 rounded-[10px] bg-[#16A34A] text-white text-[11px] font-bold leading-none">
-                                  Applied ✓
+                                <span className="px-3 py-1 rounded-[10px] bg-[#D8ECD9] text-[#0B3B1E] text-[12px] font-semibold leading-none">
+                                  {sch.degreeLevel}
                                 </span>
-                              )}
+                                {isApplied && (
+                                  <span className="px-2.5 py-1 rounded-[10px] bg-[#16A34A] text-white text-[11px] font-bold leading-none">
+                                    Applied ✓
+                                  </span>
+                                )}
+                              </div>
+
+                              <button
+                                type="button"
+                                title={isSaved ? 'Saved Scholarship' : 'Save Scholarship'}
+                                onClick={(e) => handleToggleSavedScholarship(sch.id, e)}
+                                className="p-1.5 rounded-xl text-[#15803D] hover:bg-emerald-50 transition-colors shrink-0 cursor-pointer"
+                              >
+                                <Bookmark
+                                  className={`w-6 h-6 stroke-[2.2] ${
+                                    isSaved
+                                      ? 'fill-[#15803D] text-[#15803D]'
+                                      : 'text-[#15803D]'
+                                  }`}
+                                />
+                              </button>
                             </div>
 
-                            <button
-                              type="button"
-                              title={isSaved ? 'Saved Scholarship' : 'Save Scholarship'}
-                              onClick={(e) => handleToggleSavedScholarship(sch.id, e)}
-                              className="p-1.5 rounded-xl text-[#15803D] hover:bg-emerald-50 transition-colors shrink-0 cursor-pointer"
-                            >
-                              <Bookmark
-                                className={`w-6 h-6 stroke-[2.2] ${
-                                  isSaved
-                                    ? 'fill-[#15803D] text-[#15803D]'
-                                    : 'text-[#15803D]'
-                                }`}
-                              />
-                            </button>
-                          </div>
-
-                          <div className="flex items-center justify-end mt-2.5">
-                            <span className="text-[12.5px] font-semibold text-[#15803D] tabular-nums">
-                              Deadline {sch.deadline} • {daysLeft}d left
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Locked Teaser Cards for Remaining Scholarships when Free Member / Guest */}
-                {!isCurrentUserPaid && lockedScholarships.length > 0 && (
-                  <div className="space-y-3.5 pt-1">
-                    <div className="bg-white border-2 border-[#16A34A] rounded-[26px] p-5 shadow-md text-center space-y-3">
-                      <div className="w-12 h-12 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
-                        <Lock className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-[17px] font-extrabold text-[#0B3B1E] leading-snug">
-                        Free daily limit reached. Upgrade to Premium for unlimited access to all opportunities.
-                      </h3>
-                      <p className="text-[12.5px] text-gray-600 leading-relaxed">
-                        You are viewing <strong>1 of {filteredScholarships.length}</strong>{' '}
-                        scholarships as a <strong>{membershipStatus}</strong>. Upgrade to{' '}
-                        <strong>Paid Member</strong> to unlock {lockedScholarships.length}{' '}
-                        more international fellowships &amp; grants.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setRoute({ name: 'profile' })}
-                        className="w-full py-3 px-4 rounded-[16px] bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-xs shadow-sm transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5"
-                      >
-                        <Crown className="w-4 h-4 text-amber-300" />
-                        <span>Go to My Profile</span>
-                      </button>
-                    </div>
-
-                    {lockedScholarships.map((lockedSch) => (
-                      <div
-                        key={lockedSch.id}
-                        className="relative bg-white/90 border border-emerald-200 rounded-[24px] p-4 shadow-xs overflow-hidden"
-                      >
-                        <div className="blur-[4px] select-none pointer-events-none opacity-60">
-                          <div className="text-base font-extrabold text-[#0B3B1E]">
-                            {lockedSch.title}
-                          </div>
-                          <div className="text-xs text-gray-600 mt-0.5">
-                            {lockedSch.organization} • {lockedSch.country}
-                          </div>
-                        </div>
-
-                        <div className="absolute inset-0 bg-white/65 backdrop-blur-[2px] flex items-center justify-between px-4 py-3 gap-3">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="w-9 h-9 rounded-full bg-[#14532D] text-white flex items-center justify-center shrink-0">
-                              <Lock className="w-4 h-4" />
-                            </span>
-                            <div className="min-w-0">
-                              <div className="text-xs font-extrabold text-[#0B3B1E] truncate">
-                                {lockedSch.fundingType} • {lockedSch.country}
-                              </div>
-                              <div className="text-[11px] font-semibold text-gray-700 line-clamp-1">
-                                Free daily limit reached. Upgrade to Premium for unlimited access to all opportunities.
-                              </div>
+                            <div className="flex items-center justify-end mt-2.5">
+                              <span className="text-[12.5px] font-semibold text-[#15803D] tabular-nums">
+                                Deadline {sch.deadline} • {daysLeft}d left
+                              </span>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setRoute({ name: 'profile' })}
-                            className="px-3 py-1.5 rounded-full bg-[#15803D] hover:bg-[#0D2E1B] text-white text-[11px] font-extrabold shrink-0 cursor-pointer"
-                          >
-                            Profile
-                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })
                 )}
               </div>
             </div>
