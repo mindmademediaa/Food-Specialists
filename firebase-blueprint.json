@@ -106,19 +106,16 @@
     },
     "Training": {
       "title": "Training",
-      "description": "Highfield, Lead Auditor, and custom Food Safety & Technology training programs with certificate previews",
+      "description": "Highfield and Lead Auditor training programs",
       "type": "object",
       "properties": {
-        "category": { "type": "string", "maxLength": 120 },
-        "title": { "type": "string", "maxLength": 240 },
-        "subType": { "type": "string", "maxLength": 120 },
-        "standardCode": { "type": "string", "maxLength": 120 },
-        "provider": { "type": "string", "maxLength": 200 },
-        "certificateUrl": { "type": "string", "maxLength": 350000 },
-        "description": { "type": "string", "maxLength": 5000 },
-        "duration": { "type": "string", "maxLength": 160 },
-        "fees": { "type": "string", "maxLength": 160 },
-        "enrollLink": { "type": "string", "maxLength": 1000 },
+        "category": { "type": "string", "enum": ["Highfield", "Lead Auditor"] },
+        "title": { "type": "string", "maxLength": 200 },
+        "subType": { "type": "string", "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 4000 },
+        "duration": { "type": "string", "maxLength": 120 },
+        "fees": { "type": "string", "maxLength": 120 },
+        "enrollLink": { "type": "string", "maxLength": 500 },
         "isActive": { "type": "boolean" }
       },
       "required": ["category", "title", "isActive"]

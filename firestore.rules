@@ -117,17 +117,14 @@ service cloud.firestore {
     function isValidTraining(data) {
       return data is map &&
         data.keys().hasAll(['category', 'title', 'isActive']) &&
-        data.category is string && data.category.size() >= 1 && data.category.size() <= 120 &&
-        data.title is string && data.title.size() >= 1 && data.title.size() <= 240 &&
+        data.category in ['Highfield', 'Lead Auditor'] &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
         data.isActive is bool &&
-        (!('subType' in data) || data.subType == null || (data.subType is string && data.subType.size() <= 120)) &&
-        (!('standardCode' in data) || (data.standardCode is string && data.standardCode.size() <= 120)) &&
-        (!('provider' in data) || (data.provider is string && data.provider.size() <= 200)) &&
-        (!('certificateUrl' in data) || (data.certificateUrl is string && data.certificateUrl.size() <= 350000)) &&
-        (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
-        (!('duration' in data) || (data.duration is string && data.duration.size() <= 160)) &&
-        (!('fees' in data) || (data.fees is string && data.fees.size() <= 160)) &&
-        (!('enrollLink' in data) || (data.enrollLink is string && data.enrollLink.size() <= 1000));
+        (!('subType' in data) || data.subType == null || (data.subType is string && data.subType.size() <= 80)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
+        (!('duration' in data) || (data.duration is string && data.duration.size() <= 120)) &&
+        (!('fees' in data) || (data.fees is string && data.fees.size() <= 120)) &&
+        (!('enrollLink' in data) || (data.enrollLink is string && data.enrollLink.size() <= 500));
     }
 
     match /users/{uid} {

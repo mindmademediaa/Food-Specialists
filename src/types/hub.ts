@@ -135,12 +135,10 @@ export interface HubScholarship {
 
 export interface HubTraining {
   id: string;
-  category: string; // 'Highfield' | 'Lead Auditor' | or any custom category created by admin
+  category: 'Highfield' | 'Lead Auditor';
   title: string;
-  standardCode?: string;
-  subType: null | 'Exemplar Global' | 'IRCA | CQI' | string;
-  provider?: string;
-  certificateUrl?: string; // Sample certificate image data URL or external link
+  standardCode?: 'ISO 9001' | 'FSSC 22000' | 'ISO 14001' | 'ISO 45001';
+  subType: null | 'Exemplar Global' | 'IRCA | CQI';
   description: string;
   duration: string;
   fees: string;
@@ -148,5 +146,6 @@ export interface HubTraining {
   isActive: boolean;
 }
 
-export type NavTab = 'home' | 'search' | 'communities' | 'trainings' | 'profile' | 'admin';
+export type NavTab = 'home' | 'search' | 'communities' | 'trainings' | 'profile';
+
 
