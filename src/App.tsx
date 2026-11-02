@@ -39,6 +39,7 @@ import {
   Crown,
   UserPlus,
   Copy,
+  Share2,
   MessageCircle,
   ThumbsUp,
   Loader2
@@ -640,6 +641,46 @@ export default function App() {
     setCopiedId(id);
     setTimeout(() => {
       setCopiedId((prev) => (prev === id ? null : prev));
+    }, 3500);
+  };
+
+  // Share Opportunity Helper for Jobs and Scholarships (Native Web Share + Clipboard Fallback)
+  const handleShareOpportunity = async (
+    title: string,
+    subtitle: string,
+    url?: string
+  ) => {
+    const currentUrl = url || window.location.href;
+    const shareData = {
+      title: `${title} | Food Specialists Portal`,
+      text: `${title}\n${subtitle}\n\nShared via Food Specialists Portal:`,
+      url: currentUrl
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: Copy opportunity details & link to clipboard
+    const fullText = `${shareData.title}\n${shareData.text}\n${shareData.url}`;
+    try {
+      await navigator.clipboard.writeText(fullText);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = fullText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopiedId('share-link');
+    setTimeout(() => {
+      setCopiedId((prev) => (prev === 'share-link' ? null : prev));
     }, 3500);
   };
 
@@ -1334,6 +1375,31 @@ export default function App() {
                         {job.company}
                       </p>
                     </div>
+
+                    {/* Share Job Button */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleShareOpportunity(
+                          job.title,
+                          `Company: ${job.company} • Location: ${job.location || displayCountry}`
+                        )
+                      }
+                      className="px-3.5 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EBD9] text-[#15803D] font-extrabold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"
+                      title="Share this job opportunity"
+                    >
+                      {copiedId === 'share-link' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-3.5 h-3.5 stroke-[2.4]" />
+                          <span>Share</span>
+                        </>
+                      )}
+                    </button>
                   </div>
 
                   {/* Location & Experience Details */}
@@ -1671,46 +1737,37 @@ export default function App() {
                               {sch.organization} • {sch.country}
                             </p>
 
-                            <div className="flex items-center justify-between gap-2 mt-3">
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                {sch.specialization && (
-                                  <span className="px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-[12px] font-semibold leading-none">
-                                    {sch.specialization}
-                                  </span>
-                                )}
-                                <span className="px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-[12px] font-semibold leading-none">
-                                  {sch.fundingType}
-                                </span>
-                                <span className="px-3 py-1 rounded-[10px] bg-[#D8ECD9] text-[#0B3B1E] text-[12px] font-semibold leading-none">
-                                  {sch.degreeLevel}
-                                </span>
+                            {/* Status & Metadata Row without tags */}
+                            <div className="flex items-center justify-between gap-2 mt-3 pt-1">
+                              <div>
                                 {isApplied && (
-                                  <span className="px-2.5 py-1 rounded-[10px] bg-[#16A34A] text-white text-[11px] font-bold leading-none">
-                                    Applied ✓
+                                  <span className="px-2.5 py-1 rounded-[10px] bg-[#16A34A] text-white text-[11px] font-bold leading-none inline-flex items-center gap-1">
+                                    <Check className="w-3 h-3 stroke-[2.5]" />
+                                    <span>Applied</span>
                                   </span>
                                 )}
                               </div>
 
-                              <button
-                                type="button"
-                                title={isSaved ? 'Saved Scholarship' : 'Save Scholarship'}
-                                onClick={(e) => handleToggleSavedScholarship(sch.id, e)}
-                                className="p-1.5 rounded-xl text-[#15803D] hover:bg-emerald-50 transition-colors shrink-0 cursor-pointer"
-                              >
-                                <Bookmark
-                                  className={`w-6 h-6 stroke-[2.2] ${
-                                    isSaved
-                                      ? 'fill-[#15803D] text-[#15803D]'
-                                      : 'text-[#15803D]'
-                                  }`}
-                                />
-                              </button>
-                            </div>
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-[12.5px] font-semibold text-[#15803D] tabular-nums">
+                                  Deadline {sch.deadline} • {daysLeft}d left
+                                </span>
 
-                            <div className="flex items-center justify-end mt-2.5">
-                              <span className="text-[12.5px] font-semibold text-[#15803D] tabular-nums">
-                                Deadline {sch.deadline} • {daysLeft}d left
-                              </span>
+                                <button
+                                  type="button"
+                                  title={isSaved ? 'Saved Scholarship' : 'Save Scholarship'}
+                                  onClick={(e) => handleToggleSavedScholarship(sch.id, e)}
+                                  className="p-1 rounded-lg text-[#15803D] hover:bg-emerald-50 transition-colors shrink-0 cursor-pointer"
+                                >
+                                  <Bookmark
+                                    className={`w-5 h-5 stroke-[2.2] ${
+                                      isSaved
+                                        ? 'fill-[#15803D] text-[#15803D]'
+                                        : 'text-[#15803D]'
+                                    }`}
+                                  />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1731,42 +1788,96 @@ export default function App() {
               if (!sch) return null;
               const daysLeft = getDaysRemaining(sch.deadline);
               const isApplied = appliedScholarshipIds.includes(sch.id);
-              const hrEmail =
-                sch.hrEmail || 'fellowships@foodspecialists.org';
+
+              // Auto-extract email, phone, and links from scholarship fields or text
+              const detectedEmail =
+                sch.hrEmail ||
+                sch.description?.match(
+                  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+                )?.[0] ||
+                sch.eligibility?.match(
+                  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+                )?.[0] ||
+                '';
+
+              const detectedPhone =
+                (sch as any).contactPhone ||
+                (sch as any).phone ||
+                sch.description?.match(
+                  /(?:\+?\d{1,3}[ -]?)?\(?\d{3,4}\)?[ -]?\d{3,4}[ -]?\d{3,4}/
+                )?.[0] ||
+                sch.eligibility?.match(
+                  /(?:\+?\d{1,3}[ -]?)?\(?\d{3,4}\)?[ -]?\d{3,4}[ -]?\d{3,4}/
+                )?.[0] ||
+                '';
+
+              const detectedLink =
+                sch.applyLink && !sch.applyLink.includes('#')
+                  ? sch.applyLink
+                  : sch.description?.match(/https?:\/\/[^\s]+/)?.[0] || '';
+
               const emailSubject =
-                sch.emailSubject || `Scholarship Inquiry: ${sch.title}`;
-              const guidelines =
-                sch.applicationGuidelines ||
-                'Applications are submitted externally via the university/consortium portal or by emailing your academic dossier directly from your personal email.';
+                sch.emailSubject ||
+                `Scholarship Inquiry: ${sch.title} — ${sch.organization}`;
+
+              const displayFunding =
+                sch.fundingType || sch.specialization || 'Scholarship';
+              const displayCountry = sch.country || 'International';
 
               return (
                 <div className="bg-white border border-emerald-200 rounded-[26px] p-5 shadow-sm space-y-4">
-                  <div className="border-b border-emerald-100 pb-4 space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {sch.specialization && (
-                        <span className="px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-xs font-bold">
-                          {sch.specialization}
+                  <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-4">
+                    <div className="space-y-1">
+                      {/* Top tags: Only Funding Type & Country */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="inline-block px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-xs font-bold">
+                          {displayFunding}
                         </span>
-                      )}
-                      <span className="px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-xs font-bold">
-                        {sch.fundingType}
-                      </span>
-                      <span className="px-3 py-1 rounded-[10px] bg-[#D8ECD9] text-[#0B3B1E] text-xs font-semibold">
-                        {sch.degreeLevel}
-                      </span>
+                        <span className="inline-block px-3 py-1 rounded-[10px] bg-[#EAF5EC] text-[#15803D] text-xs font-bold">
+                          {displayCountry}
+                        </span>
+                      </div>
+                      <h1 className="text-[22px] font-extrabold text-[#0B3B1E] leading-snug pt-1">
+                        {sch.title}
+                      </h1>
+                      <p className="text-sm font-semibold text-gray-600">
+                        {sch.organization}
+                      </p>
                     </div>
-                    <h1 className="text-[22px] font-extrabold text-[#0B3B1E] leading-snug pt-1">
-                      {sch.title}
-                    </h1>
-                    <p className="text-sm font-semibold text-gray-600">
-                      {sch.organization}
-                    </p>
+
+                    {/* Share Scholarship Button */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleShareOpportunity(
+                          sch.title,
+                          `Organization: ${sch.organization} • Country: ${sch.country} • Deadline: ${sch.deadline}`
+                        )
+                      }
+                      className="px-3.5 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EBD9] text-[#15803D] font-extrabold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"
+                      title="Share this scholarship"
+                    >
+                      {copiedId === 'share-link' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-3.5 h-3.5 stroke-[2.4]" />
+                          <span>Share</span>
+                        </>
+                      )}
+                    </button>
                   </div>
 
+                  {/* Country & Deadline Countdown Cards */}
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div className="p-3.5 rounded-2xl bg-[#F0FDF4]">
                       <div className="text-gray-500">Host Country</div>
-                      <div className="font-bold text-gray-900 mt-0.5">{sch.country}</div>
+                      <div className="font-bold text-gray-900 mt-0.5">
+                        {sch.country || 'International'}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-2xl bg-[#DCF2E3] border border-emerald-200">
                       <div className="text-[#14532D]">Deadline Countdown</div>
@@ -1776,107 +1887,157 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* Description Section */}
                   <div>
                     <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                      Scholarship &amp; Stipend Coverage
+                      Description
                     </h2>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                      {sch.description}
-                    </p>
+                    <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line space-y-3">
+                      <p>{sch.description}</p>
+                      {sch.eligibility && (
+                        <div className="pt-2">
+                          <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">
+                            Eligibility Criteria:
+                          </h3>
+                          <p>{sch.eligibility}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                      Eligibility Criteria
-                    </h2>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                      {sch.eligibility}
-                    </p>
-                  </div>
-
-                  {/* ==================== HOW TO APPLY BOX (EXTERNAL GUIDELINES) ==================== */}
-                  <div className="rounded-[22px] bg-[#F0FDF4] border-2 border-[#16A34A] p-4 space-y-3">
+                  {/* ==================== HOW TO APPLY BOX & VERIFICATION DISCLAIMER ==================== */}
+                  <div className="rounded-[22px] bg-[#F0FDF4] border-2 border-[#16A34A] p-4 space-y-3.5">
                     <div className="flex items-center gap-2">
                       <span className="w-8 h-8 rounded-xl bg-[#15803D] text-white flex items-center justify-center shrink-0">
                         <Mail className="w-4 h-4" />
                       </span>
                       <div>
                         <h3 className="text-sm font-extrabold text-[#0B3B1E]">
-                          How to Apply (External Guidelines)
+                          How to Apply &amp; Verification Disclaimer
                         </h3>
                         <p className="text-[11px] text-[#15803D] font-semibold">
-                          Apply via official university portal or personal email
+                          Official Application Guidelines
                         </p>
                       </div>
                     </div>
 
-                    <p className="text-xs text-gray-700 leading-relaxed">
-                      {guidelines}
-                    </p>
-
-                    <div className="bg-white rounded-2xl p-3 border border-emerald-200 space-y-2 text-xs">
-                      <div>
-                        <span className="text-[11px] font-bold uppercase text-gray-400 block">
-                          Admissions / Coordinator Contact Email
-                        </span>
-                        <span className="font-extrabold text-[#0B3B1E] select-all break-all">
-                          {hrEmail}
-                        </span>
-                      </div>
-                      <div className="border-t border-emerald-100 pt-2">
-                        <span className="text-[11px] font-bold uppercase text-gray-400 block">
-                          Recommended Email Subject Line
-                        </span>
-                        <span className="font-bold text-[#14532D] select-all">
-                          {emailSubject}
-                        </span>
-                      </div>
+                    {/* Professional English Disclaimer & Application Instructions */}
+                    <div className="space-y-2 text-xs text-gray-700 leading-relaxed bg-white/80 p-3 rounded-xl border border-emerald-100">
+                      <p>
+                        <strong>Disclaimer:</strong> We curate and share authentic, verified scholarship opportunities from reputable academic and research institutions. However, it is each individual applicant&apos;s responsibility to independently verify all eligibility requirements, institution credentials, and official deadlines before applying.
+                      </p>
+                      <p>
+                        <strong>How to Apply:</strong> Prepare your academic transcripts, CV, and required documentation, then submit directly to the admissions contact email below or apply via the official institution link as per instructions.
+                      </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleCopyEmailAndSubject(sch.id, hrEmail, emailSubject)
-                      }
-                      className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
-                    >
-                      {copiedId === sch.id ? (
-                        <>
-                          <Check className="w-4 h-4 stroke-[2.5]" />
-                          <span>Copied Contact Email &amp; Subject!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          <span>Copy Contact Email &amp; Subject</span>
-                        </>
+                    {/* Contact & Email Details Box */}
+                    {(detectedEmail || detectedPhone) && (
+                      <div className="bg-white rounded-2xl p-3 border border-emerald-200 space-y-2 text-xs">
+                        {detectedEmail && (
+                          <div>
+                            <span className="text-[11px] font-bold uppercase text-gray-400 block">
+                              Admissions / Coordinator Email
+                            </span>
+                            <span className="font-extrabold text-[#0B3B1E] select-all break-all text-[13px]">
+                              {detectedEmail}
+                            </span>
+                          </div>
+                        )}
+
+                        {detectedPhone && (
+                          <div
+                            className={
+                              detectedEmail ? 'border-t border-emerald-100 pt-2' : ''
+                            }
+                          >
+                            <span className="text-[11px] font-bold uppercase text-gray-400 block">
+                              Contact / Coordinator Number
+                            </span>
+                            <span className="font-extrabold text-[#0B3B1E] select-all text-[13px]">
+                              {detectedPhone}
+                            </span>
+                          </div>
+                        )}
+
+                        {emailSubject && detectedEmail && (
+                          <div className="border-t border-emerald-100 pt-2">
+                            <span className="text-[11px] font-bold uppercase text-gray-400 block">
+                              Recommended Email Subject Line
+                            </span>
+                            <span className="font-bold text-[#14532D] select-all text-xs">
+                              {emailSubject}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Dynamic Action Buttons */}
+                    <div className="space-y-2 pt-1">
+                      {detectedEmail && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(detectedEmail, 'sch-email')}
+                          className="w-full py-2.5 px-4 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                        >
+                          {copiedId === 'sch-email' ? (
+                            <>
+                              <Check className="w-4 h-4 stroke-[2.5]" />
+                              <span>Copied Contact Email!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4" />
+                              <span>Copy Contact Email</span>
+                            </>
+                          )}
+                        </button>
                       )}
-                    </button>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <a
-                        href={`mailto:${hrEmail}?subject=${encodeURIComponent(
-                          emailSubject
-                        )}`}
-                        className="py-2.5 px-3 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-[#0B3B1E] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <Mail className="w-3.5 h-3.5 text-[#15803D]" />
-                        <span>Open in Email App</span>
-                      </a>
+                      {detectedPhone && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(detectedPhone, 'sch-phone')}
+                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-emerald-50 border-2 border-[#16A34A] text-[#0B3B1E] font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                        >
+                          {copiedId === 'sch-phone' ? (
+                            <>
+                              <Check className="w-4 h-4 stroke-[2.5] text-[#16A34A]" />
+                              <span>Copied Contact Number!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Phone className="w-4 h-4 text-[#16A34A]" />
+                              <span>Copy Contact Number</span>
+                            </>
+                          )}
+                        </button>
+                      )}
 
-                      <a
-                        href={sch.applyLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="py-2.5 px-3 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-[#0B3B1E] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <span>Official Portal</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-[#15803D]" />
-                      </a>
+                      {detectedLink && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(detectedLink, 'sch-link')}
+                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-[#0B3B1E] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                        >
+                          {copiedId === 'sch-link' ? (
+                            <>
+                              <Check className="w-4 h-4 stroke-[2.5] text-[#16A34A]" />
+                              <span>Copied Official Link!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 text-[#16A34A]" />
+                              <span>Copy Application Link</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* Personal 'Mark as Applied' Checkbox */}
+                  {/* Personal 'Mark as Applied' Checkbox (Preserved) */}
                   <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#EAF5EC] border border-[#9EC4A7] cursor-pointer select-none">
                     <div className="flex items-center gap-3">
                       <input
