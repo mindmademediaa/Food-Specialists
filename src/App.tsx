@@ -993,38 +993,11 @@ export default function App() {
           {/* ==================== 1. HOME SCREEN (/) ==================== */}
           {route.name === 'home' && (
             <div className="space-y-4 px-1">
-              {/* Greeting + Subtitle + Stats Pills */}
-              <div className="space-y-1.5 pt-1">
+              {/* Greeting */}
+              <div className="pt-1">
                 <h1 className="text-[28px] sm:text-[30px] font-bold text-[#0D2E1B] tracking-tight leading-tight">
                   Good morning, {firstName}
                 </h1>
-
-                <p className="text-[15px] text-gray-500 font-medium">
-                  Food Science • Food Technology specialists
-                </p>
-
-                {/* Stats Pills */}
-                <div className="flex flex-wrap items-center gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => navigateToJobs('All')}
-                    className="px-3.5 py-1.5 rounded-full bg-[#C8E4CA] hover:bg-[#B8DBBA] text-[#0D2E1B] text-[13px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Wheat className="w-4 h-4 text-[#14532D]" />
-                    <span className="tabular-nums">{activeJobs.length} new jobs</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => navigateToScholarships('All')}
-                    className="px-3.5 py-1.5 rounded-full bg-[#DCEBDD] hover:bg-[#CCE2CE] text-[#0D2E1B] text-[13px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <GraduationCap className="w-4 h-4 text-[#14532D]" />
-                    <span className="tabular-nums">
-                      {activeScholarships.length} scholarships open
-                    </span>
-                  </button>
-                </div>
               </div>
 
               {/* CARD 1 - JOBS */}
@@ -1065,59 +1038,26 @@ export default function App() {
                   </span>
                 </div>
 
-                {/* Middle row 3 icons: Production, R&D Lab, Quality & Safety */}
-                <div className="grid grid-cols-3 gap-2 mt-6 mb-5 px-2 relative z-10">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigateToJobs('Production');
-                    }}
-                    className="flex flex-col items-center gap-1.5 py-1.5 rounded-xl hover:bg-[#F0FDF4] transition-colors cursor-pointer"
-                  >
+                {/* Middle row 3 icons: Production, R&D Lab, Quality & Safety (Non-clickable, display only) */}
+                <div className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none pointer-events-none">
+                  <div className="flex flex-col items-center gap-1.5 py-1">
                     <Wheat className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737]">
                       Production
                     </span>
-                  </button>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigateToJobs('R&D Lab');
-                    }}
-                    className="flex flex-col items-center gap-1.5 py-1.5 rounded-xl hover:bg-[#F0FDF4] transition-colors cursor-pointer"
-                  >
+                  <div className="flex flex-col items-center gap-1.5 py-1">
                     <FlaskConical className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737]">
                       R&amp;D Lab
                     </span>
-                  </button>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigateToJobs('Quality & Safety');
-                    }}
-                    className="flex flex-col items-center gap-1.5 py-1.5 rounded-xl hover:bg-[#F0FDF4] transition-colors cursor-pointer"
-                  >
+                  <div className="flex flex-col items-center gap-1.5 py-1">
                     <ShieldCheck className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737] whitespace-nowrap">
                       Quality &amp; Safety
-                    </span>
-                  </button>
-                </div>
-
-                {/* Bottom pill */}
-                <div className="flex items-center justify-between relative z-10">
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[13px] font-semibold">
-                    <span className="text-[#16A34A] font-bold">●</span>
-                    <span>
-                      {isCurrentUserPaid
-                        ? `Unlimited access • ${activeJobs.length} openings`
-                        : `1 free daily • ${activeJobs.length} openings`}
                     </span>
                   </div>
                 </div>
@@ -1161,59 +1101,26 @@ export default function App() {
                   </span>
                 </div>
 
-                {/* Middle row 3 icons: Fellowships, International, Grants */}
-                <div className="grid grid-cols-3 gap-2 mt-6 mb-5 px-2 relative z-10">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigateToScholarships('Fellowships');
-                    }}
-                    className="flex flex-col items-center gap-1.5 py-1.5 rounded-xl hover:bg-[#F0FDF4] transition-colors cursor-pointer"
-                  >
+                {/* Middle row 3 icons: Fellowships, International, Grants (Non-clickable, display only) */}
+                <div className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none pointer-events-none">
+                  <div className="flex flex-col items-center gap-1.5 py-1">
                     <BookOpen className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737]">
                       Fellowships
                     </span>
-                  </button>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigateToScholarships('International');
-                    }}
-                    className="flex flex-col items-center gap-1.5 py-1.5 rounded-xl hover:bg-[#F0FDF4] transition-colors cursor-pointer"
-                  >
+                  <div className="flex flex-col items-center gap-1.5 py-1">
                     <Globe className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737]">
                       International
                     </span>
-                  </button>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigateToScholarships('Grants');
-                    }}
-                    className="flex flex-col items-center gap-1.5 py-1.5 rounded-xl hover:bg-[#F0FDF4] transition-colors cursor-pointer"
-                  >
+                  <div className="flex flex-col items-center gap-1.5 py-1">
                     <Trophy className="w-6 h-6 text-[#143622] stroke-[2]" />
                     <span className="text-[12.5px] font-medium text-[#2F4737]">
                       Grants
-                    </span>
-                  </button>
-                </div>
-
-                {/* Bottom pill */}
-                <div className="flex items-center justify-between relative z-10">
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[13px] font-semibold">
-                    <span className="text-[#16A34A] font-bold">●</span>
-                    <span>
-                      {isCurrentUserPaid
-                        ? `Unlimited access • ${activeScholarships.length} available`
-                        : `1 free daily • ${activeScholarships.length} available`}
                     </span>
                   </div>
                 </div>
