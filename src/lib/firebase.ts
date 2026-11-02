@@ -10,6 +10,8 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   type User
 } from 'firebase/auth';
 import {
@@ -40,6 +42,9 @@ export const analytics =
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 export enum OperationType {
   CREATE = 'create',
@@ -100,5 +105,7 @@ export {
   onAuthStateChanged,
   updateProfile,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   type User
 };

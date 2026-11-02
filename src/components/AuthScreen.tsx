@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Mail,
@@ -13,6 +13,10 @@ import {
 } from 'lucide-react';
 import {
   auth,
+  googleProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile
@@ -20,10 +24,52 @@ import {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const GoogleLogoIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" aria-hidden="true">
+    <path
+      fill="#4285F4"
+      d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82Z"
+    />
+    <path
+      fill="#34A853"
+      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24Z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09Z"
+    />
+    <path
+      fill="#EA4335"
+      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96Z"
+    />
+  </svg>
+);
+
 function getFriendlyFirebaseAuthError(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err);
   const code = (err as { code?: string })?.code || '';
 
+  if (
+    code === 'auth/popup-closed-by-user' ||
+    raw.includes('auth/popup-closed-by-user')
+  ) {
+    return 'Google sign-in popup was closed before completing. Please try again.';
+  }
+  if (
+    code === 'auth/cancelled-popup-request' ||
+    raw.includes('auth/cancelled-popup-request')
+  ) {
+    return 'Sign-in popup request was cancelled. Please click Sign in with Google again.';
+  }
+  if (code === 'auth/popup-blocked' || raw.includes('auth/popup-blocked')) {
+    return 'Popup was blocked by your browser. Redirecting to Google Sign-In...';
+  }
+  if (
+    code === 'auth/unauthorized-domain' ||
+    raw.includes('auth/unauthorized-domain')
+  ) {
+    return 'Domain authorization pending in Firebase Console (mindmademediaa.github.io). Please use Email/Password or authorize the domain in Firebase Auth settings.';
+  }
   if (
     code === 'auth/invalid-credential' ||
     code === 'auth/wrong-password' ||
@@ -70,11 +116,51 @@ export const AuthScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getRedirectResult(auth).catch((err) => {
+      if (active && err) {
+        setErrorMessage(getFriendlyFirebaseAuthError(err));
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const switchMode = (nextMode: 'signin' | 'signup') => {
     setMode(nextMode);
     setErrorMessage(null);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage(null);
+    setIsGoogleSubmitting(true);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      const code = (err as { code?: string })?.code || '';
+      const raw = err instanceof Error ? err.message : String(err);
+      if (
+        code === 'auth/popup-blocked' ||
+        raw.includes('auth/popup-blocked') ||
+        code === 'auth/operation-not-supported-in-this-environment'
+      ) {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr) {
+          setErrorMessage(getFriendlyFirebaseAuthError(redirectErr));
+        }
+      } else {
+        setErrorMessage(getFriendlyFirebaseAuthError(err));
+      }
+    } finally {
+      setIsGoogleSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -189,8 +275,8 @@ export const AuthScreen: React.FC = () => {
             </h2>
             <p className="text-xs text-gray-500 font-medium mt-0.5">
               {mode === 'signin'
-                ? 'Enter your registered email and password to continue'
-                : 'Register with your email to join the Food Specialists network'}
+                ? 'Sign in with Google or enter your registered email'
+                : 'Sign up quickly with Google or register with your email'}
             </p>
           </div>
 
@@ -203,6 +289,39 @@ export const AuthScreen: React.FC = () => {
               <span>{errorMessage}</span>
             </div>
           )}
+
+          {/* SIGN IN WITH GOOGLE BUTTON */}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleSubmitting || isSubmitting}
+            className="w-full py-3.5 px-4 rounded-[18px] bg-white hover:bg-[#F2F7F3] border-2 border-[#9EC4A7] hover:border-[#16A34A] disabled:opacity-60 text-[#0D2E1B] font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer"
+          >
+            {isGoogleSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 text-[#15803D] animate-spin" />
+                <span>Connecting to Google...</span>
+              </>
+            ) : (
+              <>
+                <GoogleLogoIcon />
+                <span>
+                  {mode === 'signin'
+                    ? 'Sign in with Google'
+                    : 'Sign up with Google'}
+                </span>
+              </>
+            )}
+          </button>
+
+          {/* Divider */}
+          <div className="relative flex items-center justify-center py-0.5">
+            <div className="border-t border-emerald-100 w-full" />
+            <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 shrink-0">
+              or continue with email
+            </span>
+            <div className="border-t border-emerald-100 w-full" />
+          </div>
 
           {/* Full Name (Sign Up only) */}
           {mode === 'signup' && (
@@ -333,7 +452,7 @@ export const AuthScreen: React.FC = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isGoogleSubmitting}
             className="w-full py-3.5 px-5 rounded-[18px] bg-[#15803D] hover:bg-[#0D2E1B] disabled:opacity-65 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md transition-colors cursor-pointer"
           >
             {isSubmitting ? (
@@ -348,7 +467,7 @@ export const AuthScreen: React.FC = () => {
             ) : (
               <>
                 <span>
-                  {mode === 'signin' ? 'Sign In to Portal' : 'Create Account'}
+                  {mode === 'signin' ? 'Sign In with Email' : 'Create Account'}
                 </span>
                 <ArrowRight className="w-4 h-4 stroke-[2.5]" />
               </>
