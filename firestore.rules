@@ -59,6 +59,7 @@ service cloud.firestore {
         (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod.size() <= 80)) &&
         (!('paymentReference' in data) || (data.paymentReference is string && data.paymentReference.size() <= 120)) &&
         (!('paymentAmount' in data) || (data.paymentAmount is string && data.paymentAmount.size() <= 80)) &&
+        (!('receiptImageUrl' in data) || (data.receiptImageUrl is string && data.receiptImageUrl.size() <= 450000)) &&
         isValidPrivacySettings(data.privacySettings);
     }
 
@@ -77,7 +78,35 @@ service cloud.firestore {
         (!('currentRole' in data) || (data.currentRole is string && data.currentRole.size() <= 200)) &&
         (!('amount' in data) || (data.amount is string && data.amount.size() <= 80)) &&
         (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000)) &&
+        (!('receiptImageUrl' in data) || (data.receiptImageUrl is string && data.receiptImageUrl.size() <= 450000)) &&
         (!('submittedAt' in data) || (data.submittedAt is string && data.submittedAt.size() <= 64));
+    }
+
+    function isValidCertificate(data) {
+      return data is map &&
+        data.keys().hasAll(['id', 'certificateNumber', 'recipientName', 'trainingTitle', 'issueDate', 'verificationStatus']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.certificateNumber is string && data.certificateNumber.size() >= 1 && data.certificateNumber.size() <= 120 &&
+        data.recipientName is string && data.recipientName.size() >= 1 && data.recipientName.size() <= 160 &&
+        data.trainingTitle is string && data.trainingTitle.size() >= 1 && data.trainingTitle.size() <= 240 &&
+        data.issueDate is string && data.issueDate.size() >= 1 && data.issueDate.size() <= 64 &&
+        data.verificationStatus in ['valid', 'revoked'] &&
+        (!('recipientUid' in data) || (data.recipientUid is string && data.recipientUid.size() <= 128)) &&
+        (!('recipientEmail' in data) || (data.recipientEmail is string && data.recipientEmail.size() <= 200)) &&
+        (!('trainingCategory' in data) || (data.trainingCategory is string && data.trainingCategory.size() <= 120)) &&
+        (!('accreditationBody' in data) || (data.accreditationBody is string && data.accreditationBody.size() <= 160)) &&
+        (!('certificateImageUrl' in data) || (data.certificateImageUrl is string && data.certificateImageUrl.size() <= 550000)) &&
+        (!('issuedBy' in data) || (data.issuedBy is string && data.issuedBy.size() <= 160)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    function isValidCloudStorageConfig(data) {
+      return data is map &&
+        data.keys().hasAll(['provider']) &&
+        data.provider in ['smart-firestore', 'cloudinary'] &&
+        (!('cloudinaryCloudName' in data) || (data.cloudinaryCloudName is string && data.cloudinaryCloudName.size() <= 120)) &&
+        (!('cloudinaryUploadPreset' in data) || (data.cloudinaryUploadPreset is string && data.cloudinaryUploadPreset.size() <= 120)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
     function isValidChatMessage(data) {
@@ -137,6 +166,19 @@ service cloud.firestore {
         (!('applyLink' in data) || (data.applyLink is string && data.applyLink.size() <= 500));
     }
 
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email == 'mindmademedia9@gmail.com';
+    }
+
     function isValidTraining(data) {
       return data is map &&
         data.keys().hasAll(['category', 'title', 'isActive']) &&
@@ -152,46 +194,86 @@ service cloud.firestore {
         (!('enrollLink' in data) || (data.enrollLink is string && data.enrollLink.size() <= 500));
     }
 
+    // Strict Per-User Profile & Community Visibility Rules:
+    // 1. Only the authenticated owner (request.auth.uid == uid) or Admin can create, update, or delete their profile.
+    // 2. A user's document is strictly private to that user (isOwner(uid)) unless they are a Verified Paid Member (resource.data.isPaid == true) sharing their sanitized profile in the Community Directory.
+    // 3. Non-admin users cannot escalate their own isAdmin flag.
     match /users/{uid} {
-      allow get: if isValidId(uid);
-      allow list: if true;
-      allow create, update: if isValidId(uid) && isValidUser(request.resource.data, uid);
-      allow delete: if isValidId(uid);
+      allow get: if isOwner(uid) || isAdmin() || (isSignedIn() && resource.data.isPaid == true);
+      allow list: if isAdmin() || (isSignedIn() && resource.data.isPaid == true);
+      allow create: if (isOwner(uid) || isAdmin()) &&
+        isValidId(uid) &&
+        isValidUser(request.resource.data, uid) &&
+        (isAdmin() || !('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false);
+      allow update: if (isOwner(uid) || isAdmin()) &&
+        isValidId(uid) &&
+        isValidUser(request.resource.data, uid) &&
+        (isAdmin() || !('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false);
+      allow delete: if isOwner(uid) || isAdmin();
+
+      // Strictly private per-user vault: NEVER readable or writable by any other user
+      match /private/{docId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidUser(request.resource.data, uid);
+        allow delete: if isOwner(uid) || isAdmin();
+      }
     }
 
+    // Payment verification requests & receipts: Strictly isolated to the submitting user and Admin
     match /paymentRequests/{requestId} {
-      allow get: if isValidId(requestId);
-      allow list: if true;
-      allow create, update: if isValidId(requestId) && isValidPaymentRequest(request.resource.data);
-      allow delete: if isValidId(requestId);
+      allow get, list: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn() &&
+        request.resource.data.uid == request.auth.uid &&
+        isValidId(requestId) &&
+        isValidPaymentRequest(request.resource.data);
+      allow update: if (isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid && request.resource.data.status == resource.data.status)) &&
+        isValidId(requestId) &&
+        isValidPaymentRequest(request.resource.data);
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
     }
 
+    // Training Certificates: Signed-in individuals can view/verify certificates; only Admin can issue, update, or delete
+    match /certificates/{certificateId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isAdmin() && isValidId(certificateId) && isValidCertificate(request.resource.data);
+      allow delete: if isAdmin() && isValidId(certificateId);
+    }
+
+    // Cloud Storage & CDN Settings: Signed-in users can read upload configuration; only Admin can update
+    match /settings/{settingId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isAdmin() && isValidId(settingId) && isValidCloudStorageConfig(request.resource.data);
+      allow delete: if isAdmin() && isValidId(settingId);
+    }
+
+    // Direct support & hiring chats: Strictly isolated to the message sender and Admin
     match /chats/{chatId} {
-      allow get: if isValidId(chatId);
-      allow list: if true;
-      allow create, update: if isValidId(chatId) && isValidChatMessage(request.resource.data);
-      allow delete: if isValidId(chatId);
+      allow get, list: if isAdmin() || (isSignedIn() && resource.data.senderUid == request.auth.uid);
+      allow create: if isSignedIn() &&
+        request.resource.data.senderUid == request.auth.uid &&
+        isValidId(chatId) &&
+        isValidChatMessage(request.resource.data);
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.senderUid == request.auth.uid && isValidChatMessage(request.resource.data));
     }
 
+    // Jobs, Scholarships & Trainings: Authenticated members can view; only Admin can publish/modify/delete
     match /jobs/{jobId} {
-      allow get: if isValidId(jobId);
-      allow list: if true;
-      allow create, update: if isValidId(jobId) && isValidJob(request.resource.data);
-      allow delete: if isValidId(jobId);
+      allow get, list: if isSignedIn();
+      allow create, update: if isAdmin() && isValidId(jobId) && isValidJob(request.resource.data);
+      allow delete: if isAdmin() && isValidId(jobId);
     }
 
     match /scholarships/{scholarshipId} {
-      allow get: if isValidId(scholarshipId);
-      allow list: if true;
-      allow create, update: if isValidId(scholarshipId) && isValidScholarship(request.resource.data);
-      allow delete: if isValidId(scholarshipId);
+      allow get, list: if isSignedIn();
+      allow create, update: if isAdmin() && isValidId(scholarshipId) && isValidScholarship(request.resource.data);
+      allow delete: if isAdmin() && isValidId(scholarshipId);
     }
 
     match /trainings/{trainingId} {
-      allow get: if isValidId(trainingId);
-      allow list: if true;
-      allow create, update: if isValidId(trainingId) && isValidTraining(request.resource.data);
-      allow delete: if isValidId(trainingId);
+      allow get, list: if isSignedIn();
+      allow create, update: if isAdmin() && isValidId(trainingId) && isValidTraining(request.resource.data);
+      allow delete: if isAdmin() && isValidId(trainingId);
     }
   }
 }
+

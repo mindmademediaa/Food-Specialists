@@ -42,14 +42,24 @@ import {
   Share2,
   MessageCircle,
   ThumbsUp,
-  Loader2
+  Loader2,
+  Database,
+  Upload,
+  Download,
+  Trash2,
+  Plus,
+  CreditCard,
+  Image as ImageIcon
 } from 'lucide-react';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   onSnapshot,
-  setDoc
+  query,
+  setDoc,
+  where
 } from 'firebase/firestore';
 import {
   db,
@@ -62,9 +72,13 @@ import {
 } from './lib/firebase';
 import {
   HubUser,
+  PrivacySettings,
   HubJob,
   HubScholarship,
   HubTraining,
+  HubPaymentRequest,
+  HubCertificate,
+  CloudStorageConfig,
   DevRole,
   SpecializationTag,
   NavTab
@@ -77,6 +91,11 @@ import {
   INITIAL_COMMUNITY_THREADS,
   makeAvatarSvg
 } from './data/mockHubData';
+import {
+  uploadMediaFile,
+  generateCertificateSvgDataUrl,
+  INITIAL_CERTIFICATES
+} from './lib/storage';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { JobCard } from './components/JobCard';
@@ -243,7 +262,8 @@ type RouteView =
   | { name: 'trainings-highfield' }
   | { name: 'trainings-lead-auditor-hub' }
   | { name: 'training-detail'; trainingId: string }
-  | { name: 'profile' };
+  | { name: 'profile' }
+  | { name: 'admin' };
 
 const JOB_SCH_SPECIALIZATIONS: SpecializationTag[] = [
   'QA/QC',
@@ -307,6 +327,22 @@ const DEFAULT_CURRENT_USER_PROFILE: HubUser = {
   paymentStatus: 'none'
 };
 
+// Sanitize a user profile before saving to the shared /users/{uid} document:
+// Any field whose privacy toggle is OFF (Private) is stripped so other users cannot read it,
+// while the owner's full unredacted data is stored in /users/{uid}/private/profile.
+const buildSanitizedPublicUser = (fullProfile: HubUser): HubUser => {
+  const ps = fullProfile.privacySettings || DEFAULT_CURRENT_USER_PROFILE.privacySettings;
+  return {
+    ...fullProfile,
+    currentRole: ps.currentRole_public ? fullProfile.currentRole : '',
+    qualification: ps.qualification_public ? fullProfile.qualification : '',
+    experience: ps.experience_public ? fullProfile.experience : '',
+    location: ps.location_public ? fullProfile.location : '',
+    email: ps.email_public ? fullProfile.email : '',
+    phone: ps.phone_public ? fullProfile.phone : ''
+  };
+};
+
 export default function App() {
   // Firebase Authentication State (Strict Gate)
   const [authUser, setAuthUser] = useState<User | null>(null);
@@ -323,6 +359,18 @@ export default function App() {
     INITIAL_SCHOLARSHIPS
   );
   const [trainings, setTrainings] = useState<HubTraining[]>(INITIAL_TRAININGS);
+  const [certificates, setCertificates] = useState<HubCertificate[]>(
+    INITIAL_CERTIFICATES
+  );
+  const [paymentRequests, setPaymentRequests] = useState<HubPaymentRequest[]>(
+    []
+  );
+  const [storageConfig, setStorageConfig] = useState<CloudStorageConfig>({
+    provider: 'smart-firestore',
+    cloudinaryCloudName: '',
+    cloudinaryUploadPreset: '',
+    updatedAt: '2026-11-01T00:00:00Z'
+  });
 
   // Applied Jobs & Scholarships Local Tracking ('Mark as Applied' checkbox)
   const [appliedJobIds, setAppliedJobIds] = useState<string[]>([]);
@@ -339,6 +387,63 @@ export default function App() {
     DEFAULT_CURRENT_USER_PROFILE
   );
   const [profileSaveMsg, setProfileSaveMsg] = useState<string | null>(null);
+  const [uploadStatusMsg, setUploadStatusMsg] = useState<string | null>(null);
+  const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
+
+  // Payment Receipt Submission State (in /profile)
+  const [payMethod, setPayMethod] = useState<
+    'EasyPaisa' | 'JazzCash' | 'Bank Transfer'
+  >('EasyPaisa');
+  const [payTransactionId, setPayTransactionId] = useState<string>('');
+  const [payAmount, setPayAmount] = useState<string>('PKR 2,000');
+  const [payNotes, setPayNotes] = useState<string>('');
+  const [payReceiptUrl, setPayReceiptUrl] = useState<string>('');
+  const [paySubmitBanner, setPaySubmitBanner] = useState<string | null>(null);
+
+  // Certificate Search & Preview Modal State (in /trainings and /profile)
+  const [certSearchQuery, setCertSearchQuery] = useState<string>('');
+  const [selectedCertificate, setSelectedCertificate] =
+    useState<HubCertificate | null>(null);
+
+  // Admin Console Active Tab & Forms
+  const [adminTab, setAdminTab] = useState<
+    'storage' | 'receipts' | 'certificates' | 'opportunities'
+  >('storage');
+  const [adminStatusBanner, setAdminStatusBanner] = useState<string | null>(
+    null
+  );
+  const [newCertRecipientName, setNewCertRecipientName] = useState<string>('');
+  const [newCertRecipientEmail, setNewCertRecipientEmail] =
+    useState<string>('');
+  const [newCertCategory, setNewCertCategory] = useState<string>('Highfield');
+  const [newCertTitle, setNewCertTitle] = useState<string>(
+    'HACCP Level 3 — Food Safety & HACCP Plan Implementation'
+  );
+  const [newCertAccreditation, setNewCertAccreditation] = useState<string>(
+    'Highfield UK Accredited'
+  );
+  const [newCertNumber, setNewCertNumber] = useState<string>(
+    `FSP-2026-${Math.floor(1000 + Math.random() * 9000)}`
+  );
+  const [newCertIssueDate, setNewCertIssueDate] =
+    useState<string>('2026-11-03');
+  const [newCertImageUrl, setNewCertImageUrl] = useState<string>('');
+
+  // Admin Quick Add Job / Scholarship State
+  const [adminOppType, setAdminOppType] = useState<'job' | 'scholarship'>(
+    'job'
+  );
+  const [adminOppTitle, setAdminOppTitle] = useState<string>('');
+  const [adminOppOrg, setAdminOppOrg] = useState<string>('');
+  const [adminOppCountry, setAdminOppCountry] = useState<string>('Pakistan');
+  const [adminOppLocation, setAdminOppLocation] =
+    useState<string>('Lahore, Pakistan');
+  const [adminOppCat, setAdminOppCat] = useState<string>('Quality & Safety');
+  const [adminOppExpOrDeadline, setAdminOppExpOrDeadline] =
+    useState<string>('2+ Years QA/QC');
+  const [adminOppEmail, setAdminOppEmail] = useState<string>('');
+  const [adminOppLink, setAdminOppLink] = useState<string>('');
+  const [adminOppDesc, setAdminOppDesc] = useState<string>('');
 
   // Hire / Contact Modal State for Communities
   const [contactModalMember, setContactModalMember] = useState<HubUser | null>(
@@ -374,9 +479,11 @@ export default function App() {
   const [commExpFilter, setCommExpFilter] = useState<string>('All');
   const [onlyHireableFilter, setOnlyHireableFilter] = useState<boolean>(false);
 
-  // File upload refs for /profile
+  // File upload refs for /profile & /admin
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const cvInputRef = useRef<HTMLInputElement | null>(null);
+  const receiptInputRef = useRef<HTMLInputElement | null>(null);
+  const certImageInputRef = useRef<HTMLInputElement | null>(null);
 
   // Derive user's Membership Status directly from their Profile state:
   // Paid Member (when myProfile.isPaid === true), Free Member (when profile exists & !isPaid), or Guest
@@ -428,32 +535,66 @@ export default function App() {
             makeAvatarSvg(initials, '#DCFCE7', '#14532D')
         }));
 
-        // Check if user profile already exists in Firestore; if so, hydrate it; otherwise create it automatically
+        // Check if user profile already exists in Firestore; hydrate both public doc and private owner vault
         const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const privateVaultRef = doc(db, 'users', firebaseUser.uid, 'private', 'profile');
         try {
-          const existingSnap = await getDoc(userDocRef);
-          if (existingSnap.exists()) {
-            const existingData = existingSnap.data() as HubUser;
+          const [existingSnap, privateSnap] = await Promise.all([
+            getDoc(userDocRef),
+            getDoc(privateVaultRef)
+          ]);
+
+          if (existingSnap.exists() || privateSnap.exists()) {
+            const publicData = (existingSnap.exists() ? existingSnap.data() : {}) as Partial<HubUser>;
+            const privateData = (privateSnap.exists() ? privateSnap.data() : {}) as Partial<HubUser>;
+            const mergedPrivacy: PrivacySettings = {
+              ...DEFAULT_CURRENT_USER_PROFILE.privacySettings,
+              ...(publicData.privacySettings || {}),
+              ...(privateData.privacySettings || {})
+            };
             const mergedProfile: HubUser = {
               ...baseUserRecord,
-              ...existingData,
+              ...publicData,
+              ...privateData,
               uid: firebaseUser.uid,
               name:
-                existingData.name?.trim() ||
+                privateData.name?.trim() ||
+                publicData.name?.trim() ||
                 firebaseUser.displayName?.trim() ||
                 displayName,
-              email: existingData.email || firebaseUser.email || '',
-              isAdmin: isAdminUser || Boolean(existingData.isAdmin),
-              privacySettings: {
-                ...DEFAULT_CURRENT_USER_PROFILE.privacySettings,
-                ...(existingData.privacySettings || {})
-              }
+              email:
+                privateData.email ||
+                publicData.email ||
+                firebaseUser.email ||
+                '',
+              phone: privateData.phone || publicData.phone || '',
+              qualification:
+                privateData.qualification || publicData.qualification || '',
+              experience: privateData.experience || publicData.experience || '',
+              currentRole:
+                privateData.currentRole || publicData.currentRole || '',
+              location: privateData.location || publicData.location || '',
+              isPaid: Boolean(publicData.isPaid ?? privateData.isPaid),
+              paymentStatus:
+                publicData.paymentStatus || privateData.paymentStatus || 'none',
+              isAdmin: isAdminUser || Boolean(publicData.isAdmin),
+              privacySettings: mergedPrivacy
             };
             setMyProfile(mergedProfile);
             setHasSavedProfile(true);
-            await setDoc(userDocRef, mergedProfile, { merge: true });
+            await Promise.all([
+              setDoc(privateVaultRef, mergedProfile, { merge: true }),
+              setDoc(userDocRef, buildSanitizedPublicUser(mergedProfile), {
+                merge: true
+              })
+            ]);
           } else {
-            await setDoc(userDocRef, baseUserRecord, { merge: true });
+            await Promise.all([
+              setDoc(privateVaultRef, baseUserRecord, { merge: true }),
+              setDoc(userDocRef, buildSanitizedPublicUser(baseUserRecord), {
+                merge: true
+              })
+            ]);
             setMyProfile(baseUserRecord);
             setHasSavedProfile(true);
           }
@@ -482,11 +623,36 @@ export default function App() {
     }
   };
 
-  // Real-time Firestore Listeners (with graceful fallback to local state)
+  // Real-time Firestore Listeners (with strict per-user isolation & Paid community filtering)
   useEffect(() => {
     if (!authUser) return;
+    const isAdminUser =
+      authUser.email?.toLowerCase() === 'mindmademedia9@gmail.com';
+
+    // Listen to current user's own document so admin approval of isPaid/paymentStatus reflects immediately
+    const unsubMyDoc = onSnapshot(
+      doc(db, 'users', authUser.uid),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data() as Partial<HubUser>;
+          setMyProfile((prev) => ({
+            ...prev,
+            isPaid: Boolean(data.isPaid ?? prev.isPaid),
+            paymentStatus: data.paymentStatus || prev.paymentStatus
+          }));
+        }
+      },
+      () => {}
+    );
+
+    // Non-admin users only query Verified Paid community profiles (`where('isPaid', '==', true)`)
+    // matching `allow list: if isAdmin() || (isSignedIn() && resource.data.isPaid == true)` in firestore.rules
+    const usersQuery = isAdminUser
+      ? collection(db, 'users')
+      : query(collection(db, 'users'), where('isPaid', '==', true));
+
     const unsubUsers = onSnapshot(
-      collection(db, 'users'),
+      usersQuery,
       (snap) => {
         if (!snap.empty) {
           const fsUsers = snap.docs.map((d) => d.data() as HubUser);
@@ -585,11 +751,63 @@ export default function App() {
       }
     );
 
+    const unsubCerts = onSnapshot(
+      collection(db, 'certificates'),
+      (snap) => {
+        if (!snap.empty) {
+          const fsCerts = snap.docs.map((d) => ({
+            ...(d.data() as HubCertificate),
+            id: d.id
+          }));
+          setCertificates(() => {
+            const map = new Map<string, HubCertificate>();
+            INITIAL_CERTIFICATES.forEach((c) => map.set(c.id, c));
+            fsCerts.forEach((c) => map.set(c.id, c));
+            return Array.from(map.values());
+          });
+        }
+      },
+      () => {}
+    );
+
+    const unsubStorageCfg = onSnapshot(
+      doc(db, 'settings', 'storageConfig'),
+      (snap) => {
+        if (snap.exists()) {
+          setStorageConfig(snap.data() as CloudStorageConfig);
+        }
+      },
+      () => {}
+    );
+
+    const payQuery = isAdminUser
+      ? collection(db, 'paymentRequests')
+      : query(
+          collection(db, 'paymentRequests'),
+          where('uid', '==', authUser.uid)
+        );
+
+    const unsubPay = onSnapshot(
+      payQuery,
+      (snap) => {
+        const list = snap.docs.map((d) => ({
+          ...(d.data() as HubPaymentRequest),
+          id: d.id
+        }));
+        setPaymentRequests(list);
+      },
+      () => {}
+    );
+
     return () => {
+      unsubMyDoc();
       unsubUsers();
       unsubJobs();
       unsubSch();
       unsubTr();
+      unsubCerts();
+      unsubStorageCfg();
+      unsubPay();
     };
   }, [authUser]);
 
@@ -612,6 +830,7 @@ export default function App() {
       case 'training-detail':
         return 'trainings';
       case 'profile':
+      case 'admin':
         return 'profile';
     }
   }, [route.name]);
@@ -1003,10 +1222,70 @@ export default function App() {
     });
   };
 
+  // Persist both full private vault (/users/{uid}/private/profile) and sanitized public profile (/users/{uid})
+  const persistUserProfileToFirestore = async (fullUser: HubUser) => {
+    const sanitizedPublic = buildSanitizedPublicUser(fullUser);
+    setUsers((prev) => {
+      const exists = prev.some((u) => u.uid === sanitizedPublic.uid);
+      if (exists) {
+        return prev.map((u) =>
+          u.uid === sanitizedPublic.uid ? sanitizedPublic : u
+        );
+      }
+      return [sanitizedPublic, ...prev];
+    });
+
+    try {
+      await Promise.all([
+        setDoc(
+          doc(db, 'users', fullUser.uid, 'private', 'profile'),
+          fullUser,
+          { merge: true }
+        ),
+        setDoc(doc(db, 'users', fullUser.uid), sanitizedPublic, {
+          merge: true
+        })
+      ]);
+    } catch (err) {
+      try {
+        handleFirestoreError(
+          err,
+          OperationType.WRITE,
+          `users/${fullUser.uid}`
+        );
+      } catch {}
+    }
+  };
+
+  // Instant Privacy Toggle Handler: Immediately saves toggle state & sanitizes shared Community data
+  const handleTogglePrivacySetting = async (field: keyof PrivacySettings) => {
+    const cleanUid = authUser?.uid || myProfile.uid;
+    const nextValue = !myProfile.privacySettings[field];
+    const updatedUser: HubUser = {
+      ...myProfile,
+      uid: cleanUid,
+      name: myProfile.name.trim() || 'Food Specialist',
+      isPaid: isCurrentUserPaid,
+      privacySettings: {
+        ...myProfile.privacySettings,
+        [field]: nextValue
+      }
+    };
+    setMyProfile(updatedUser);
+    await persistUserProfileToFirestore(updatedUser);
+    setProfileSaveMsg(
+      nextValue
+        ? 'Privacy updated: Selected field is now visible in your Community Profile.'
+        : 'Privacy updated: Selected field is now hidden and strictly private to you.'
+    );
+    setTimeout(() => setProfileSaveMsg(null), 3500);
+  };
+
   // Profile Save Handler
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUid =
+      authUser?.uid ||
       myProfile.uid ||
       'user-' +
         (myProfile.name || 'specialist')
@@ -1025,56 +1304,416 @@ export default function App() {
 
     setHasSavedProfile(true);
     setMyProfile(updatedUser);
-    setUsers((prev) => {
-      const exists = prev.some((u) => u.uid === updatedUser.uid);
-      if (exists) {
-        return prev.map((u) => (u.uid === updatedUser.uid ? updatedUser : u));
-      }
-      return [updatedUser, ...prev];
-    });
+    await persistUserProfileToFirestore(updatedUser);
+
+    setProfileSaveMsg(
+      isCurrentUserPaid
+        ? 'Profile saved! Only the fields marked Public are visible to Paid Specialists in the Community Directory.'
+        : 'Profile saved! Your current status is Free Member (Strictly Private until upgraded to Paid Member).'
+    );
+    setTimeout(() => setProfileSaveMsg(null), 5000);
+  };
+
+  const isUserAdmin = Boolean(
+    myProfile.isAdmin ||
+      authUser?.email?.toLowerCase() === 'mindmademedia9@gmail.com'
+  );
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingMedia(true);
+    try {
+      const result = await uploadMediaFile(file, 'avatars', storageConfig);
+      const updated: HubUser = {
+        ...myProfile,
+        uid: authUser?.uid || myProfile.uid,
+        profilePicUrl: result.url
+      };
+      setMyProfile(updated);
+      await persistUserProfileToFirestore(updated);
+      setUploadStatusMsg(
+        result.provider === 'cloudinary-cdn'
+          ? `Profile photo uploaded to Free Cloud CDN (${result.sizeKb} KB)!`
+          : `Profile photo compressed & saved to Cloud Vault (${result.sizeKb} KB WebP)!`
+      );
+      setTimeout(() => setUploadStatusMsg(null), 4000);
+    } catch {
+      setUploadStatusMsg('Could not process image. Please try another photo.');
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const handleCvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingMedia(true);
+    try {
+      const result = await uploadMediaFile(file, 'cvs', storageConfig);
+      const updated: HubUser = {
+        ...myProfile,
+        uid: authUser?.uid || myProfile.uid,
+        cvUrl: result.provider === 'cloudinary-cdn' ? result.url : result.fileName
+      };
+      setMyProfile(updated);
+      await persistUserProfileToFirestore(updated);
+      setUploadStatusMsg(
+        result.provider === 'cloudinary-cdn'
+          ? `CV uploaded to Cloud CDN (${result.sizeKb} KB)!`
+          : `CV metadata & document linked to your Private Vault (${result.sizeKb} KB)!`
+      );
+      setTimeout(() => setUploadStatusMsg(null), 4000);
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const handlePaymentReceiptUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingMedia(true);
+    try {
+      const result = await uploadMediaFile(file, 'receipts', storageConfig);
+      setPayReceiptUrl(result.url);
+      setPaySubmitBanner(
+        `Payment receipt attached (${result.sizeKb} KB ${
+          result.provider === 'cloudinary-cdn' ? 'Cloud CDN' : 'Compressed WebP'
+        }). Click Submit below to send to Admin.`
+      );
+    } catch {
+      setPaySubmitBanner('Failed to attach receipt image.');
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const handleSubmitPaymentVerification = async () => {
+    if (!authUser) return;
+    if (!payTransactionId.trim() && !payReceiptUrl) {
+      setPaySubmitBanner(
+        'Please enter your Transaction ID or upload your Payment Receipt screenshot.'
+      );
+      return;
+    }
+
+    const reqId = `pay-${authUser.uid.slice(0, 18)}-${Date.now()}`;
+    const payload: HubPaymentRequest = {
+      id: reqId,
+      uid: authUser.uid,
+      userName: myProfile.name || authUser.displayName || 'Food Specialist',
+      userEmail: myProfile.email || authUser.email || '',
+      userPhone: myProfile.phone || '',
+      qualification: myProfile.qualification || '',
+      currentRole: myProfile.currentRole || '',
+      paymentMethod: payMethod,
+      transactionId: payTransactionId.trim() || 'RECEIPT-UPLOADED',
+      amount: payAmount.trim() || 'PKR 2,000',
+      notes: payNotes.trim(),
+      receiptImageUrl: payReceiptUrl || '',
+      status: 'pending',
+      submittedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    };
 
     try {
-      await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, {
-        merge: true
-      });
+      await setDoc(doc(db, 'paymentRequests', reqId), payload);
+      const updatedUser: HubUser = {
+        ...myProfile,
+        uid: authUser.uid,
+        paymentStatus: 'pending',
+        paymentMethod: payMethod,
+        paymentReference: payload.transactionId,
+        paymentAmount: payload.amount,
+        receiptImageUrl: payReceiptUrl || myProfile.receiptImageUrl || ''
+      };
+      setMyProfile(updatedUser);
+      await persistUserProfileToFirestore(updatedUser);
+      setPaySubmitBanner(
+        'Payment Receipt & Verification Request saved in Cloud Storage! Admin will verify and activate your Paid Membership shortly.'
+      );
+      setPayTransactionId('');
+      setPayNotes('');
     } catch (err) {
       try {
         handleFirestoreError(
           err,
           OperationType.WRITE,
-          `users/${updatedUser.uid}`
+          `paymentRequests/${reqId}`
         );
       } catch {}
     }
-
-    setProfileSaveMsg(
-      isCurrentUserPaid
-        ? 'Profile saved! Your Verified Paid Member profile is public in the Specialist Directory.'
-        : 'Profile saved! Your current status is Free Member (Private until upgraded to Paid Member).'
-    );
-    setTimeout(() => setProfileSaveMsg(null), 5000);
   };
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAdminVerifyPayment = async (
+    req: HubPaymentRequest,
+    decision: 'verified' | 'rejected'
+  ) => {
+    try {
+      await setDoc(
+        doc(db, 'paymentRequests', req.id),
+        { ...req, status: decision },
+        { merge: true }
+      );
+      const userSnap = await getDoc(doc(db, 'users', req.uid));
+      if (userSnap.exists()) {
+        const uData = userSnap.data() as HubUser;
+        const updatedUser: HubUser = {
+          ...uData,
+          isPaid: decision === 'verified',
+          paymentStatus: decision
+        };
+        await setDoc(doc(db, 'users', req.uid), updatedUser, { merge: true });
+        await setDoc(
+          doc(db, 'users', req.uid, 'private', 'profile'),
+          updatedUser,
+          { merge: true }
+        );
+      }
+      setAdminStatusBanner(
+        decision === 'verified'
+          ? `Approved ${req.userName} as Verified Paid Specialist!`
+          : `Marked ${req.userName}'s payment request as Rejected.`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch (err) {
+      try {
+        handleFirestoreError(
+          err,
+          OperationType.WRITE,
+          `paymentRequests/${req.id}`
+        );
+      } catch {}
+    }
+  };
+
+  const handleCertImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setMyProfile((prev) => ({
-          ...prev,
-          profilePicUrl: reader.result as string
-        }));
+    setIsUploadingMedia(true);
+    try {
+      const result = await uploadMediaFile(file, 'certificates', storageConfig);
+      setNewCertImageUrl(result.url);
+      setAdminStatusBanner(
+        `Certificate scan uploaded (${result.sizeKb} KB via ${
+          result.provider === 'cloudinary-cdn' ? 'Cloud CDN' : 'Smart WebP'
+        })!`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const handleIssueCertificate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCertRecipientName.trim() || !newCertTitle.trim()) return;
+    const certId = `cert-${Date.now()}`;
+    const serial =
+      newCertNumber.trim() ||
+      `FSP-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const certImg =
+      newCertImageUrl ||
+      generateCertificateSvgDataUrl({
+        certificateNumber: serial,
+        recipientName: newCertRecipientName.trim(),
+        trainingTitle: newCertTitle.trim(),
+        trainingCategory: newCertCategory,
+        accreditationBody: newCertAccreditation,
+        issueDate: newCertIssueDate || '2026-11-03'
+      });
+
+    const newCert: HubCertificate = {
+      id: certId,
+      certificateNumber: serial,
+      recipientName: newCertRecipientName.trim(),
+      recipientEmail: newCertRecipientEmail.trim().toLowerCase(),
+      trainingCategory: newCertCategory,
+      trainingTitle: newCertTitle.trim(),
+      accreditationBody: newCertAccreditation.trim() || 'Highfield UK Accredited',
+      issueDate: newCertIssueDate || '2026-11-03',
+      certificateImageUrl: certImg,
+      verificationStatus: 'valid',
+      issuedBy: 'Food Specialists Portal Admin',
+      createdAt: new Date().toISOString().slice(0, 19) + 'Z'
+    };
+
+    try {
+      await setDoc(doc(db, 'certificates', certId), newCert);
+      setCertificates((prev) => [newCert, ...prev]);
+      setAdminStatusBanner(
+        `Issued & stored Training Certificate (${serial}) for ${newCert.recipientName}!`
+      );
+      setNewCertRecipientName('');
+      setNewCertRecipientEmail('');
+      setNewCertImageUrl('');
+      setNewCertNumber(`FSP-2026-${Math.floor(1000 + Math.random() * 9000)}`);
+      setTimeout(() => setAdminStatusBanner(null), 4500);
+    } catch (err) {
+      try {
+        handleFirestoreError(
+          err,
+          OperationType.WRITE,
+          `certificates/${certId}`
+        );
+      } catch {}
+    }
+  };
+
+  const handleDeleteCertificate = async (certId: string) => {
+    try {
+      await deleteDoc(doc(db, 'certificates', certId));
+    } catch {}
+    setCertificates((prev) => prev.filter((c) => c.id !== certId));
+    setAdminStatusBanner('Certificate removed from storage.');
+    setTimeout(() => setAdminStatusBanner(null), 3500);
+  };
+
+  const handleAdminPublishOpportunity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminOppTitle.trim() || !adminOppOrg.trim()) return;
+    if (adminOppType === 'job') {
+      const id = `job-${Date.now()}`;
+      const newJob: HubJob = {
+        id,
+        title: adminOppTitle.trim(),
+        company: adminOppOrg.trim(),
+        location: adminOppLocation.trim() || 'Lahore, Pakistan',
+        country: adminOppCountry.trim() || 'Pakistan',
+        specialization: adminOppCat,
+        experienceRequired: adminOppExpOrDeadline.trim() || '2+ Years',
+        category: adminOppCat,
+        description: adminOppDesc.trim() || 'Role in Food Quality & Safety.',
+        requirements: 'BS/MS Food Science & Technology, HACCP / ISO 22000.',
+        hrEmail: adminOppEmail.trim(),
+        applyLink: adminOppLink.trim() || '#',
+        tags: [adminOppCat, adminOppCountry],
+        postedAt: new Date().toISOString().slice(0, 10),
+        expiryAt: '2026-12-31',
+        isActive: true
+      };
+      try {
+        await setDoc(doc(db, 'jobs', id), newJob);
+        setJobs((prev) => [newJob, ...prev]);
+        setAdminStatusBanner(`Job "${newJob.title}" saved to Cloud Storage!`);
+      } catch {}
+    } else {
+      const id = `sch-${Date.now()}`;
+      const newSch: HubScholarship = {
+        id,
+        title: adminOppTitle.trim(),
+        organization: adminOppOrg.trim(),
+        country: adminOppCountry.trim() || 'International',
+        specialization: 'Food Science & Technology',
+        deadline: adminOppExpOrDeadline.trim() || '2026-12-31',
+        fundingType:
+          (adminOppCat as 'Fellowships' | 'International' | 'Grants') ||
+          'Fellowships',
+        degreeLevel: 'MS / PhD',
+        description:
+          adminOppDesc.trim() || 'Funded Food Science & Technology Scholarship.',
+        eligibility: 'BS/MS in Food Science, Human Nutrition, or Dairy Tech.',
+        hrEmail: adminOppEmail.trim(),
+        applyLink: adminOppLink.trim() || '#',
+        isActive: true
+      };
+      try {
+        await setDoc(doc(db, 'scholarships', id), newSch);
+        setScholarships((prev) => [newSch, ...prev]);
+        setAdminStatusBanner(
+          `Scholarship "${newSch.title}" saved to Cloud Storage!`
+        );
+      } catch {}
+    }
+    setAdminOppTitle('');
+    setAdminOppOrg('');
+    setAdminOppDesc('');
+    setAdminOppEmail('');
+    setAdminOppLink('');
+    setTimeout(() => setAdminStatusBanner(null), 4000);
+  };
+
+  const handleSaveStorageConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const updated: CloudStorageConfig = {
+      ...storageConfig,
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    };
+    setStorageConfig(updated);
+    try {
+      await setDoc(doc(db, 'settings', 'storageConfig'), updated);
+      setAdminStatusBanner(
+        updated.provider === 'cloudinary'
+          ? 'Cloud Storage switched to Free Cloudinary Global CDN (25 GB Capacity)!'
+          : 'Cloud Storage set to Built-in Smart WebP Compression + Firebase Firestore Vault!'
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch {}
+  };
+
+  const handleExportFullBackupJson = () => {
+    const backupPayload = {
+      exportedAt: new Date().toISOString(),
+      projectId: 'food-specialist-3e294',
+      storageConfig,
+      counts: {
+        users: users.length,
+        paymentRequests: paymentRequests.length,
+        jobs: jobs.length,
+        scholarships: scholarships.length,
+        trainings: trainings.length,
+        certificates: certificates.length
+      },
+      data: {
+        users,
+        paymentRequests,
+        jobs,
+        scholarships,
+        trainings,
+        certificates
       }
     };
-    reader.readAsDataURL(file);
+    const blob = new Blob([JSON.stringify(backupPayload, null, 2)], {
+      type: 'application/json'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `food-specialists-storage-backup-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  const handleCvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setMyProfile((prev) => ({ ...prev, cvUrl: file.name }));
-  };
+  const filteredCertificates = useMemo(() => {
+    const q = certSearchQuery.trim().toLowerCase();
+    if (!q) return certificates;
+    return certificates.filter(
+      (c) =>
+        c.certificateNumber.toLowerCase().includes(q) ||
+        c.recipientName.toLowerCase().includes(q) ||
+        c.recipientEmail?.toLowerCase().includes(q) ||
+        c.trainingTitle.toLowerCase().includes(q)
+    );
+  }, [certificates, certSearchQuery]);
+
+  const myEarnedCertificates = useMemo(() => {
+    const myEmail = (authUser?.email || myProfile.email || '').toLowerCase();
+    const myName = (myProfile.name || '').toLowerCase();
+    return certificates.filter(
+      (c) =>
+        (myEmail && c.recipientEmail?.toLowerCase() === myEmail) ||
+        (c.recipientUid && c.recipientUid === authUser?.uid) ||
+        (myName && c.recipientName.toLowerCase() === myName)
+    );
+  }, [certificates, authUser?.email, authUser?.uid, myProfile.email, myProfile.name]);
 
   const firstName = useMemo(() => {
     if (!myProfile.name) return 'Guest';
@@ -1128,12 +1767,15 @@ export default function App() {
                 route.name === 'trainings-lead-auditor-hub'
               )
                 setRoute({ name: 'trainings' });
+              else if (route.name === 'admin') setRoute({ name: 'profile' });
               else setRoute({ name: 'home' });
             }}
             onHomeClick={() => setRoute({ name: 'home' })}
             onSearchClick={() => setRoute({ name: 'search' })}
             onBellClick={() => navigateToJobs('All')}
             onProfileClick={() => setRoute({ name: 'profile' })}
+            onAdminClick={() => setRoute({ name: 'admin' })}
+            isAdmin={isUserAdmin}
             onSignOutClick={handleSignOut}
             userEmail={authUser.email}
             userInitial={userInitial}
@@ -2846,6 +3488,105 @@ export default function App() {
                   </span>
                 </div>
               </div>
+
+              {/* CARD 3: TRAINING CERTIFICATES VERIFICATION & DIGITAL VAULT */}
+              <div className="bg-white border-[1.5px] border-[#78AF88] rounded-[24px] p-5 shadow-sm space-y-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-[#15803D] text-white flex items-center justify-center shrink-0">
+                      <Award className="w-6 h-6 stroke-[2.2]" />
+                    </div>
+                    <div>
+                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#DCF2E3] text-[#14532D] text-[10.5px] font-extrabold">
+                        Cloud Certificate Registry
+                      </span>
+                      <h2 className="text-[19px] font-extrabold text-[#0D2E1B] leading-tight mt-0.5">
+                        Training Certificates &amp; Verification
+                      </h2>
+                    </div>
+                  </div>
+                  {isUserAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminTab('certificates');
+                        setRoute({ name: 'admin' });
+                      }}
+                      className="px-3 py-1.5 rounded-full bg-[#14532D] text-white text-[11px] font-extrabold cursor-pointer shrink-0"
+                    >
+                      + Issue Certificate
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Search by Certificate ID (e.g. <strong>FSP-2026-HACCP4-001</strong>), candidate name, or email to verify and download official Highfield &amp; Lead Auditor training certificates.
+                </p>
+
+                <div className="relative">
+                  <Search className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={certSearchQuery}
+                    onChange={(e) => setCertSearchQuery(e.target.value)}
+                    placeholder="Enter Certificate ID, Name, or Email..."
+                    className="w-full pl-10 pr-8 py-2.5 rounded-2xl bg-[#F2F7F3] border border-[#AECBB5] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#16A34A] focus:bg-white"
+                  />
+                  {certSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setCertSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-0.5">
+                  {filteredCertificates.length === 0 ? (
+                    <div className="p-4 rounded-2xl bg-[#F6FBF7] border border-emerald-100 text-center text-xs text-gray-500 font-semibold">
+                      No matching training certificate found for &ldquo;{certSearchQuery}&rdquo;.
+                    </div>
+                  ) : (
+                    filteredCertificates.map((cert) => (
+                      <div
+                        key={cert.id}
+                        onClick={() => setSelectedCertificate(cert)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedCertificate(cert);
+                          }
+                        }}
+                        className="p-3.5 rounded-2xl bg-[#F6FBF7] hover:bg-[#EAF5EC] border border-emerald-200 flex items-center justify-between gap-3 cursor-pointer transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-0.5 rounded-md bg-[#14532D] text-white text-[10px] font-extrabold">
+                              {cert.certificateNumber}
+                            </span>
+                            <span className="text-[10.5px] font-extrabold text-[#15803D]">
+                              • Verified ✓
+                            </span>
+                          </div>
+                          <div className="text-[14px] font-extrabold text-[#0B3B1E] truncate mt-1">
+                            {cert.recipientName}
+                          </div>
+                          <div className="text-[11.5px] font-semibold text-gray-600 truncate">
+                            {cert.trainingTitle} ({cert.issueDate})
+                          </div>
+                        </div>
+                        <span className="px-3 py-1.5 rounded-full bg-[#138A3E] text-white text-[11px] font-extrabold shrink-0">
+                          View
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -3384,15 +4125,7 @@ export default function App() {
                     type="button"
                     role="switch"
                     aria-checked={Boolean(myProfile.privacySettings.hireMe_public)}
-                    onClick={() =>
-                      setMyProfile({
-                        ...myProfile,
-                        privacySettings: {
-                          ...myProfile.privacySettings,
-                          hireMe_public: !myProfile.privacySettings.hireMe_public
-                        }
-                      })
-                    }
+                    onClick={() => handleTogglePrivacySetting('hireMe_public')}
                     className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
                       myProfile.privacySettings.hireMe_public
                         ? 'bg-[#228B4E] justify-end'
@@ -3542,14 +4275,7 @@ export default function App() {
                       role="switch"
                       aria-checked={myProfile.privacySettings.currentRole_public}
                       onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            currentRole_public:
-                              !myProfile.privacySettings.currentRole_public
-                          }
-                        })
+                        handleTogglePrivacySetting('currentRole_public')
                       }
                       className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
                         myProfile.privacySettings.currentRole_public
@@ -3595,14 +4321,7 @@ export default function App() {
                       role="switch"
                       aria-checked={myProfile.privacySettings.qualification_public}
                       onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            qualification_public:
-                              !myProfile.privacySettings.qualification_public
-                          }
-                        })
+                        handleTogglePrivacySetting('qualification_public')
                       }
                       className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
                         myProfile.privacySettings.qualification_public
@@ -3645,14 +4364,7 @@ export default function App() {
                       role="switch"
                       aria-checked={myProfile.privacySettings.experience_public}
                       onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            experience_public:
-                              !myProfile.privacySettings.experience_public
-                          }
-                        })
+                        handleTogglePrivacySetting('experience_public')
                       }
                       className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
                         myProfile.privacySettings.experience_public
@@ -3695,14 +4407,7 @@ export default function App() {
                       role="switch"
                       aria-checked={myProfile.privacySettings.location_public}
                       onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            location_public:
-                              !myProfile.privacySettings.location_public
-                          }
-                        })
+                        handleTogglePrivacySetting('location_public')
                       }
                       className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
                         myProfile.privacySettings.location_public
@@ -3744,15 +4449,7 @@ export default function App() {
                       type="button"
                       role="switch"
                       aria-checked={myProfile.privacySettings.email_public}
-                      onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            email_public: !myProfile.privacySettings.email_public
-                          }
-                        })
-                      }
+                      onClick={() => handleTogglePrivacySetting('email_public')}
                       className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
                         myProfile.privacySettings.email_public
                           ? 'bg-[#228B4E] justify-end'
@@ -3793,15 +4490,7 @@ export default function App() {
                       type="button"
                       role="switch"
                       aria-checked={myProfile.privacySettings.phone_public}
-                      onClick={() =>
-                        setMyProfile({
-                          ...myProfile,
-                          privacySettings: {
-                            ...myProfile.privacySettings,
-                            phone_public: !myProfile.privacySettings.phone_public
-                          }
-                        })
-                      }
+                      onClick={() => handleTogglePrivacySetting('phone_public')}
                       className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
                         myProfile.privacySettings.phone_public
                           ? 'bg-[#228B4E] justify-end'
@@ -3825,6 +4514,15 @@ export default function App() {
                 </div>
               </div>
 
+              {uploadStatusMsg && (
+                <div className="bg-[#DCFCE7] border border-[#16A34A] text-[#0D2E1B] rounded-2xl p-3 text-xs font-extrabold flex items-center justify-between">
+                  <span>{uploadStatusMsg}</span>
+                  {isUploadingMedia && (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#15803D]" />
+                  )}
+                </div>
+              )}
+
               {/* CV Upload PDF */}
               <div className="bg-white border border-emerald-100 rounded-[24px] p-4 flex items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -3834,7 +4532,7 @@ export default function App() {
                       {myProfile.cvUrl || 'No CV PDF uploaded yet'}
                     </div>
                     <div className="text-[11px] text-gray-500">
-                      Upload CV PDF for Hiring &amp; QA Roles
+                      Upload CV PDF for Hiring &amp; QA Roles (Saved to Cloud Vault)
                     </div>
                   </div>
                 </div>
@@ -3854,6 +4552,202 @@ export default function App() {
                 </button>
               </div>
 
+              {/* MY EARNED TRAINING CERTIFICATES VAULT CARD */}
+              <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-[#15803D]" />
+                    <h3 className="text-sm font-extrabold text-[#0D2E1B]">
+                      My Training Certificates ({myEarnedCertificates.length})
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRoute({ name: 'trainings' })}
+                    className="text-[11px] font-extrabold text-[#15803D] underline cursor-pointer"
+                  >
+                    Verify Any ID →
+                  </button>
+                </div>
+
+                {myEarnedCertificates.length === 0 ? (
+                  <p className="text-xs text-gray-600">
+                    Certificates issued to your email (<strong>{myProfile.email}</strong>) or name will automatically appear here for viewing &amp; download.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {myEarnedCertificates.map((cert) => (
+                      <div
+                        key={cert.id}
+                        onClick={() => setSelectedCertificate(cert)}
+                        className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200 flex items-center justify-between gap-2 cursor-pointer"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-xs font-extrabold text-[#0D2E1B] truncate">
+                            {cert.trainingTitle}
+                          </div>
+                          <div className="text-[11px] text-[#15803D] font-bold">
+                            ID: {cert.certificateNumber} • {cert.issueDate}
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full bg-[#15803D] text-white text-[10.5px] font-extrabold shrink-0">
+                          Open
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* PREMIUM / PAID MEMBERSHIP PAYMENT RECEIPT UPLOAD & VERIFICATION CARD */}
+              <div className="bg-white border-2 border-[#16A34A] rounded-[26px] p-5 shadow-xs space-y-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-[#15803D]" />
+                    <div>
+                      <h3 className="text-[16px] font-extrabold text-[#0D2E1B]">
+                        Paid Membership &amp; Payment Receipt Vault
+                      </h3>
+                      <p className="text-[11px] text-gray-600">
+                        Upload your payment receipt to unlock Verified Specialist status
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10.5px] font-extrabold ${
+                      myProfile.isPaid
+                        ? 'bg-[#DCFCE7] text-[#14532D]'
+                        : myProfile.paymentStatus === 'pending'
+                        ? 'bg-amber-100 text-amber-900'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {myProfile.isPaid
+                      ? 'Verified ✓'
+                      : myProfile.paymentStatus === 'pending'
+                      ? 'Pending Review'
+                      : 'Free Tier'}
+                  </span>
+                </div>
+
+                {!myProfile.isPaid && (
+                  <div className="space-y-3 pt-1">
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(
+                        ['EasyPaisa', 'JazzCash', 'Bank Transfer'] as const
+                      ).map((method) => (
+                        <button
+                          key={method}
+                          type="button"
+                          onClick={() => setPayMethod(method)}
+                          className={`py-2 px-2 rounded-xl text-xs font-extrabold border transition-colors cursor-pointer ${
+                            payMethod === method
+                              ? 'bg-[#15803D] text-white border-[#15803D]'
+                              : 'bg-[#F2F7F3] text-[#0D2E1B] border-[#C6DFCB]'
+                          }`}
+                        >
+                          {method}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
+                          Transaction / Ref ID
+                        </label>
+                        <input
+                          type="text"
+                          value={payTransactionId}
+                          onChange={(e) => setPayTransactionId(e.target.value)}
+                          placeholder="e.g. TID-89341209"
+                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
+                          Paid Amount
+                        </label>
+                        <input
+                          type="text"
+                          value={payAmount}
+                          onChange={(e) => setPayAmount(e.target.value)}
+                          placeholder="PKR 2,000"
+                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Payment Receipt Image Upload */}
+                    <div className="p-3.5 rounded-2xl bg-[#F2F7F3] border border-dashed border-[#16A34A] flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <ImageIcon className="w-5 h-5 text-[#15803D] shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-xs font-extrabold text-[#0D2E1B] truncate">
+                            {payReceiptUrl
+                              ? 'Payment Receipt Attached ✓'
+                              : 'Upload Payment Receipt Screenshot'}
+                          </div>
+                          <div className="text-[10.5px] text-gray-600">
+                            Auto-compressed for fast cloud storage
+                          </div>
+                        </div>
+                      </div>
+                      <input
+                        ref={receiptInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePaymentReceiptUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => receiptInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-xl bg-[#15803D] text-white text-xs font-extrabold shrink-0 cursor-pointer flex items-center gap-1"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{payReceiptUrl ? 'Change' : 'Upload'}</span>
+                      </button>
+                    </div>
+
+                    {payReceiptUrl && (
+                      <div className="rounded-2xl overflow-hidden border border-emerald-200 max-h-40 bg-gray-50 flex justify-center">
+                        <img
+                          src={payReceiptUrl}
+                          alt="Payment Receipt Preview"
+                          className="max-h-36 object-contain"
+                        />
+                      </div>
+                    )}
+
+                    {paySubmitBanner && (
+                      <div className="p-3 rounded-xl bg-[#DCFCE7] text-[#0D2E1B] text-xs font-bold">
+                        {paySubmitBanner}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleSubmitPaymentVerification}
+                      className="w-full py-3 px-4 rounded-2xl bg-[#14532D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold transition-colors cursor-pointer"
+                    >
+                      Submit Payment Receipt for Admin Verification
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {isUserAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setRoute({ name: 'admin' })}
+                  className="w-full py-3.5 px-5 rounded-[18px] bg-[#0D2E1B] hover:bg-[#14532D] text-white font-extrabold text-sm shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Database className="w-4 h-4 text-emerald-300" />
+                  <span>Open Admin Cloud Storage &amp; Control Panel</span>
+                </button>
+              )}
+
               {/* Full-Width Green "Save Changes" Button */}
               <button
                 type="submit"
@@ -3863,7 +4757,766 @@ export default function App() {
               </button>
             </form>
           )}
+
+          {/* ==================== 8. ADMIN CLOUD STORAGE, RECEIPTS & CERTIFICATES CONSOLE (/admin) ==================== */}
+          {route.name === 'admin' && isUserAdmin && (
+            <div className="space-y-4 px-1">
+              <div className="bg-gradient-to-r from-[#0D2E1B] via-[#14532D] to-[#15803D] rounded-[24px] p-5 text-white shadow-sm space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-200 text-[10.5px] font-extrabold">
+                    Admin Cloud Storage &amp; Control Center
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleExportFullBackupJson}
+                    className="px-3 py-1 rounded-full bg-white text-[#0D2E1B] text-[11px] font-extrabold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Backup All Data</span>
+                  </button>
+                </div>
+                <h1 className="text-[22px] font-extrabold leading-tight">
+                  Cloud Storage &amp; Data Vault
+                </h1>
+                <p className="text-xs text-emerald-100 leading-relaxed">
+                  Manage high-traffic storage for User Profiles, Avatars, Payment Receipts, Jobs, Scholarships &amp; Training Certificates.
+                </p>
+              </div>
+
+              {adminStatusBanner && (
+                <div className="p-3.5 rounded-2xl bg-[#15803D] text-white text-xs font-extrabold flex items-center justify-between shadow-xs">
+                  <span>{adminStatusBanner}</span>
+                  <button
+                    type="button"
+                    onClick={() => setAdminStatusBanner(null)}
+                    className="underline ml-2"
+                  >
+                    OK
+                  </button>
+                </div>
+              )}
+
+              {/* 4 Admin Navigation Tabs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                {(
+                  [
+                    { id: 'storage', label: '1. Cloud Storage' },
+                    {
+                      id: 'receipts',
+                      label: `2. Receipts (${paymentRequests.length})`
+                    },
+                    {
+                      id: 'certificates',
+                      label: `3. Certificates (${certificates.length})`
+                    },
+                    { id: 'opportunities', label: '4. Jobs & Scholars' }
+                  ] as const
+                ).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setAdminTab(t.id)}
+                    className={`py-2.5 px-2.5 rounded-2xl text-xs font-extrabold border transition-colors cursor-pointer ${
+                      adminTab === t.id
+                        ? 'bg-[#15803D] text-white border-[#15803D] shadow-xs'
+                        : 'bg-white text-[#0D2E1B] border-emerald-200 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* TAB 1: CLOUD STORAGE ARCHITECTURE & LIVE METRICS */}
+              {adminTab === 'storage' && (
+                <div className="space-y-4">
+                  <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-extrabold text-[#0D2E1B] flex items-center gap-1.5">
+                        <Database className="w-4 h-4 text-[#15803D]" />
+                        <span>Live Cloud Storage Collections Status</span>
+                      </h2>
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#14532D] text-[10.5px] font-extrabold">
+                        100% Free Active
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5 text-xs">
+                      <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100">
+                        <div className="text-gray-500 font-semibold">
+                          User Profiles &amp; Pics
+                        </div>
+                        <div className="text-lg font-extrabold text-[#0D2E1B] mt-0.5">
+                          {users.length} Users
+                        </div>
+                        <div className="text-[10.5px] text-[#15803D] font-bold">
+                          /users + /private/profile
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100">
+                        <div className="text-gray-500 font-semibold">
+                          Payment Receipts
+                        </div>
+                        <div className="text-lg font-extrabold text-[#0D2E1B] mt-0.5">
+                          {paymentRequests.length} Receipts
+                        </div>
+                        <div className="text-[10.5px] text-[#15803D] font-bold">
+                          /paymentRequests
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100">
+                        <div className="text-gray-500 font-semibold">
+                          Jobs &amp; Scholarships
+                        </div>
+                        <div className="text-lg font-extrabold text-[#0D2E1B] mt-0.5">
+                          {jobs.length + scholarships.length} Posts
+                        </div>
+                        <div className="text-[10.5px] text-[#15803D] font-bold">
+                          {jobs.length} Jobs • {scholarships.length} Scholarships
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100">
+                        <div className="text-gray-500 font-semibold">
+                          Training Certificates
+                        </div>
+                        <div className="text-lg font-extrabold text-[#0D2E1B] mt-0.5">
+                          {certificates.length} Issued
+                        </div>
+                        <div className="text-[10.5px] text-[#15803D] font-bold">
+                          /certificates Vault
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* STORAGE ENGINE CONFIGURATION (SMART WEBP VS 25GB CLOUDINARY FREE CDN) */}
+                  <form
+                    onSubmit={handleSaveStorageConfig}
+                    className="bg-white border border-emerald-200 rounded-[24px] p-5 shadow-xs space-y-3.5"
+                  >
+                    <div>
+                      <h3 className="text-base font-extrabold text-[#0D2E1B]">
+                        High-Traffic Free Media Storage Engine
+                      </h3>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        Choose how Profile Photos, Payment Receipts, CVs &amp; Training Certificates are stored:
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label
+                        onClick={() =>
+                          setStorageConfig({
+                            ...storageConfig,
+                            provider: 'smart-firestore'
+                          })
+                        }
+                        className={`block p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                          storageConfig.provider === 'smart-firestore'
+                            ? 'bg-[#F0FDF4] border-2 border-[#16A34A]'
+                            : 'bg-white border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-extrabold text-[#0D2E1B]">
+                            Tier 1: Smart WebP Compression + Firebase Firestore (Default)
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-[#15803D] text-white text-[10px] font-bold">
+                            Active &amp; Free
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-600 mt-1">
+                          Automatically compresses 5MB photos, receipts &amp; certificates down to ~80 KB WebP before saving to Firestore. Zero external account needed; supports 10,000+ records free.
+                        </p>
+                      </label>
+
+                      <label
+                        onClick={() =>
+                          setStorageConfig({
+                            ...storageConfig,
+                            provider: 'cloudinary'
+                          })
+                        }
+                        className={`block p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                          storageConfig.provider === 'cloudinary'
+                            ? 'bg-[#F0FDF4] border-2 border-[#16A34A]'
+                            : 'bg-white border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-extrabold text-[#0D2E1B]">
+                            Tier 2: Cloudinary 25 GB Free Global CDN (Massive Traffic)
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[#14532D] text-[10px] font-bold">
+                            25 GB Free
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-600 mt-1">
+                          Uploads images, receipts, PDFs &amp; certificates to Cloudinary&apos;s free 25 GB CDN and saves only the tiny HTTPS URL (~80 bytes) in Firestore for 100,000+ users.
+                        </p>
+                      </label>
+                    </div>
+
+                    {storageConfig.provider === 'cloudinary' && (
+                      <div className="space-y-2.5 p-3.5 rounded-2xl bg-[#F2F7F3] border border-emerald-200">
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
+                            Cloudinary Cloud Name (Free Account at cloudinary.com)
+                          </label>
+                          <input
+                            type="text"
+                            value={storageConfig.cloudinaryCloudName}
+                            onChange={(e) =>
+                              setStorageConfig({
+                                ...storageConfig,
+                                cloudinaryCloudName: e.target.value
+                              })
+                            }
+                            placeholder="e.g. dxyz12345"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-semibold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
+                            Unsigned Upload Preset Name
+                          </label>
+                          <input
+                            type="text"
+                            value={storageConfig.cloudinaryUploadPreset}
+                            onChange={(e) =>
+                              setStorageConfig({
+                                ...storageConfig,
+                                cloudinaryUploadPreset: e.target.value
+                              })
+                            }
+                            placeholder="e.g. food_specialists_unsigned"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-semibold"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer"
+                    >
+                      Save Cloud Storage Configuration
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* TAB 2: PAYMENT RECEIPTS & PREMIUM MEMBER APPROVALS */}
+              {adminTab === 'receipts' && (
+                <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-3">
+                  <h2 className="text-base font-extrabold text-[#0D2E1B]">
+                    Submitted Payment Receipts ({paymentRequests.length})
+                  </h2>
+                  {paymentRequests.length === 0 ? (
+                    <p className="text-xs text-gray-500 py-4 text-center">
+                      No payment receipts submitted yet. When users upload a receipt in their Profile, it appears here.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {paymentRequests.map((req) => (
+                        <div
+                          key={req.id}
+                          className="p-4 rounded-2xl bg-[#F6FBF7] border border-emerald-200 space-y-2.5"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="text-sm font-extrabold text-[#0D2E1B]">
+                                {req.userName}
+                              </div>
+                              <div className="text-[11px] text-gray-600">
+                                {req.userEmail} • {req.userPhone}
+                              </div>
+                              <div className="text-xs font-bold text-[#15803D] mt-0.5">
+                                {req.paymentMethod} • {req.amount} • TID:{' '}
+                                {req.transactionId}
+                              </div>
+                            </div>
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
+                                req.status === 'verified'
+                                  ? 'bg-[#DCFCE7] text-[#14532D]'
+                                  : req.status === 'rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-amber-100 text-amber-900'
+                              }`}
+                            >
+                              {req.status.toUpperCase()}
+                            </span>
+                          </div>
+
+                          {req.receiptImageUrl && (
+                            <div className="rounded-xl overflow-hidden border border-emerald-200 bg-white p-2">
+                              <img
+                                src={req.receiptImageUrl}
+                                alt="Payment Receipt"
+                                className="max-h-48 mx-auto object-contain rounded-lg"
+                              />
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleAdminVerifyPayment(req, 'verified')
+                              }
+                              className="py-2 px-3 rounded-xl bg-[#15803D] text-white text-xs font-extrabold cursor-pointer"
+                            >
+                              ✓ Approve Paid Member
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleAdminVerifyPayment(req, 'rejected')
+                              }
+                              className="py-2 px-3 rounded-xl bg-red-50 text-red-700 border border-red-200 text-xs font-extrabold cursor-pointer"
+                            >
+                              ✕ Reject
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: TRAINING CERTIFICATES ISSUANCE & STORAGE */}
+              {adminTab === 'certificates' && (
+                <div className="space-y-4">
+                  <form
+                    onSubmit={handleIssueCertificate}
+                    className="bg-white border border-emerald-200 rounded-[24px] p-5 shadow-xs space-y-3"
+                  >
+                    <h2 className="text-base font-extrabold text-[#0D2E1B]">
+                      Issue &amp; Store Training Certificate
+                    </h2>
+                    <p className="text-xs text-gray-600">
+                      Upload a scanned certificate image OR auto-generate a verifiable digital certificate for any student.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
+                          Recipient Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newCertRecipientName}
+                          onChange={(e) =>
+                            setNewCertRecipientName(e.target.value)
+                          }
+                          placeholder="e.g. Muhammad Usman"
+                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
+                          Recipient Email (Links to User Profile)
+                        </label>
+                        <input
+                          type="email"
+                          value={newCertRecipientEmail}
+                          onChange={(e) =>
+                            setNewCertRecipientEmail(e.target.value)
+                          }
+                          placeholder="student@email.com"
+                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
+                          Training Category
+                        </label>
+                        <select
+                          value={newCertCategory}
+                          onChange={(e) => {
+                            const cat = e.target.value;
+                            setNewCertCategory(cat);
+                            if (cat === 'Highfield') {
+                              setNewCertTitle(
+                                'HACCP Level 3 — Food Safety & HACCP Plan Implementation'
+                              );
+                              setNewCertAccreditation('Highfield UK Accredited');
+                            } else {
+                              setNewCertTitle('ISO 22000 Lead Auditor (FSMS)');
+                              setNewCertAccreditation('IRCA | CQI Certified');
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-bold"
+                        >
+                          <option value="Highfield">Highfield Trainings</option>
+                          <option value="Lead Auditor">
+                            Lead Auditor Trainings
+                          </option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
+                          Accreditation Body
+                        </label>
+                        <input
+                          type="text"
+                          value={newCertAccreditation}
+                          onChange={(e) =>
+                            setNewCertAccreditation(e.target.value)
+                          }
+                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
+                        Training Course Title *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newCertTitle}
+                        onChange={(e) => setNewCertTitle(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
+                          Certificate Serial / ID
+                        </label>
+                        <input
+                          type="text"
+                          value={newCertNumber}
+                          onChange={(e) => setNewCertNumber(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
+                          Issue Date
+                        </label>
+                        <input
+                          type="date"
+                          value={newCertIssueDate}
+                          onChange={(e) => setNewCertIssueDate(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Optional Custom Certificate Image Upload */}
+                    <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-dashed border-[#16A34A] flex items-center justify-between gap-2">
+                      <div className="text-xs">
+                        <div className="font-extrabold text-[#0D2E1B]">
+                          {newCertImageUrl
+                            ? 'Custom Certificate Image Attached ✓'
+                            : 'Optional: Upload Scanned Certificate Image'}
+                        </div>
+                        <div className="text-[10.5px] text-gray-500">
+                          Leave empty to auto-generate Official Digital Certificate
+                        </div>
+                      </div>
+                      <input
+                        ref={certImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCertImageUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => certImageInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-xl bg-[#15803D] text-white text-xs font-extrabold shrink-0 cursor-pointer"
+                      >
+                        Upload Scan
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Issue &amp; Save Certificate to Cloud Storage</span>
+                    </button>
+                  </form>
+
+                  <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-2.5">
+                    <h3 className="text-sm font-extrabold text-[#0D2E1B]">
+                      Stored Certificates ({certificates.length})
+                    </h3>
+                    {certificates.map((c) => (
+                      <div
+                        key={c.id}
+                        className="p-3 rounded-2xl bg-[#F6FBF7] border border-emerald-200 flex items-center justify-between gap-2"
+                      >
+                        <div
+                          onClick={() => setSelectedCertificate(c)}
+                          className="min-w-0 cursor-pointer flex-1"
+                        >
+                          <div className="text-xs font-extrabold text-[#0D2E1B] truncate">
+                            {c.recipientName} — {c.certificateNumber}
+                          </div>
+                          <div className="text-[11px] text-gray-600 truncate">
+                            {c.trainingTitle} • {c.issueDate}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCertificate(c)}
+                            className="px-2.5 py-1 rounded-lg bg-[#DCFCE7] text-[#14532D] text-[11px] font-extrabold cursor-pointer"
+                          >
+                            View
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCertificate(c.id)}
+                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: JOBS & SCHOLARSHIPS CLOUD STORAGE */}
+              {adminTab === 'opportunities' && (
+                <form
+                  onSubmit={handleAdminPublishOpportunity}
+                  className="bg-white border border-emerald-200 rounded-[24px] p-5 shadow-xs space-y-3"
+                >
+                  <h2 className="text-base font-extrabold text-[#0D2E1B]">
+                    Store New Job or Scholarship in Cloud Database
+                  </h2>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminOppType('job');
+                        setAdminOppCat('Quality & Safety');
+                      }}
+                      className={`py-2 rounded-xl text-xs font-extrabold border cursor-pointer ${
+                        adminOppType === 'job'
+                          ? 'bg-[#15803D] text-white border-[#15803D]'
+                          : 'bg-[#F2F7F3] text-[#0D2E1B] border-emerald-200'
+                      }`}
+                    >
+                      + New Job ({jobs.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminOppType('scholarship');
+                        setAdminOppCat('Fellowships');
+                      }}
+                      className={`py-2 rounded-xl text-xs font-extrabold border cursor-pointer ${
+                        adminOppType === 'scholarship'
+                          ? 'bg-[#15803D] text-white border-[#15803D]'
+                          : 'bg-[#F2F7F3] text-[#0D2E1B] border-emerald-200'
+                      }`}
+                    >
+                      + New Scholarship ({scholarships.length})
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    required
+                    value={adminOppTitle}
+                    onChange={(e) => setAdminOppTitle(e.target.value)}
+                    placeholder={
+                      adminOppType === 'job'
+                        ? 'Job Title (e.g. QA/QC Executive)'
+                        : 'Scholarship Title (e.g. MSc Food Science Fellowship)'
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                  />
+
+                  <input
+                    type="text"
+                    required
+                    value={adminOppOrg}
+                    onChange={(e) => setAdminOppOrg(e.target.value)}
+                    placeholder={
+                      adminOppType === 'job'
+                        ? 'Company Name (e.g. Engro Foods)'
+                        : 'University / Organization'
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                  />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={adminOppCountry}
+                      onChange={(e) => setAdminOppCountry(e.target.value)}
+                      placeholder="Country (e.g. Pakistan / UAE)"
+                      className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                    />
+                    <input
+                      type="text"
+                      value={adminOppExpOrDeadline}
+                      onChange={(e) => setAdminOppExpOrDeadline(e.target.value)}
+                      placeholder={
+                        adminOppType === 'job'
+                          ? 'Experience (e.g. 2+ Years)'
+                          : 'Deadline (YYYY-MM-DD)'
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="email"
+                      value={adminOppEmail}
+                      onChange={(e) => setAdminOppEmail(e.target.value)}
+                      placeholder="Contact HR / Admissions Email"
+                      className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                    />
+                    <input
+                      type="text"
+                      value={adminOppLink}
+                      onChange={(e) => setAdminOppLink(e.target.value)}
+                      placeholder="Official Apply Link (https://...)"
+                      className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                    />
+                  </div>
+
+                  <textarea
+                    rows={3}
+                    value={adminOppDesc}
+                    onChange={(e) => setAdminOppDesc(e.target.value)}
+                    placeholder="Full description, eligibility, and application instructions..."
+                    className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                  />
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer"
+                  >
+                    Save &amp; Publish to Cloud Database
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* ==================== TRAINING CERTIFICATE PREVIEW & DOWNLOAD MODAL ==================== */}
+        {selectedCertificate && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+            <div className="w-full max-w-[460px] bg-white rounded-[28px] p-5 shadow-2xl space-y-4 border-2 border-[#16A34A]">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#14532D] text-[10.5px] font-extrabold inline-flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#16A34A]" />
+                    <span>
+                      Verified Certificate • {selectedCertificate.certificateNumber}
+                    </span>
+                  </span>
+                  <h3 className="text-lg font-extrabold text-[#0D2E1B] mt-1">
+                    {selectedCertificate.recipientName}
+                  </h3>
+                  <p className="text-xs font-semibold text-[#15803D]">
+                    {selectedCertificate.trainingTitle}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCertificate(null)}
+                  className="p-1.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="rounded-2xl overflow-hidden border border-emerald-200 bg-[#F0FDF4]">
+                <img
+                  src={
+                    selectedCertificate.certificateImageUrl ||
+                    generateCertificateSvgDataUrl({
+                      certificateNumber: selectedCertificate.certificateNumber,
+                      recipientName: selectedCertificate.recipientName,
+                      trainingTitle: selectedCertificate.trainingTitle,
+                      trainingCategory: selectedCertificate.trainingCategory,
+                      accreditationBody: selectedCertificate.accreditationBody,
+                      issueDate: selectedCertificate.issueDate
+                    })
+                  }
+                  alt={selectedCertificate.trainingTitle}
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs bg-[#F6FBF7] p-3 rounded-2xl border border-emerald-100">
+                <div>
+                  <span className="text-gray-400 font-bold block text-[10px] uppercase">
+                    Accreditation
+                  </span>
+                  <span className="font-extrabold text-[#0D2E1B]">
+                    {selectedCertificate.accreditationBody}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400 font-bold block text-[10px] uppercase">
+                    Issue Date
+                  </span>
+                  <span className="font-extrabold text-[#0D2E1B]">
+                    {selectedCertificate.issueDate}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={
+                    selectedCertificate.certificateImageUrl ||
+                    generateCertificateSvgDataUrl({
+                      certificateNumber: selectedCertificate.certificateNumber,
+                      recipientName: selectedCertificate.recipientName,
+                      trainingTitle: selectedCertificate.trainingTitle,
+                      trainingCategory: selectedCertificate.trainingCategory,
+                      accreditationBody: selectedCertificate.accreditationBody,
+                      issueDate: selectedCertificate.issueDate
+                    })
+                  }
+                  download={`${selectedCertificate.certificateNumber}-${selectedCertificate.recipientName.replace(
+                    /\s+/g,
+                    '_'
+                  )}.svg`}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Certificate</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCertificate(null)}
+                  className="py-3 px-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-extrabold cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ==================== HIRE / CONTACT MEMBER MODAL ==================== */}
         {contactModalMember && (
@@ -3931,34 +5584,51 @@ export default function App() {
                   </a>
                 )}
 
-                {contactModalMember.phone && (
-                  <a
-                    href={`https://wa.me/${contactModalMember.phone.replace(
-                      /[^0-9]/g,
-                      ''
-                    )}?text=${encodeURIComponent(contactCustomMsg)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>Hire / Chat on WhatsApp</span>
-                  </a>
-                )}
+                {contactModalMember.privacySettings?.phone_public &&
+                  contactModalMember.phone && (
+                    <a
+                      href={`https://wa.me/${contactModalMember.phone.replace(
+                        /[^0-9]/g,
+                        ''
+                      )}?text=${encodeURIComponent(contactCustomMsg)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Hire / Chat on WhatsApp</span>
+                    </a>
+                  )}
 
-                {contactModalMember.email && (
-                  <a
-                    href={`mailto:${
-                      contactModalMember.email
-                    }?subject=${encodeURIComponent(
-                      'Hiring / Networking Inquiry via Food Specialists Hub'
-                    )}&body=${encodeURIComponent(contactCustomMsg)}`}
-                    className="w-full py-3 px-4 rounded-2xl bg-[#EAF3EC] hover:bg-[#D5EAD8] text-[#0D2E1B] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <Mail className="w-4 h-4 text-[#15803D]" />
-                    <span>Send Direct Email ({contactModalMember.email})</span>
-                  </a>
-                )}
+                {contactModalMember.privacySettings?.email_public &&
+                  contactModalMember.email && (
+                    <a
+                      href={`mailto:${
+                        contactModalMember.email
+                      }?subject=${encodeURIComponent(
+                        'Hiring / Networking Inquiry via Food Specialists Hub'
+                      )}&body=${encodeURIComponent(contactCustomMsg)}`}
+                      className="w-full py-3 px-4 rounded-2xl bg-[#EAF3EC] hover:bg-[#D5EAD8] text-[#0D2E1B] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Mail className="w-4 h-4 text-[#15803D]" />
+                      <span>Send Direct Email ({contactModalMember.email})</span>
+                    </a>
+                  )}
+
+                {!contactModalMember.linkedinUrl &&
+                  !contactModalMember.portfolioUrl &&
+                  !(
+                    contactModalMember.privacySettings?.phone_public &&
+                    contactModalMember.phone
+                  ) &&
+                  !(
+                    contactModalMember.privacySettings?.email_public &&
+                    contactModalMember.email
+                  ) && (
+                    <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold text-center">
+                      This specialist has set their direct phone and email to Private.
+                    </div>
+                  )}
               </div>
             </div>
           </div>

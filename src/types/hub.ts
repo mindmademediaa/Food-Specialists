@@ -49,6 +49,7 @@ export interface HubUser {
   paymentMethod?: string;
   paymentReference?: string;
   paymentAmount?: string;
+  receiptImageUrl?: string;
 }
 
 export interface HubCommunityThread {
@@ -76,8 +77,32 @@ export interface HubPaymentRequest {
   transactionId: string;
   amount: string;
   notes: string;
+  receiptImageUrl?: string;
   status: 'pending' | 'verified' | 'rejected';
   submittedAt: string;
+}
+
+export interface HubCertificate {
+  id: string;
+  certificateNumber: string;
+  recipientUid?: string;
+  recipientName: string;
+  recipientEmail: string;
+  trainingCategory: 'Highfield' | 'Lead Auditor' | string;
+  trainingTitle: string;
+  accreditationBody: string;
+  issueDate: string;
+  certificateImageUrl?: string;
+  verificationStatus: 'valid' | 'revoked';
+  issuedBy: string;
+  createdAt: string;
+}
+
+export interface CloudStorageConfig {
+  provider: 'smart-firestore' | 'cloudinary';
+  cloudinaryCloudName: string;
+  cloudinaryUploadPreset: string;
+  updatedAt: string;
 }
 
 export interface HubChatMessage {
@@ -147,5 +172,6 @@ export interface HubTraining {
 }
 
 export type NavTab = 'home' | 'search' | 'communities' | 'trainings' | 'profile';
+
 
 
