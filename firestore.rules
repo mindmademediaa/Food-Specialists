@@ -5,6 +5,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /test/connection {
+      allow get: if true;
+    }
+
     function isValidId(id) {
       return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -33,16 +37,22 @@ service cloud.firestore {
         data.keys().hasAll(['uid', 'name', 'privacySettings']) &&
         data.uid == uid &&
         data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
-        (!('profilePicUrl' in data) || (data.profilePicUrl is string && data.profilePicUrl.size() <= 200000)) &&
+        (!('profilePicUrl' in data) || (data.profilePicUrl is string && data.profilePicUrl.size() <= 350000)) &&
         (!('qualification' in data) || (data.qualification is string && data.qualification.size() <= 300)) &&
         (!('experience' in data) || (data.experience is string && data.experience.size() <= 3000)) &&
         (!('currentRole' in data) || (data.currentRole is string && data.currentRole.size() <= 200)) &&
         (!('company' in data) || (data.company is string && data.company.size() <= 200)) &&
         (!('location' in data) || (data.location is string && data.location.size() <= 200)) &&
+        (!('country' in data) || (data.country is string && data.country.size() <= 120)) &&
+        (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
         (!('email' in data) || (data.email is string && data.email.size() <= 200)) &&
         (!('phone' in data) || (data.phone is string && data.phone.size() <= 60)) &&
+        (!('linkedinUrl' in data) || (data.linkedinUrl is string && data.linkedinUrl.size() <= 500)) &&
+        (!('portfolioUrl' in data) || (data.portfolioUrl is string && data.portfolioUrl.size() <= 500)) &&
         (!('skills' in data) || (data.skills is list && data.skills.size() <= 30)) &&
-        (!('cvUrl' in data) || (data.cvUrl is string && data.cvUrl.size() <= 350000)) &&
+        (!('specializations' in data) || (data.specializations is list && data.specializations.size() <= 30)) &&
+        (!('cvUrl' in data) || (data.cvUrl is string && data.cvUrl.size() <= 500000)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
         (!('isPaid' in data) || data.isPaid is bool) &&
         (!('isAdmin' in data) || data.isAdmin is bool) &&
         (!('paymentStatus' in data) || data.paymentStatus in ['none', 'pending', 'verified', 'rejected']) &&
@@ -89,14 +99,22 @@ service cloud.firestore {
         data.keys().hasAll(['title', 'company', 'category', 'isActive']) &&
         data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
         data.company is string && data.company.size() >= 1 && data.company.size() <= 200 &&
-        data.category in ['Production', 'R&D Lab', 'Quality & Safety'] &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 120 &&
         data.isActive is bool &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
         (!('location' in data) || (data.location is string && data.location.size() <= 200)) &&
+        (!('country' in data) || (data.country is string && data.country.size() <= 120)) &&
+        (!('specialization' in data) || (data.specialization is string && data.specialization.size() <= 120)) &&
         (!('experienceRequired' in data) || (data.experienceRequired is string && data.experienceRequired.size() <= 120)) &&
-        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
-        (!('requirements' in data) || (data.requirements is string && data.requirements.size() <= 4000)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 8000)) &&
+        (!('requirements' in data) || (data.requirements is string && data.requirements.size() <= 8000)) &&
+        (!('hrEmail' in data) || (data.hrEmail is string && data.hrEmail.size() <= 200)) &&
+        (!('emailSubject' in data) || (data.emailSubject is string && data.emailSubject.size() <= 300)) &&
+        (!('applicationGuidelines' in data) || (data.applicationGuidelines is string && data.applicationGuidelines.size() <= 2000)) &&
         (!('applyLink' in data) || (data.applyLink is string && data.applyLink.size() <= 500)) &&
-        (!('tags' in data) || (data.tags is list && data.tags.size() <= 20));
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 20)) &&
+        (!('postedAt' in data) || (data.postedAt is string && data.postedAt.size() <= 64)) &&
+        (!('expiryAt' in data) || (data.expiryAt is string && data.expiryAt.size() <= 64));
     }
 
     function isValidScholarship(data) {
@@ -106,22 +124,29 @@ service cloud.firestore {
         data.organization is string && data.organization.size() >= 1 && data.organization.size() <= 240 &&
         data.country is string && data.country.size() >= 1 && data.country.size() <= 120 &&
         data.isActive is bool &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('specialization' in data) || (data.specialization is string && data.specialization.size() <= 120)) &&
         (!('deadline' in data) || (data.deadline is string && data.deadline.size() <= 64)) &&
         (!('fundingType' in data) || (data.fundingType is string && data.fundingType.size() <= 120)) &&
         (!('degreeLevel' in data) || (data.degreeLevel is string && data.degreeLevel.size() <= 120)) &&
-        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
-        (!('eligibility' in data) || (data.eligibility is string && data.eligibility.size() <= 4000)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 8000)) &&
+        (!('eligibility' in data) || (data.eligibility is string && data.eligibility.size() <= 8000)) &&
+        (!('hrEmail' in data) || (data.hrEmail is string && data.hrEmail.size() <= 200)) &&
+        (!('emailSubject' in data) || (data.emailSubject is string && data.emailSubject.size() <= 300)) &&
+        (!('applicationGuidelines' in data) || (data.applicationGuidelines is string && data.applicationGuidelines.size() <= 2000)) &&
         (!('applyLink' in data) || (data.applyLink is string && data.applyLink.size() <= 500));
     }
 
     function isValidTraining(data) {
       return data is map &&
         data.keys().hasAll(['category', 'title', 'isActive']) &&
-        data.category in ['Highfield', 'Lead Auditor'] &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 120 &&
         data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
         data.isActive is bool &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('standardCode' in data) || data.standardCode == null || (data.standardCode is string && data.standardCode.size() <= 80)) &&
         (!('subType' in data) || data.subType == null || (data.subType is string && data.subType.size() <= 80)) &&
-        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 8000)) &&
         (!('duration' in data) || (data.duration is string && data.duration.size() <= 120)) &&
         (!('fees' in data) || (data.fees is string && data.fees.size() <= 120)) &&
         (!('enrollLink' in data) || (data.enrollLink is string && data.enrollLink.size() <= 500));

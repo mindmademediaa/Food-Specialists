@@ -47,6 +47,7 @@ import {
 import {
   collection,
   doc,
+  getDoc,
   onSnapshot,
   setDoc
 } from 'firebase/firestore';
@@ -385,30 +386,86 @@ export default function App() {
     return 'Guest';
   }, [myProfile.isPaid, myProfile.name, hasSavedProfile]);
 
-  // Monitor real-time Firebase Authentication state
+  // Monitor real-time Firebase Authentication state and auto-persist user record in Firestore
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       setAuthUser(firebaseUser);
       if (firebaseUser) {
         const displayName =
           firebaseUser.displayName?.trim() ||
           firebaseUser.email?.split('@')[0] ||
           'Food Specialist';
-        const initials = displayName
-          .split(' ')
-          .slice(0, 2)
-          .map((part) => part.charAt(0))
-          .join('')
-          .toUpperCase() || 'FS';
+        const initials =
+          displayName
+            .split(' ')
+            .slice(0, 2)
+            .map((part) => part.charAt(0))
+            .join('')
+            .toUpperCase() || 'FS';
+        const isAdminUser =
+          firebaseUser.email?.toLowerCase() === 'mindmademedia9@gmail.com';
+
+        const baseUserRecord: HubUser = {
+          ...DEFAULT_CURRENT_USER_PROFILE,
+          uid: firebaseUser.uid,
+          name: displayName,
+          email: firebaseUser.email || '',
+          profilePicUrl:
+            firebaseUser.photoURL || makeAvatarSvg(initials, '#DCFCE7', '#14532D'),
+          isAdmin: isAdminUser,
+          createdAt: new Date().toISOString().slice(0, 19) + 'Z'
+        };
 
         setMyProfile((prev) => ({
           ...prev,
           uid: firebaseUser.uid,
           name: firebaseUser.displayName?.trim() || prev.name || displayName,
           email: firebaseUser.email || prev.email,
+          isAdmin: isAdminUser || prev.isAdmin,
           profilePicUrl:
-            prev.profilePicUrl || makeAvatarSvg(initials, '#DCFCE7', '#14532D')
+            prev.profilePicUrl ||
+            firebaseUser.photoURL ||
+            makeAvatarSvg(initials, '#DCFCE7', '#14532D')
         }));
+
+        // Check if user profile already exists in Firestore; if so, hydrate it; otherwise create it automatically
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        try {
+          const existingSnap = await getDoc(userDocRef);
+          if (existingSnap.exists()) {
+            const existingData = existingSnap.data() as HubUser;
+            const mergedProfile: HubUser = {
+              ...baseUserRecord,
+              ...existingData,
+              uid: firebaseUser.uid,
+              name:
+                existingData.name?.trim() ||
+                firebaseUser.displayName?.trim() ||
+                displayName,
+              email: existingData.email || firebaseUser.email || '',
+              isAdmin: isAdminUser || Boolean(existingData.isAdmin),
+              privacySettings: {
+                ...DEFAULT_CURRENT_USER_PROFILE.privacySettings,
+                ...(existingData.privacySettings || {})
+              }
+            };
+            setMyProfile(mergedProfile);
+            setHasSavedProfile(true);
+            await setDoc(userDocRef, mergedProfile, { merge: true });
+          } else {
+            await setDoc(userDocRef, baseUserRecord, { merge: true });
+            setMyProfile(baseUserRecord);
+            setHasSavedProfile(true);
+          }
+        } catch (err) {
+          try {
+            handleFirestoreError(
+              err,
+              OperationType.WRITE,
+              `users/${firebaseUser.uid}`
+            );
+          } catch {}
+        }
       }
       setAuthLoading(false);
     });
@@ -980,7 +1037,15 @@ export default function App() {
       await setDoc(doc(db, 'users', updatedUser.uid), updatedUser, {
         merge: true
       });
-    } catch {}
+    } catch (err) {
+      try {
+        handleFirestoreError(
+          err,
+          OperationType.WRITE,
+          `users/${updatedUser.uid}`
+        );
+      } catch {}
+    }
 
     setProfileSaveMsg(
       isCurrentUserPaid

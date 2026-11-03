@@ -92,7 +92,7 @@ export interface HubChatMessage {
   createdAt: string;
 }
 
-export type JobCategory = 'Production' | 'R&D Lab' | 'Quality & Safety';
+export type JobCategory = 'Production' | 'R&D Lab' | 'Quality & Safety' | (string & {});
 
 export interface HubJob {
   id: string;
