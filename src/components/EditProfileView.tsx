@@ -29,8 +29,7 @@ import {
   HubEducationItem,
   HubExperienceItem,
   HubCertificationItem,
-  HubProjectItem,
-  HubCertificate
+  HubProjectItem
 } from '../types/hub';
 import { makeAvatarSvg } from '../data/mockHubData';
 import { formatFileSizeLabel } from '../lib/storage';
@@ -181,10 +180,6 @@ interface EditProfileViewProps {
   profileSaveMsg: string | null;
   isUserAdmin: boolean;
   onOpenAdmin: () => void;
-  // Membership & Certificates Vault props
-  myEarnedCertificates: HubCertificate[];
-  onSelectCertificate: (cert: HubCertificate) => void;
-  onOpenTrainings: () => void;
   onOpenPremiumModal: () => void;
 }
 
@@ -202,9 +197,6 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
   profileSaveMsg,
   isUserAdmin,
   onOpenAdmin,
-  myEarnedCertificates,
-  onSelectCertificate,
-  onOpenTrainings,
   onOpenPremiumModal
 }) => {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
@@ -1660,53 +1652,6 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
               : 'Become a Premium Member — Only Rs. 100 / Month'}
           </span>
         </button>
-      </div>
-
-      {/* MY TRAINING CERTIFICATES VAULT */}
-      <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-[#15803D]" />
-            <h3 className="text-sm font-extrabold text-[#0D2E1B]">
-              My Training Certificates ({myEarnedCertificates.length})
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={onOpenTrainings}
-            className="text-[11px] font-extrabold text-[#15803D] underline cursor-pointer"
-          >
-            Verify Any ID →
-          </button>
-        </div>
-
-        {myEarnedCertificates.length === 0 ? (
-          <p className="text-xs text-gray-600">
-            Official Highfield &amp; Lead Auditor training certificates issued to your email will appear here.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {myEarnedCertificates.map((cert) => (
-              <div
-                key={cert.id}
-                onClick={() => onSelectCertificate(cert)}
-                className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200 flex items-center justify-between gap-2 cursor-pointer"
-              >
-                <div className="min-w-0">
-                  <div className="text-xs font-extrabold text-[#0D2E1B] truncate">
-                    {cert.trainingTitle}
-                  </div>
-                  <div className="text-[11px] text-[#15803D] font-bold">
-                    ID: {cert.certificateNumber} • {cert.issueDate}
-                  </div>
-                </div>
-                <span className="px-2.5 py-1 rounded-full bg-[#15803D] text-white text-[10.5px] font-extrabold shrink-0">
-                  Open
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {isUserAdmin && (

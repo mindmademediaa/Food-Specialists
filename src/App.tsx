@@ -78,7 +78,6 @@ import {
   HubScholarship,
   HubTraining,
   HubPaymentRequest,
-  HubCertificate,
   CloudStorageConfig,
   DevRole,
   SpecializationTag,
@@ -92,9 +91,7 @@ import {
 } from './data/mockHubData';
 import {
   uploadMediaFile,
-  formatFileSizeLabel,
-  generateCertificateSvgDataUrl,
-  INITIAL_CERTIFICATES
+  formatFileSizeLabel
 } from './lib/storage';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
@@ -399,9 +396,6 @@ export default function App() {
     INITIAL_SCHOLARSHIPS
   );
   const [trainings, setTrainings] = useState<HubTraining[]>(INITIAL_TRAININGS);
-  const [certificates, setCertificates] = useState<HubCertificate[]>(
-    INITIAL_CERTIFICATES
-  );
   const [paymentRequests, setPaymentRequests] = useState<HubPaymentRequest[]>(
     []
   );
@@ -442,34 +436,13 @@ export default function App() {
   const [payReceiptUrl, setPayReceiptUrl] = useState<string>('');
   const [paySubmitBanner, setPaySubmitBanner] = useState<string | null>(null);
 
-  // Certificate Search & Preview Modal State (in /trainings and /profile)
-  const [certSearchQuery, setCertSearchQuery] = useState<string>('');
-  const [selectedCertificate, setSelectedCertificate] =
-    useState<HubCertificate | null>(null);
-
   // Admin Console Active Tab & Forms
   const [adminTab, setAdminTab] = useState<
-    'storage' | 'receipts' | 'certificates' | 'opportunities'
+    'storage' | 'receipts' | 'opportunities'
   >('storage');
   const [adminStatusBanner, setAdminStatusBanner] = useState<string | null>(
     null
   );
-  const [newCertRecipientName, setNewCertRecipientName] = useState<string>('');
-  const [newCertRecipientEmail, setNewCertRecipientEmail] =
-    useState<string>('');
-  const [newCertCategory, setNewCertCategory] = useState<string>('Highfield');
-  const [newCertTitle, setNewCertTitle] = useState<string>(
-    'HACCP Level 3 — Food Safety & HACCP Plan Implementation'
-  );
-  const [newCertAccreditation, setNewCertAccreditation] = useState<string>(
-    'Highfield UK Accredited'
-  );
-  const [newCertNumber, setNewCertNumber] = useState<string>(
-    `FSP-2026-${Math.floor(1000 + Math.random() * 9000)}`
-  );
-  const [newCertIssueDate, setNewCertIssueDate] =
-    useState<string>('2026-11-03');
-  const [newCertImageUrl, setNewCertImageUrl] = useState<string>('');
 
   // Admin Quick Add Job / Scholarship State
   const [adminOppType, setAdminOppType] = useState<'job' | 'scholarship'>(
@@ -525,7 +498,6 @@ export default function App() {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const cvInputRef = useRef<HTMLInputElement | null>(null);
   const receiptInputRef = useRef<HTMLInputElement | null>(null);
-  const certImageInputRef = useRef<HTMLInputElement | null>(null);
 
   // Derive user's Membership Status directly from their Profile state:
   // Paid Member (when myProfile.isPaid === true), Free Member (when profile exists & !isPaid), or Guest
@@ -864,25 +836,6 @@ export default function App() {
       }
     );
 
-    const unsubCerts = onSnapshot(
-      collection(db, 'certificates'),
-      (snap) => {
-        if (!snap.empty) {
-          const fsCerts = snap.docs.map((d) => ({
-            ...(d.data() as HubCertificate),
-            id: d.id
-          }));
-          setCertificates(() => {
-            const map = new Map<string, HubCertificate>();
-            INITIAL_CERTIFICATES.forEach((c) => map.set(c.id, c));
-            fsCerts.forEach((c) => map.set(c.id, c));
-            return Array.from(map.values());
-          });
-        }
-      },
-      () => {}
-    );
-
     const unsubStorageCfg = onSnapshot(
       doc(db, 'settings', 'storageConfig'),
       (snap) => {
@@ -939,7 +892,6 @@ export default function App() {
       unsubJobs();
       unsubSch();
       unsubTr();
-      unsubCerts();
       unsubStorageCfg();
       unsubPay();
     };
@@ -1634,91 +1586,6 @@ export default function App() {
     }
   };
 
-  const handleCertImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploadingMedia(true);
-    try {
-      const result = await uploadMediaFile(file, 'certificates', storageConfig);
-      setNewCertImageUrl(result.url);
-      setAdminStatusBanner(
-        `Certificate scan uploaded (${result.sizeKb} KB via ${
-          result.provider === 'cloudinary-cdn' ? 'Cloud CDN' : 'Smart WebP'
-        })!`
-      );
-      setTimeout(() => setAdminStatusBanner(null), 4000);
-    } finally {
-      setIsUploadingMedia(false);
-    }
-  };
-
-  const handleIssueCertificate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCertRecipientName.trim() || !newCertTitle.trim()) return;
-    const certId = `cert-${Date.now()}`;
-    const serial =
-      newCertNumber.trim() ||
-      `FSP-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const certImg =
-      newCertImageUrl ||
-      generateCertificateSvgDataUrl({
-        certificateNumber: serial,
-        recipientName: newCertRecipientName.trim(),
-        trainingTitle: newCertTitle.trim(),
-        trainingCategory: newCertCategory,
-        accreditationBody: newCertAccreditation,
-        issueDate: newCertIssueDate || '2026-11-03'
-      });
-
-    const newCert: HubCertificate = {
-      id: certId,
-      certificateNumber: serial,
-      recipientName: newCertRecipientName.trim(),
-      recipientEmail: newCertRecipientEmail.trim().toLowerCase(),
-      trainingCategory: newCertCategory,
-      trainingTitle: newCertTitle.trim(),
-      accreditationBody: newCertAccreditation.trim() || 'Highfield UK Accredited',
-      issueDate: newCertIssueDate || '2026-11-03',
-      certificateImageUrl: certImg,
-      verificationStatus: 'valid',
-      issuedBy: 'FS Portal Admin',
-      createdAt: new Date().toISOString().slice(0, 19) + 'Z'
-    };
-
-    try {
-      await setDoc(doc(db, 'certificates', certId), newCert);
-      setCertificates((prev) => [newCert, ...prev]);
-      setAdminStatusBanner(
-        `Issued & stored Training Certificate (${serial}) for ${newCert.recipientName}!`
-      );
-      setNewCertRecipientName('');
-      setNewCertRecipientEmail('');
-      setNewCertImageUrl('');
-      setNewCertNumber(`FSP-2026-${Math.floor(1000 + Math.random() * 9000)}`);
-      setTimeout(() => setAdminStatusBanner(null), 4500);
-    } catch (err) {
-      try {
-        handleFirestoreError(
-          err,
-          OperationType.WRITE,
-          `certificates/${certId}`
-        );
-      } catch {}
-    }
-  };
-
-  const handleDeleteCertificate = async (certId: string) => {
-    try {
-      await deleteDoc(doc(db, 'certificates', certId));
-    } catch {}
-    setCertificates((prev) => prev.filter((c) => c.id !== certId));
-    setAdminStatusBanner('Certificate removed from storage.');
-    setTimeout(() => setAdminStatusBanner(null), 3500);
-  };
-
   const handleAdminPublishOpportunity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminOppTitle.trim() || !adminOppOrg.trim()) return;
@@ -1811,16 +1678,14 @@ export default function App() {
         paymentRequests: paymentRequests.length,
         jobs: jobs.length,
         scholarships: scholarships.length,
-        trainings: trainings.length,
-        certificates: certificates.length
+        trainings: trainings.length
       },
       data: {
         users,
         paymentRequests,
         jobs,
         scholarships,
-        trainings,
-        certificates
+        trainings
       }
     };
     const blob = new Blob([JSON.stringify(backupPayload, null, 2)], {
@@ -1837,29 +1702,6 @@ export default function App() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
-  const filteredCertificates = useMemo(() => {
-    const q = certSearchQuery.trim().toLowerCase();
-    if (!q) return certificates;
-    return certificates.filter(
-      (c) =>
-        c.certificateNumber.toLowerCase().includes(q) ||
-        c.recipientName.toLowerCase().includes(q) ||
-        c.recipientEmail?.toLowerCase().includes(q) ||
-        c.trainingTitle.toLowerCase().includes(q)
-    );
-  }, [certificates, certSearchQuery]);
-
-  const myEarnedCertificates = useMemo(() => {
-    const myEmail = (authUser?.email || myProfile.email || '').toLowerCase();
-    const myName = (myProfile.name || '').toLowerCase();
-    return certificates.filter(
-      (c) =>
-        (myEmail && c.recipientEmail?.toLowerCase() === myEmail) ||
-        (c.recipientUid && c.recipientUid === authUser?.uid) ||
-        (myName && c.recipientName.toLowerCase() === myName)
-    );
-  }, [certificates, authUser?.email, authUser?.uid, myProfile.email, myProfile.name]);
 
   const firstName = useMemo(() => {
     if (!myProfile.name) return 'Guest';
@@ -3421,105 +3263,6 @@ export default function App() {
                   </span>
                 </div>
               </div>
-
-              {/* CARD 3: TRAINING CERTIFICATES VERIFICATION & DIGITAL VAULT */}
-              <div className="bg-white border-[1.5px] border-[#78AF88] rounded-[24px] p-5 shadow-sm space-y-3.5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[#15803D] text-white flex items-center justify-center shrink-0">
-                      <Award className="w-6 h-6 stroke-[2.2]" />
-                    </div>
-                    <div>
-                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#DCF2E3] text-[#14532D] text-[10.5px] font-extrabold">
-                        Cloud Certificate Registry
-                      </span>
-                      <h2 className="text-[19px] font-extrabold text-[#0D2E1B] leading-tight mt-0.5">
-                        Training Certificates &amp; Verification
-                      </h2>
-                    </div>
-                  </div>
-                  {isUserAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdminTab('certificates');
-                        setRoute({ name: 'admin' });
-                      }}
-                      className="px-3 py-1.5 rounded-full bg-[#14532D] text-white text-[11px] font-extrabold cursor-pointer shrink-0"
-                    >
-                      + Issue Certificate
-                    </button>
-                  )}
-                </div>
-
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Search by Certificate ID (e.g. <strong>FSP-2026-HACCP4-001</strong>), candidate name, or email to verify and download official Highfield &amp; Lead Auditor training certificates.
-                </p>
-
-                <div className="relative">
-                  <Search className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={certSearchQuery}
-                    onChange={(e) => setCertSearchQuery(e.target.value)}
-                    placeholder="Enter Certificate ID, Name, or Email..."
-                    className="w-full pl-10 pr-8 py-2.5 rounded-2xl bg-[#F2F7F3] border border-[#AECBB5] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#16A34A] focus:bg-white"
-                  />
-                  {certSearchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setCertSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-0.5">
-                  {filteredCertificates.length === 0 ? (
-                    <div className="p-4 rounded-2xl bg-[#F6FBF7] border border-emerald-100 text-center text-xs text-gray-500 font-semibold">
-                      No matching training certificate found for &ldquo;{certSearchQuery}&rdquo;.
-                    </div>
-                  ) : (
-                    filteredCertificates.map((cert) => (
-                      <div
-                        key={cert.id}
-                        onClick={() => setSelectedCertificate(cert)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setSelectedCertificate(cert);
-                          }
-                        }}
-                        className="p-3.5 rounded-2xl bg-[#F6FBF7] hover:bg-[#EAF5EC] border border-emerald-200 flex items-center justify-between gap-3 cursor-pointer transition-colors"
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded-md bg-[#14532D] text-white text-[10px] font-extrabold">
-                              {cert.certificateNumber}
-                            </span>
-                            <span className="text-[10.5px] font-extrabold text-[#15803D]">
-                              • Verified ✓
-                            </span>
-                          </div>
-                          <div className="text-[14px] font-extrabold text-[#0B3B1E] truncate mt-1">
-                            {cert.recipientName}
-                          </div>
-                          <div className="text-[11.5px] font-semibold text-gray-600 truncate">
-                            {cert.trainingTitle} ({cert.issueDate})
-                          </div>
-                        </div>
-                        <span className="px-3 py-1.5 rounded-full bg-[#138A3E] text-white text-[11px] font-extrabold shrink-0">
-                          View
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
             </div>
           )}
 
@@ -3924,9 +3667,6 @@ export default function App() {
               profileSaveMsg={profileSaveMsg}
               isUserAdmin={isUserAdmin}
               onOpenAdmin={() => setRoute({ name: 'admin' })}
-              myEarnedCertificates={myEarnedCertificates}
-              onSelectCertificate={(cert) => setSelectedCertificate(cert)}
-              onOpenTrainings={() => setRoute({ name: 'trainings' })}
               onOpenPremiumModal={() => {
                 setPaySubmitBanner(null);
                 setShowPremiumUpgradeModal(true);
@@ -3934,7 +3674,7 @@ export default function App() {
             />
           )}
 
-          {/* ==================== 8. ADMIN CLOUD STORAGE, RECEIPTS & CERTIFICATES CONSOLE (/admin) ==================== */}
+          {/* ==================== 8. ADMIN CLOUD STORAGE & RECEIPTS CONSOLE (/admin) ==================== */}
           {route.name === 'admin' && isUserAdmin && (
             <div className="space-y-4 px-1">
               <div className="bg-gradient-to-r from-[#0D2E1B] via-[#14532D] to-[#15803D] rounded-[24px] p-5 text-white shadow-sm space-y-2">
@@ -3955,7 +3695,7 @@ export default function App() {
                   Cloud Storage &amp; Data Vault
                 </h1>
                 <p className="text-xs text-emerald-100 leading-relaxed">
-                  Manage high-traffic storage for User Profiles, Avatars, Payment Receipts, Jobs, Scholarships &amp; Training Certificates.
+                  Manage high-traffic storage for User Profiles, Avatars, CVs, Payment Receipts, Jobs &amp; Scholarships.
                 </p>
               </div>
 
@@ -3972,8 +3712,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* 4 Admin Navigation Tabs */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {/* 3 Admin Navigation Tabs */}
+              <div className="grid grid-cols-3 gap-1.5">
                 {(
                   [
                     { id: 'storage', label: '1. Cloud Storage' },
@@ -3981,11 +3721,7 @@ export default function App() {
                       id: 'receipts',
                       label: `2. Receipts (${paymentRequests.length})`
                     },
-                    {
-                      id: 'certificates',
-                      label: `3. Certificates (${certificates.length})`
-                    },
-                    { id: 'opportunities', label: '4. Jobs & Scholars' }
+                    { id: 'opportunities', label: '3. Jobs & Scholars' }
                   ] as const
                 ).map((t) => (
                   <button
@@ -4017,7 +3753,7 @@ export default function App() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2.5 text-xs">
+                    <div className="grid grid-cols-3 gap-2.5 text-xs">
                       <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100">
                         <div className="text-gray-500 font-semibold">
                           User Profiles &amp; Pics
@@ -4053,18 +3789,6 @@ export default function App() {
                           {jobs.length} Jobs • {scholarships.length} Scholarships
                         </div>
                       </div>
-
-                      <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100">
-                        <div className="text-gray-500 font-semibold">
-                          Training Certificates
-                        </div>
-                        <div className="text-lg font-extrabold text-[#0D2E1B] mt-0.5">
-                          {certificates.length} Issued
-                        </div>
-                        <div className="text-[10.5px] text-[#15803D] font-bold">
-                          /certificates Vault
-                        </div>
-                      </div>
                     </div>
                   </div>
 
@@ -4078,7 +3802,7 @@ export default function App() {
                         High-Traffic Free Media Storage Engine
                       </h3>
                       <p className="text-xs text-gray-600 mt-0.5">
-                        Choose how Profile Photos, Payment Receipts, CVs &amp; Training Certificates are stored:
+                        Choose how Profile Photos, Payment Receipts &amp; CVs are stored:
                       </p>
                     </div>
 
@@ -4304,213 +4028,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB 3: TRAINING CERTIFICATES ISSUANCE & STORAGE */}
-              {adminTab === 'certificates' && (
-                <div className="space-y-4">
-                  <form
-                    onSubmit={handleIssueCertificate}
-                    className="bg-white border border-emerald-200 rounded-[24px] p-5 shadow-xs space-y-3"
-                  >
-                    <h2 className="text-base font-extrabold text-[#0D2E1B]">
-                      Issue &amp; Store Training Certificate
-                    </h2>
-                    <p className="text-xs text-gray-600">
-                      Upload a scanned certificate image OR auto-generate a verifiable digital certificate for any student.
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
-                          Recipient Full Name *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={newCertRecipientName}
-                          onChange={(e) =>
-                            setNewCertRecipientName(e.target.value)
-                          }
-                          placeholder="e.g. Muhammad Usman"
-                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
-                          Recipient Email (Links to User Profile)
-                        </label>
-                        <input
-                          type="email"
-                          value={newCertRecipientEmail}
-                          onChange={(e) =>
-                            setNewCertRecipientEmail(e.target.value)
-                          }
-                          placeholder="student@email.com"
-                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
-                          Training Category
-                        </label>
-                        <select
-                          value={newCertCategory}
-                          onChange={(e) => {
-                            const cat = e.target.value;
-                            setNewCertCategory(cat);
-                            if (cat === 'Highfield') {
-                              setNewCertTitle(
-                                'HACCP Level 3 — Food Safety & HACCP Plan Implementation'
-                              );
-                              setNewCertAccreditation('Highfield UK Accredited');
-                            } else {
-                              setNewCertTitle('ISO 22000 Lead Auditor (FSMS)');
-                              setNewCertAccreditation('IRCA | CQI Certified');
-                            }
-                          }}
-                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-bold"
-                        >
-                          <option value="Highfield">Highfield Trainings</option>
-                          <option value="Lead Auditor">
-                            Lead Auditor Trainings
-                          </option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
-                          Accreditation Body
-                        </label>
-                        <input
-                          type="text"
-                          value={newCertAccreditation}
-                          onChange={(e) =>
-                            setNewCertAccreditation(e.target.value)
-                          }
-                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
-                        Training Course Title *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newCertTitle}
-                        onChange={(e) => setNewCertTitle(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
-                          Certificate Serial / ID
-                        </label>
-                        <input
-                          type="text"
-                          value={newCertNumber}
-                          onChange={(e) => setNewCertNumber(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
-                          Issue Date
-                        </label>
-                        <input
-                          type="date"
-                          value={newCertIssueDate}
-                          onChange={(e) => setNewCertIssueDate(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Optional Custom Certificate Image Upload */}
-                    <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-dashed border-[#16A34A] flex items-center justify-between gap-2">
-                      <div className="text-xs">
-                        <div className="font-extrabold text-[#0D2E1B]">
-                          {newCertImageUrl
-                            ? 'Custom Certificate Image Attached ✓'
-                            : 'Optional: Upload Scanned Certificate Image'}
-                        </div>
-                        <div className="text-[10.5px] text-gray-500">
-                          Leave empty to auto-generate Official Digital Certificate
-                        </div>
-                      </div>
-                      <input
-                        ref={certImageInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleCertImageUpload}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => certImageInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-xl bg-[#15803D] text-white text-xs font-extrabold shrink-0 cursor-pointer"
-                      >
-                        Upload Scan
-                      </button>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Issue &amp; Save Certificate to Cloud Storage</span>
-                    </button>
-                  </form>
-
-                  <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-2.5">
-                    <h3 className="text-sm font-extrabold text-[#0D2E1B]">
-                      Stored Certificates ({certificates.length})
-                    </h3>
-                    {certificates.map((c) => (
-                      <div
-                        key={c.id}
-                        className="p-3 rounded-2xl bg-[#F6FBF7] border border-emerald-200 flex items-center justify-between gap-2"
-                      >
-                        <div
-                          onClick={() => setSelectedCertificate(c)}
-                          className="min-w-0 cursor-pointer flex-1"
-                        >
-                          <div className="text-xs font-extrabold text-[#0D2E1B] truncate">
-                            {c.recipientName} — {c.certificateNumber}
-                          </div>
-                          <div className="text-[11px] text-gray-600 truncate">
-                            {c.trainingTitle} • {c.issueDate}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedCertificate(c)}
-                            className="px-2.5 py-1 rounded-lg bg-[#DCFCE7] text-[#14532D] text-[11px] font-extrabold cursor-pointer"
-                          >
-                            View
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCertificate(c.id)}
-                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 4: JOBS & SCHOLARSHIPS CLOUD STORAGE */}
+              {/* TAB 3: JOBS & SCHOLARSHIPS CLOUD STORAGE */}
               {adminTab === 'opportunities' && (
                 <form
                   onSubmit={handleAdminPublishOpportunity}
@@ -4633,105 +4151,6 @@ export default function App() {
             </div>
           )}
         </div>
-
-        {/* ==================== TRAINING CERTIFICATE PREVIEW & DOWNLOAD MODAL ==================== */}
-        {selectedCertificate && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-            <div className="w-full max-w-[460px] bg-white rounded-[28px] p-5 shadow-2xl space-y-4 border-2 border-[#16A34A]">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#14532D] text-[10.5px] font-extrabold inline-flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#16A34A]" />
-                    <span>
-                      Verified Certificate • {selectedCertificate.certificateNumber}
-                    </span>
-                  </span>
-                  <h3 className="text-lg font-extrabold text-[#0D2E1B] mt-1">
-                    {selectedCertificate.recipientName}
-                  </h3>
-                  <p className="text-xs font-semibold text-[#15803D]">
-                    {selectedCertificate.trainingTitle}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCertificate(null)}
-                  className="p-1.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="rounded-2xl overflow-hidden border border-emerald-200 bg-[#F0FDF4]">
-                <img
-                  src={
-                    selectedCertificate.certificateImageUrl ||
-                    generateCertificateSvgDataUrl({
-                      certificateNumber: selectedCertificate.certificateNumber,
-                      recipientName: selectedCertificate.recipientName,
-                      trainingTitle: selectedCertificate.trainingTitle,
-                      trainingCategory: selectedCertificate.trainingCategory,
-                      accreditationBody: selectedCertificate.accreditationBody,
-                      issueDate: selectedCertificate.issueDate
-                    })
-                  }
-                  alt={selectedCertificate.trainingTitle}
-                  className="w-full h-auto object-contain"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs bg-[#F6FBF7] p-3 rounded-2xl border border-emerald-100">
-                <div>
-                  <span className="text-gray-400 font-bold block text-[10px] uppercase">
-                    Accreditation
-                  </span>
-                  <span className="font-extrabold text-[#0D2E1B]">
-                    {selectedCertificate.accreditationBody}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-400 font-bold block text-[10px] uppercase">
-                    Issue Date
-                  </span>
-                  <span className="font-extrabold text-[#0D2E1B]">
-                    {selectedCertificate.issueDate}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <a
-                  href={
-                    selectedCertificate.certificateImageUrl ||
-                    generateCertificateSvgDataUrl({
-                      certificateNumber: selectedCertificate.certificateNumber,
-                      recipientName: selectedCertificate.recipientName,
-                      trainingTitle: selectedCertificate.trainingTitle,
-                      trainingCategory: selectedCertificate.trainingCategory,
-                      accreditationBody: selectedCertificate.accreditationBody,
-                      issueDate: selectedCertificate.issueDate
-                    })
-                  }
-                  download={`${selectedCertificate.certificateNumber}-${selectedCertificate.recipientName.replace(
-                    /\s+/g,
-                    '_'
-                  )}.svg`}
-                  className="flex-1 py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Certificate</span>
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCertificate(null)}
-                  className="py-3 px-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-extrabold cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* ==================== HIRE / CONTACT MEMBER MODAL ==================== */}
         {contactModalMember && (
