@@ -427,6 +427,10 @@ export default function App() {
   // Payment Receipt Submission & Premium Upgrade Modal State
   const [showPremiumUpgradeModal, setShowPremiumUpgradeModal] =
     useState<boolean>(false);
+  const [showApplicationStatusModal, setShowApplicationStatusModal] =
+    useState<boolean>(false);
+  const [isSubmittingPayment, setIsSubmittingPayment] =
+    useState<boolean>(false);
   const [payMethod, setPayMethod] = useState<
     'JazzCash' | 'EasyPaisa' | 'Bank Transfer'
   >('JazzCash');
@@ -1453,8 +1457,49 @@ export default function App() {
     }
   };
 
+  const myPaymentApplications = useMemo<HubPaymentRequest[]>(() => {
+    const ownList = paymentRequests
+      .filter((r) => r.uid === (authUser?.uid || myProfile.uid))
+      .sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+
+    if (ownList.length > 0) return ownList;
+
+    if (myProfile.paymentStatus && myProfile.paymentStatus !== 'none') {
+      return [
+        {
+          id: `app-${myProfile.uid || 'user'}`,
+          uid: myProfile.uid,
+          userName: myProfile.name || 'Food Specialist',
+          userEmail: myProfile.email || '',
+          userPhone: myProfile.phone || '',
+          qualification: myProfile.qualification || '',
+          currentRole: myProfile.title || myProfile.currentRole || '',
+          paymentMethod:
+            (myProfile.paymentMethod as
+              | 'JazzCash'
+              | 'EasyPaisa'
+              | 'Bank Transfer') || 'JazzCash',
+          transactionId: myProfile.paymentReference || 'SCREENSHOT-UPLOADED',
+          amount: myProfile.paymentAmount || 'Rs. 100 (1 Month)',
+          notes: '1 Month Premium Subscription (Rs. 100)',
+          receiptImageUrl: myProfile.receiptImageUrl || payReceiptUrl || '',
+          status: myProfile.paymentStatus as 'pending' | 'verified' | 'rejected',
+          submittedAt:
+            myProfile.createdAt || new Date().toISOString().slice(0, 19) + 'Z',
+          subscriptionPlan: myProfile.subscriptionPlan || '1 Month (Rs. 100)',
+          approvedAt: myProfile.premiumActivatedAt || '',
+          premiumExpiresAt: myProfile.premiumExpiresAt || ''
+        }
+      ];
+    }
+
+    return [];
+  }, [paymentRequests, authUser?.uid, myProfile, payReceiptUrl]);
+
+  const myLatestApplication = myPaymentApplications[0] || null;
+
   const handleSubmitPaymentVerification = async () => {
-    if (!authUser) return;
+    if (!authUser || isSubmittingPayment) return;
     if (!payReceiptUrl && !payTransactionId.trim()) {
       setPaySubmitBanner(
         'Please upload your Payment Screenshot (or enter the Transaction ID) after sending Rs. 100.'
@@ -1462,6 +1507,7 @@ export default function App() {
       return;
     }
 
+    setIsSubmittingPayment(true);
     const reqId = `pay-${authUser.uid.slice(0, 18)}-${Date.now()}`;
     const payload: HubPaymentRequest = {
       id: reqId,
@@ -1494,12 +1540,17 @@ export default function App() {
         receiptImageUrl: payReceiptUrl || myProfile.receiptImageUrl || ''
       };
       setMyProfile(updatedUser);
+      setPaymentRequests((prev) => [
+        payload,
+        ...prev.filter((r) => r.id !== payload.id)
+      ]);
       await persistUserProfileToFirestore(updatedUser);
-      setPaySubmitBanner(
-        '✓ Your Rs. 100 Payment Screenshot & Request have been sent to Admin! Once verified in the Admin Panel, your 1-Month Premium Membership will activate automatically.'
-      );
+      setPaySubmitBanner(null);
       setPayTransactionId('');
       setPayNotes('');
+      // Close the payment popup and open the Application Under Review & Status window
+      setShowPremiumUpgradeModal(false);
+      setShowApplicationStatusModal(true);
     } catch (err) {
       try {
         handleFirestoreError(
@@ -1508,6 +1559,8 @@ export default function App() {
           `paymentRequests/${reqId}`
         );
       } catch {}
+    } finally {
+      setIsSubmittingPayment(false);
     }
   };
 
@@ -3671,6 +3724,16 @@ export default function App() {
                 setPaySubmitBanner(null);
                 setShowPremiumUpgradeModal(true);
               }}
+              hasSubmittedApplication={
+                myPaymentApplications.length > 0 ||
+                Boolean(
+                  myProfile.paymentStatus &&
+                    myProfile.paymentStatus !== 'none'
+                )
+              }
+              onOpenApplicationStatusModal={() => {
+                setShowApplicationStatusModal(true);
+              }}
             />
           )}
 
@@ -4527,10 +4590,17 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleSubmitPaymentVerification}
-                    disabled={isUploadingMedia}
-                    className="flex-1 py-3.5 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer disabled:opacity-60"
+                    disabled={isUploadingMedia || isSubmittingPayment}
+                    className="flex-1 py-3.5 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
                   >
-                    Submit Payment Screenshot for Approval
+                    {isSubmittingPayment && (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    )}
+                    <span>
+                      {isSubmittingPayment
+                        ? 'Submitting Request...'
+                        : 'Submit Payment Screenshot for Approval'}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -4541,6 +4611,323 @@ export default function App() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==================== APPLICATION UNDER REVIEW & APPROVAL STATUS MODAL ==================== */}
+        {showApplicationStatusModal && (
+          <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3.5 overflow-y-auto">
+            <div className="w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-5 shadow-2xl space-y-4 border-2 border-[#16A34A]">
+              {(() => {
+                const currentStatus = isCurrentUserPaid
+                  ? 'verified'
+                  : myLatestApplication?.status ||
+                    (myProfile.paymentStatus &&
+                    myProfile.paymentStatus !== 'none'
+                      ? myProfile.paymentStatus
+                      : 'pending');
+
+                const isApproved = currentStatus === 'verified';
+                const isRejected = currentStatus === 'rejected';
+
+                return (
+                  <>
+                    {/* Top Modal Header */}
+                    <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-3.5">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                            isApproved
+                              ? 'bg-[#15803D] text-white'
+                              : isRejected
+                              ? 'bg-red-600 text-white'
+                              : 'bg-amber-500 text-white'
+                          }`}
+                        >
+                          {isApproved ? (
+                            <CheckCircle2 className="w-6 h-6" />
+                          ) : isRejected ? (
+                            <X className="w-6 h-6" />
+                          ) : (
+                            <ShieldCheck className="w-6 h-6" />
+                          )}
+                        </div>
+                        <div>
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
+                              isApproved
+                                ? 'bg-[#DCFCE7] text-[#14532D]'
+                                : isRejected
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-amber-100 text-amber-900'
+                            }`}
+                          >
+                            {isApproved
+                              ? 'Application Approved ✓'
+                              : isRejected
+                              ? 'Application Not Approved'
+                              : 'Sent to Admin for Approval'}
+                          </span>
+                          <h2 className="text-[19px] font-extrabold text-[#0D2E1B] leading-tight mt-1">
+                            {isApproved
+                              ? 'Premium Membership Active!'
+                              : isRejected
+                              ? 'Payment Request Not Approved'
+                              : 'Your Request is Under Review'}
+                          </h2>
+                          <p className="text-xs font-medium text-gray-600 mt-0.5 leading-relaxed">
+                            {isApproved
+                              ? 'Admin has verified your Rs. 100 payment and activated your 1-Month Premium Membership.'
+                              : isRejected
+                              ? 'Admin reviewed your request and marked it as not approved. You can submit a new valid payment slip below.'
+                              : 'Your request is under review and has been sent to Admin for approval. Once Admin approves your payment slip, your 1-Month Premium Membership will activate automatically.'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowApplicationStatusModal(false)}
+                        className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center shrink-0 cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Live Approval Tracker Steps */}
+                    <div className="bg-[#F2F9F4] border border-[#B8D8C0] rounded-2xl p-4 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#14532D]">
+                          Live Approval Status
+                        </span>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
+                            isApproved
+                              ? 'bg-[#15803D] text-white'
+                              : isRejected
+                              ? 'bg-red-600 text-white'
+                              : 'bg-amber-500 text-white'
+                          }`}
+                        >
+                          {isApproved
+                            ? 'APPROVED ✓'
+                            : isRejected
+                            ? 'REJECTED'
+                            : 'UNDER REVIEW'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 text-xs font-semibold">
+                        <div className="flex items-center gap-2.5 text-[#0D2E1B]">
+                          <span className="w-5 h-5 rounded-full bg-[#16A34A] text-white flex items-center justify-center text-[11px] font-extrabold shrink-0">
+                            ✓
+                          </span>
+                          <span>1. Payment Slip &amp; Application Submitted</span>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 text-[#0D2E1B]">
+                          <span
+                            className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${
+                              isApproved
+                                ? 'bg-[#16A34A] text-white'
+                                : isRejected
+                                ? 'bg-red-600 text-white'
+                                : 'bg-amber-500 text-white'
+                            }`}
+                          >
+                            {isApproved ? '✓' : isRejected ? '✕' : '2'}
+                          </span>
+                          <span>
+                            2. Sent to Admin for Verification{' '}
+                            <strong
+                              className={
+                                isApproved
+                                  ? 'text-[#15803D]'
+                                  : isRejected
+                                  ? 'text-red-700'
+                                  : 'text-amber-800'
+                              }
+                            >
+                              (
+                              {isApproved
+                                ? 'Verified by Admin'
+                                : isRejected
+                                ? 'Not Approved'
+                                : 'Under Review'}
+                              )
+                            </strong>
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2.5 text-[#0D2E1B]">
+                          <span
+                            className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${
+                              isApproved
+                                ? 'bg-[#16A34A] text-white'
+                                : 'bg-gray-200 text-gray-600'
+                            }`}
+                          >
+                            {isApproved ? '✓' : '3'}
+                          </span>
+                          <span
+                            className={
+                              isApproved ? 'text-[#0D2E1B]' : 'text-gray-500'
+                            }
+                          >
+                            3. 1-Month Premium Membership Activation{' '}
+                            {isApproved ? '(Active ✓)' : '(Awaiting Approval)'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Submitted Application Details Card */}
+                    {myLatestApplication && (
+                      <div className="bg-white border border-emerald-200 rounded-2xl p-4 space-y-3 shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
+                          <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#0D2E1B]">
+                            My Submitted Application Details
+                          </h3>
+                          <span className="text-[10.5px] font-bold text-gray-500">
+                            {myLatestApplication.submittedAt
+                              ? myLatestApplication.submittedAt
+                                  .replace('T', ' ')
+                                  .replace('Z', '')
+                              : 'Just now'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5 text-xs">
+                          <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100">
+                            <span className="text-[10px] font-bold text-gray-500 block uppercase">
+                              Applicant Name
+                            </span>
+                            <span className="font-extrabold text-[#0D2E1B] block truncate mt-0.5">
+                              {myLatestApplication.userName || myProfile.name}
+                            </span>
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100">
+                            <span className="text-[10px] font-bold text-gray-500 block uppercase">
+                              Approval Status
+                            </span>
+                            <span
+                              className={`font-extrabold block mt-0.5 ${
+                                isApproved
+                                  ? 'text-[#15803D]'
+                                  : isRejected
+                                  ? 'text-red-700'
+                                  : 'text-amber-700'
+                              }`}
+                            >
+                              {isApproved
+                                ? 'Approved ✓'
+                                : isRejected
+                                ? 'Not Approved'
+                                : 'Under Review'}
+                            </span>
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100">
+                            <span className="text-[10px] font-bold text-gray-500 block uppercase">
+                              Payment Method
+                            </span>
+                            <span className="font-extrabold text-[#0D2E1B] block mt-0.5">
+                              {myLatestApplication.paymentMethod}
+                            </span>
+                          </div>
+
+                          <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100">
+                            <span className="text-[10px] font-bold text-gray-500 block uppercase">
+                              Subscription Fee
+                            </span>
+                            <span className="font-extrabold text-[#15803D] block mt-0.5">
+                              {myLatestApplication.amount || 'Rs. 100 (1 Month)'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {myLatestApplication.transactionId &&
+                          myLatestApplication.transactionId !==
+                            'SCREENSHOT-UPLOADED' && (
+                            <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100 text-xs flex items-center justify-between">
+                              <span className="text-gray-500 font-bold">
+                                Transaction / Ref ID:
+                              </span>
+                              <span className="font-extrabold text-[#0D2E1B]">
+                                {myLatestApplication.transactionId}
+                              </span>
+                            </div>
+                          )}
+
+                        {isApproved &&
+                          (myLatestApplication.premiumExpiresAt ||
+                            myProfile.premiumExpiresAt) && (
+                            <div className="p-3 rounded-xl bg-[#DCFCE7] border border-[#16A34A] text-xs font-extrabold text-[#0D2E1B] flex items-center justify-between">
+                              <span>1-Month Subscription Valid Until:</span>
+                              <span className="text-[#15803D]">
+                                {new Date(
+                                  myLatestApplication.premiumExpiresAt ||
+                                    myProfile.premiumExpiresAt ||
+                                    ''
+                                ).toLocaleDateString('en-PK', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                          )}
+
+                        {myLatestApplication.receiptImageUrl && (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-gray-600">
+                              <span>Uploaded Payment Slip</span>
+                              <a
+                                href={myLatestApplication.receiptImageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#15803D] underline font-extrabold"
+                              >
+                                View Full Slip ↗
+                              </a>
+                            </div>
+                            <div className="rounded-xl overflow-hidden border border-emerald-200 bg-[#F6FBF7] p-2">
+                              <img
+                                src={myLatestApplication.receiptImageUrl}
+                                alt="Submitted Payment Slip"
+                                className="max-h-44 mx-auto object-contain rounded-lg"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowApplicationStatusModal(false)}
+                        className="w-full py-3.5 px-5 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer"
+                      >
+                        OK, Close Window
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowApplicationStatusModal(false);
+                          setPaySubmitBanner(null);
+                          setShowPremiumUpgradeModal(true);
+                        }}
+                        className="w-full sm:w-auto py-3.5 px-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-extrabold cursor-pointer shrink-0"
+                      >
+                        Submit New Slip
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}

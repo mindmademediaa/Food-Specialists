@@ -181,6 +181,8 @@ interface EditProfileViewProps {
   isUserAdmin: boolean;
   onOpenAdmin: () => void;
   onOpenPremiumModal: () => void;
+  hasSubmittedApplication: boolean;
+  onOpenApplicationStatusModal: () => void;
 }
 
 export const EditProfileView: React.FC<EditProfileViewProps> = ({
@@ -197,7 +199,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
   profileSaveMsg,
   isUserAdmin,
   onOpenAdmin,
-  onOpenPremiumModal
+  onOpenPremiumModal,
+  hasSubmittedApplication,
+  onOpenApplicationStatusModal
 }) => {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const cvInputRef = useRef<HTMLInputElement | null>(null);
@@ -1600,13 +1604,17 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       ? 'bg-[#DCFCE7] text-[#14532D] border border-[#16A34A]/30'
                       : profile.paymentStatus === 'pending'
                       ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                      : profile.paymentStatus === 'rejected'
+                      ? 'bg-red-100 text-red-800 border border-red-300'
                       : 'bg-gray-100 text-gray-700'
                   }`}
                 >
                   {isPremium
-                    ? 'Active ✓'
+                    ? 'Approved • Active ✓'
                     : profile.paymentStatus === 'pending'
-                    ? 'Pending Admin Approval'
+                    ? 'Under Review • Sent to Admin'
+                    : profile.paymentStatus === 'rejected'
+                    ? 'Not Approved'
                     : 'Free User Plan'}
                 </span>
               </div>
@@ -1629,7 +1637,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     )}
                   </>
                 ) : profile.paymentStatus === 'pending' ? (
-                  'Your Rs. 100 payment screenshot has been submitted and is awaiting Admin verification. Once approved, your 1-month Premium subscription will activate.'
+                  'Your request is under review and has been sent to Admin for approval. You can view your submitted application and check your live approval status below.'
+                ) : profile.paymentStatus === 'rejected' ? (
+                  'Your previous payment request was not approved by Admin. You can view your application status or upload a valid Rs. 100 payment slip below.'
                 ) : (
                   'As a Free User, you get Jobs & Scholarships updates, can apply for Trainings, and save your Profile. Upgrade to Premium (Only Rs. 100 / Month) to show your profile in the Community and connect with other specialists!'
                 )}
@@ -1638,20 +1648,46 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onOpenPremiumModal}
-          className="w-full py-3.5 px-5 rounded-[18px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[14px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
-        >
-          <Crown className="w-4 h-4 text-amber-300 shrink-0" />
-          <span>
-            {isPremium
-              ? 'View Premium Benefits / Renew (Rs. 100 / Month)'
-              : profile.paymentStatus === 'pending'
-              ? 'View Pending Payment / Upload New Screenshot'
-              : 'Become a Premium Member — Only Rs. 100 / Month'}
-          </span>
-        </button>
+        {profile.paymentStatus === 'pending' || hasSubmittedApplication ? (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={onOpenApplicationStatusModal}
+              className="w-full py-3.5 px-5 rounded-[18px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[14px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <Eye className="w-4 h-4 text-emerald-200 shrink-0" />
+              <span>
+                {isPremium
+                  ? 'View My Application & Approval Status (Approved ✓)'
+                  : profile.paymentStatus === 'pending'
+                  ? 'View My Application Status (Under Review)'
+                  : 'View My Application & Approval Status'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onOpenPremiumModal}
+              className="w-full py-2.5 px-4 rounded-[14px] bg-white hover:bg-[#EAF5EC] border border-[#8BB999] text-[#0D2E1B] font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Crown className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
+              <span>
+                {isPremium
+                  ? 'Renew / Submit Another Payment Slip (Rs. 100 / Month)'
+                  : 'Submit New Payment Slip (Rs. 100 / Month)'}
+              </span>
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenPremiumModal}
+            className="w-full py-3.5 px-5 rounded-[18px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[14px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            <Crown className="w-4 h-4 text-amber-300 shrink-0" />
+            <span>Become a Premium Member — Only Rs. 100 / Month</span>
+          </button>
+        )}
       </div>
 
       {isUserAdmin && (
