@@ -21,14 +21,11 @@ interface MemberCardProps {
 
 export function canViewerSeeField(
   vis: VisibilityLevel | undefined,
-  viewerIsPremium: boolean,
-  isOwnerOrAdmin: boolean
+  _viewerIsPremium?: boolean,
+  _isOwnerOrAdmin?: boolean
 ): boolean {
-  if (isOwnerOrAdmin) return true;
   const level: VisibilityLevel = vis || 'public';
-  if (level === 'private') return false;
-  if (level === 'premium') return viewerIsPremium;
-  return true;
+  return level !== 'private';
 }
 
 export const MemberCard: React.FC<MemberCardProps> = ({
@@ -47,7 +44,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
     isOwner
   );
   const canSeeCompany = canViewerSeeField(
-    vis?.company ?? 'premium',
+    vis?.company ?? 'public',
     viewerIsPremium,
     isOwner
   );
@@ -56,8 +53,18 @@ export const MemberCard: React.FC<MemberCardProps> = ({
     viewerIsPremium,
     isOwner
   );
+  const canSeeBio = canViewerSeeField(
+    vis?.bio ?? 'public',
+    viewerIsPremium,
+    isOwner
+  );
   const canSeeLinkedin = canViewerSeeField(
-    vis?.linkedin ?? 'premium',
+    vis?.linkedin ?? 'public',
+    viewerIsPremium,
+    isOwner
+  );
+  const canSeeCv = canViewerSeeField(
+    vis?.cv ?? 'public',
     viewerIsPremium,
     isOwner
   );
@@ -133,7 +140,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
             </span>
           </div>
 
-          {/* Title & Company (filtered by field visibility) */}
+          {/* Title & Company (filtered by field visibility toggle) */}
           {(canSeeTitle && displayTitle) || (canSeeCompany && member.company) ? (
             <div className="flex items-center gap-1.5 text-[13.5px] text-gray-800 font-semibold">
               <Briefcase className="w-3.5 h-3.5 text-[#1E8E49] shrink-0" />
@@ -147,19 +154,26 @@ export const MemberCard: React.FC<MemberCardProps> = ({
             </div>
           ) : null}
 
-          {/* Location (filtered by field visibility) */}
+          {/* Location (filtered by field visibility toggle) */}
           {canSeeLocation && member.location && (
             <div className="flex items-center gap-1.5 text-[12.5px] text-gray-600 font-medium">
               <MapPin className="w-3.5 h-3.5 text-[#1E8E49] shrink-0" />
               <span className="truncate">{member.location}</span>
             </div>
           )}
+
+          {/* Bio snippet (shown if Bio toggle is ON) */}
+          {canSeeBio && member.bio && (
+            <p className="text-xs text-gray-600 line-clamp-2 pt-0.5 leading-relaxed">
+              {member.bio}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Bottom Row: Hire Me / LinkedIn Icon (if allowed) + View Profile Button */}
+      {/* Bottom Row: Hire Me / LinkedIn / CV Indicator (if toggled ON) + View Profile Button */}
       <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-emerald-100/90">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {hireMeActive && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#15803D] text-[11px] font-extrabold">
               <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
@@ -182,6 +196,12 @@ export const MemberCard: React.FC<MemberCardProps> = ({
               <span>LinkedIn</span>
               <ExternalLink className="w-3 h-3" />
             </a>
+          )}
+
+          {canSeeCv && (member.cvUrl || member.cvFileName) && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FEF3C7] border border-[#FCD34D] text-[#92400E] text-[11px] font-extrabold">
+              <span>CV Available</span>
+            </span>
           )}
         </div>
 

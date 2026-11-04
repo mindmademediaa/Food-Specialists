@@ -492,7 +492,7 @@ export default function App() {
     null
   );
   const [contactCustomMsg, setContactCustomMsg] = useState<string>(
-    'Assalam-o-Alaikum, I saw your Verified Specialist profile on Food Specialists Hub and would like to connect regarding a Food Science / QA opportunity.'
+    'Assalam-o-Alaikum, I saw your Verified Specialist profile on FS Portal and would like to connect regarding a Food Science / QA opportunity.'
   );
   const [contactSentBanner, setContactSentBanner] = useState<string | null>(
     null
@@ -1062,8 +1062,8 @@ export default function App() {
   ) => {
     const currentUrl = url || window.location.href;
     const shareData = {
-      title: `${title} | Food Specialists Portal`,
-      text: `${title}\n${subtitle}\n\nShared via Food Specialists Portal:`,
+      title: `${title} | FS Portal`,
+      text: `${title}\n${subtitle}\n\nShared via FS Portal:`,
       url: currentUrl
     };
 
@@ -1684,7 +1684,7 @@ export default function App() {
       issueDate: newCertIssueDate || '2026-11-03',
       certificateImageUrl: certImg,
       verificationStatus: 'valid',
-      issuedBy: 'Food Specialists Portal Admin',
+      issuedBy: 'FS Portal Admin',
       createdAt: new Date().toISOString().slice(0, 19) + 'Z'
     };
 
@@ -1877,7 +1877,7 @@ export default function App() {
             <Loader2 className="w-6 h-6 animate-spin" />
           </div>
           <h2 className="text-base font-extrabold text-[#0D2E1B]">
-            Food Specialists Portal
+            FS Portal
           </h2>
           <p className="text-xs font-medium text-gray-500">
             Verifying your authentication session...
@@ -4829,7 +4829,7 @@ export default function App() {
                     href={`mailto:${
                       contactModalMember.email
                     }?subject=${encodeURIComponent(
-                      'Hiring / Networking Inquiry via Food Safety App'
+                      'Hiring / Networking Inquiry via FS Portal'
                     )}&body=${encodeURIComponent(contactCustomMsg)}`}
                     className="w-full py-3 px-4 rounded-2xl bg-[#EAF3EC] hover:bg-[#D5EAD8] text-[#0D2E1B] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
                   >

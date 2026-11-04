@@ -104,13 +104,10 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
     isOwnerOrAdmin
   );
 
-  // CV Download Rule (Part 3):
-  // IF (owner is Premium AND viewer is Premium) OR isOwnerOrAdmin -> Enable Download
-  // ELSE -> Show Locked "Become Premium to Download CV"
+  // CV Download Rule:
+  // If owner toggled CV ON (canSeeCvField) and uploaded a CV -> show & enable download
   const canDownloadCv =
-    Boolean(member.cvUrl || member.cvFileName) &&
-    canSeeCvField &&
-    ((ownerIsPremium && viewerIsPremium) || isOwnerOrAdmin);
+    Boolean(member.cvUrl || member.cvFileName) && canSeeCvField;
 
   const displayName = canSeeName ? member.name : 'Food Safety Specialist';
   const displayTitle = member.title || member.currentRole || '';
@@ -425,7 +422,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
             </div>
           )}
 
-          {/* Location • Food Safety App • 500+ connections + [✦ Premium Member] Pill */}
+          {/* Location • FS Portal • 500+ connections + [✦ Premium Member] Pill */}
           <div className="flex items-center justify-center gap-1.5 flex-wrap text-[12.5px] font-medium text-gray-600 pt-0.5">
             {canSeeLocation && member.location && (
               <span className="inline-flex items-center gap-1">
@@ -434,7 +431,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 <span>•</span>
               </span>
             )}
-            <span>Food Safety App</span>
+            <span>FS Portal</span>
             <span>•</span>
             <span>500+ connections</span>
 
@@ -447,39 +444,28 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
           </div>
         </div>
 
-        {/* MESSAGE & CONTACT BUTTONS (WITH STRICT VISIBILITY & VIEWER PLAN ENFORCEMENT) */}
-        {vis.contact !== 'private' || isOwnerOrAdmin ? (
-          canSeeContact && (viewerIsPremium || isOwnerOrAdmin) ? (
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <button
-                type="button"
-                onClick={() => onMessageOrContact(member, 'message')}
-                className="py-3 px-4 rounded-2xl bg-[#278549] hover:bg-[#1D6A39] text-white font-extrabold text-[15px] shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
-                <MessageSquare className="w-4 h-4 fill-white/20" />
-                <span>Message</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onMessageOrContact(member, 'contact')}
-                className="py-3 px-4 rounded-2xl bg-white hover:bg-[#F0FDF4] border-[1.5px] border-[#278549] text-[#14261C] font-extrabold text-[15px] shadow-2xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
-                <Phone className="w-4 h-4 text-[#278549]" />
-                <span>Contact</span>
-              </button>
-            </div>
-          ) : (
+        {/* MESSAGE & CONTACT BUTTONS (SHOWN WHEN OWNER TOGGLES CONTACT ON) */}
+        {canSeeContact && (
+          <div className="grid grid-cols-2 gap-3 pt-1">
             <button
               type="button"
-              onClick={onRequestUpgradeToPremium}
-              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#FEF3C7] to-[#FDE68A] hover:from-[#FDE68A] hover:to-[#FCD34D] border border-[#D97706]/50 text-[#78350F] font-extrabold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+              onClick={() => onMessageOrContact(member, 'message')}
+              className="py-3 px-4 rounded-2xl bg-[#278549] hover:bg-[#1D6A39] text-white font-extrabold text-[15px] shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
-              <Lock className="w-4 h-4 text-[#B45309] shrink-0" />
-              <span>Upgrade to Premium to Contact</span>
+              <MessageSquare className="w-4 h-4 fill-white/20" />
+              <span>Message</span>
             </button>
-          )
-        ) : null}
+
+            <button
+              type="button"
+              onClick={() => onMessageOrContact(member, 'contact')}
+              className="py-3 px-4 rounded-2xl bg-white hover:bg-[#F0FDF4] border-[1.5px] border-[#278549] text-[#14261C] font-extrabold text-[15px] shadow-2xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              <Phone className="w-4 h-4 text-[#278549]" />
+              <span>Contact</span>
+            </button>
+          </div>
+        )}
 
         {/* ABOUT SECTION + HIRE ME INDICATOR */}
         {((canSeeBio && member.bio) || hireMeOn) && (
@@ -512,74 +498,35 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
           </div>
         )}
 
-        {/* LINKEDIN CARD (RESPECTING VISIBILITY + BLURRED LOCK FOR FREE VIEWERS WHEN PREMIUM ONLY) */}
-        {rawLinkedin && (vis.linkedin !== 'private' || isOwnerOrAdmin) && (
+        {/* LINKEDIN CARD (SHOWN WHEN OWNER TOGGLES LINKEDIN ON) */}
+        {rawLinkedin && canSeeLinkedin && (
           <div>
-            {canSeeLinkedin ? (
-              <a
-                href={linkedinHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-[#F3F5F4] hover:bg-[#EAEFEC] border border-gray-300/90 rounded-2xl p-3.5 flex items-center justify-between gap-3 transition-colors group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-[#0A66C2] text-white font-black text-[22px] flex items-center justify-center shrink-0 leading-none shadow-2xs">
-                    in
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[15.5px] font-extrabold text-[#14261C]">
-                      LinkedIn
-                    </div>
-                    <div className="text-[13px] font-semibold text-[#0A66C2] truncate">
-                      {cleanLinkedinDisplay}
-                    </div>
-                  </div>
+            <a
+              href={linkedinHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full bg-[#F3F5F4] hover:bg-[#EAEFEC] border border-gray-300/90 rounded-2xl p-3.5 flex items-center justify-between gap-3 transition-colors group"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-xl bg-[#0A66C2] text-white font-black text-[22px] flex items-center justify-center shrink-0 leading-none shadow-2xs">
+                  in
                 </div>
-                <ArrowRight className="w-5 h-5 text-gray-500 group-hover:text-[#14261C] group-hover:translate-x-0.5 transition-all shrink-0" />
-              </a>
-            ) : (
-              <div
-                onClick={onRequestUpgradeToPremium}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onRequestUpgradeToPremium();
-                  }
-                }}
-                className="relative w-full bg-[#F3F5F4] border border-amber-300 rounded-2xl p-3.5 overflow-hidden cursor-pointer"
-              >
-                <div className="flex items-center justify-between gap-3 blur-[4px] select-none opacity-60">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-[#0A66C2] text-white font-black text-[22px] flex items-center justify-center">
-                      in
-                    </div>
-                    <div>
-                      <div className="text-[15.5px] font-extrabold text-[#14261C]">
-                        LinkedIn
-                      </div>
-                      <div className="text-[13px] font-semibold text-[#0A66C2]">
-                        linkedin.com/in/premium-specialist
-                      </div>
-                    </div>
+                <div className="min-w-0">
+                  <div className="text-[15.5px] font-extrabold text-[#14261C]">
+                    LinkedIn
                   </div>
-                  <ArrowRight className="w-5 h-5 text-gray-400" />
-                </div>
-
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                  <span className="px-3.5 py-1.5 rounded-full bg-[#14261C] text-amber-300 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm">
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Premium Members Only</span>
-                  </span>
+                  <div className="text-[13px] font-semibold text-[#0A66C2] truncate">
+                    {cleanLinkedinDisplay}
+                  </div>
                 </div>
               </div>
-            )}
+              <ArrowRight className="w-5 h-5 text-gray-500 group-hover:text-[#14261C] group-hover:translate-x-0.5 transition-all shrink-0" />
+            </a>
           </div>
         )}
 
-        {/* CV VAULT — PREMIUM CARD (GOLD BORDER + SHIELD ICON + DOWNLOAD LOGIC) */}
-        {(vis.cv !== 'private' || isOwnerOrAdmin) && (
+        {/* CV VAULT CARD (SHOWN WHEN OWNER TOGGLES CV ON) */}
+        {canSeeCvField && Boolean(member.cvUrl || member.cvFileName) && (
           <div className="bg-[#FDFBF5] border-[1.5px] border-[#C6A34F] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-2xs">
             <div className="flex items-center gap-3 min-w-0">
               {/* Gold Shield Icon matching Reference Image 2 */}
@@ -603,35 +550,24 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
 
               <div className="min-w-0">
                 <div className="text-[15.5px] font-extrabold text-[#14261C] leading-tight">
-                  CV Vault — Premium
+                  CV / Resume Vault
                 </div>
                 <div className="text-[12px] font-medium text-gray-700 truncate mt-0.5">
-                  {member.cvFileName && canDownloadCv
+                  {member.cvFileName
                     ? `${member.cvFileName}`
-                    : 'Download CV for premium members'}
+                    : 'Download Specialist CV / Resume'}
                 </div>
               </div>
             </div>
 
-            {canDownloadCv ? (
-              <button
-                type="button"
-                onClick={handleTriggerCvDownload}
-                className="px-3.5 py-2 rounded-xl bg-[#278549] hover:bg-[#1D6A39] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shrink-0 shadow-xs transition-colors cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>Download CV</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onRequestUpgradeToPremium}
-                className="px-3 py-2 rounded-xl bg-[#FEF3C7] hover:bg-[#FDE68A] border border-[#D97706]/50 text-[#78350F] text-[11px] font-extrabold inline-flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
-              >
-                <Lock className="w-3.5 h-3.5 text-[#B45309] shrink-0" />
-                <span>Become Premium to Download CV</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleTriggerCvDownload}
+              className="px-3.5 py-2 rounded-xl bg-[#278549] hover:bg-[#1D6A39] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shrink-0 shadow-xs transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Download CV</span>
+            </button>
           </div>
         )}
 

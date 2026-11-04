@@ -38,22 +38,20 @@ import { formatFileSizeLabel } from '../lib/storage';
 export const DEFAULT_VISIBILITY_MAP: ProfileVisibilityMap = {
   name: 'public',
   title: 'public',
-  company: 'premium',
+  company: 'public',
   location: 'public',
   bio: 'public',
-  linkedin: 'premium',
-  cv: 'premium',
-  contact: 'premium',
-  education: 'premium',
-  experience: 'premium',
+  linkedin: 'public',
+  cv: 'public',
+  contact: 'public',
+  education: 'public',
+  experience: 'public',
   certifications: 'public',
   projects: 'public'
 };
 
 export function cycleVisibilityLevel(current: VisibilityLevel): VisibilityLevel {
-  if (current === 'public') return 'private';
-  if (current === 'private') return 'premium';
-  return 'public';
+  return current === 'private' ? 'public' : 'private';
 }
 
 export function normalizeExperienceArray(
@@ -76,7 +74,7 @@ export function normalizeExperienceArray(
         isPresent: true,
         location: user.location || '',
         description: user.experience.trim(),
-        visibility: user.visibility?.experience || 'premium'
+        visibility: user.visibility?.experience || 'public'
       }
     ];
   }
@@ -99,7 +97,7 @@ export function normalizeEducationArray(
         startYear: '2018',
         endYear: '2022',
         description: '',
-        visibility: user.visibility?.education || 'premium'
+        visibility: user.visibility?.education || 'public'
       }
     ];
   }
@@ -117,54 +115,55 @@ export const VisibilityPill: React.FC<VisibilityPillProps> = ({
   onChange,
   size = 'md'
 }) => {
-  const handleClick = (e: React.MouseEvent) => {
+  const isOn = value !== 'private';
+
+  const handleToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onChange(cycleVisibilityLevel(value));
+    onChange(isOn ? 'private' : 'public');
   };
 
-  if (value === 'public') {
-    return (
-      <button
-        type="button"
-        onClick={handleClick}
-        title="Visibility: Public (Tap to switch to Private / Premium Only)"
-        className={`inline-flex items-center rounded-full border border-[#229A54] bg-gradient-to-r from-white via-[#E8F8EE] to-[#229A54] text-[#0D2E1B] font-extrabold shadow-2xs transition-all cursor-pointer shrink-0 select-none ${
-          size === 'sm' ? 'px-2.5 py-0.5 text-[10.5px]' : 'px-3 py-1 text-[11.5px]'
-        }`}
-      >
-        <span className="text-[#15803D] drop-shadow-2xs">Public</span>
-      </button>
-    );
-  }
-
-  if (value === 'private') {
-    return (
-      <button
-        type="button"
-        onClick={handleClick}
-        title="Visibility: Private — Only you can see (Tap to switch to Premium Only)"
-        className={`inline-flex items-center rounded-full bg-[#B0B5B2] hover:bg-[#9CA29E] text-white font-extrabold shadow-2xs transition-all cursor-pointer shrink-0 select-none ${
-          size === 'sm' ? 'px-2.5 py-0.5 text-[10.5px]' : 'px-3 py-1 text-[11.5px]'
-        }`}
-      >
-        <span>Private</span>
-      </button>
-    );
-  }
-
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      title="Visibility: Premium Only — Only Premium Paid Members can see (Tap to switch to Public)"
-      className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#B45309] hover:to-[#92400E] border border-[#FCD34D] text-white font-extrabold shadow-2xs transition-all cursor-pointer shrink-0 select-none ${
-        size === 'sm' ? 'px-2.5 py-0.5 text-[10.5px]' : 'px-3 py-1 text-[11px]'
-      }`}
+    <div
+      onClick={handleToggle}
+      role="switch"
+      aria-checked={isOn}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          onChange(isOn ? 'private' : 'public');
+        }
+      }}
+      title={
+        isOn
+          ? 'ON — Show this information to other users in Community (Click to turn OFF)'
+          : 'OFF — Hide this information from other users (Click to turn ON)'
+      }
+      className="inline-flex items-center gap-1.5 shrink-0 cursor-pointer select-none"
     >
-      <Sparkles className="w-2.5 h-2.5 text-amber-200" />
-      <span>Premium Only</span>
-    </button>
+      <span
+        className={`font-extrabold ${
+          size === 'sm' ? 'text-[10.5px]' : 'text-xs'
+        } ${isOn ? 'text-[#228B4E]' : 'text-gray-400'}`}
+      >
+        {isOn ? 'ON' : 'OFF'}
+      </span>
+      <button
+        type="button"
+        tabIndex={-1}
+        className={`rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
+          size === 'sm' ? 'w-11 h-6' : 'w-12 h-6.5'
+        } ${isOn ? 'bg-[#229A54] justify-end' : 'bg-gray-300 justify-start'}`}
+      >
+        <span
+          className={`rounded-full bg-white shadow-sm ${
+            size === 'sm' ? 'w-5 h-5' : 'w-5.5 h-5.5'
+          }`}
+        />
+      </button>
+    </div>
   );
 };
 
@@ -398,18 +397,15 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           </button>
         </div>
 
-        {/* Quick Public Profile Preview Pill + Visibility Legend */}
+        {/* Quick Public Profile Preview + Toggle Legend */}
         <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-emerald-100 rounded-2xl px-3.5 py-2.5 shadow-2xs">
           <div className="text-[11px] font-semibold text-gray-600 flex items-center gap-1.5 flex-wrap">
-            <span>Tap any pill to cycle:</span>
-            <span className="px-2 py-0.5 rounded-full bg-[#229A54] text-white font-bold text-[10px]">
-              Public
+            <span>Toggle next to any field:</span>
+            <span className="px-2 py-0.5 rounded-full bg-[#229A54] text-white font-extrabold text-[10px]">
+              ON = Show in Community
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-[#B0B5B2] text-white font-bold text-[10px]">
-              Private
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-[#D97706] text-white font-bold text-[10px]">
-              Premium Only
+            <span className="px-2 py-0.5 rounded-full bg-gray-300 text-gray-700 font-extrabold text-[10px]">
+              OFF = Hidden
             </span>
           </div>
           <button
@@ -711,7 +707,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             )}
 
             <p className="text-[11px] font-semibold text-[#14532D]/90 leading-snug">
-              Your CV will be visible only to Premium Community Members after you become Premium
+              Turn the toggle button ON to show your CV in the Community section, or OFF to keep it hidden
             </p>
           </div>
         </div>
@@ -743,7 +739,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     startYear: '',
                     endYear: '',
                     description: '',
-                    visibility: vis.education || 'premium'
+                    visibility: vis.education || 'public'
                   })
                 }
                 className="px-4 py-1.5 rounded-full bg-[#95CEA5] hover:bg-[#7FBF91] text-[#0D2E1B] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
@@ -876,7 +872,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     <div className="flex items-center gap-1.5 shrink-0">
                       <VisibilityPill
                         size="sm"
-                        value={edu.visibility || 'premium'}
+                        value={edu.visibility || 'public'}
                         onChange={(nextVis) => {
                           const nextList = educationList.map((item) =>
                             item.id === edu.id
@@ -939,7 +935,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     isPresent: true,
                     location: '',
                     description: '',
-                    visibility: vis.experience || 'premium'
+                    visibility: vis.experience || 'public'
                   })
                 }
                 className="px-4 py-1.5 rounded-full bg-[#95CEA5] hover:bg-[#7FBF91] text-[#0D2E1B] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
@@ -1110,7 +1106,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     <div className="flex items-center gap-1.5 shrink-0">
                       <VisibilityPill
                         size="sm"
-                        value={exp.visibility || 'premium'}
+                        value={exp.visibility || 'public'}
                         onChange={(nextVis) => {
                           const nextList = experienceList.map((item) =>
                             item.id === exp.id

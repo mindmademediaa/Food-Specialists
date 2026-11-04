@@ -234,7 +234,7 @@ export function generateCertificateSvgDataUrl(cert: {
     
     <rect x="180" y="65" width="640" height="54" rx="27" fill="url(#headerGrad)"/>
     <text x="500" y="99" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="20" font-weight="bold" letter-spacing="3">
-      FOOD SPECIALISTS PORTAL • OFFICIAL CERTIFICATE
+      FS PORTAL • OFFICIAL CERTIFICATE
     </text>
 
     <text x="500" y="168" text-anchor="middle" fill="#15803D" font-family="Arial, sans-serif" font-size="15" font-weight="bold" letter-spacing="2">
@@ -302,7 +302,7 @@ export const INITIAL_CERTIFICATES: HubCertificate[] = [
     accreditationBody: 'Highfield UK Accredited',
     issueDate: '2026-10-15',
     verificationStatus: 'valid',
-    issuedBy: 'Food Specialists Portal Admin',
+    issuedBy: 'FS Portal Admin',
     createdAt: '2026-10-15T10:00:00Z'
   },
   {
@@ -315,7 +315,7 @@ export const INITIAL_CERTIFICATES: HubCertificate[] = [
     accreditationBody: 'IRCA | CQI Certified',
     issueDate: '2026-10-28',
     verificationStatus: 'valid',
-    issuedBy: 'Food Specialists Portal Admin',
+    issuedBy: 'FS Portal Admin',
     createdAt: '2026-10-28T14:30:00Z'
   }
 ];

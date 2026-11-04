@@ -266,7 +266,7 @@ export const AuthScreen: React.FC = () => {
                 <ShieldCheck className="w-3.5 h-3.5 stroke-[2.5]" />
               </div>
               <span className="text-[11.5px] font-extrabold uppercase tracking-wider">
-                Food Specialists Portal
+                FS Portal
               </span>
             </div>
 

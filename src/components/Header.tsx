@@ -46,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Small Avatar next to Food Specialists Portal */}
+        {/* Small Avatar next to FS Portal */}
         <button
           type="button"
           onClick={onProfileClick}
@@ -72,9 +72,9 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onHomeClick}
-            className="text-[14.5px] sm:text-[18px] font-extrabold tracking-tight text-white font-display leading-tight truncate block w-full cursor-pointer text-left"
+            className="text-[16px] sm:text-[19px] font-extrabold tracking-tight text-white font-display leading-tight truncate block w-full cursor-pointer text-left"
           >
-            Food Specialists Portal
+            FS Portal
           </button>
           {userEmail && (
             <div
