@@ -79,7 +79,10 @@ service cloud.firestore {
         (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod.size() <= 80)) &&
         (!('paymentReference' in data) || (data.paymentReference is string && data.paymentReference.size() <= 120)) &&
         (!('paymentAmount' in data) || (data.paymentAmount is string && data.paymentAmount.size() <= 80)) &&
-        (!('receiptImageUrl' in data) || (data.receiptImageUrl is string && data.receiptImageUrl.size() <= 450000));
+        (!('receiptImageUrl' in data) || (data.receiptImageUrl is string && data.receiptImageUrl.size() <= 450000)) &&
+        (!('subscriptionPlan' in data) || (data.subscriptionPlan is string && data.subscriptionPlan.size() <= 80)) &&
+        (!('premiumActivatedAt' in data) || (data.premiumActivatedAt is string && data.premiumActivatedAt.size() <= 64)) &&
+        (!('premiumExpiresAt' in data) || (data.premiumExpiresAt is string && data.premiumExpiresAt.size() <= 64));
     }
 
     function isValidPaymentRequest(data) {
@@ -98,7 +101,10 @@ service cloud.firestore {
         (!('amount' in data) || (data.amount is string && data.amount.size() <= 80)) &&
         (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000)) &&
         (!('receiptImageUrl' in data) || (data.receiptImageUrl is string && data.receiptImageUrl.size() <= 450000)) &&
-        (!('submittedAt' in data) || (data.submittedAt is string && data.submittedAt.size() <= 64));
+        (!('submittedAt' in data) || (data.submittedAt is string && data.submittedAt.size() <= 64)) &&
+        (!('subscriptionPlan' in data) || (data.subscriptionPlan is string && data.subscriptionPlan.size() <= 80)) &&
+        (!('approvedAt' in data) || (data.approvedAt is string && data.approvedAt.size() <= 64)) &&
+        (!('premiumExpiresAt' in data) || (data.premiumExpiresAt is string && data.premiumExpiresAt.size() <= 64));
     }
 
     function isValidCertificate(data) {

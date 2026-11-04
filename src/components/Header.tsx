@@ -33,8 +33,8 @@ export const Header: React.FC<HeaderProps> = ({
   notificationCount = 1
 }) => {
   return (
-    <header className="bg-[#16A34A] text-white rounded-[24px] px-3.5 sm:px-5 py-3.5 flex items-center justify-between shadow-sm">
-      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+    <header className="bg-[#16A34A] text-white rounded-[24px] px-3 sm:px-5 py-3 flex items-center justify-between gap-2 shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
         {showBack && onBack && (
           <button
             type="button"
@@ -68,18 +68,18 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#B9E29A] border-2 border-[#16A34A]" />
         </button>
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 pr-1">
           <button
             type="button"
             onClick={onHomeClick}
-            className="text-[16px] sm:text-[19px] font-bold tracking-tight text-white font-display leading-tight truncate block cursor-pointer text-left"
+            className="text-[14.5px] sm:text-[18px] font-extrabold tracking-tight text-white font-display leading-tight truncate block w-full cursor-pointer text-left"
           >
             Food Specialists Portal
           </button>
           {userEmail && (
             <div
               title={userEmail}
-              className="flex items-center gap-1 text-[10px] font-semibold text-emerald-100 truncate max-w-[130px] sm:max-w-[200px] mt-0.5"
+              className="flex items-center gap-1 text-[10px] font-semibold text-emerald-100 truncate mt-0.5"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#B9E29A] shrink-0" />
               <span className="truncate">{userEmail}</span>
@@ -88,13 +88,13 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
         {isAdmin && onAdminClick && (
           <button
             type="button"
             onClick={onAdminClick}
             title="Open Admin Panel"
-            className="px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-[11px] font-bold text-white flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-2 py-1 rounded-full bg-white/15 hover:bg-white/25 text-[11px] font-bold text-white flex items-center gap-1 transition-colors cursor-pointer"
           >
             <Shield className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Admin</span>
@@ -105,18 +105,18 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           onClick={onSearchClick}
           aria-label="Search"
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors cursor-pointer shrink-0"
         >
-          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[2.2]" />
+          <Search className="w-4 h-4 text-white stroke-[2.3]" />
         </button>
 
         <button
           type="button"
           onClick={onBellClick}
           aria-label="Notifications"
-          className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors cursor-pointer"
+          className="relative w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors cursor-pointer shrink-0"
         >
-          <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white" />
+          <Bell className="w-4 h-4 text-white fill-white" />
           <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-[#B9E29A] text-[#0D2E1B] text-[9.5px] font-bold flex items-center justify-center tabular-nums">
             {notificationCount}
           </span>
@@ -128,10 +128,10 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onSignOutClick}
             aria-label="Sign Out"
             title="Sign Out"
-            className="px-2.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-2.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Sign Out</span>
+            <span>Sign Out</span>
           </button>
         )}
       </div>

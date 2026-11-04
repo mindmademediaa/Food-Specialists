@@ -430,12 +430,14 @@ export default function App() {
   const [uploadStatusMsg, setUploadStatusMsg] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
 
-  // Payment Receipt Submission State (in /profile)
+  // Payment Receipt Submission & Premium Upgrade Modal State
+  const [showPremiumUpgradeModal, setShowPremiumUpgradeModal] =
+    useState<boolean>(false);
   const [payMethod, setPayMethod] = useState<
-    'EasyPaisa' | 'JazzCash' | 'Bank Transfer'
-  >('EasyPaisa');
+    'JazzCash' | 'EasyPaisa' | 'Bank Transfer'
+  >('JazzCash');
   const [payTransactionId, setPayTransactionId] = useState<string>('');
-  const [payAmount, setPayAmount] = useState<string>('PKR 2,000');
+  const [payAmount, setPayAmount] = useState<string>('Rs. 100');
   const [payNotes, setPayNotes] = useState<string>('');
   const [payReceiptUrl, setPayReceiptUrl] = useState<string>('');
   const [paySubmitBanner, setPaySubmitBanner] = useState<string | null>(null);
@@ -601,12 +603,19 @@ export default function App() {
               ...(publicData.visibility || {}),
               ...(privateData.visibility || {})
             };
+            const rawExpiresAt =
+              publicData.premiumExpiresAt || privateData.premiumExpiresAt || '';
+            const isNotExpired =
+              !rawExpiresAt ||
+              Number.isNaN(new Date(rawExpiresAt).getTime()) ||
+              new Date(rawExpiresAt).getTime() > Date.now();
             const isPaidOrPremium = Boolean(
               isAdminUser ||
-                publicData.isPaid ||
-                publicData.isPremium ||
-                privateData.isPaid ||
-                privateData.isPremium
+                ((publicData.isPaid ||
+                  publicData.isPremium ||
+                  privateData.isPaid ||
+                  privateData.isPremium) &&
+                  isNotExpired)
             );
             const mergedTitle =
               privateData.title ||
@@ -739,15 +748,24 @@ export default function App() {
       (snap) => {
         if (snap.exists()) {
           const data = snap.data() as Partial<HubUser>;
+          const rawExpires = data.premiumExpiresAt || '';
+          const notExpired =
+            !rawExpires ||
+            Number.isNaN(new Date(rawExpires).getTime()) ||
+            new Date(rawExpires).getTime() > Date.now();
           const nextPaid = Boolean(
-            isAdminUser || data.isPaid || data.isPremium
+            isAdminUser || ((data.isPaid || data.isPremium) && notExpired)
           );
           setMyProfile((prev) => ({
             ...prev,
-            isPaid: nextPaid || prev.isPaid,
-            isPremium: nextPaid || prev.isPremium,
-            plan: nextPaid || prev.isPremium ? 'premium' : 'free',
-            paymentStatus: data.paymentStatus || prev.paymentStatus
+            isPaid: nextPaid,
+            isPremium: nextPaid,
+            plan: nextPaid ? 'premium' : 'free',
+            paymentStatus: data.paymentStatus || prev.paymentStatus,
+            subscriptionPlan: data.subscriptionPlan || prev.subscriptionPlan,
+            premiumActivatedAt:
+              data.premiumActivatedAt || prev.premiumActivatedAt,
+            premiumExpiresAt: data.premiumExpiresAt || prev.premiumExpiresAt
           }));
         }
       },
@@ -1076,10 +1094,21 @@ export default function App() {
     }, 3500);
   };
 
+  // Helper: Check if a user's 1-month Premium subscription is currently active
+  const isMemberPremiumActive = (u: Partial<HubUser>): boolean => {
+    if (!u.isPaid && !u.isPremium) return false;
+    if (u.premiumExpiresAt) {
+      const expTime = new Date(u.premiumExpiresAt).getTime();
+      if (!Number.isNaN(expTime) && expTime <= Date.now()) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Is Current User a Premium/Paid Member? (Driven by their Profile record or Admin status)
   const isCurrentUserPaid = Boolean(
-    myProfile.isPaid ||
-      myProfile.isPremium ||
+    isMemberPremiumActive(myProfile) ||
       myProfile.isAdmin ||
       authUser?.email?.toLowerCase() === 'mindmademedia9@gmail.com'
   );
@@ -1188,7 +1217,7 @@ export default function App() {
   const paidCommunityMembers = useMemo<HubUser[]>(() => {
     const list = users.filter(
       (u) =>
-        (u.isPaid === true || u.isPremium === true) &&
+        isMemberPremiumActive(u) &&
         u.profileVisibility !== false &&
         Boolean(u.uid && u.name.trim())
     );
@@ -1463,12 +1492,10 @@ export default function App() {
       const result = await uploadMediaFile(file, 'receipts', storageConfig);
       setPayReceiptUrl(result.url);
       setPaySubmitBanner(
-        `Payment receipt attached (${result.sizeKb} KB ${
-          result.provider === 'cloudinary-cdn' ? 'Cloud CDN' : 'Compressed WebP'
-        }). Click Submit below to send to Admin.`
+        `Payment screenshot attached (${result.sizeKb} KB). Click "Submit Payment Screenshot" below to send your request to Admin.`
       );
     } catch {
-      setPaySubmitBanner('Failed to attach receipt image.');
+      setPaySubmitBanner('Failed to attach screenshot image. Please try again.');
     } finally {
       setIsUploadingMedia(false);
     }
@@ -1476,9 +1503,9 @@ export default function App() {
 
   const handleSubmitPaymentVerification = async () => {
     if (!authUser) return;
-    if (!payTransactionId.trim() && !payReceiptUrl) {
+    if (!payReceiptUrl && !payTransactionId.trim()) {
       setPaySubmitBanner(
-        'Please enter your Transaction ID or upload your Payment Receipt screenshot.'
+        'Please upload your Payment Screenshot (or enter the Transaction ID) after sending Rs. 100.'
       );
       return;
     }
@@ -1491,14 +1518,15 @@ export default function App() {
       userEmail: myProfile.email || authUser.email || '',
       userPhone: myProfile.phone || '',
       qualification: myProfile.qualification || '',
-      currentRole: myProfile.currentRole || '',
+      currentRole: myProfile.title || myProfile.currentRole || '',
       paymentMethod: payMethod,
-      transactionId: payTransactionId.trim() || 'RECEIPT-UPLOADED',
-      amount: payAmount.trim() || 'PKR 2,000',
-      notes: payNotes.trim(),
+      transactionId: payTransactionId.trim() || 'SCREENSHOT-UPLOADED',
+      amount: 'Rs. 100 (1 Month)',
+      notes: payNotes.trim() || '1 Month Premium Subscription (Rs. 100)',
       receiptImageUrl: payReceiptUrl || '',
       status: 'pending',
-      submittedAt: new Date().toISOString().slice(0, 19) + 'Z'
+      submittedAt: new Date().toISOString().slice(0, 19) + 'Z',
+      subscriptionPlan: '1 Month (Rs. 100)'
     };
 
     try {
@@ -1509,13 +1537,14 @@ export default function App() {
         paymentStatus: 'pending',
         paymentMethod: payMethod,
         paymentReference: payload.transactionId,
-        paymentAmount: payload.amount,
+        paymentAmount: 'Rs. 100 (1 Month)',
+        subscriptionPlan: '1 Month (Rs. 100)',
         receiptImageUrl: payReceiptUrl || myProfile.receiptImageUrl || ''
       };
       setMyProfile(updatedUser);
       await persistUserProfileToFirestore(updatedUser);
       setPaySubmitBanner(
-        'Payment Receipt & Verification Request saved in Cloud Storage! Admin will verify and activate your Paid Membership shortly.'
+        '✓ Your Rs. 100 Payment Screenshot & Request have been sent to Admin! Once verified in the Admin Panel, your 1-Month Premium Membership will activate automatically.'
       );
       setPayTransactionId('');
       setPayNotes('');
@@ -1535,32 +1564,65 @@ export default function App() {
     decision: 'verified' | 'rejected'
   ) => {
     try {
+      const now = new Date();
+      const nowIso = now.toISOString().slice(0, 19) + 'Z';
+      const expiresDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const expiresIso = expiresDate.toISOString().slice(0, 19) + 'Z';
+
       await setDoc(
         doc(db, 'paymentRequests', req.id),
-        { ...req, status: decision },
+        {
+          ...req,
+          status: decision,
+          approvedAt: decision === 'verified' ? nowIso : '',
+          premiumExpiresAt: decision === 'verified' ? expiresIso : ''
+        },
         { merge: true }
       );
       const userSnap = await getDoc(doc(db, 'users', req.uid));
-      if (userSnap.exists()) {
-        const uData = userSnap.data() as HubUser;
-        const updatedUser: HubUser = {
-          ...uData,
-          isPaid: decision === 'verified',
-          paymentStatus: decision
-        };
-        await setDoc(doc(db, 'users', req.uid), updatedUser, { merge: true });
-        await setDoc(
-          doc(db, 'users', req.uid, 'private', 'profile'),
-          updatedUser,
-          { merge: true }
-        );
-      }
+      const baseUser = userSnap.exists()
+        ? (userSnap.data() as HubUser)
+        : ({
+            ...DEFAULT_CURRENT_USER_PROFILE,
+            uid: req.uid,
+            name: req.userName || 'Food Specialist',
+            email: req.userEmail || '',
+            phone: req.userPhone || ''
+          } as HubUser);
+
+      const updatedUser: HubUser = {
+        ...baseUser,
+        uid: req.uid,
+        name: baseUser.name || req.userName || 'Food Specialist',
+        isPaid: decision === 'verified',
+        isPremium: decision === 'verified',
+        plan: decision === 'verified' ? 'premium' : 'free',
+        paymentStatus: decision,
+        subscriptionPlan: '1 Month (Rs. 100)',
+        premiumActivatedAt:
+          decision === 'verified'
+            ? nowIso
+            : baseUser.premiumActivatedAt || '',
+        premiumExpiresAt:
+          decision === 'verified' ? expiresIso : baseUser.premiumExpiresAt || ''
+      };
+
+      await Promise.all([
+        setDoc(doc(db, 'users', req.uid), updatedUser, { merge: true }),
+        setDoc(doc(db, 'users', req.uid, 'private', 'profile'), updatedUser, {
+          merge: true
+        }),
+        setDoc(doc(db, 'users', req.uid, 'profile', 'main'), updatedUser, {
+          merge: true
+        })
+      ]);
+
       setAdminStatusBanner(
         decision === 'verified'
-          ? `Approved ${req.userName} as Verified Paid Specialist!`
+          ? `Approved ${req.userName}! 1-Month Premium Subscription (Rs. 100) activated until ${expiresDate.toLocaleDateString()}.`
           : `Marked ${req.userName}'s payment request as Rejected.`
       );
-      setTimeout(() => setAdminStatusBanner(null), 4000);
+      setTimeout(() => setAdminStatusBanner(null), 5000);
     } catch (err) {
       try {
         handleFirestoreError(
@@ -3189,13 +3251,13 @@ export default function App() {
                         type="button"
                         onClick={() => {
                           setShowCommunityPaywall(false);
-                          setRoute({ name: 'profile' });
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          setPaySubmitBanner(null);
+                          setShowPremiumUpgradeModal(true);
                         }}
                         className="flex-1 py-3.5 px-5 rounded-2xl bg-[#228B4E] hover:bg-[#156B36] text-white font-extrabold text-xs shadow-md transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                       >
                         <Crown className="w-4 h-4 text-amber-300" />
-                        <span>Upgrade to Premium</span>
+                        <span>Become Premium (Rs. 100 / Month)</span>
                       </button>
                       <button
                         type="button"
@@ -3239,8 +3301,8 @@ export default function App() {
                   onEditOwnProfile={() => setRoute({ name: 'profile' })}
                   onMessageOrContact={(mem) => setContactModalMember(mem)}
                   onRequestUpgradeToPremium={() => {
-                    setRoute({ name: 'profile' });
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setPaySubmitBanner(null);
+                    setShowPremiumUpgradeModal(true);
                   }}
                 />
               );
@@ -3865,16 +3927,10 @@ export default function App() {
               myEarnedCertificates={myEarnedCertificates}
               onSelectCertificate={(cert) => setSelectedCertificate(cert)}
               onOpenTrainings={() => setRoute({ name: 'trainings' })}
-              payMethod={payMethod}
-              setPayMethod={setPayMethod}
-              payTransactionId={payTransactionId}
-              setPayTransactionId={setPayTransactionId}
-              payAmount={payAmount}
-              setPayAmount={setPayAmount}
-              payReceiptUrl={payReceiptUrl}
-              onUploadPaymentReceipt={handlePaymentReceiptUpload}
-              paySubmitBanner={paySubmitBanner}
-              onSubmitPaymentVerification={handleSubmitPaymentVerification}
+              onOpenPremiumModal={() => {
+                setPaySubmitBanner(null);
+                setShowPremiumUpgradeModal(true);
+              }}
             />
           )}
 
@@ -4132,12 +4188,22 @@ export default function App() {
               {/* TAB 2: PAYMENT RECEIPTS & PREMIUM MEMBER APPROVALS */}
               {adminTab === 'receipts' && (
                 <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-3">
-                  <h2 className="text-base font-extrabold text-[#0D2E1B]">
-                    Submitted Payment Receipts ({paymentRequests.length})
-                  </h2>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h2 className="text-base font-extrabold text-[#0D2E1B]">
+                        Premium Subscription Requests ({paymentRequests.length})
+                      </h2>
+                      <p className="text-[11px] text-gray-600">
+                        Verify Rs. 100 payment screenshots and approve to activate 1-Month Premium Membership
+                      </p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#14532D] text-[10.5px] font-extrabold shrink-0">
+                      Rs. 100 / 1 Month
+                    </span>
+                  </div>
                   {paymentRequests.length === 0 ? (
                     <p className="text-xs text-gray-500 py-4 text-center">
-                      No payment receipts submitted yet. When users upload a receipt in their Profile, it appears here.
+                      No payment requests submitted yet. When users click &ldquo;Become a Premium Member&rdquo; and upload their Rs. 100 payment screenshot, it appears here.
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -4152,12 +4218,28 @@ export default function App() {
                                 {req.userName}
                               </div>
                               <div className="text-[11px] text-gray-600">
-                                {req.userEmail} • {req.userPhone}
+                                {req.userEmail}
+                                {req.userPhone ? ` • ${req.userPhone}` : ''}
                               </div>
-                              <div className="text-xs font-bold text-[#15803D] mt-0.5">
-                                {req.paymentMethod} • {req.amount} • TID:{' '}
+                              <div className="text-xs font-extrabold text-[#15803D] mt-0.5">
+                                {req.paymentMethod} • {req.amount || 'Rs. 100 (1 Month)'} • TID:{' '}
                                 {req.transactionId}
                               </div>
+                              {req.submittedAt && (
+                                <div className="text-[10.5px] text-gray-500 mt-0.5">
+                                  Submitted: {req.submittedAt.replace('T', ' ').replace('Z', '')}
+                                </div>
+                              )}
+                              {req.status === 'verified' && req.premiumExpiresAt && (
+                                <div className="text-[11px] font-extrabold text-[#14532D] mt-1">
+                                  ✓ 1-Month Subscription Active Until:{' '}
+                                  {new Date(req.premiumExpiresAt).toLocaleDateString('en-PK', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })}
+                                </div>
+                              )}
                             </div>
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
@@ -4168,16 +4250,29 @@ export default function App() {
                                   : 'bg-amber-100 text-amber-900'
                               }`}
                             >
-                              {req.status.toUpperCase()}
+                              {req.status === 'verified'
+                                ? 'APPROVED (1 MONTH)'
+                                : req.status.toUpperCase()}
                             </span>
                           </div>
 
                           {req.receiptImageUrl && (
-                            <div className="rounded-xl overflow-hidden border border-emerald-200 bg-white p-2">
+                            <div className="rounded-xl overflow-hidden border border-emerald-200 bg-white p-2 space-y-1.5">
+                              <div className="text-[10.5px] font-bold text-gray-500 flex items-center justify-between px-1">
+                                <span>Uploaded Payment Screenshot</span>
+                                <a
+                                  href={req.receiptImageUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#15803D] underline font-extrabold"
+                                >
+                                  Open Full Image ↗
+                                </a>
+                              </div>
                               <img
                                 src={req.receiptImageUrl}
                                 alt="Payment Receipt"
-                                className="max-h-48 mx-auto object-contain rounded-lg"
+                                className="max-h-56 mx-auto object-contain rounded-lg"
                               />
                             </div>
                           )}
@@ -4188,16 +4283,16 @@ export default function App() {
                               onClick={() =>
                                 handleAdminVerifyPayment(req, 'verified')
                               }
-                              className="py-2 px-3 rounded-xl bg-[#15803D] text-white text-xs font-extrabold cursor-pointer"
+                              className="py-2.5 px-3 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer transition-colors"
                             >
-                              ✓ Approve Paid Member
+                              ✓ Approve &amp; Activate 1 Month
                             </button>
                             <button
                               type="button"
                               onClick={() =>
                                 handleAdminVerifyPayment(req, 'rejected')
                               }
-                              className="py-2 px-3 rounded-xl bg-red-50 text-red-700 border border-red-200 text-xs font-extrabold cursor-pointer"
+                              className="py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold cursor-pointer transition-colors"
                             >
                               ✕ Reject
                             </button>
@@ -4750,6 +4845,282 @@ export default function App() {
                       This specialist has not added direct contact details yet.
                     </div>
                   )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==================== PREMIUM MEMBERSHIP & PAYMENT POPUP MODAL (RS. 100 / 1 MONTH) ==================== */}
+        {showPremiumUpgradeModal && (
+          <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3.5 overflow-y-auto">
+            <div className="w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-5 shadow-2xl space-y-4 border-2 border-[#16A34A]">
+              {/* Modal Header */}
+              <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#D97706] to-[#B45309] text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <Crown className="w-6 h-6 text-amber-100" />
+                  </div>
+                  <div>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10.5px] font-extrabold">
+                      <Sparkles className="w-3 h-3 text-[#D97706]" />
+                      <span>Only Rs. 100 for 1 Month</span>
+                    </span>
+                    <h2 className="text-[20px] font-extrabold text-[#0D2E1B] leading-tight mt-1">
+                      Become a Premium Member
+                    </h2>
+                    <p className="text-xs font-medium text-gray-600 mt-0.5">
+                      Unlock full Community visibility &amp; networking for 30 days
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPremiumUpgradeModal(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center shrink-0 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Premium Member Features List */}
+              <div className="bg-[#F2F9F4] border border-[#B8D8C0] rounded-2xl p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#14532D]">
+                    Premium Member Benefits
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#15803D] text-white text-[11px] font-extrabold">
+                    Rs. 100 / Month
+                  </span>
+                </div>
+
+                <ul className="space-y-2 text-xs text-gray-800 font-semibold">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Show Your Profile in Community:</strong> Your profile appears in the Community directory so other Premium specialists &amp; recruiters can view your profile.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>View Full Profiles &amp; LinkedIn:</strong> Access complete profiles, experience, education &amp; LinkedIn links of fellow specialists.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>CV Vault Access &amp; Downloads:</strong> Download CVs/Resumes of other Premium members and showcase your CV to recruiters.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Direct Contact &amp; Hiring:</strong> Enable direct WhatsApp, Email &amp; Message buttons to connect with members and recruiters.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Payment Options: JazzCash, EasyPaisa, Bank Transfer */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-extrabold text-[#0D2E1B]">
+                    1. Choose Payment Option (Fee: Rs. 100 / 1 Month)
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {(['JazzCash', 'EasyPaisa', 'Bank Transfer'] as const).map(
+                    (method) => (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setPayMethod(method)}
+                        className={`py-2.5 px-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                          payMethod === method
+                            ? 'bg-[#15803D] text-white border-[#15803D] shadow-xs'
+                            : 'bg-[#F2F7F3] text-[#0D2E1B] border-[#C6DFCB] hover:bg-[#E4F0E6]'
+                        }`}
+                      >
+                        {method}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {/* Selected Payment Account Instructions */}
+                <div className="bg-[#FFFBEB] border border-[#FCD34D] rounded-2xl p-3.5 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-extrabold text-[#92400E]">
+                      {payMethod} Account Details
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleCopyText('03240906384', 'pay-acc-num')
+                      }
+                      className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-[#92400E] text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedId === 'pay-acc-num' ? (
+                        <>
+                          <Check className="w-3 h-3 text-[#16A34A]" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy Number</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {payMethod === 'JazzCash' && (
+                    <div className="text-gray-800 space-y-0.5">
+                      <div>
+                        Account Title: <strong>Muneeb Khan</strong>
+                      </div>
+                      <div>
+                        JazzCash Number: <strong>0324-0906384</strong>
+                      </div>
+                      <div>
+                        Subscription Fee: <strong>Rs. 100 (For 1 Month)</strong>
+                      </div>
+                    </div>
+                  )}
+
+                  {payMethod === 'EasyPaisa' && (
+                    <div className="text-gray-800 space-y-0.5">
+                      <div>
+                        Account Title: <strong>Muneeb Khan</strong>
+                      </div>
+                      <div>
+                        EasyPaisa Number: <strong>0324-0906384</strong>
+                      </div>
+                      <div>
+                        Subscription Fee: <strong>Rs. 100 (For 1 Month)</strong>
+                      </div>
+                    </div>
+                  )}
+
+                  {payMethod === 'Bank Transfer' && (
+                    <div className="text-gray-800 space-y-0.5">
+                      <div>
+                        Account Title: <strong>Muneeb Khan</strong>
+                      </div>
+                      <div>
+                        WhatsApp / Contact for Bank IBAN:{' '}
+                        <strong>+92 324 0906384</strong>
+                      </div>
+                      <div>
+                        Subscription Fee: <strong>Rs. 100 (For 1 Month)</strong>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload Screenshot & Transaction Details */}
+              <div className="space-y-3">
+                <label className="block text-xs font-extrabold text-[#0D2E1B]">
+                  2. Upload Payment Screenshot After Paying Rs. 100
+                </label>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <span className="block text-[10.5px] font-bold text-gray-500 mb-1">
+                      Subscription Fee (1 Month)
+                    </span>
+                    <div className="w-full px-3 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#C6DFCB] text-xs font-extrabold text-[#0D2E1B]">
+                      Rs. 100 / 1 Month
+                    </div>
+                  </div>
+                  <div>
+                    <span className="block text-[10.5px] font-bold text-gray-500 mb-1">
+                      Transaction / Ref ID (Optional)
+                    </span>
+                    <input
+                      type="text"
+                      value={payTransactionId}
+                      onChange={(e) => setPayTransactionId(e.target.value)}
+                      placeholder="e.g. TID 839201..."
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#C6DFCB] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#16A34A]"
+                    />
+                  </div>
+                </div>
+
+                {/* Screenshot Upload Box */}
+                <div className="p-3.5 rounded-2xl bg-[#F2F7F3] border-2 border-dashed border-[#16A34A] space-y-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ImageIcon className="w-5 h-5 text-[#15803D] shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-xs font-extrabold text-[#0D2E1B] block truncate">
+                          {payReceiptUrl
+                            ? 'Payment Screenshot Uploaded ✓'
+                            : 'Upload Payment Screenshot'}
+                        </span>
+                        <span className="text-[10.5px] text-gray-500 block">
+                          Attach screenshot of your Rs. 100 payment
+                        </span>
+                      </div>
+                    </div>
+                    <input
+                      ref={receiptInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePaymentReceiptUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => receiptInputRef.current?.click()}
+                      disabled={isUploadingMedia}
+                      className="px-3.5 py-2 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                    >
+                      {isUploadingMedia ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Upload className="w-3.5 h-3.5" />
+                      )}
+                      <span>{payReceiptUrl ? 'Change' : 'Upload'}</span>
+                    </button>
+                  </div>
+
+                  {payReceiptUrl && (
+                    <div className="rounded-xl overflow-hidden border border-emerald-200 bg-white p-2">
+                      <img
+                        src={payReceiptUrl}
+                        alt="Uploaded Payment Screenshot"
+                        className="max-h-40 mx-auto object-contain rounded-lg"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {paySubmitBanner && (
+                  <div className="p-3 rounded-xl bg-[#DCFCE7] border border-[#16A34A] text-[#0D2E1B] text-xs font-extrabold leading-relaxed">
+                    {paySubmitBanner}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleSubmitPaymentVerification}
+                    disabled={isUploadingMedia}
+                    className="flex-1 py-3.5 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    Submit Payment Screenshot for Approval
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPremiumUpgradeModal(false)}
+                    className="py-3.5 px-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-extrabold cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>

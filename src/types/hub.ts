@@ -121,6 +121,9 @@ export interface HubUser {
   paymentReference?: string;
   paymentAmount?: string;
   receiptImageUrl?: string;
+  subscriptionPlan?: string;
+  premiumActivatedAt?: string;
+  premiumExpiresAt?: string;
 }
 
 export interface HubCommunityThread {
@@ -151,6 +154,9 @@ export interface HubPaymentRequest {
   receiptImageUrl?: string;
   status: 'pending' | 'verified' | 'rejected';
   submittedAt: string;
+  subscriptionPlan?: string;
+  approvedAt?: string;
+  premiumExpiresAt?: string;
 }
 
 export interface HubCertificate {

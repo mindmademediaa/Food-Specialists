@@ -18,7 +18,9 @@ import {
   Database,
   Eye,
   Image as ImageIcon,
-  AlertCircle
+  AlertCircle,
+  Crown,
+  ShieldCheck
 } from 'lucide-react';
 import {
   HubUser,
@@ -184,16 +186,7 @@ interface EditProfileViewProps {
   myEarnedCertificates: HubCertificate[];
   onSelectCertificate: (cert: HubCertificate) => void;
   onOpenTrainings: () => void;
-  payMethod: 'EasyPaisa' | 'JazzCash' | 'Bank Transfer';
-  setPayMethod: (m: 'EasyPaisa' | 'JazzCash' | 'Bank Transfer') => void;
-  payTransactionId: string;
-  setPayTransactionId: (v: string) => void;
-  payAmount: string;
-  setPayAmount: (v: string) => void;
-  payReceiptUrl: string;
-  onUploadPaymentReceipt: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  paySubmitBanner: string | null;
-  onSubmitPaymentVerification: () => void;
+  onOpenPremiumModal: () => void;
 }
 
 export const EditProfileView: React.FC<EditProfileViewProps> = ({
@@ -213,20 +206,10 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
   myEarnedCertificates,
   onSelectCertificate,
   onOpenTrainings,
-  payMethod,
-  setPayMethod,
-  payTransactionId,
-  setPayTransactionId,
-  payAmount,
-  setPayAmount,
-  payReceiptUrl,
-  onUploadPaymentReceipt,
-  paySubmitBanner,
-  onSubmitPaymentVerification
+  onOpenPremiumModal
 }) => {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const cvInputRef = useRef<HTMLInputElement | null>(null);
-  const receiptInputRef = useRef<HTMLInputElement | null>(null);
 
   const [linkedinError, setLinkedinError] = useState<string | null>(null);
   const [cvError, setCvError] = useState<string | null>(null);
@@ -1609,116 +1592,78 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
         </div>
       </form>
 
-      {/* PREMIUM MEMBERSHIP UPGRADE & TRAINING CERTIFICATES VAULT */}
-      <div className="bg-white border-2 border-[#16A34A] rounded-[26px] p-5 shadow-xs space-y-3.5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-[#15803D]" />
+      {/* PREMIUM MEMBERSHIP BUTTON CARD (Payment options hidden until user clicks Become a Premium Member) */}
+      <div className="bg-gradient-to-br from-white via-[#F6FBF7] to-[#EAF5EC] border-[1.5px] border-[#8BB999] rounded-[26px] p-5 shadow-xs space-y-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#D97706] to-[#B45309] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Crown className="w-5 h-5 text-amber-100" />
+            </div>
             <div>
-              <h3 className="text-[15.5px] font-extrabold text-[#0D2E1B]">
-                Premium Membership &amp; Payment Receipt
-              </h3>
-              <p className="text-[11px] text-gray-600">
-                Become a Premium Member to appear in Community, view LinkedIn &amp; download CVs
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-[16px] font-extrabold text-[#0D2E1B]">
+                  {isPremium
+                    ? 'Premium Member Active'
+                    : 'Premium Community Membership'}
+                </h3>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
+                    isPremium
+                      ? 'bg-[#DCFCE7] text-[#14532D] border border-[#16A34A]/30'
+                      : profile.paymentStatus === 'pending'
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  {isPremium
+                    ? 'Active ✓'
+                    : profile.paymentStatus === 'pending'
+                    ? 'Pending Admin Approval'
+                    : 'Free User Plan'}
+                </span>
+              </div>
+              <p className="text-xs font-medium text-gray-600 mt-1 leading-relaxed">
+                {isPremium ? (
+                  <>
+                    Your profile is visible in the Community Directory, and you have full access to member profiles, LinkedIn &amp; CVs.
+                    {profile.premiumExpiresAt && (
+                      <span className="block text-[11px] font-extrabold text-[#15803D] mt-1">
+                        1-Month Subscription Valid Until:{' '}
+                        {new Date(profile.premiumExpiresAt).toLocaleDateString(
+                          'en-PK',
+                          {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          }
+                        )}
+                      </span>
+                    )}
+                  </>
+                ) : profile.paymentStatus === 'pending' ? (
+                  'Your Rs. 100 payment screenshot has been submitted and is awaiting Admin verification. Once approved, your 1-month Premium subscription will activate.'
+                ) : (
+                  'As a Free User, you get Jobs & Scholarships updates, can apply for Trainings, and save your Profile. Upgrade to Premium (Only Rs. 100 / Month) to show your profile in the Community and connect with other specialists!'
+                )}
               </p>
             </div>
           </div>
-          <span
-            className={`px-2.5 py-1 rounded-full text-[10.5px] font-extrabold ${
-              isPremium
-                ? 'bg-[#DCFCE7] text-[#14532D]'
-                : profile.paymentStatus === 'pending'
-                ? 'bg-amber-100 text-amber-900'
-                : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            {isPremium
-              ? 'Premium Active ✓'
-              : profile.paymentStatus === 'pending'
-              ? 'Pending Admin Review'
-              : 'Free Plan'}
-          </span>
         </div>
 
-        {!isPremium && (
-          <div className="space-y-3 pt-1">
-            <div className="grid grid-cols-3 gap-1.5">
-              {(['EasyPaisa', 'JazzCash', 'Bank Transfer'] as const).map(
-                (method) => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setPayMethod(method)}
-                    className={`py-2 px-2 rounded-xl text-xs font-extrabold border transition-colors cursor-pointer ${
-                      payMethod === method
-                        ? 'bg-[#15803D] text-white border-[#15803D]'
-                        : 'bg-[#F2F7F3] text-[#0D2E1B] border-[#C6DFCB]'
-                    }`}
-                  >
-                    {method}
-                  </button>
-                )
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <input
-                type="text"
-                value={payTransactionId}
-                onChange={(e) => setPayTransactionId(e.target.value)}
-                placeholder="Transaction / Ref ID"
-                className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold text-gray-900 focus:outline-none"
-              />
-              <input
-                type="text"
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-                placeholder="Amount (e.g. PKR 2,000)"
-                className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold text-gray-900 focus:outline-none"
-              />
-            </div>
-
-            <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-dashed border-[#16A34A] flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <ImageIcon className="w-5 h-5 text-[#15803D] shrink-0" />
-                <span className="text-xs font-extrabold text-[#0D2E1B] truncate">
-                  {payReceiptUrl
-                    ? 'Payment Receipt Attached ✓'
-                    : 'Upload Payment Receipt Screenshot'}
-                </span>
-              </div>
-              <input
-                ref={receiptInputRef}
-                type="file"
-                accept="image/*"
-                onChange={onUploadPaymentReceipt}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => receiptInputRef.current?.click()}
-                className="px-3 py-1.5 rounded-xl bg-[#15803D] text-white text-xs font-extrabold shrink-0 cursor-pointer flex items-center gap-1"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>{payReceiptUrl ? 'Change' : 'Upload'}</span>
-              </button>
-            </div>
-
-            {paySubmitBanner && (
-              <div className="p-3 rounded-xl bg-[#DCFCE7] text-[#0D2E1B] text-xs font-bold">
-                {paySubmitBanner}
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={onSubmitPaymentVerification}
-              className="w-full py-3 px-4 rounded-2xl bg-[#14532D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold transition-colors cursor-pointer"
-            >
-              Submit Payment Receipt for Premium Activation
-            </button>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={onOpenPremiumModal}
+          className="w-full py-3.5 px-5 rounded-[18px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[14px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+        >
+          <Crown className="w-4 h-4 text-amber-300 shrink-0" />
+          <span>
+            {isPremium
+              ? 'View Premium Benefits / Renew (Rs. 100 / Month)'
+              : profile.paymentStatus === 'pending'
+              ? 'View Pending Payment / Upload New Screenshot'
+              : 'Become a Premium Member — Only Rs. 100 / Month'}
+          </span>
+        </button>
       </div>
 
       {/* MY TRAINING CERTIFICATES VAULT */}

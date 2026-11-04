@@ -45,7 +45,10 @@
         "paymentMethod": { "type": "string", "maxLength": 80 },
         "paymentReference": { "type": "string", "maxLength": 120 },
         "paymentAmount": { "type": "string", "maxLength": 80 },
-        "receiptImageUrl": { "type": "string", "maxLength": 450000 }
+        "receiptImageUrl": { "type": "string", "maxLength": 450000 },
+        "subscriptionPlan": { "type": "string", "maxLength": 80 },
+        "premiumActivatedAt": { "type": "string", "maxLength": 64 },
+        "premiumExpiresAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["uid", "name"]
     },
@@ -67,7 +70,10 @@
         "notes": { "type": "string", "maxLength": 1000 },
         "receiptImageUrl": { "type": "string", "maxLength": 450000 },
         "status": { "type": "string", "enum": ["pending", "verified", "rejected"] },
-        "submittedAt": { "type": "string", "maxLength": 64 }
+        "submittedAt": { "type": "string", "maxLength": 64 },
+        "subscriptionPlan": { "type": "string", "maxLength": 80 },
+        "approvedAt": { "type": "string", "maxLength": 64 },
+        "premiumExpiresAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "uid", "userName", "paymentMethod", "transactionId", "status"]
     },
