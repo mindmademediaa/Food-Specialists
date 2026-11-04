@@ -46,26 +46,19 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Small Avatar next to FS Portal */}
+        {/* FS Portal Brand Logo before FS Portal Title */}
         <button
           type="button"
-          onClick={onProfileClick}
-          aria-label="My Profile"
-          title="Open Profile"
-          className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#EBF5ED] border-2 border-white flex items-center justify-center overflow-hidden shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer"
+          onClick={onHomeClick}
+          aria-label="FS Portal Home"
+          title="FS Portal"
+          className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border-2 border-white flex items-center justify-center overflow-hidden shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer"
         >
-          {userAvatarUrl ? (
-            <img
-              src={userAvatarUrl}
-              alt="User Avatar"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="w-full h-full flex items-center justify-center text-xs font-bold text-[#14532D]">
-              {userInitial}
-            </span>
-          )}
-          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#B9E29A] border-2 border-[#16A34A]" />
+          <img
+            src="/assets/aistudio/Untitled_design_20261105_004327_0000_25d32177.webp"
+            alt="FS Portal Logo"
+            className="w-full h-full object-contain p-0.5"
+          />
         </button>
 
         <div className="min-w-0 flex-1 pr-1">

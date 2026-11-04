@@ -31,6 +31,7 @@ import {
   normalizeEducationArray,
   normalizeExperienceArray
 } from './EditProfileView';
+import { downloadProfessionalCvPdf } from '../lib/cvGenerator';
 
 interface PublicProfileViewProps {
   member: HubUser;
@@ -105,9 +106,8 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
   );
 
   // CV Download Rule:
-  // If owner toggled CV ON (canSeeCvField) and uploaded a CV -> show & enable download
-  const canDownloadCv =
-    Boolean(member.cvUrl || member.cvFileName) && canSeeCvField;
+  // If owner toggled CV ON (canSeeCvField) -> show & enable download
+  const canDownloadCv = canSeeCvField;
 
   const displayName = canSeeName ? member.name : 'Food Safety Specialist';
   const displayTitle = member.title || member.currentRole || '';
@@ -218,44 +218,8 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
       return;
     }
 
-    // Fallback printable/downloadable CV summary if only filename was stored
-    const summaryContent = [
-      `CURRICULUM VITAE — ${member.name}`,
-      `Title: ${displayTitle}`,
-      `Company: ${member.company || 'N/A'}`,
-      `Location: ${member.location || 'N/A'}`,
-      `Email: ${member.email || 'N/A'}`,
-      `LinkedIn: ${member.linkedinUrl || 'N/A'}`,
-      '',
-      'ABOUT:',
-      member.bio || '',
-      '',
-      'EXPERIENCE:',
-      ...visibleExperience.map(
-        (e) =>
-          `- ${e.jobTitle} at ${e.company} (${e.startDate} - ${
-            e.isPresent ? 'Present' : e.endDate
-          }, ${e.location})\n  ${e.description}`
-      ),
-      '',
-      'EDUCATION:',
-      ...visibleEducation.map(
-        (ed) =>
-          `- ${ed.degree}, ${ed.institute} (${ed.startYear} - ${ed.endYear})\n  ${ed.description}`
-      )
-    ].join('\n');
-
-    const blob = new Blob([summaryContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName.endsWith('.pdf')
-      ? fileName.replace(/\.pdf$/i, '_Profile_CV.txt')
-      : `${fileName}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Generate sharp, market-standard PDF CV from visible profile fields
+    downloadProfessionalCvPdf(member, { respectVisibility: !isOwner });
   };
 
   return (
@@ -526,7 +490,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
         )}
 
         {/* CV VAULT CARD (SHOWN WHEN OWNER TOGGLES CV ON) */}
-        {canSeeCvField && Boolean(member.cvUrl || member.cvFileName) && (
+        {canSeeCvField && (
           <div className="bg-[#FDFBF5] border-[1.5px] border-[#C6A34F] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-2xs">
             <div className="flex items-center gap-3 min-w-0">
               {/* Gold Shield Icon matching Reference Image 2 */}
@@ -550,12 +514,12 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
 
               <div className="min-w-0">
                 <div className="text-[15.5px] font-extrabold text-[#14261C] leading-tight">
-                  CV / Resume Vault
+                  CV / Resume (PDF)
                 </div>
                 <div className="text-[12px] font-medium text-gray-700 truncate mt-0.5">
                   {member.cvFileName
                     ? `${member.cvFileName}`
-                    : 'Download Specialist CV / Resume'}
+                    : `${displayName.replace(/\s+/g, '_')}_Professional_CV.pdf`}
                 </div>
               </div>
             </div>

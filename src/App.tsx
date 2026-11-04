@@ -28,6 +28,7 @@ import {
   Pencil,
   Shield,
   Lock,
+  Clock,
   Eye,
   X,
   Bookmark,
@@ -379,6 +380,16 @@ const buildSanitizedPublicUser = (fullProfile: HubUser): HubUser => {
 };
 
 export default function App() {
+  // 0.5-second (500ms) Startup Splash Screen with FS Portal Logo
+  const [showSplashLogo, setShowSplashLogo] = useState<boolean>(true);
+
+  useEffect(() => {
+    const splashTimer = setTimeout(() => {
+      setShowSplashLogo(false);
+    }, 500);
+    return () => clearTimeout(splashTimer);
+  }, []);
+
   // Firebase Authentication State (Strict Gate)
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
@@ -1763,13 +1774,42 @@ export default function App() {
 
   const userInitial = firstName.charAt(0).toUpperCase() || 'G';
 
+  // 0. 0.5-Second (500ms) Startup Splash Screen with FS Portal WebP Logo
+  if (showSplashLogo) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-fade-in">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white shadow-[0_12px_40px_rgba(13,46,27,0.12)] border border-emerald-100 flex items-center justify-center p-4">
+            <img
+              src="/assets/aistudio/Untitled_design_20261105_004327_0000_25d32177.webp"
+              alt="FS Portal Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0D2E1B] tracking-tight">
+              FS Portal
+            </h1>
+            <p className="text-xs font-bold text-[#15803D] uppercase tracking-widest">
+              Food Safety &amp; Quality Specialists
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 1. While checking Firebase Auth state on page load, show a clean loading screen
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#F0FDF4] flex flex-col items-center justify-center p-4">
         <div className="bg-white border-[1.5px] border-[#9EC4A7] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-xs w-full">
-          <div className="w-12 h-12 rounded-2xl bg-[#DCFCE7] text-[#15803D] flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin" />
+          <div className="w-16 h-16 rounded-2xl bg-white border border-emerald-100 shadow-xs flex items-center justify-center p-2">
+            <img
+              src="/assets/aistudio/Untitled_design_20261105_004327_0000_25d32177.webp"
+              alt="FS Portal Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h2 className="text-base font-extrabold text-[#0D2E1B]">
             FS Portal
@@ -2976,194 +3016,178 @@ export default function App() {
           {/* ==================== 5. COMMUNITY — PREMIUM PROFILES LIST (/communities) ==================== */}
           {route.name === 'communities' && (
             <div className="space-y-4 px-1">
-              {/* Top Community Header & Search/Location Filter Card */}
-              <div className="bg-white border border-[#C6DFCB] rounded-[28px] p-5 shadow-[0_6px_20px_rgba(22,163,74,0.06)] space-y-3.5">
-                <div className="flex items-start justify-between gap-2 flex-wrap">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h1 className="text-[23px] sm:text-[25px] font-extrabold text-[#0D2E1B] leading-tight tracking-tight">
-                        Premium Community
-                      </h1>
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#538257] border border-[#D4AF37] text-white text-[10.5px] font-extrabold inline-flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-[#FDE047]" />
-                        <span>Premium</span>
-                      </span>
-                    </div>
-                    <p className="text-[12.5px] text-gray-600 font-medium mt-0.5">
-                      {paidCommunityMembers.length} Verified Premium Specialists • Connect, View LinkedIn &amp; Download CVs
+              {!isCurrentUserPaid && !isUserAdmin ? (
+                /* FREE USER VIEW IN COMMUNITIES: Show Purchase / Buy Premium Membership Button + Application Status */
+                <div className="bg-white border border-[#C6DFCB] rounded-[28px] p-6 shadow-[0_6px_20px_rgba(22,163,74,0.06)] text-center space-y-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A] border border-[#F59E0B]/40 text-[#B45309] flex items-center justify-center mx-auto shadow-xs">
+                    <Crown className="w-8 h-8 text-[#D97706]" />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] text-[11px] font-extrabold">
+                      <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
+                      <span>Premium Community Directory</span>
+                    </span>
+                    <h1 className="text-[22px] sm:text-[24px] font-extrabold text-[#0D2E1B] leading-tight">
+                      Connect with Verified Food Specialists
+                    </h1>
+                    <p className="text-xs sm:text-[13px] text-gray-600 max-w-md mx-auto leading-relaxed font-medium">
+                      Upgrade to Premium Membership (Only Rs. 100 / Month) to showcase your profile in the Community, view other paid members&apos; visible profile details, connect on LinkedIn, and download CVs.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="space-y-2.5 pt-1">
                     <button
                       type="button"
-                      onClick={() =>
-                        setRoute({
-                          name: 'community-member',
-                          uid: myProfile.uid
-                        })
-                      }
-                      className="px-3 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EAD8] text-[#15803D] text-xs font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setPaySubmitBanner(null);
+                        setShowPremiumUpgradeModal(true);
+                      }}
+                      className="w-full py-4 px-5 rounded-[22px] bg-gradient-to-r from-[#14532D] via-[#15803D] to-[#166534] hover:from-[#0D2E1B] hover:to-[#14532D] text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
                     >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>My Public View</span>
+                      <Crown className="w-4 h-4 text-amber-300 shrink-0" />
+                      <span>Purchase / Buy Premium Membership</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setRoute({ name: 'profile' })}
-                      className="px-3 py-1.5 rounded-full bg-[#1E8E49] hover:bg-[#156B36] text-white text-xs font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      <span>Edit Profile</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Search by Name / Title / Company + Filter by Location */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <div className="relative sm:col-span-2">
-                    <Search className="w-4 h-4 text-[#0D2E1B] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={memberSearchQuery}
-                      onChange={(e) => setMemberSearchQuery(e.target.value)}
-                      placeholder="Search by Name, Title, or Company..."
-                      className="w-full pl-10 pr-8 py-2.5 text-[13.5px] bg-[#F2F7F3] border border-[#AECBB5] rounded-[16px] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-[#16A34A] focus:bg-white transition-colors"
-                    />
-                    {memberSearchQuery && (
+                    {(myPaymentApplications.length > 0 ||
+                      (myProfile.paymentStatus &&
+                        myProfile.paymentStatus !== 'none')) && (
                       <button
                         type="button"
-                        onClick={() => setMemberSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                        onClick={() => setShowApplicationStatusModal(true)}
+                        className="w-full py-3.5 px-5 rounded-[22px] bg-[#FFFBEB] hover:bg-[#FEF3C7] border-[1.5px] border-[#F59E0B] text-[#92400E] font-extrabold text-xs shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
                       >
-                        <X className="w-4 h-4" />
+                        <Clock className="w-4 h-4 text-[#D97706] shrink-0" />
+                        <span>
+                          View My Application Status (
+                          {myProfile.paymentStatus === 'pending'
+                            ? 'Under Review'
+                            : myProfile.paymentStatus === 'rejected'
+                            ? 'Action Needed'
+                            : 'Check Status'}
+                          )
+                        </span>
                       </button>
                     )}
                   </div>
-
-                  <div className="relative">
-                    <select
-                      value={commCountryFilter}
-                      onChange={(e) => setCommCountryFilter(e.target.value)}
-                      className="w-full appearance-none pl-3.5 pr-8 py-2.5 rounded-[16px] bg-[#F2F7F3] border border-[#AECBB5] text-[#0D2E1B] text-xs font-bold focus:outline-none cursor-pointer"
-                    >
-                      <option value="All">All Locations</option>
-                      {availableCommunityLocations.map((loc) => (
-                        <option key={loc} value={loc}>
-                          {loc}
-                        </option>
-                      ))}
-                      {!availableCommunityLocations.includes('Pakistan') && (
-                        <option value="Pakistan">Pakistan</option>
-                      )}
-                      {!availableCommunityLocations.includes('UAE') && (
-                        <option value="UAE">UAE</option>
-                      )}
-                      {!availableCommunityLocations.includes('Saudi Arabia') && (
-                        <option value="Saudi Arabia">Saudi Arabia</option>
-                      )}
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#0D2E1B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-
-              {/* PREMIUM PROFILES GRID / LIST OR EMPTY STATE */}
-              {paidCommunityMembers.length === 0 ? (
-                <div className="bg-white border border-[#C6DFCB] rounded-[28px] p-8 text-center space-y-3 shadow-xs">
-                  <div className="w-14 h-14 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
-                    <UserPlus className="w-7 h-7" />
-                  </div>
-                  <h2 className="text-[20px] font-extrabold text-[#0D2E1B]">
-                    Complete your profile
-                  </h2>
-                  <p className="text-xs sm:text-sm text-gray-600 max-w-md mx-auto leading-relaxed">
-                    No completed Premium specialist profiles found in Cloud Firestore yet. Complete your profile and upgrade to Premium to be featured in the Community Directory.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setRoute({ name: 'profile' })}
-                    className="px-6 py-3 rounded-2xl bg-[#228B4E] hover:bg-[#156B36] text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    <span>Complete Your Profile</span>
-                  </button>
-                </div>
-              ) : filteredMembers.length === 0 ? (
-                <div className="bg-white border border-[#B8D3BE] rounded-[26px] p-6 text-center space-y-2 shadow-xs">
-                  <div className="w-12 h-12 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
-                    <Search className="w-6 h-6" />
-                  </div>
-                  <h2 className="text-[17px] font-extrabold text-[#0D2E1B]">
-                    No Matching Specialists Found
-                  </h2>
-                  <p className="text-xs text-gray-600">
-                    Try clearing your search query or location filter above.
-                  </p>
                 </div>
               ) : (
-                <div className="space-y-3.5">
-                  {filteredMembers.map((member) => (
-                    <MemberCard
-                      key={member.uid}
-                      member={member}
-                      viewerIsPremium={isCurrentUserPaid || isUserAdmin}
-                      viewerUid={myProfile.uid}
-                      onClick={(m) => {
-                        // Free users clicking View Profile on other members see Paywall
-                        if (
-                          !isCurrentUserPaid &&
-                          !isUserAdmin &&
-                          m.uid !== myProfile.uid
-                        ) {
-                          setShowCommunityPaywall(true);
-                          return;
-                        }
-                        setRoute({ name: 'community-member', uid: m.uid });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
+                /* PAID USER VIEW IN COMMUNITIES: Show Other Paid Members' Profiles (Only Visible Information) */
+                <>
+                  {/* Top Community Header & Search/Location Filter Card */}
+                  <div className="bg-white border border-[#C6DFCB] rounded-[28px] p-5 shadow-[0_6px_20px_rgba(22,163,74,0.06)] space-y-3.5">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h1 className="text-[23px] sm:text-[25px] font-extrabold text-[#0D2E1B] leading-tight tracking-tight">
+                            Premium Community
+                          </h1>
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#538257] border border-[#D4AF37] text-white text-[10.5px] font-extrabold inline-flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-[#FDE047]" />
+                            <span>Premium</span>
+                          </span>
+                        </div>
+                        <p className="text-[12.5px] text-gray-600 font-medium mt-0.5">
+                          {paidCommunityMembers.length} Verified Premium Specialists • Connect, View LinkedIn &amp; Download CVs
+                        </p>
+                      </div>
 
-              {/* PAYWALL MODAL FOR FREE USERS CLICKING "VIEW PROFILE" IN COMMUNITY */}
-              {showCommunityPaywall && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                  <div className="w-full max-w-[420px] bg-white border-2 border-[#C6A34F] rounded-[28px] p-6 shadow-2xl text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-[#FEF3C7] border border-[#D97706]/40 text-[#B45309] flex items-center justify-center mx-auto shadow-xs">
-                      <Lock className="w-7 h-7" />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRoute({
+                              name: 'community-member',
+                              uid: myProfile.uid
+                            })
+                          }
+                          className="px-3 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EAD8] text-[#15803D] text-xs font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>My Public View</span>
+                        </button>
+                      </div>
                     </div>
-                    <h2 className="text-[20px] font-extrabold text-[#14261C] leading-snug">
-                      Premium Community Access
-                    </h2>
-                    <p className="text-[13.5px] font-semibold text-gray-700 leading-relaxed">
-                      This is a Premium Community. Upgrade to see full profiles, LinkedIn and Download CVs
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowCommunityPaywall(false);
-                          setPaySubmitBanner(null);
-                          setShowPremiumUpgradeModal(true);
-                        }}
-                        className="flex-1 py-3.5 px-5 rounded-2xl bg-[#228B4E] hover:bg-[#156B36] text-white font-extrabold text-xs shadow-md transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <Crown className="w-4 h-4 text-amber-300" />
-                        <span>Become Premium (Rs. 100 / Month)</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowCommunityPaywall(false)}
-                        className="py-3.5 px-5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-xs transition-colors cursor-pointer"
-                      >
-                        Close
-                      </button>
+
+                    {/* Search by Name / Title / Company + Filter by Location */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div className="relative sm:col-span-2">
+                        <Search className="w-4 h-4 text-[#0D2E1B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={memberSearchQuery}
+                          onChange={(e) => setMemberSearchQuery(e.target.value)}
+                          placeholder="Search by Name, Title, or Company..."
+                          className="w-full pl-10 pr-8 py-2.5 text-[13.5px] bg-[#F2F7F3] border border-[#AECBB5] rounded-[16px] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-[#16A34A] focus:bg-white transition-colors"
+                        />
+                        {memberSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setMemberSearchQuery('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="relative">
+                        <select
+                          value={commCountryFilter}
+                          onChange={(e) => setCommCountryFilter(e.target.value)}
+                          className="w-full appearance-none pl-3.5 pr-8 py-2.5 rounded-[16px] bg-[#F2F7F3] border border-[#AECBB5] text-[#0D2E1B] text-xs font-bold focus:outline-none cursor-pointer"
+                        >
+                          <option value="All">All Locations</option>
+                          {availableCommunityLocations.map((loc) => (
+                            <option key={loc} value={loc}>
+                              {loc}
+                            </option>
+                          ))}
+                          {!availableCommunityLocations.includes('Pakistan') && (
+                            <option value="Pakistan">Pakistan</option>
+                          )}
+                          {!availableCommunityLocations.includes('UAE') && (
+                            <option value="UAE">UAE</option>
+                          )}
+                          {!availableCommunityLocations.includes('Saudi Arabia') && (
+                            <option value="Saudi Arabia">Saudi Arabia</option>
+                          )}
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-[#0D2E1B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
-                </div>
+
+                  {/* PREMIUM PROFILES LIST FOR PAID USERS */}
+                  {filteredMembers.length === 0 ? (
+                    <div className="bg-white border border-[#B8D3BE] rounded-[26px] p-6 text-center space-y-2 shadow-xs">
+                      <div className="w-12 h-12 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
+                        <Search className="w-6 h-6" />
+                      </div>
+                      <h2 className="text-[17px] font-extrabold text-[#0D2E1B]">
+                        No Matching Paid Members Found
+                      </h2>
+                      <p className="text-xs text-gray-600">
+                        Paid members who activate their Premium Membership will appear here automatically.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3.5">
+                      {filteredMembers.map((member) => (
+                        <MemberCard
+                          key={member.uid}
+                          member={member}
+                          viewerIsPremium={isCurrentUserPaid || isUserAdmin}
+                          viewerUid={myProfile.uid}
+                          onClick={(m) => {
+                            setRoute({ name: 'community-member', uid: m.uid });
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

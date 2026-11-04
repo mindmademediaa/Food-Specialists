@@ -20,7 +20,8 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Crown,
-  ShieldCheck
+  ShieldCheck,
+  Download
 } from 'lucide-react';
 import {
   HubUser,
@@ -33,6 +34,7 @@ import {
 } from '../types/hub';
 import { makeAvatarSvg } from '../data/mockHubData';
 import { formatFileSizeLabel } from '../lib/storage';
+import { downloadProfessionalCvPdf } from '../lib/cvGenerator';
 
 export const DEFAULT_VISIBILITY_MAP: ProfileVisibilityMap = {
   name: 'public',
@@ -1581,111 +1583,50 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           >
             {isSaving ? 'Saving Profile...' : 'Save Changes'}
           </button>
+
+          {/* SHARP PROFESSIONAL MARKET-STANDARD PDF CV GENERATOR BUTTON */}
+          <button
+            type="button"
+            onClick={() =>
+              downloadProfessionalCvPdf(profile, { respectVisibility: false })
+            }
+            className="w-full py-3.5 px-5 rounded-[18px] bg-[#0D2E1B] hover:bg-[#14532D] text-white font-extrabold text-[14.5px] shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          >
+            <Download className="w-4 h-4 text-emerald-300 shrink-0" />
+            <span>Download Professional CV (PDF)</span>
+          </button>
         </div>
       </form>
 
-      {/* PREMIUM MEMBERSHIP BUTTON CARD (Payment options hidden until user clicks Become a Premium Member) */}
-      <div className="bg-gradient-to-br from-white via-[#F6FBF7] to-[#EAF5EC] border-[1.5px] border-[#8BB999] rounded-[26px] p-5 shadow-xs space-y-3.5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#D97706] to-[#B45309] text-white flex items-center justify-center shrink-0 shadow-xs">
-              <Crown className="w-5 h-5 text-amber-100" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-[16px] font-extrabold text-[#0D2E1B]">
-                  {isPremium
-                    ? 'Premium Member Active'
-                    : 'Premium Community Membership'}
-                </h3>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
-                    isPremium
-                      ? 'bg-[#DCFCE7] text-[#14532D] border border-[#16A34A]/30'
-                      : profile.paymentStatus === 'pending'
-                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                      : profile.paymentStatus === 'rejected'
-                      ? 'bg-red-100 text-red-800 border border-red-300'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {isPremium
-                    ? 'Approved • Active ✓'
-                    : profile.paymentStatus === 'pending'
-                    ? 'Under Review • Sent to Admin'
-                    : profile.paymentStatus === 'rejected'
-                    ? 'Not Approved'
-                    : 'Free User Plan'}
-                </span>
-              </div>
-              <p className="text-xs font-medium text-gray-600 mt-1 leading-relaxed">
-                {isPremium ? (
-                  <>
-                    Your profile is visible in the Community Directory, and you have full access to member profiles, LinkedIn &amp; CVs.
-                    {profile.premiumExpiresAt && (
-                      <span className="block text-[11px] font-extrabold text-[#15803D] mt-1">
-                        1-Month Subscription Valid Until:{' '}
-                        {new Date(profile.premiumExpiresAt).toLocaleDateString(
-                          'en-PK',
-                          {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                          }
-                        )}
-                      </span>
-                    )}
-                  </>
-                ) : profile.paymentStatus === 'pending' ? (
-                  'Your request is under review and has been sent to Admin for approval. You can view your submitted application and check your live approval status below.'
-                ) : profile.paymentStatus === 'rejected' ? (
-                  'Your previous payment request was not approved by Admin. You can view your application status or upload a valid Rs. 100 payment slip below.'
-                ) : (
-                  'As a Free User, you get Jobs & Scholarships updates, can apply for Trainings, and save your Profile. Upgrade to Premium (Only Rs. 100 / Month) to show your profile in the Community and connect with other specialists!'
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {profile.paymentStatus === 'pending' || hasSubmittedApplication ? (
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={onOpenApplicationStatusModal}
-              className="w-full py-3.5 px-5 rounded-[18px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[14px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
-            >
-              <Eye className="w-4 h-4 text-emerald-200 shrink-0" />
-              <span>
-                {isPremium
-                  ? 'View My Application & Approval Status (Approved ✓)'
-                  : profile.paymentStatus === 'pending'
-                  ? 'View My Application Status (Under Review)'
-                  : 'View My Application & Approval Status'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onOpenPremiumModal}
-              className="w-full py-2.5 px-4 rounded-[14px] bg-white hover:bg-[#EAF5EC] border border-[#8BB999] text-[#0D2E1B] font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Crown className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
-              <span>
-                {isPremium
-                  ? 'Renew / Submit Another Payment Slip (Rs. 100 / Month)'
-                  : 'Submit New Payment Slip (Rs. 100 / Month)'}
-              </span>
-            </button>
-          </div>
-        ) : (
+      {/* CLEAN PURCHASE / BUY PREMIUM MEMBERSHIP BUTTON (No extra membership window in Profile) */}
+      <div className="space-y-2.5">
+        {!isPremium && (
           <button
             type="button"
             onClick={onOpenPremiumModal}
-            className="w-full py-3.5 px-5 rounded-[18px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[14px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="w-full py-4 px-5 rounded-[20px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[15px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
-            <Crown className="w-4 h-4 text-amber-300 shrink-0" />
-            <span>Become a Premium Member — Only Rs. 100 / Month</span>
+            <Crown className="w-5 h-5 text-amber-300 shrink-0" />
+            <span>Purchase / Buy Premium Membership</span>
+          </button>
+        )}
+
+        {(profile.paymentStatus === 'pending' ||
+          hasSubmittedApplication ||
+          isPremium) && (
+          <button
+            type="button"
+            onClick={onOpenApplicationStatusModal}
+            className="w-full py-3.5 px-5 rounded-[18px] bg-white hover:bg-[#EAF5EC] border-[1.5px] border-[#16A34A] text-[#0D2E1B] font-extrabold text-[14px] shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          >
+            <Eye className="w-4 h-4 text-[#15803D] shrink-0" />
+            <span>
+              {isPremium
+                ? 'View My Application Status (Approved ✓)'
+                : profile.paymentStatus === 'pending'
+                ? 'View My Application Status (Under Review)'
+                : 'View My Application Status'}
+            </span>
           </button>
         )}
       </div>
