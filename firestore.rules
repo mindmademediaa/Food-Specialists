@@ -32,14 +32,24 @@ service cloud.firestore {
         (!('hireMe_public' in ps) || ps.hireMe_public is bool);
     }
 
+    function isValidVisibilityMap(vis) {
+      return vis is map;
+    }
+
     function isValidUser(data, uid) {
       return data is map &&
-        data.keys().hasAll(['uid', 'name', 'privacySettings']) &&
+        data.keys().hasAll(['uid', 'name']) &&
         data.uid == uid &&
         data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        (!('title' in data) || (data.title is string && data.title.size() <= 200)) &&
+        (!('profilePhotoUrl' in data) || (data.profilePhotoUrl is string && data.profilePhotoUrl.size() <= 350000)) &&
         (!('profilePicUrl' in data) || (data.profilePicUrl is string && data.profilePicUrl.size() <= 350000)) &&
         (!('qualification' in data) || (data.qualification is string && data.qualification.size() <= 300)) &&
-        (!('experience' in data) || (data.experience is string && data.experience.size() <= 3000)) &&
+        (!('experience' in data) || (data.experience is string && data.experience.size() <= 5000) || (data.experience is list && data.experience.size() <= 50)) &&
+        (!('experienceItems' in data) || (data.experienceItems is list && data.experienceItems.size() <= 50)) &&
+        (!('education' in data) || (data.education is list && data.education.size() <= 50)) &&
+        (!('certifications' in data) || (data.certifications is list && data.certifications.size() <= 50)) &&
+        (!('projects' in data) || (data.projects is list && data.projects.size() <= 50)) &&
         (!('currentRole' in data) || (data.currentRole is string && data.currentRole.size() <= 200)) &&
         (!('company' in data) || (data.company is string && data.company.size() <= 200)) &&
         (!('location' in data) || (data.location is string && data.location.size() <= 200)) &&
@@ -51,7 +61,17 @@ service cloud.firestore {
         (!('portfolioUrl' in data) || (data.portfolioUrl is string && data.portfolioUrl.size() <= 500)) &&
         (!('skills' in data) || (data.skills is list && data.skills.size() <= 30)) &&
         (!('specializations' in data) || (data.specializations is list && data.specializations.size() <= 30)) &&
-        (!('cvUrl' in data) || (data.cvUrl is string && data.cvUrl.size() <= 500000)) &&
+        (!('cvUrl' in data) || (data.cvUrl is string && data.cvUrl.size() <= 750000)) &&
+        (!('cvFileName' in data) || (data.cvFileName is string && data.cvFileName.size() <= 260)) &&
+        (!('cvFileSize' in data) || (data.cvFileSize is string && data.cvFileSize.size() <= 60)) &&
+        (!('cvUploadedAt' in data) || (data.cvUploadedAt is string && data.cvUploadedAt.size() <= 64)) &&
+        (!('hireMe' in data) || data.hireMe is bool) &&
+        (!('plan' in data) || data.plan in ['free', 'premium']) &&
+        (!('isPremium' in data) || data.isPremium is bool) &&
+        (!('profileCompleted' in data) || data.profileCompleted is bool) &&
+        (!('profileVisibility' in data) || data.profileVisibility is bool) &&
+        (!('visibility' in data) || isValidVisibilityMap(data.visibility)) &&
+        (!('privacySettings' in data) || isValidPrivacySettings(data.privacySettings)) &&
         (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
         (!('isPaid' in data) || data.isPaid is bool) &&
         (!('isAdmin' in data) || data.isAdmin is bool) &&
@@ -59,8 +79,7 @@ service cloud.firestore {
         (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod.size() <= 80)) &&
         (!('paymentReference' in data) || (data.paymentReference is string && data.paymentReference.size() <= 120)) &&
         (!('paymentAmount' in data) || (data.paymentAmount is string && data.paymentAmount.size() <= 80)) &&
-        (!('receiptImageUrl' in data) || (data.receiptImageUrl is string && data.receiptImageUrl.size() <= 450000)) &&
-        isValidPrivacySettings(data.privacySettings);
+        (!('receiptImageUrl' in data) || (data.receiptImageUrl is string && data.receiptImageUrl.size() <= 450000));
     }
 
     function isValidPaymentRequest(data) {
@@ -196,11 +215,10 @@ service cloud.firestore {
 
     // Strict Per-User Profile & Community Visibility Rules:
     // 1. Only the authenticated owner (request.auth.uid == uid) or Admin can create, update, or delete their profile.
-    // 2. A user's document is strictly private to that user (isOwner(uid)) unless they are a Verified Paid Member (resource.data.isPaid == true) sharing their sanitized profile in the Community Directory.
+    // 2. Other signed-in users can read the sanitized /users/{uid} profile document; frontend enforces field-level visibility ('public' | 'private' | 'premium') + viewer plan.
     // 3. Non-admin users cannot escalate their own isAdmin flag.
     match /users/{uid} {
-      allow get: if isOwner(uid) || isAdmin() || (isSignedIn() && resource.data.isPaid == true);
-      allow list: if isAdmin() || (isSignedIn() && resource.data.isPaid == true);
+      allow get, list: if isSignedIn();
       allow create: if (isOwner(uid) || isAdmin()) &&
         isValidId(uid) &&
         isValidUser(request.resource.data, uid) &&
@@ -214,6 +232,13 @@ service cloud.firestore {
       // Strictly private per-user vault: NEVER readable or writable by any other user
       match /private/{docId} {
         allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidUser(request.resource.data, uid);
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      // Profile subcollection (/users/{uid}/profile/{docId})
+      match /profile/{docId} {
+        allow get, list: if isSignedIn();
         allow create, update: if (isOwner(uid) || isAdmin()) && isValidUser(request.resource.data, uid);
         allow delete: if isOwner(uid) || isAdmin();
       }

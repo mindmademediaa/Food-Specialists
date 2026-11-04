@@ -1,3 +1,59 @@
+export type VisibilityLevel = 'public' | 'private' | 'premium';
+
+export interface ProfileVisibilityMap {
+  name: VisibilityLevel;
+  title: VisibilityLevel;
+  company: VisibilityLevel;
+  location: VisibilityLevel;
+  bio: VisibilityLevel;
+  linkedin: VisibilityLevel;
+  cv: VisibilityLevel;
+  contact: VisibilityLevel;
+  education: VisibilityLevel;
+  experience: VisibilityLevel;
+  certifications: VisibilityLevel;
+  projects: VisibilityLevel;
+}
+
+export interface HubEducationItem {
+  id: string;
+  degree: string;
+  institute: string;
+  startYear: string;
+  endYear: string;
+  description: string;
+  visibility: VisibilityLevel;
+}
+
+export interface HubExperienceItem {
+  id: string;
+  jobTitle: string;
+  company: string;
+  startDate: string;
+  endDate: string;
+  isPresent: boolean;
+  location: string;
+  description: string;
+  visibility: VisibilityLevel;
+}
+
+export interface HubCertificationItem {
+  id: string;
+  name: string;
+  issuer: string;
+  issueDate: string;
+  credentialId: string;
+  visibility: VisibilityLevel;
+}
+
+export interface HubProjectItem {
+  id: string;
+  title: string;
+  description: string;
+  link?: string;
+  visibility: VisibilityLevel;
+}
+
 export interface PrivacySettings {
   qualification_public: boolean;
   experience_public: boolean;
@@ -26,9 +82,15 @@ export type SpecializationTag =
 export interface HubUser {
   uid: string;
   name: string;
+  title?: string;
+  profilePhotoUrl?: string;
   profilePicUrl: string;
   qualification: string;
-  experience: string;
+  experience: string | HubExperienceItem[];
+  experienceItems?: HubExperienceItem[];
+  education?: HubEducationItem[];
+  certifications?: HubCertificationItem[];
+  projects?: HubProjectItem[];
   currentRole: string;
   company: string;
   location: string;
@@ -41,6 +103,15 @@ export interface HubUser {
   skills: string[];
   specializations?: string[];
   cvUrl: string;
+  cvFileName?: string;
+  cvFileSize?: string;
+  cvUploadedAt?: string;
+  hireMe?: boolean;
+  plan?: 'free' | 'premium';
+  isPremium?: boolean;
+  profileCompleted?: boolean;
+  profileVisibility?: boolean;
+  visibility?: ProfileVisibilityMap;
   privacySettings: PrivacySettings;
   createdAt: string;
   isAdmin: boolean;

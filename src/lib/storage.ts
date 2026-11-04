@@ -155,8 +155,8 @@ export async function uploadMediaFile(
     };
   }
 
-  // 3. For small PDFs (<= 320KB), encode as data URL; otherwise store clean reference metadata
-  if (file.size <= 320 * 1024) {
+  // 3. For PDFs (<= 500KB), encode as data URL; otherwise store clean reference metadata
+  if (file.size <= 500 * 1024) {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -182,11 +182,18 @@ export async function uploadMediaFile(
   }
 
   return {
-    url: `${file.name} (${Math.round(file.size / 1024)} KB)`,
+    url: `${file.name}`,
     provider: 'smart-firestore',
     sizeKb: Math.max(1, Math.round(file.size / 1024)),
     fileName: file.name
   };
+}
+
+export function formatFileSizeLabel(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 /**

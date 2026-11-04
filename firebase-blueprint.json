@@ -2,14 +2,20 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Community member profile, free vs paid membership status, payment verification state, hireMe flag, and privacy settings",
+      "description": "Community member profile, free vs premium membership status, field-level visibility settings, education, experience, certifications, projects, and CV vault",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "maxLength": 128 },
         "name": { "type": "string", "maxLength": 120 },
+        "title": { "type": "string", "maxLength": 200 },
+        "profilePhotoUrl": { "type": "string", "maxLength": 350000 },
         "profilePicUrl": { "type": "string", "maxLength": 350000 },
         "qualification": { "type": "string", "maxLength": 300 },
-        "experience": { "type": "string", "maxLength": 3000 },
+        "experience": { "type": "array" },
+        "experienceItems": { "type": "array" },
+        "education": { "type": "array" },
+        "certifications": { "type": "array" },
+        "projects": { "type": "array" },
         "currentRole": { "type": "string", "maxLength": 200 },
         "company": { "type": "string", "maxLength": 200 },
         "location": { "type": "string", "maxLength": 200 },
@@ -21,7 +27,16 @@
         "portfolioUrl": { "type": "string", "maxLength": 500 },
         "skills": { "type": "array" },
         "specializations": { "type": "array" },
-        "cvUrl": { "type": "string", "maxLength": 500000 },
+        "cvUrl": { "type": "string", "maxLength": 750000 },
+        "cvFileName": { "type": "string", "maxLength": 260 },
+        "cvFileSize": { "type": "string", "maxLength": 60 },
+        "cvUploadedAt": { "type": "string", "maxLength": 64 },
+        "hireMe": { "type": "boolean" },
+        "plan": { "type": "string", "enum": ["free", "premium"] },
+        "isPremium": { "type": "boolean" },
+        "profileCompleted": { "type": "boolean" },
+        "profileVisibility": { "type": "boolean" },
+        "visibility": { "type": "object" },
         "privacySettings": { "type": "object" },
         "createdAt": { "type": "string", "maxLength": 64 },
         "isAdmin": { "type": "boolean" },
@@ -32,7 +47,7 @@
         "paymentAmount": { "type": "string", "maxLength": 80 },
         "receiptImageUrl": { "type": "string", "maxLength": 450000 }
       },
-      "required": ["uid", "name", "privacySettings"]
+      "required": ["uid", "name"]
     },
     "PaymentRequest": {
       "title": "PaymentRequest",
@@ -182,6 +197,10 @@
     "/users/{uid}/private/{docId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Strictly private per-user profile vault accessible only by the owner (request.auth.uid == uid) or admin"
+    },
+    "/users/{uid}/profile/{docId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile document subcollection"
     },
     "/paymentRequests/{requestId}": {
       "schema": { "$ref": "#/entities/PaymentRequest" },

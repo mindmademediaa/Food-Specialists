@@ -73,6 +73,7 @@ import {
 import {
   HubUser,
   PrivacySettings,
+  ProfileVisibilityMap,
   HubJob,
   HubScholarship,
   HubTraining,
@@ -84,23 +85,29 @@ import {
   NavTab
 } from './types/hub';
 import {
-  INITIAL_USERS,
   INITIAL_JOBS,
   INITIAL_SCHOLARSHIPS,
   INITIAL_TRAININGS,
-  INITIAL_COMMUNITY_THREADS,
   makeAvatarSvg
 } from './data/mockHubData';
 import {
   uploadMediaFile,
+  formatFileSizeLabel,
   generateCertificateSvgDataUrl,
   INITIAL_CERTIFICATES
 } from './lib/storage';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { JobCard } from './components/JobCard';
-import { MemberCard } from './components/MemberCard';
+import { MemberCard, canViewerSeeField } from './components/MemberCard';
 import { AuthScreen } from './components/AuthScreen';
+import {
+  EditProfileView,
+  DEFAULT_VISIBILITY_MAP,
+  normalizeEducationArray,
+  normalizeExperienceArray
+} from './components/EditProfileView';
+import { PublicProfileView } from './components/PublicProfileView';
 
 // Custom Duotone SVGs & Botanical Watermarks for the Home Screen Cards
 const DuotoneBriefcaseIcon = () => (
@@ -274,18 +281,6 @@ const JOB_SCH_SPECIALIZATIONS: SpecializationTag[] = [
   'R&D'
 ];
 
-const COMMUNITY_SPECIALIZATION_TAGS: SpecializationTag[] = [
-  'HACCP',
-  'ISO 22000',
-  'Food Chemistry',
-  'QA/QC',
-  'Food Safety',
-  'Dairy',
-  'Bakery',
-  'Nutrition',
-  'R&D'
-];
-
 function getDaysRemaining(deadlineStr: string): number {
   const today = new Date('2026-11-01T00:00:00Z').getTime();
   const target = new Date(deadlineStr).getTime();
@@ -295,23 +290,38 @@ function getDaysRemaining(deadlineStr: string): number {
 }
 
 const DEFAULT_CURRENT_USER_PROFILE: HubUser = {
-  uid: 'user-alex-morgan',
-  name: 'Alex Morgan',
-  profilePicUrl: makeAvatarSvg('AM', '#DCFCE7', '#14532D'),
-  qualification: 'BS (Hons.) Food Science & Technology',
-  experience: 'Fresh Graduate / 1 Year Food Quality & Safety Internship',
-  currentRole: 'Food Safety & QA Specialist',
-  company: 'PureFoods Dairy Lab',
-  location: 'Lahore, Pakistan',
-  country: 'Pakistan',
-  bio: 'Food Safety & QA Specialist passionate about HACCP implementation, ISO 22000 auditing, and dairy quality control.',
-  email: 'alex.morgan@email.com',
-  phone: '+92 300 1234567',
-  linkedinUrl: 'https://www.linkedin.com/in/alex-morgan-fsqa',
-  portfolioUrl: 'https://foodspecialists.org/portfolio/alex-morgan',
-  skills: ['HACCP', 'ISO 22000', 'QA/QC', 'Food Safety'],
-  specializations: ['QA/QC', 'Food Safety', 'HACCP', 'ISO 22000'],
-  cvUrl: 'Alex_Morgan_Food_Safety_CV.pdf',
+  uid: '',
+  name: '',
+  title: '',
+  profilePhotoUrl: '',
+  profilePicUrl: '',
+  qualification: '',
+  experience: [],
+  experienceItems: [],
+  education: [],
+  certifications: [],
+  projects: [],
+  currentRole: '',
+  company: '',
+  location: '',
+  country: '',
+  bio: '',
+  email: '',
+  phone: '',
+  linkedinUrl: '',
+  portfolioUrl: '',
+  skills: [],
+  specializations: [],
+  cvUrl: '',
+  cvFileName: '',
+  cvFileSize: '',
+  cvUploadedAt: '',
+  hireMe: true,
+  plan: 'free',
+  isPremium: false,
+  profileCompleted: false,
+  profileVisibility: true,
+  visibility: DEFAULT_VISIBILITY_MAP,
   privacySettings: {
     qualification_public: true,
     experience_public: true,
@@ -328,18 +338,46 @@ const DEFAULT_CURRENT_USER_PROFILE: HubUser = {
 };
 
 // Sanitize a user profile before saving to the shared /users/{uid} document:
-// Any field whose privacy toggle is OFF (Private) is stripped so other users cannot read it,
-// while the owner's full unredacted data is stored in /users/{uid}/private/profile.
+// Any field whose visibility is 'private' is stripped from the shared document,
+// while 'public' and 'premium' fields remain so the frontend can enforce viewer plan rules,
+// and the owner's full unredacted data is stored in /users/{uid}/private/profile.
 const buildSanitizedPublicUser = (fullProfile: HubUser): HubUser => {
-  const ps = fullProfile.privacySettings || DEFAULT_CURRENT_USER_PROFILE.privacySettings;
+  const vis: ProfileVisibilityMap = {
+    ...DEFAULT_VISIBILITY_MAP,
+    ...(fullProfile.visibility || {})
+  };
+  const eduList = normalizeEducationArray(fullProfile).filter(
+    (item) => item.visibility !== 'private'
+  );
+  const expList = normalizeExperienceArray(fullProfile).filter(
+    (item) => item.visibility !== 'private'
+  );
+  const certList = (fullProfile.certifications || []).filter(
+    (item) => item.visibility !== 'private'
+  );
+  const projList = (fullProfile.projects || []).filter(
+    (item) => item.visibility !== 'private'
+  );
+
   return {
     ...fullProfile,
-    currentRole: ps.currentRole_public ? fullProfile.currentRole : '',
-    qualification: ps.qualification_public ? fullProfile.qualification : '',
-    experience: ps.experience_public ? fullProfile.experience : '',
-    location: ps.location_public ? fullProfile.location : '',
-    email: ps.email_public ? fullProfile.email : '',
-    phone: ps.phone_public ? fullProfile.phone : ''
+    visibility: vis,
+    title: vis.title === 'private' ? '' : fullProfile.title || fullProfile.currentRole || '',
+    currentRole:
+      vis.title === 'private' ? '' : fullProfile.title || fullProfile.currentRole || '',
+    company: vis.company === 'private' ? '' : fullProfile.company || '',
+    location: vis.location === 'private' ? '' : fullProfile.location || '',
+    bio: vis.bio === 'private' ? '' : fullProfile.bio || '',
+    linkedinUrl: vis.linkedin === 'private' ? '' : fullProfile.linkedinUrl || '',
+    cvUrl: vis.cv === 'private' ? '' : fullProfile.cvUrl || '',
+    cvFileName: vis.cv === 'private' ? '' : fullProfile.cvFileName || '',
+    email: vis.contact === 'private' ? '' : fullProfile.email || '',
+    phone: vis.contact === 'private' ? '' : fullProfile.phone || '',
+    education: vis.education === 'private' ? [] : eduList,
+    experience: vis.experience === 'private' ? [] : expList,
+    experienceItems: vis.experience === 'private' ? [] : expList,
+    certifications: vis.certifications === 'private' ? [] : certList,
+    projects: vis.projects === 'private' ? [] : projList
   };
 };
 
@@ -352,8 +390,10 @@ export default function App() {
   const [route, setRoute] = useState<RouteView>({ name: 'home' });
   const [hasSavedProfile, setHasSavedProfile] = useState<boolean>(true);
 
-  // Collections State
-  const [users, setUsers] = useState<HubUser[]>(INITIAL_USERS);
+  // Collections State (Real Firestore Users — No Placeholder Profiles)
+  const [users, setUsers] = useState<HubUser[]>([]);
+  const [showCommunityPaywall, setShowCommunityPaywall] =
+    useState<boolean>(false);
   const [jobs, setJobs] = useState<HubJob[]>(INITIAL_JOBS);
   const [scholarships, setScholarships] = useState<HubScholarship[]>(
     INITIAL_SCHOLARSHIPS
@@ -488,10 +528,10 @@ export default function App() {
   // Derive user's Membership Status directly from their Profile state:
   // Paid Member (when myProfile.isPaid === true), Free Member (when profile exists & !isPaid), or Guest
   const membershipStatus: DevRole = useMemo(() => {
-    if (myProfile.isPaid) return 'Paid Member';
+    if (myProfile.isPaid || myProfile.isPremium) return 'Paid Member';
     if (hasSavedProfile && myProfile.name.trim()) return 'Free Member';
     return 'Guest';
-  }, [myProfile.isPaid, myProfile.name, hasSavedProfile]);
+  }, [myProfile.isPaid, myProfile.isPremium, myProfile.name, hasSavedProfile]);
 
   // Monitor real-time Firebase Authentication state and auto-persist user record in Firestore
   useEffect(() => {
@@ -511,15 +551,21 @@ export default function App() {
             .toUpperCase() || 'FS';
         const isAdminUser =
           firebaseUser.email?.toLowerCase() === 'mindmademedia9@gmail.com';
+        const defaultAvatar =
+          firebaseUser.photoURL || makeAvatarSvg(initials, '#DCFCE7', '#14532D');
 
         const baseUserRecord: HubUser = {
           ...DEFAULT_CURRENT_USER_PROFILE,
           uid: firebaseUser.uid,
           name: displayName,
           email: firebaseUser.email || '',
-          profilePicUrl:
-            firebaseUser.photoURL || makeAvatarSvg(initials, '#DCFCE7', '#14532D'),
+          profilePhotoUrl: defaultAvatar,
+          profilePicUrl: defaultAvatar,
           isAdmin: isAdminUser,
+          isPaid: isAdminUser,
+          isPremium: isAdminUser,
+          plan: isAdminUser ? 'premium' : 'free',
+          visibility: DEFAULT_VISIBILITY_MAP,
           createdAt: new Date().toISOString().slice(0, 19) + 'Z'
         };
 
@@ -529,10 +575,8 @@ export default function App() {
           name: firebaseUser.displayName?.trim() || prev.name || displayName,
           email: firebaseUser.email || prev.email,
           isAdmin: isAdminUser || prev.isAdmin,
-          profilePicUrl:
-            prev.profilePicUrl ||
-            firebaseUser.photoURL ||
-            makeAvatarSvg(initials, '#DCFCE7', '#14532D')
+          profilePhotoUrl: prev.profilePhotoUrl || prev.profilePicUrl || defaultAvatar,
+          profilePicUrl: prev.profilePicUrl || prev.profilePhotoUrl || defaultAvatar
         }));
 
         // Check if user profile already exists in Firestore; hydrate both public doc and private owner vault
@@ -552,6 +596,31 @@ export default function App() {
               ...(publicData.privacySettings || {}),
               ...(privateData.privacySettings || {})
             };
+            const mergedVisibility: ProfileVisibilityMap = {
+              ...DEFAULT_VISIBILITY_MAP,
+              ...(publicData.visibility || {}),
+              ...(privateData.visibility || {})
+            };
+            const isPaidOrPremium = Boolean(
+              isAdminUser ||
+                publicData.isPaid ||
+                publicData.isPremium ||
+                privateData.isPaid ||
+                privateData.isPremium
+            );
+            const mergedTitle =
+              privateData.title ||
+              privateData.currentRole ||
+              publicData.title ||
+              publicData.currentRole ||
+              '';
+            const mergedAvatar =
+              privateData.profilePhotoUrl ||
+              privateData.profilePicUrl ||
+              publicData.profilePhotoUrl ||
+              publicData.profilePicUrl ||
+              defaultAvatar;
+
             const mergedProfile: HubUser = {
               ...baseUserRecord,
               ...publicData,
@@ -562,6 +631,10 @@ export default function App() {
                 publicData.name?.trim() ||
                 firebaseUser.displayName?.trim() ||
                 displayName,
+              title: mergedTitle,
+              currentRole: mergedTitle,
+              profilePhotoUrl: mergedAvatar,
+              profilePicUrl: mergedAvatar,
               email:
                 privateData.email ||
                 publicData.email ||
@@ -570,14 +643,45 @@ export default function App() {
               phone: privateData.phone || publicData.phone || '',
               qualification:
                 privateData.qualification || publicData.qualification || '',
-              experience: privateData.experience || publicData.experience || '',
-              currentRole:
-                privateData.currentRole || publicData.currentRole || '',
+              experience:
+                privateData.experience ||
+                publicData.experience ||
+                [],
+              education:
+                privateData.education ||
+                publicData.education ||
+                [],
+              certifications:
+                privateData.certifications ||
+                publicData.certifications ||
+                [],
+              projects:
+                privateData.projects ||
+                publicData.projects ||
+                [],
               location: privateData.location || publicData.location || '',
-              isPaid: Boolean(publicData.isPaid ?? privateData.isPaid),
+              isPaid: isPaidOrPremium,
+              isPremium: isPaidOrPremium,
+              plan: isPaidOrPremium ? 'premium' : 'free',
+              hireMe: Boolean(
+                privateData.hireMe ??
+                  publicData.hireMe ??
+                  mergedPrivacy.hireMe_public ??
+                  true
+              ),
+              profileCompleted: Boolean(
+                privateData.profileCompleted ??
+                  publicData.profileCompleted ??
+                  Boolean(mergedTitle || privateData.bio || publicData.bio)
+              ),
+              profileVisibility:
+                privateData.profileVisibility ??
+                publicData.profileVisibility ??
+                true,
               paymentStatus:
                 publicData.paymentStatus || privateData.paymentStatus || 'none',
               isAdmin: isAdminUser || Boolean(publicData.isAdmin),
+              visibility: mergedVisibility,
               privacySettings: mergedPrivacy
             };
             setMyProfile(mergedProfile);
@@ -623,21 +727,26 @@ export default function App() {
     }
   };
 
-  // Real-time Firestore Listeners (with strict per-user isolation & Paid community filtering)
+  // Real-time Firestore Listeners (Real Firestore data only — no placeholder users)
   useEffect(() => {
     if (!authUser) return;
     const isAdminUser =
       authUser.email?.toLowerCase() === 'mindmademedia9@gmail.com';
 
-    // Listen to current user's own document so admin approval of isPaid/paymentStatus reflects immediately
+    // Listen to current user's own document so admin approval of isPaid/isPremium reflects immediately
     const unsubMyDoc = onSnapshot(
       doc(db, 'users', authUser.uid),
       (snap) => {
         if (snap.exists()) {
           const data = snap.data() as Partial<HubUser>;
+          const nextPaid = Boolean(
+            isAdminUser || data.isPaid || data.isPremium
+          );
           setMyProfile((prev) => ({
             ...prev,
-            isPaid: Boolean(data.isPaid ?? prev.isPaid),
+            isPaid: nextPaid || prev.isPaid,
+            isPremium: nextPaid || prev.isPremium,
+            plan: nextPaid || prev.isPremium ? 'premium' : 'free',
             paymentStatus: data.paymentStatus || prev.paymentStatus
           }));
         }
@@ -645,27 +754,13 @@ export default function App() {
       () => {}
     );
 
-    // Non-admin users only query Verified Paid community profiles (`where('isPaid', '==', true)`)
-    // matching `allow list: if isAdmin() || (isSignedIn() && resource.data.isPaid == true)` in firestore.rules
-    const usersQuery = isAdminUser
-      ? collection(db, 'users')
-      : query(collection(db, 'users'), where('isPaid', '==', true));
-
     const unsubUsers = onSnapshot(
-      usersQuery,
+      collection(db, 'users'),
       (snap) => {
-        if (!snap.empty) {
-          const fsUsers = snap.docs.map((d) => d.data() as HubUser);
-          setUsers(() => {
-            const map = new Map<string, HubUser>();
-            INITIAL_USERS.forEach((u) => map.set(u.uid, u));
-            fsUsers.forEach((u) => {
-              const initMatch = INITIAL_USERS.find((iu) => iu.uid === u.uid);
-              map.set(u.uid, { ...initMatch, ...u });
-            });
-            return Array.from(map.values());
-          });
-        }
+        const fsUsers = snap.docs
+          .map((d) => ({ ...(d.data() as HubUser), uid: d.id }))
+          .filter((u) => Boolean(u.uid && u.name));
+        setUsers(fsUsers);
       },
       (err) => {
         try {
@@ -981,8 +1076,13 @@ export default function App() {
     }, 3500);
   };
 
-  // Is Current User a Paid Member? (Driven by their Profile record)
-  const isCurrentUserPaid = Boolean(myProfile.isPaid);
+  // Is Current User a Premium/Paid Member? (Driven by their Profile record or Admin status)
+  const isCurrentUserPaid = Boolean(
+    myProfile.isPaid ||
+      myProfile.isPremium ||
+      myProfile.isAdmin ||
+      authUser?.email?.toLowerCase() === 'mindmademedia9@gmail.com'
+  );
 
   // Filtered Jobs for /jobs (Country + Category)
   const activeJobs = useMemo(() => jobs.filter((j) => j.isActive), [jobs]);
@@ -1083,65 +1183,72 @@ export default function App() {
   const visibleScholarships = filteredScholarships;
   const lockedScholarships: HubScholarship[] = [];
 
-  // Filtered Members for /communities:
-  // ONLY Paid Members (`u.isPaid === true`) are shown in the Specialist Directory!
-  const paidCommunityMembers = useMemo(() => {
-    const list = users.filter((u) => u.isPaid === true && u.uid && u.name);
+  // Part 4: Community Premium Profiles List
+  // Show all Premium Users who have completed profile and set profileVisibility !== false
+  const paidCommunityMembers = useMemo<HubUser[]>(() => {
+    const list = users.filter(
+      (u) =>
+        (u.isPaid === true || u.isPremium === true) &&
+        u.profileVisibility !== false &&
+        Boolean(u.uid && u.name.trim())
+    );
     if (
       isCurrentUserPaid &&
+      myProfile.uid &&
+      myProfile.name.trim() &&
       !list.some((u) => u.uid === myProfile.uid)
     ) {
-      return [{ ...myProfile, isPaid: true }, ...list];
+      return [
+        {
+          ...myProfile,
+          isPaid: true,
+          isPremium: true,
+          plan: 'premium' as const
+        },
+        ...list
+      ];
     }
     return list;
   }, [users, isCurrentUserPaid, myProfile]);
 
+  const availableCommunityLocations = useMemo(() => {
+    const set = new Set<string>();
+    paidCommunityMembers.forEach((u) => {
+      if (u.location?.trim()) set.add(u.location.trim());
+    });
+    return Array.from(set).sort();
+  }, [paidCommunityMembers]);
+
   const filteredMembers = useMemo(() => {
     return paidCommunityMembers.filter((u) => {
-      if (onlyHireableFilter && !u.privacySettings?.hireMe_public) {
+      const hireMeActive = Boolean(
+        u.hireMe ?? u.privacySettings?.hireMe_public
+      );
+      if (onlyHireableFilter && !hireMeActive) {
         return false;
       }
-      if (commSpecFilter !== 'All') {
-        const specs = u.specializations || u.skills || [];
-        const hasSpec =
-          specs.some(
-            (s) => s.toLowerCase() === commSpecFilter.toLowerCase()
-          ) ||
-          u.currentRole.toLowerCase().includes(commSpecFilter.toLowerCase()) ||
-          u.experience.toLowerCase().includes(commSpecFilter.toLowerCase());
-        if (!hasSpec) return false;
-      }
       if (commCountryFilter !== 'All') {
-        const locStr = `${u.country || ''} ${u.location || ''}`.toLowerCase();
+        const locStr = `${u.location || ''} ${u.country || ''}`.toLowerCase();
         if (!locStr.includes(commCountryFilter.toLowerCase())) return false;
-      }
-      if (commExpFilter !== 'All') {
-        const expStr = (u.experience || '').toLowerCase();
-        if (!expStr.includes(commExpFilter.toLowerCase())) return false;
       }
       if (!memberSearchQuery.trim()) return true;
       const q = memberSearchQuery.toLowerCase();
       const matchName = u.name.toLowerCase().includes(q);
-      const matchBio = u.bio?.toLowerCase().includes(q);
-      const matchRole =
-        u.privacySettings?.currentRole_public &&
-        (u.currentRole.toLowerCase().includes(q) ||
-          u.company.toLowerCase().includes(q));
-      const matchLoc =
-        u.privacySettings?.location_public &&
-        u.location.toLowerCase().includes(q);
-      const matchQual =
-        u.privacySettings?.qualification_public &&
-        u.qualification.toLowerCase().includes(q);
-      return matchName || matchBio || matchRole || matchLoc || matchQual;
+      const roleStr = (u.title || u.currentRole || '').toLowerCase();
+      const compStr = (u.company || '').toLowerCase();
+      const locStr = (u.location || '').toLowerCase();
+      return (
+        matchName ||
+        roleStr.includes(q) ||
+        compStr.includes(q) ||
+        locStr.includes(q)
+      );
     });
   }, [
     paidCommunityMembers,
     memberSearchQuery,
     onlyHireableFilter,
-    commSpecFilter,
-    commCountryFilter,
-    commExpFilter
+    commCountryFilter
   ]);
 
   // Trainings Lists
@@ -1157,29 +1264,6 @@ export default function App() {
       ),
     [highfieldTrainings]
   );
-
-  const leadAuditorStandards = [
-    {
-      code: 'ISO 9001',
-      subtitle: 'Quality Management Systems (QMS)',
-      icon: Award
-    },
-    {
-      code: 'FSSC 22000',
-      subtitle: 'Food Safety System Certification',
-      icon: Shield
-    },
-    {
-      code: 'ISO 14001',
-      subtitle: 'Environmental Management Systems',
-      icon: Leaf
-    },
-    {
-      code: 'ISO 45001',
-      subtitle: 'Occupational Health & Safety (OH&S)',
-      icon: ShieldCheck
-    }
-  ];
 
   // Global Search Results for /search
   const searchResults = useMemo(() => {
@@ -1206,15 +1290,13 @@ export default function App() {
           t.category.toLowerCase().includes(q) ||
           (t.subType && t.subType.toLowerCase().includes(q)))
     );
-    const matchedMembers = isCurrentUserPaid
-      ? paidCommunityMembers.filter(
-          (u) =>
-            !q ||
-            u.name.toLowerCase().includes(q) ||
-            (u.privacySettings?.currentRole_public &&
-              u.currentRole.toLowerCase().includes(q))
-        )
-      : [];
+    const matchedMembers = paidCommunityMembers.filter(
+      (u) =>
+        !q ||
+        u.name.toLowerCase().includes(q) ||
+        (u.title || u.currentRole || '').toLowerCase().includes(q) ||
+        (u.company || '').toLowerCase().includes(q)
+    );
     return {
       jobs: matchedJobs,
       scholarships: matchedScholarships,
@@ -1226,24 +1308,10 @@ export default function App() {
     visibleJobs,
     visibleScholarships,
     trainings,
-    paidCommunityMembers,
-    isCurrentUserPaid
+    paidCommunityMembers
   ]);
 
-  // Toggle Specialization Tag on Profile
-  const handleToggleProfileSpecialization = (tag: string) => {
-    const current = myProfile.specializations || [];
-    const next = current.includes(tag)
-      ? current.filter((t) => t !== tag)
-      : [...current, tag];
-    setMyProfile({
-      ...myProfile,
-      specializations: next,
-      skills: next
-    });
-  };
-
-  // Persist both full private vault (/users/{uid}/private/profile) and sanitized public profile (/users/{uid})
+  // Persist both full private vault (/users/{uid}/private/profile, /users/{uid}/profile/main) and sanitized public profile (/users/{uid})
   const persistUserProfileToFirestore = async (fullUser: HubUser) => {
     const sanitizedPublic = buildSanitizedPublicUser(fullUser);
     setUsers((prev) => {
@@ -1263,6 +1331,11 @@ export default function App() {
           fullUser,
           { merge: true }
         ),
+        setDoc(
+          doc(db, 'users', fullUser.uid, 'profile', 'main'),
+          sanitizedPublic,
+          { merge: true }
+        ),
         setDoc(doc(db, 'users', fullUser.uid), sanitizedPublic, {
           merge: true
         })
@@ -1278,49 +1351,28 @@ export default function App() {
     }
   };
 
-  // Instant Privacy Toggle Handler: Immediately saves toggle state & sanitizes shared Community data
-  const handleTogglePrivacySetting = async (field: keyof PrivacySettings) => {
-    const cleanUid = authUser?.uid || myProfile.uid;
-    const nextValue = !myProfile.privacySettings[field];
-    const updatedUser: HubUser = {
-      ...myProfile,
-      uid: cleanUid,
-      name: myProfile.name.trim() || 'Food Specialist',
-      isPaid: isCurrentUserPaid,
-      privacySettings: {
-        ...myProfile.privacySettings,
-        [field]: nextValue
-      }
-    };
-    setMyProfile(updatedUser);
-    await persistUserProfileToFirestore(updatedUser);
-    setProfileSaveMsg(
-      nextValue
-        ? 'Privacy updated: Selected field is now visible in your Community Profile.'
-        : 'Privacy updated: Selected field is now hidden and strictly private to you.'
-    );
-    setTimeout(() => setProfileSaveMsg(null), 3500);
-  };
-
-  // Profile Save Handler
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Profile Save Handler for Rebuilt EditProfileView
+  const handleSaveProfileModel = async (updatedFromEditor: HubUser) => {
     const cleanUid =
       authUser?.uid ||
-      myProfile.uid ||
+      updatedFromEditor.uid ||
       'user-' +
-        (myProfile.name || 'specialist')
+        (updatedFromEditor.name || 'specialist')
           .toLowerCase()
           .replace(/[^a-z0-9]/g, '-')
           .slice(0, 60);
 
     const updatedUser: HubUser = {
-      ...myProfile,
+      ...updatedFromEditor,
       uid: cleanUid,
-      name: myProfile.name.trim() || 'Food Specialist',
+      name: updatedFromEditor.name.trim() || 'Food Safety Specialist',
       isPaid: isCurrentUserPaid,
+      isPremium: isCurrentUserPaid,
+      plan: isCurrentUserPaid ? 'premium' : 'free',
+      profileCompleted: true,
+      profileVisibility: true,
       createdAt:
-        myProfile.createdAt || new Date().toISOString().slice(0, 19) + 'Z'
+        updatedFromEditor.createdAt || new Date().toISOString().slice(0, 19) + 'Z'
     };
 
     setHasSavedProfile(true);
@@ -1328,11 +1380,9 @@ export default function App() {
     await persistUserProfileToFirestore(updatedUser);
 
     setProfileSaveMsg(
-      isCurrentUserPaid
-        ? 'Profile saved! Only the fields marked Public are visible to Paid Specialists in the Community Directory.'
-        : 'Profile saved! Your current status is Free Member (Strictly Private until upgraded to Paid Member).'
+      'Profile & visibility settings saved to Cloud Firestore!'
     );
-    setTimeout(() => setProfileSaveMsg(null), 5000);
+    setTimeout(() => setProfileSaveMsg(null), 4500);
   };
 
   const isUserAdmin = Boolean(
@@ -1340,23 +1390,20 @@ export default function App() {
       authUser?.email?.toLowerCase() === 'mindmademedia9@gmail.com'
   );
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleUploadAvatarFile = async (file: File) => {
     setIsUploadingMedia(true);
     try {
       const result = await uploadMediaFile(file, 'avatars', storageConfig);
       const updated: HubUser = {
         ...myProfile,
         uid: authUser?.uid || myProfile.uid,
+        profilePhotoUrl: result.url,
         profilePicUrl: result.url
       };
       setMyProfile(updated);
       await persistUserProfileToFirestore(updated);
       setUploadStatusMsg(
-        result.provider === 'cloudinary-cdn'
-          ? `Profile photo uploaded to Free Cloud CDN (${result.sizeKb} KB)!`
-          : `Profile photo compressed & saved to Cloud Vault (${result.sizeKb} KB WebP)!`
+        `Profile photo uploaded (${result.sizeKb} KB)!`
       );
       setTimeout(() => setUploadStatusMsg(null), 4000);
     } catch {
@@ -1366,28 +1413,44 @@ export default function App() {
     }
   };
 
-  const handleCvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleUploadCvFile = async (file: File) => {
     setIsUploadingMedia(true);
     try {
       const result = await uploadMediaFile(file, 'cvs', storageConfig);
+      const sizeLabel = formatFileSizeLabel(file.size);
+      const nowIso = new Date().toISOString().slice(0, 19) + 'Z';
       const updated: HubUser = {
         ...myProfile,
         uid: authUser?.uid || myProfile.uid,
-        cvUrl: result.provider === 'cloudinary-cdn' ? result.url : result.fileName
+        cvUrl: result.url,
+        cvFileName: file.name,
+        cvFileSize: sizeLabel,
+        cvUploadedAt: nowIso
       };
       setMyProfile(updated);
       await persistUserProfileToFirestore(updated);
       setUploadStatusMsg(
-        result.provider === 'cloudinary-cdn'
-          ? `CV uploaded to Cloud CDN (${result.sizeKb} KB)!`
-          : `CV metadata & document linked to your Private Vault (${result.sizeKb} KB)!`
+        `CV uploaded (${file.name} • ${sizeLabel})!`
       );
       setTimeout(() => setUploadStatusMsg(null), 4000);
     } finally {
       setIsUploadingMedia(false);
     }
+  };
+
+  const handleDeleteCvFile = async () => {
+    const updated: HubUser = {
+      ...myProfile,
+      uid: authUser?.uid || myProfile.uid,
+      cvUrl: '',
+      cvFileName: '',
+      cvFileSize: '',
+      cvUploadedAt: ''
+    };
+    setMyProfile(updated);
+    await persistUserProfileToFirestore(updated);
+    setUploadStatusMsg('CV removed from your profile.');
+    setTimeout(() => setUploadStatusMsg(null), 3500);
   };
 
   const handlePaymentReceiptUpload = async (
@@ -2925,82 +2988,91 @@ export default function App() {
                 {(searchTab === 'All' || searchTab === 'Members') && (
                   <div className="space-y-3">
                     <h2 className="text-xs font-bold uppercase tracking-wider text-[#14532D] px-1">
-                      Verified Specialists ({searchResults.members.length})
+                      Premium Specialists ({searchResults.members.length})
                     </h2>
-                    {isCurrentUserPaid ? (
-                      searchResults.members.map((m) => (
-                        <MemberCard
-                          key={m.uid}
-                          member={m}
-                          onHireOrContact={(mem, e) => {
-                            e.stopPropagation();
-                            setContactModalMember(mem);
-                          }}
-                          onClick={(mem) =>
-                            setRoute({ name: 'community-member', uid: mem.uid })
+                    {searchResults.members.map((m) => (
+                      <MemberCard
+                        key={m.uid}
+                        member={m}
+                        viewerIsPremium={isCurrentUserPaid}
+                        viewerUid={myProfile.uid}
+                        onClick={(mem) => {
+                          if (
+                            !isCurrentUserPaid &&
+                            !isUserAdmin &&
+                            mem.uid !== myProfile.uid
+                          ) {
+                            setShowCommunityPaywall(true);
+                            return;
                           }
-                        />
-                      ))
-                    ) : (
-                      <div className="bg-white border border-emerald-200 rounded-[22px] p-4 text-xs text-gray-700 flex items-center justify-between gap-3">
-                        <span>
-                          Free Members cannot search the Specialist Directory. Check your status in Profile.
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setRoute({ name: 'profile' })}
-                          className="px-3 py-1.5 rounded-full bg-[#15803D] text-white font-bold shrink-0 cursor-pointer"
-                        >
-                          My Profile
-                        </button>
-                      </div>
-                    )}
+                          setRoute({ name: 'community-member', uid: mem.uid });
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* ==================== 5. SPECIALIST COMMUNITY & DIRECTORY (/communities) ==================== */}
+          {/* ==================== 5. COMMUNITY — PREMIUM PROFILES LIST (/communities) ==================== */}
           {route.name === 'communities' && (
             <div className="space-y-4 px-1">
-              {/* Top Rounded White Directory Header & Search/Filter Card */}
+              {/* Top Community Header & Search/Location Filter Card */}
               <div className="bg-white border border-[#C6DFCB] rounded-[28px] p-5 shadow-[0_6px_20px_rgba(22,163,74,0.06)] space-y-3.5">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div>
-                    <h1 className="text-[24px] sm:text-[26px] font-extrabold text-[#0D2E1B] leading-tight tracking-tight">
-                      Specialist Directory
-                    </h1>
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-[23px] sm:text-[25px] font-extrabold text-[#0D2E1B] leading-tight tracking-tight">
+                        Premium Community
+                      </h1>
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#538257] border border-[#D4AF37] text-white text-[10.5px] font-extrabold inline-flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-[#FDE047]" />
+                        <span>Premium</span>
+                      </span>
+                    </div>
                     <p className="text-[12.5px] text-gray-600 font-medium mt-0.5">
-                      {paidCommunityMembers.length} Verified Paid Specialists • Direct Professional Discovery
+                      {paidCommunityMembers.length} Verified Premium Specialists • Connect, View LinkedIn &amp; Download CVs
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setRoute({ name: 'profile' })}
-                    className="px-3 py-1.5 rounded-full bg-[#DCF2E3] hover:bg-[#C6E8D1] text-[#0D2E1B] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#16A34A]" />
-                    <span>My Profile</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRoute({
+                          name: 'community-member',
+                          uid: myProfile.uid
+                        })
+                      }
+                      className="px-3 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EAD8] text-[#15803D] text-xs font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>My Public View</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRoute({ name: 'profile' })}
+                      className="px-3 py-1.5 rounded-full bg-[#1E8E49] hover:bg-[#156B36] text-white text-xs font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Edit Profile</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Search Input + Right "Hire Me" Filter Toggle */}
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
+                {/* Search by Name / Title / Company + Filter by Location */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="relative sm:col-span-2">
                     <Search className="w-4 h-4 text-[#0D2E1B] absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      disabled={!isCurrentUserPaid}
                       value={memberSearchQuery}
                       onChange={(e) => setMemberSearchQuery(e.target.value)}
-                      placeholder={
-                        isCurrentUserPaid
-                          ? 'Search specialists by name, role, bio...'
-                          : 'Upgrade to Paid to search specialists...'
-                      }
-                      className="w-full pl-10 pr-8 py-2.5 text-[13.5px] bg-[#F2F7F3] border border-[#AECBB5] rounded-[18px] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-[#16A34A] focus:bg-white transition-colors disabled:opacity-60"
+                      placeholder="Search by Name, Title, or Company..."
+                      className="w-full pl-10 pr-8 py-2.5 text-[13.5px] bg-[#F2F7F3] border border-[#AECBB5] rounded-[16px] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-[#16A34A] focus:bg-white transition-colors"
                     />
                     {memberSearchQuery && (
                       <button
@@ -3013,386 +3085,164 @@ export default function App() {
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={!isCurrentUserPaid}
-                    title="Filter Open to Hire (Hire Me)"
-                    onClick={() => setOnlyHireableFilter((prev) => !prev)}
-                    className={`px-3 py-2.5 rounded-[16px] border text-xs font-extrabold flex items-center justify-center gap-1 shrink-0 transition-colors cursor-pointer disabled:opacity-60 ${
-                      onlyHireableFilter
-                        ? 'bg-[#15803D] border-[#15803D] text-white'
-                        : 'bg-[#C5DFC9] border-[#9BBFA1] text-[#0D2E1B] hover:bg-[#B4D5B9]'
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Hire Me</span>
-                  </button>
-                </div>
-
-                {/* Filter Tags (HACCP, ISO 22000, Food Chemistry, QA/QC, etc.) */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                  <button
-                    type="button"
-                    disabled={!isCurrentUserPaid}
-                    onClick={() => setCommSpecFilter('All')}
-                    className={`px-3 py-1 rounded-full text-[11.5px] font-extrabold whitespace-nowrap transition-colors cursor-pointer disabled:opacity-60 ${
-                      commSpecFilter === 'All'
-                        ? 'bg-[#15803D] text-white'
-                        : 'bg-[#EAF5EC] text-[#0D2E1B]'
-                    }`}
-                  >
-                    All Tags
-                  </button>
-                  {COMMUNITY_SPECIALIZATION_TAGS.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      disabled={!isCurrentUserPaid}
-                      onClick={() => setCommSpecFilter(tag)}
-                      className={`px-3 py-1 rounded-full text-[11.5px] font-extrabold whitespace-nowrap transition-colors cursor-pointer disabled:opacity-60 ${
-                        commSpecFilter === tag
-                          ? 'bg-[#15803D] text-white'
-                          : 'bg-[#EAF5EC] text-[#0D2E1B] hover:bg-[#D5EAD8]'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Country & Experience Dropdowns */}
-                <div className="grid grid-cols-2 gap-2">
                   <div className="relative">
                     <select
-                      disabled={!isCurrentUserPaid}
                       value={commCountryFilter}
                       onChange={(e) => setCommCountryFilter(e.target.value)}
-                      className="w-full appearance-none pl-3 pr-7 py-2 rounded-[14px] bg-[#F2F7F3] border border-[#AECBB5] text-[#0D2E1B] text-xs font-bold focus:outline-none cursor-pointer disabled:opacity-60"
+                      className="w-full appearance-none pl-3.5 pr-8 py-2.5 rounded-[16px] bg-[#F2F7F3] border border-[#AECBB5] text-[#0D2E1B] text-xs font-bold focus:outline-none cursor-pointer"
                     >
-                      <option value="All">All Countries</option>
-                      <option value="Pakistan">Pakistan</option>
-                      <option value="UAE">UAE</option>
-                      <option value="Saudi Arabia">Saudi Arabia</option>
+                      <option value="All">All Locations</option>
+                      {availableCommunityLocations.map((loc) => (
+                        <option key={loc} value={loc}>
+                          {loc}
+                        </option>
+                      ))}
+                      {!availableCommunityLocations.includes('Pakistan') && (
+                        <option value="Pakistan">Pakistan</option>
+                      )}
+                      {!availableCommunityLocations.includes('UAE') && (
+                        <option value="UAE">UAE</option>
+                      )}
+                      {!availableCommunityLocations.includes('Saudi Arabia') && (
+                        <option value="Saudi Arabia">Saudi Arabia</option>
+                      )}
                     </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#0D2E1B] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-
-                  <div className="relative">
-                    <select
-                      disabled={!isCurrentUserPaid}
-                      value={commExpFilter}
-                      onChange={(e) => setCommExpFilter(e.target.value)}
-                      className="w-full appearance-none pl-3 pr-7 py-2 rounded-[14px] bg-[#F2F7F3] border border-[#AECBB5] text-[#0D2E1B] text-xs font-bold focus:outline-none cursor-pointer disabled:opacity-60"
-                    >
-                      <option value="All">All Experience Levels</option>
-                      <option value="3">3+ Years</option>
-                      <option value="4">4+ Years</option>
-                      <option value="5">5+ Years</option>
-                      <option value="7">7+ Years</option>
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#0D2E1B] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="w-3.5 h-3.5 text-[#0D2E1B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 </div>
               </div>
 
-              {/* DIRECTORY + COMMUNITY FORUM CONTAINER WITH FROSTED-GLASS OVERLAY FOR FREE / GUEST */}
-              <div className="relative">
-                <div
-                  className={`space-y-5 transition-all ${
-                    !isCurrentUserPaid
-                      ? 'blur-[6px] select-none pointer-events-none opacity-80'
-                      : ''
-                  }`}
-                >
-                  {/* 1. Verified Paid Specialists List */}
-                  <div className="space-y-3.5">
-                    {filteredMembers.length > 0 ? (
-                      filteredMembers.map((member) => (
-                        <MemberCard
-                          key={member.uid}
-                          member={member}
-                          onHireOrContact={(mem, e) => {
-                            e.stopPropagation();
-                            if (!isCurrentUserPaid) return;
-                            setContactModalMember(mem);
-                          }}
-                          onClick={(m) => {
-                            if (!isCurrentUserPaid) return;
-                            setRoute({ name: 'community-member', uid: m.uid });
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                        />
-                      ))
-                    ) : (
-                      <div className="bg-white border border-[#B8D3BE] rounded-[26px] p-6 text-center space-y-2 shadow-xs">
-                        <div className="w-12 h-12 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
-                          <UserPlus className="w-6 h-6" />
-                        </div>
-                        <h2 className="text-[17px] font-extrabold text-[#0D2E1B]">
-                          No Matching Specialists Found
-                        </h2>
-                        <p className="text-xs text-gray-600">
-                          Try resetting the specialization, country, or experience filters above.
-                        </p>
-                      </div>
-                    )}
+              {/* PREMIUM PROFILES GRID / LIST OR EMPTY STATE */}
+              {paidCommunityMembers.length === 0 ? (
+                <div className="bg-white border border-[#C6DFCB] rounded-[28px] p-8 text-center space-y-3 shadow-xs">
+                  <div className="w-14 h-14 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
+                    <UserPlus className="w-7 h-7" />
                   </div>
-
-                  {/* 2. Community Discussions & Technical Forum Threads */}
-                  <div className="bg-white border border-[#B8D3BE] rounded-[26px] p-5 shadow-xs space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-[19px] font-extrabold text-[#0D2E1B]">
-                          Community Discussions
-                        </h2>
-                        <p className="text-xs text-gray-600 font-medium">
-                          Peer technical threads on FSSC 22000 v6, ISO 17025 &amp; R&amp;D
-                        </p>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#15803D] text-[11px] font-extrabold">
-                        Paid Forum
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      {INITIAL_COMMUNITY_THREADS.map((thread) => (
-                        <div
-                          key={thread.id}
-                          className="p-4 rounded-[20px] bg-[#F6FBF7] border border-emerald-200/80 space-y-2"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <img
-                                src={thread.authorAvatar}
-                                alt={thread.authorName}
-                                className="w-8 h-8 rounded-full object-cover border border-emerald-300 shrink-0"
-                              />
-                              <div className="min-w-0">
-                                <div className="text-xs font-extrabold text-[#0D2E1B] truncate">
-                                  {thread.authorName}
-                                </div>
-                                <div className="text-[10.5px] text-gray-500 truncate">
-                                  {thread.authorRole}
-                                </div>
-                              </div>
-                            </div>
-                            <span className="px-2.5 py-0.5 rounded-full bg-[#BCE3C5] text-[#0B3B1E] text-[10.5px] font-extrabold shrink-0">
-                              {thread.topicTag}
-                            </span>
-                          </div>
-
-                          <h3 className="text-[14px] font-extrabold text-[#0B3B1E] leading-snug">
-                            {thread.title}
-                          </h3>
-                          <p className="text-xs text-gray-600 leading-relaxed">
-                            {thread.preview}
-                          </p>
-
-                          <div className="flex items-center justify-between text-[11px] font-bold text-[#15803D] pt-1">
-                            <div className="flex items-center gap-3">
-                              <span className="inline-flex items-center gap-1">
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                {thread.repliesCount} replies
-                              </span>
-                              <span className="inline-flex items-center gap-1">
-                                <ThumbsUp className="w-3.5 h-3.5" />
-                                {thread.likesCount} helpful
-                              </span>
-                            </div>
-                            <span className="text-gray-400">{thread.postedAgo}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <h2 className="text-[20px] font-extrabold text-[#0D2E1B]">
+                    Complete your profile
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-600 max-w-md mx-auto leading-relaxed">
+                    No completed Premium specialist profiles found in Cloud Firestore yet. Complete your profile and upgrade to Premium to be featured in the Community Directory.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setRoute({ name: 'profile' })}
+                    className="px-6 py-3 rounded-2xl bg-[#228B4E] hover:bg-[#156B36] text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    <span>Complete Your Profile</span>
+                  </button>
                 </div>
+              ) : filteredMembers.length === 0 ? (
+                <div className="bg-white border border-[#B8D3BE] rounded-[26px] p-6 text-center space-y-2 shadow-xs">
+                  <div className="w-12 h-12 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
+                    <Search className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-[17px] font-extrabold text-[#0D2E1B]">
+                    No Matching Specialists Found
+                  </h2>
+                  <p className="text-xs text-gray-600">
+                    Try clearing your search query or location filter above.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3.5">
+                  {filteredMembers.map((member) => (
+                    <MemberCard
+                      key={member.uid}
+                      member={member}
+                      viewerIsPremium={isCurrentUserPaid || isUserAdmin}
+                      viewerUid={myProfile.uid}
+                      onClick={(m) => {
+                        // Free users clicking View Profile on other members see Paywall
+                        if (
+                          !isCurrentUserPaid &&
+                          !isUserAdmin &&
+                          m.uid !== myProfile.uid
+                        ) {
+                          setShowCommunityPaywall(true);
+                          return;
+                        }
+                        setRoute({ name: 'community-member', uid: m.uid });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
-                {/* FROSTED-GLASS BLUR OVERLAY MODAL FOR FREE MEMBERS & GUESTS */}
-                {!isCurrentUserPaid && (
-                  <div className="absolute inset-x-0 top-6 z-20 flex justify-center px-3">
-                    <div className="w-full max-w-[410px] bg-white/90 backdrop-blur-md border-2 border-[#16A34A] rounded-[28px] p-6 shadow-2xl text-center space-y-3.5">
-                      <div className="w-14 h-14 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto shadow-xs">
-                        <Lock className="w-7 h-7" />
-                      </div>
-                      <h2 className="text-[20px] font-extrabold text-[#0D2E1B] leading-snug">
-                        Upgrade to Unlock Community &amp; Networking
-                      </h2>
-                      <p className="text-[13px] text-gray-700 leading-relaxed">
-                        Free members cannot search or view the{' '}
-                        <strong>Specialist Directory</strong> or{' '}
-                        <strong>Community Discussions</strong>. Only{' '}
-                        <strong>Paid Members</strong> approved by Admin are visible here.
-                      </p>
+              {/* PAYWALL MODAL FOR FREE USERS CLICKING "VIEW PROFILE" IN COMMUNITY */}
+              {showCommunityPaywall && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="w-full max-w-[420px] bg-white border-2 border-[#C6A34F] rounded-[28px] p-6 shadow-2xl text-center space-y-4">
+                    <div className="w-14 h-14 rounded-full bg-[#FEF3C7] border border-[#D97706]/40 text-[#B45309] flex items-center justify-center mx-auto shadow-xs">
+                      <Lock className="w-7 h-7" />
+                    </div>
+                    <h2 className="text-[20px] font-extrabold text-[#14261C] leading-snug">
+                      Premium Community Access
+                    </h2>
+                    <p className="text-[13.5px] font-semibold text-gray-700 leading-relaxed">
+                      This is a Premium Community. Upgrade to see full profiles, LinkedIn and Download CVs
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
                       <button
                         type="button"
-                        onClick={() => setRoute({ name: 'profile' })}
-                        className="w-full py-3.5 px-5 rounded-[18px] bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-xs shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        onClick={() => {
+                          setShowCommunityPaywall(false);
+                          setRoute({ name: 'profile' });
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="flex-1 py-3.5 px-5 rounded-2xl bg-[#228B4E] hover:bg-[#156B36] text-white font-extrabold text-xs shadow-md transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                       >
                         <Crown className="w-4 h-4 text-amber-300" />
-                        <span>View Membership Status in My Profile</span>
+                        <span>Upgrade to Premium</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowCommunityPaywall(false)}
+                        className="py-3.5 px-5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-xs transition-colors cursor-pointer"
+                      >
+                        Close
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* ==================== MEMBER PUBLIC PROFILE (/communities/[uid]) ==================== */}
+          {/* ==================== PART 3: PUBLIC PROFILE VIEW (/profile/[userId]) ==================== */}
           {route.name === 'community-member' &&
             (() => {
               const member =
-                paidCommunityMembers.find((u) => u.uid === route.uid) ||
-                users.find((u) => u.uid === route.uid) ||
-                myProfile;
+                route.uid === myProfile.uid
+                  ? myProfile
+                  : paidCommunityMembers.find((u) => u.uid === route.uid) ||
+                    users.find((u) => u.uid === route.uid) ||
+                    myProfile;
 
               if (!member) return null;
-              const ps = member.privacySettings;
-              const initials = (member.name || 'FS')
-                .split(' ')
-                .slice(0, 2)
-                .map((w) => w.charAt(0))
-                .join('')
-                .toUpperCase();
-              const externalUrl = member.linkedinUrl || member.portfolioUrl;
 
               return (
-                <div className="bg-white border border-[#B8D3BE] rounded-[26px] p-5 shadow-sm space-y-5">
-                  <div className="flex items-center gap-4 border-b border-emerald-100 pb-4">
-                    <img
-                      src={member.profilePicUrl || makeAvatarSvg(initials)}
-                      alt={member.name}
-                      referrerPolicy="no-referrer"
-                      className="w-20 h-20 rounded-full object-cover border-2 border-[#16A34A] shrink-0"
-                    />
-                    <div className="min-w-0 space-y-1 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h1 className="text-[21px] font-extrabold text-[#0D2E1B] truncate">
-                          {member.name}
-                        </h1>
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#DCFCE7] border border-[#16A34A]/40 text-[#14532D] text-[11px] font-extrabold shrink-0">
-                          <ShieldCheck className="w-3.5 h-3.5 text-[#16A34A]" />
-                          <span>Verified Specialist</span>
-                        </span>
-                      </div>
-
-                      {ps.currentRole_public && member.currentRole && (
-                        <p className="text-xs font-bold text-[#15803D]">
-                          {member.currentRole}
-                          {member.company ? ` • ${member.company}` : ''}
-                        </p>
-                      )}
-                      {ps.location_public && member.location && (
-                        <p className="text-xs text-gray-600 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-[#16A34A]" />
-                          <span>{member.location}</span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {member.bio && (
-                    <div>
-                      <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-                        Specialist Bio
-                      </h2>
-                      <p className="text-sm text-gray-700 leading-relaxed">
-                        {member.bio}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Specializations */}
-                  {member.specializations && member.specializations.length > 0 && (
-                    <div>
-                      <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                        Specializations
-                      </h2>
-                      <div className="flex flex-wrap gap-1.5">
-                        {member.specializations.map((spec) => (
-                          <span
-                            key={spec}
-                            className="px-3 py-1 rounded-full bg-[#BCE3C5] text-[#0B3B1E] text-xs font-bold"
-                          >
-                            {spec}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Education / Qualification */}
-                  {ps.qualification_public && member.qualification && (
-                    <div className="p-4 rounded-2xl bg-[#D8ECD9]/70 border border-emerald-200">
-                      <div className="text-[11px] font-bold uppercase text-[#15803D] flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Education &amp; Qualification</span>
-                      </div>
-                      <div className="text-sm font-bold text-[#0D2E1B] mt-1">
-                        {member.qualification}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Experience */}
-                  {ps.experience_public && member.experience && (
-                    <div>
-                      <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                        Food Industry Experience
-                      </h2>
-                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                        {member.experience}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* External Portfolio / LinkedIn & Permitted Contact Info */}
-                  <div className="space-y-2.5 pt-2 border-t border-emerald-100">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                      External Links &amp; Direct Discovery
-                    </h2>
-
-                    {externalUrl && (
-                      <a
-                        href={externalUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full py-3 px-4 rounded-2xl bg-[#EAF5EC] hover:bg-[#D5EAD8] border border-[#9EC4A7] text-[#0D2E1B] font-extrabold text-xs flex items-center justify-center gap-2 transition-colors"
-                      >
-                        <span>Connect via LinkedIn / Portfolio</span>
-                        <ExternalLink className="w-4 h-4 text-[#15803D]" />
-                      </a>
-                    )}
-
-                    {ps.email_public && member.email && (
-                      <div className="flex items-center gap-2 text-xs font-semibold text-gray-800">
-                        <Mail className="w-4 h-4 text-[#16A34A]" />
-                        <span>{member.email}</span>
-                      </div>
-                    )}
-
-                    {ps.phone_public && member.phone && (
-                      <div className="flex items-center gap-2 text-xs font-semibold text-gray-800">
-                        <Phone className="w-4 h-4 text-[#16A34A]" />
-                        <span>{member.phone}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Hire / Contact Me Button */}
-                  <button
-                    type="button"
-                    onClick={() => setContactModalMember(member)}
-                    className="w-full py-3.5 px-5 rounded-[18px] bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>
-                      {ps.hireMe_public
-                        ? `Hire / Contact ${member.name}`
-                        : `Contact ${member.name}`}
-                    </span>
-                  </button>
-                </div>
+                <PublicProfileView
+                  member={member}
+                  viewerIsPremium={isCurrentUserPaid || isUserAdmin}
+                  viewerUid={myProfile.uid}
+                  isViewerAdmin={isUserAdmin}
+                  onBack={() => {
+                    if (route.uid === myProfile.uid) {
+                      setRoute({ name: 'profile' });
+                    } else {
+                      setRoute({ name: 'communities' });
+                    }
+                  }}
+                  onEditOwnProfile={() => setRoute({ name: 'profile' })}
+                  onMessageOrContact={(mem) => setContactModalMember(mem)}
+                  onRequestUpgradeToPremium={() => {
+                    setRoute({ name: 'profile' });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
               );
             })()}
 
@@ -3994,789 +3844,38 @@ export default function App() {
               );
             })()}
 
-          {/* ==================== 7. PROFILE DASHBOARD (/profile) ==================== */}
+          {/* ==================== 7. MY OWN PROFILE — CREATE / EDIT VIEW (/profile & /profile/edit) ==================== */}
           {route.name === 'profile' && (
-            <form onSubmit={handleSaveProfile} className="space-y-4 px-1">
-              {/* ACCOUNT MEMBERSHIP STATUS CARD INSIDE PROFILE (Guest / Free Member / Paid Member) */}
-              <div className="bg-white border-2 border-[#16A34A] rounded-[24px] p-4 shadow-xs space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#15803D]">
-                      My Account Membership Status
-                    </div>
-                    <h3 className="text-[18px] font-extrabold text-[#0D2E1B] mt-0.5 flex items-center gap-2">
-                      <span>{membershipStatus}</span>
-                      {membershipStatus === 'Paid Member' && (
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#14532D] text-white text-[10.5px] font-extrabold inline-flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-emerald-300" />
-                          <span>Verified Specialist</span>
-                        </span>
-                      )}
-                    </h3>
-                  </div>
-
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-extrabold ${
-                      membershipStatus === 'Paid Member'
-                        ? 'bg-[#DCFCE7] text-[#14532D] border border-[#16A34A]/40'
-                        : membershipStatus === 'Free Member'
-                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                    }`}
-                  >
-                    {membershipStatus}
-                  </span>
-                </div>
-
-                {/* 3 Status Indicators showing Guest vs Free Member vs Paid Member right on Profile */}
-                <div className="grid grid-cols-3 gap-1.5 pt-1">
-                  {(['Guest', 'Free Member', 'Paid Member'] as DevRole[]).map(
-                    (statusOption) => {
-                      const isCurrent = membershipStatus === statusOption;
-                      return (
-                        <div
-                          key={statusOption}
-                          className={`px-2.5 py-2 rounded-xl text-center border text-[11px] font-extrabold transition-all ${
-                            isCurrent
-                              ? 'bg-[#15803D] border-[#15803D] text-white shadow-xs'
-                              : 'bg-[#F2F7F3] border-[#C6DFCB] text-gray-500'
-                          }`}
-                        >
-                          <div>{statusOption}</div>
-                          <div className="text-[9.5px] font-semibold opacity-90 mt-0.5">
-                            {isCurrent ? 'Current Status' : 'Tier'}
-                          </div>
-                        </div>
-                      );
-                    }
-                  )}
-                </div>
-
-                {isCurrentUserPaid ? (
-                  <p className="text-xs font-semibold text-[#14532D] bg-[#F0FDF4] p-3 rounded-xl border border-emerald-200">
-                    Your profile is public and active in the Specialist Directory. [Verified Specialist]
-                  </p>
-                ) : (
-                  <p className="text-xs font-semibold text-amber-900 bg-amber-50 p-3 rounded-xl border border-amber-200">
-                    Your profile is private ({membershipStatus}). Upgrade to Paid Member (verified by Admin) to get featured in the Specialist Directory and be discovered by recruiters.
-                  </p>
-                )}
-              </div>
-
-              {/* Top Profile Hero Card with Sage-Green Gradient Backdrop */}
-              <div className="rounded-[28px] overflow-hidden bg-gradient-to-b from-[#6FA57C] via-[#9FC4A7]/60 to-white border border-[#B5D6BB] shadow-sm p-5 text-center relative">
-                <div className="bg-white rounded-[18px] px-4 py-2.5 flex items-center justify-between shadow-xs mb-5">
-                  <span className="text-[18px] font-extrabold text-[#0D2E1B]">
-                    Profile Dashboard
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRoute({ name: 'community-member', uid: myProfile.uid })
-                      }
-                      className="px-2.5 py-1 rounded-lg bg-[#EAF5EC] text-[#15803D] text-xs font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Preview</span>
-                    </button>
-                    <Lock className="w-5 h-5 text-[#15803D]" />
-                  </div>
-                </div>
-
-                {/* Large Centered Circular Avatar + Floating Green Edit Badge */}
-                <div className="relative inline-block">
-                  <img
-                    src={myProfile.profilePicUrl || makeAvatarSvg('FS')}
-                    alt={myProfile.name}
-                    className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md bg-[#F0FDF4]"
-                  />
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 px-2.5 py-1 rounded-full bg-[#228B4E] hover:bg-[#15803D] text-white text-[11px] font-bold border-2 border-white shadow-sm flex items-center gap-1 cursor-pointer"
-                  >
-                    <Pencil className="w-3 h-3" />
-                    <span>Edit</span>
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-center gap-1.5 mt-3">
-                  <h2 className="text-[22px] font-extrabold text-[#0D2E1B] leading-tight">
-                    {myProfile.name}
-                  </h2>
-                  {isCurrentUserPaid && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#14532D] text-white text-[10.5px] font-extrabold">
-                      <ShieldCheck className="w-3 h-3 text-emerald-300" />
-                      <span>Verified Specialist</span>
-                    </span>
-                  )}
-                </div>
-
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#DCEFE0] text-[#138A3E] text-[12px] font-bold mt-1">
-                  <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-                  <span>{myProfile.currentRole || 'Food Safety Specialist'}</span>
-                </div>
-                <p className="text-[12.5px] font-bold text-[#0D2E1B] mt-2">
-                  Manage your Name, Title, Specializations, Bio &amp; External Links
-                </p>
-              </div>
-
-              {/* HIRE ME TOGGLE CARD */}
-              <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs font-extrabold text-[#0D2E1B] flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-[#15803D]" />
-                    <span>&ldquo;Hire Me&rdquo; Badge Visible on My Profile</span>
-                  </div>
-                  <p className="text-[11px] text-gray-600">
-                    Allow recruiters &amp; specialists to hire you based on your Education &amp; Experience
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={Boolean(myProfile.privacySettings.hireMe_public)}
-                    onClick={() => handleTogglePrivacySetting('hireMe_public')}
-                    className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                      myProfile.privacySettings.hireMe_public
-                        ? 'bg-[#228B4E] justify-end'
-                        : 'bg-gray-300 justify-start'
-                    }`}
-                  >
-                    <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                  </button>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                      myProfile.privacySettings.hireMe_public
-                        ? 'bg-[#68B678]'
-                        : 'bg-[#A6ABA8]'
-                    }`}
-                  >
-                    {myProfile.privacySettings.hireMe_public ? 'ON' : 'OFF'}
-                  </span>
-                </div>
-              </div>
-
-              {profileSaveMsg && (
-                <div className="bg-[#15803D] text-white rounded-2xl p-3.5 text-xs font-bold flex items-center justify-between gap-2 shadow-sm">
-                  <span>{profileSaveMsg}</span>
-                </div>
-              )}
-
-              {/* ✨ SPECIALIZATIONS & BIO CARD */}
-              <div className="bg-white border border-emerald-100 rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.08)] space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-[16px] font-extrabold text-[#0D2E1B]">
-                    Specializations &amp; Professional Bio
-                  </h3>
-                  <span className="text-[11px] font-bold text-[#15803D]">
-                    Directory Filters
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {COMMUNITY_SPECIALIZATION_TAGS.map((tag) => {
-                    const selected = (myProfile.specializations || []).includes(
-                      tag
-                    );
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => handleToggleProfileSpecialization(tag)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-colors cursor-pointer ${
-                          selected
-                            ? 'bg-[#15803D] text-white shadow-xs'
-                            : 'bg-[#EAF3EC] text-[#0D2E1B] hover:bg-[#D5EAD8]'
-                        }`}
-                      >
-                        {selected ? `✓ ${tag}` : `+ ${tag}`}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="space-y-1 pt-1">
-                  <label className="block text-xs font-extrabold text-[#0D2E1B]">
-                    Short Professional Bio
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={myProfile.bio || ''}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, bio: e.target.value })
-                    }
-                    placeholder="Summarize your food safety, QA/QC, or R&D expertise..."
-                    className="w-full px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-medium text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                </div>
-
-                {/* External Links: LinkedIn / Portfolio */}
-                <div className="space-y-1 pt-1">
-                  <label className="block text-xs font-extrabold text-[#0D2E1B]">
-                    External LinkedIn / Portfolio Link
-                  </label>
-                  <input
-                    type="url"
-                    value={myProfile.linkedinUrl || ''}
-                    onChange={(e) =>
-                      setMyProfile({
-                        ...myProfile,
-                        linkedinUrl: e.target.value
-                      })
-                    }
-                    placeholder="https://www.linkedin.com/in/your-profile"
-                    className="w-full px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                </div>
-              </div>
-
-              {/* ✨ PROFILE DETAILS & PRIVACY TOGGLES WHITE CARD */}
-              <div className="bg-white border border-emerald-100 rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.08)] space-y-3.5">
-                <div className="flex items-center justify-center gap-1.5 pb-1">
-                  <Sparkles className="w-5 h-5 text-[#15803D]" />
-                  <h3 className="text-[20px] font-extrabold text-[#0D2E1B]">
-                    Profile Details &amp; Privacy
-                  </h3>
-                </div>
-
-                {/* Row 1: Name */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={myProfile.name}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, name: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="w-11 h-6 rounded-full bg-[#228B4E] p-0.5 flex items-center justify-end">
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#68B678] text-white text-[10px] font-bold">
-                      Public
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 2: Title / Current Role */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Title / Role
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.currentRole}
-                    onChange={(e) =>
-                      setMyProfile({
-                        ...myProfile,
-                        currentRole: e.target.value
-                      })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.currentRole_public}
-                      onClick={() =>
-                        handleTogglePrivacySetting('currentRole_public')
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.currentRole_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.currentRole_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.currentRole_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 3: Qualification (Education) */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Qualification
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.qualification}
-                    onChange={(e) =>
-                      setMyProfile({
-                        ...myProfile,
-                        qualification: e.target.value
-                      })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.qualification_public}
-                      onClick={() =>
-                        handleTogglePrivacySetting('qualification_public')
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.qualification_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.qualification_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.qualification_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 4: Experience */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Experience
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.experience}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, experience: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.experience_public}
-                      onClick={() =>
-                        handleTogglePrivacySetting('experience_public')
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.experience_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.experience_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.experience_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 5: Location */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.location}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, location: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.location_public}
-                      onClick={() =>
-                        handleTogglePrivacySetting('location_public')
-                      }
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.location_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.location_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.location_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 6: Email */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={myProfile.email}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, email: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.email_public}
-                      onClick={() => handleTogglePrivacySetting('email_public')}
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.email_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.email_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.email_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Row 7: Phone */}
-                <div className="flex items-center gap-2.5">
-                  <label className="w-[95px] text-[13px] font-extrabold text-[#0D2E1B] shrink-0">
-                    Phone
-                  </label>
-                  <input
-                    type="text"
-                    value={myProfile.phone}
-                    onChange={(e) =>
-                      setMyProfile({ ...myProfile, phone: e.target.value })
-                    }
-                    className="flex-1 min-w-0 px-3 py-2 rounded-[12px] bg-[#EAF3EC] text-[13px] font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                  />
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={myProfile.privacySettings.phone_public}
-                      onClick={() => handleTogglePrivacySetting('phone_public')}
-                      className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
-                        myProfile.privacySettings.phone_public
-                          ? 'bg-[#228B4E] justify-end'
-                          : 'bg-gray-300 justify-start'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-white shadow-xs" />
-                    </button>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${
-                        myProfile.privacySettings.phone_public
-                          ? 'bg-[#68B678]'
-                          : 'bg-[#A6ABA8]'
-                      }`}
-                    >
-                      {myProfile.privacySettings.phone_public
-                        ? 'Public'
-                        : 'Private'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {uploadStatusMsg && (
-                <div className="bg-[#DCFCE7] border border-[#16A34A] text-[#0D2E1B] rounded-2xl p-3 text-xs font-extrabold flex items-center justify-between">
-                  <span>{uploadStatusMsg}</span>
-                  {isUploadingMedia && (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#15803D]" />
-                  )}
-                </div>
-              )}
-
-              {/* CV Upload PDF */}
-              <div className="bg-white border border-emerald-100 rounded-[24px] p-4 flex items-center justify-between gap-3 shadow-xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <FileText className="w-5 h-5 text-[#16A34A] shrink-0" />
-                  <div className="min-w-0 text-xs">
-                    <div className="font-bold text-gray-900 truncate">
-                      {myProfile.cvUrl || 'No CV PDF uploaded yet'}
-                    </div>
-                    <div className="text-[11px] text-gray-500">
-                      Upload CV PDF for Hiring &amp; QA Roles (Saved to Cloud Vault)
-                    </div>
-                  </div>
-                </div>
-                <input
-                  ref={cvInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleCvUpload}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => cvInputRef.current?.click()}
-                  className="px-3 py-1.5 rounded-xl bg-[#EAF3EC] text-[#15803D] text-xs font-bold shrink-0 cursor-pointer"
-                >
-                  Upload PDF
-                </button>
-              </div>
-
-              {/* MY EARNED TRAINING CERTIFICATES VAULT CARD */}
-              <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Award className="w-5 h-5 text-[#15803D]" />
-                    <h3 className="text-sm font-extrabold text-[#0D2E1B]">
-                      My Training Certificates ({myEarnedCertificates.length})
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setRoute({ name: 'trainings' })}
-                    className="text-[11px] font-extrabold text-[#15803D] underline cursor-pointer"
-                  >
-                    Verify Any ID →
-                  </button>
-                </div>
-
-                {myEarnedCertificates.length === 0 ? (
-                  <p className="text-xs text-gray-600">
-                    Certificates issued to your email (<strong>{myProfile.email}</strong>) or name will automatically appear here for viewing &amp; download.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {myEarnedCertificates.map((cert) => (
-                      <div
-                        key={cert.id}
-                        onClick={() => setSelectedCertificate(cert)}
-                        className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200 flex items-center justify-between gap-2 cursor-pointer"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-xs font-extrabold text-[#0D2E1B] truncate">
-                            {cert.trainingTitle}
-                          </div>
-                          <div className="text-[11px] text-[#15803D] font-bold">
-                            ID: {cert.certificateNumber} • {cert.issueDate}
-                          </div>
-                        </div>
-                        <span className="px-2.5 py-1 rounded-full bg-[#15803D] text-white text-[10.5px] font-extrabold shrink-0">
-                          Open
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* PREMIUM / PAID MEMBERSHIP PAYMENT RECEIPT UPLOAD & VERIFICATION CARD */}
-              <div className="bg-white border-2 border-[#16A34A] rounded-[26px] p-5 shadow-xs space-y-3.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-[#15803D]" />
-                    <div>
-                      <h3 className="text-[16px] font-extrabold text-[#0D2E1B]">
-                        Paid Membership &amp; Payment Receipt Vault
-                      </h3>
-                      <p className="text-[11px] text-gray-600">
-                        Upload your payment receipt to unlock Verified Specialist status
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[10.5px] font-extrabold ${
-                      myProfile.isPaid
-                        ? 'bg-[#DCFCE7] text-[#14532D]'
-                        : myProfile.paymentStatus === 'pending'
-                        ? 'bg-amber-100 text-amber-900'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {myProfile.isPaid
-                      ? 'Verified ✓'
-                      : myProfile.paymentStatus === 'pending'
-                      ? 'Pending Review'
-                      : 'Free Tier'}
-                  </span>
-                </div>
-
-                {!myProfile.isPaid && (
-                  <div className="space-y-3 pt-1">
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {(
-                        ['EasyPaisa', 'JazzCash', 'Bank Transfer'] as const
-                      ).map((method) => (
-                        <button
-                          key={method}
-                          type="button"
-                          onClick={() => setPayMethod(method)}
-                          className={`py-2 px-2 rounded-xl text-xs font-extrabold border transition-colors cursor-pointer ${
-                            payMethod === method
-                              ? 'bg-[#15803D] text-white border-[#15803D]'
-                              : 'bg-[#F2F7F3] text-[#0D2E1B] border-[#C6DFCB]'
-                          }`}
-                        >
-                          {method}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
-                          Transaction / Ref ID
-                        </label>
-                        <input
-                          type="text"
-                          value={payTransactionId}
-                          onChange={(e) => setPayTransactionId(e.target.value)}
-                          placeholder="e.g. TID-89341209"
-                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#0D2E1B] mb-1">
-                          Paid Amount
-                        </label>
-                        <input
-                          type="text"
-                          value={payAmount}
-                          onChange={(e) => setPayAmount(e.target.value)}
-                          placeholder="PKR 2,000"
-                          className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Payment Receipt Image Upload */}
-                    <div className="p-3.5 rounded-2xl bg-[#F2F7F3] border border-dashed border-[#16A34A] flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <ImageIcon className="w-5 h-5 text-[#15803D] shrink-0" />
-                        <div className="min-w-0">
-                          <div className="text-xs font-extrabold text-[#0D2E1B] truncate">
-                            {payReceiptUrl
-                              ? 'Payment Receipt Attached ✓'
-                              : 'Upload Payment Receipt Screenshot'}
-                          </div>
-                          <div className="text-[10.5px] text-gray-600">
-                            Auto-compressed for fast cloud storage
-                          </div>
-                        </div>
-                      </div>
-                      <input
-                        ref={receiptInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePaymentReceiptUpload}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => receiptInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-xl bg-[#15803D] text-white text-xs font-extrabold shrink-0 cursor-pointer flex items-center gap-1"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>{payReceiptUrl ? 'Change' : 'Upload'}</span>
-                      </button>
-                    </div>
-
-                    {payReceiptUrl && (
-                      <div className="rounded-2xl overflow-hidden border border-emerald-200 max-h-40 bg-gray-50 flex justify-center">
-                        <img
-                          src={payReceiptUrl}
-                          alt="Payment Receipt Preview"
-                          className="max-h-36 object-contain"
-                        />
-                      </div>
-                    )}
-
-                    {paySubmitBanner && (
-                      <div className="p-3 rounded-xl bg-[#DCFCE7] text-[#0D2E1B] text-xs font-bold">
-                        {paySubmitBanner}
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={handleSubmitPaymentVerification}
-                      className="w-full py-3 px-4 rounded-2xl bg-[#14532D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold transition-colors cursor-pointer"
-                    >
-                      Submit Payment Receipt for Admin Verification
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {isUserAdmin && (
-                <button
-                  type="button"
-                  onClick={() => setRoute({ name: 'admin' })}
-                  className="w-full py-3.5 px-5 rounded-[18px] bg-[#0D2E1B] hover:bg-[#14532D] text-white font-extrabold text-sm shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Database className="w-4 h-4 text-emerald-300" />
-                  <span>Open Admin Cloud Storage &amp; Control Panel</span>
-                </button>
-              )}
-
-              {/* Full-Width Green "Save Changes" Button */}
-              <button
-                type="submit"
-                className="w-full py-4 px-5 rounded-[18px] bg-[#168A42] hover:bg-[#117035] text-white font-extrabold text-[16px] shadow-md transition-colors cursor-pointer"
-              >
-                Save Changes
-              </button>
-            </form>
+            <EditProfileView
+              profile={myProfile}
+              onChangeProfile={setMyProfile}
+              onSaveProfile={handleSaveProfileModel}
+              onUploadAvatar={handleUploadAvatarFile}
+              onUploadCv={handleUploadCvFile}
+              onDeleteCv={handleDeleteCvFile}
+              onBack={() => setRoute({ name: 'home' })}
+              onPreviewPublicProfile={() =>
+                setRoute({ name: 'community-member', uid: myProfile.uid })
+              }
+              isUploadingMedia={isUploadingMedia}
+              uploadStatusMsg={uploadStatusMsg}
+              profileSaveMsg={profileSaveMsg}
+              isUserAdmin={isUserAdmin}
+              onOpenAdmin={() => setRoute({ name: 'admin' })}
+              myEarnedCertificates={myEarnedCertificates}
+              onSelectCertificate={(cert) => setSelectedCertificate(cert)}
+              onOpenTrainings={() => setRoute({ name: 'trainings' })}
+              payMethod={payMethod}
+              setPayMethod={setPayMethod}
+              payTransactionId={payTransactionId}
+              setPayTransactionId={setPayTransactionId}
+              payAmount={payAmount}
+              setPayAmount={setPayAmount}
+              payReceiptUrl={payReceiptUrl}
+              onUploadPaymentReceipt={handlePaymentReceiptUpload}
+              paySubmitBanner={paySubmitBanner}
+              onSubmitPaymentVerification={handleSubmitPaymentVerification}
+            />
           )}
 
           {/* ==================== 8. ADMIN CLOUD STORAGE, RECEIPTS & CERTIFICATES CONSOLE (/admin) ==================== */}
@@ -5547,14 +4646,19 @@ export default function App() {
                 <div>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] text-[11px] font-extrabold inline-flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Verified Specialist</span>
+                    <span>Premium Specialist</span>
                   </span>
                   <h3 className="text-[20px] font-extrabold text-[#0D2E1B] mt-1">
                     Connect with {contactModalMember.name}
                   </h3>
-                  {contactModalMember.privacySettings.qualification_public && (
+                  {(contactModalMember.title ||
+                    contactModalMember.currentRole) && (
                     <p className="text-xs text-gray-600 font-medium">
-                      {contactModalMember.qualification}
+                      {contactModalMember.title ||
+                        contactModalMember.currentRole}
+                      {contactModalMember.company
+                        ? ` • ${contactModalMember.company}`
+                        : ''}
                     </p>
                   )}
                 </div>
@@ -5589,65 +4693,61 @@ export default function App() {
               )}
 
               <div className="space-y-2">
-                {(contactModalMember.linkedinUrl ||
-                  contactModalMember.portfolioUrl) && (
+                {contactModalMember.linkedinUrl &&
+                  canViewerSeeField(
+                    contactModalMember.visibility?.linkedin || 'premium',
+                    isCurrentUserPaid,
+                    contactModalMember.uid === myProfile.uid || isUserAdmin
+                  ) && (
+                    <a
+                      href={
+                        contactModalMember.linkedinUrl.startsWith('http')
+                          ? contactModalMember.linkedinUrl
+                          : `https://${contactModalMember.linkedinUrl}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 px-4 rounded-2xl bg-[#0A66C2] hover:bg-[#084e96] text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <span>Message on LinkedIn</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
+
+                {contactModalMember.phone && (
                   <a
-                    href={
-                      contactModalMember.linkedinUrl ||
-                      contactModalMember.portfolioUrl
-                    }
+                    href={`https://wa.me/${contactModalMember.phone.replace(
+                      /[^0-9]/g,
+                      ''
+                    )}?text=${encodeURIComponent(contactCustomMsg)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3 px-4 rounded-2xl bg-[#14532D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+                    className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
                   >
-                    <span>Connect via LinkedIn / Portfolio</span>
-                    <ExternalLink className="w-4 h-4" />
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Message / Call on WhatsApp</span>
                   </a>
                 )}
 
-                {contactModalMember.privacySettings?.phone_public &&
-                  contactModalMember.phone && (
-                    <a
-                      href={`https://wa.me/${contactModalMember.phone.replace(
-                        /[^0-9]/g,
-                        ''
-                      )}?text=${encodeURIComponent(contactCustomMsg)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Hire / Chat on WhatsApp</span>
-                    </a>
-                  )}
-
-                {contactModalMember.privacySettings?.email_public &&
-                  contactModalMember.email && (
-                    <a
-                      href={`mailto:${
-                        contactModalMember.email
-                      }?subject=${encodeURIComponent(
-                        'Hiring / Networking Inquiry via Food Specialists Hub'
-                      )}&body=${encodeURIComponent(contactCustomMsg)}`}
-                      className="w-full py-3 px-4 rounded-2xl bg-[#EAF3EC] hover:bg-[#D5EAD8] text-[#0D2E1B] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <Mail className="w-4 h-4 text-[#15803D]" />
-                      <span>Send Direct Email ({contactModalMember.email})</span>
-                    </a>
-                  )}
+                {contactModalMember.email && (
+                  <a
+                    href={`mailto:${
+                      contactModalMember.email
+                    }?subject=${encodeURIComponent(
+                      'Hiring / Networking Inquiry via Food Safety App'
+                    )}&body=${encodeURIComponent(contactCustomMsg)}`}
+                    className="w-full py-3 px-4 rounded-2xl bg-[#EAF3EC] hover:bg-[#D5EAD8] text-[#0D2E1B] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Mail className="w-4 h-4 text-[#15803D]" />
+                    <span>Send Direct Email ({contactModalMember.email})</span>
+                  </a>
+                )}
 
                 {!contactModalMember.linkedinUrl &&
-                  !contactModalMember.portfolioUrl &&
-                  !(
-                    contactModalMember.privacySettings?.phone_public &&
-                    contactModalMember.phone
-                  ) &&
-                  !(
-                    contactModalMember.privacySettings?.email_public &&
-                    contactModalMember.email
-                  ) && (
+                  !contactModalMember.phone &&
+                  !contactModalMember.email && (
                     <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold text-center">
-                      This specialist has set their direct phone and email to Private.
+                      This specialist has not added direct contact details yet.
                     </div>
                   )}
               </div>
