@@ -83,47 +83,61 @@ export async function compressImageFile(
  * - Tier 2 (Built-in Default — 100% Free): Uses Smart WebP/JPEG Canvas Compression to store
  *   optimized media directly in Firebase Firestore without hitting the 1MB document limit.
  */
+export const DEFAULT_CLOUDINARY_CLOUD_NAME = 'mhjkrdlh';
+export const DEFAULT_CLOUDINARY_UPLOAD_PRESET = 'Food Specialists';
+
 export async function uploadMediaFile(
   file: File,
   folder: StorageFolder,
   config?: CloudStorageConfig
 ): Promise<UploadResult> {
-  const cloudName = config?.cloudinaryCloudName?.trim();
-  const uploadPreset = config?.cloudinaryUploadPreset?.trim();
+  const cloudName =
+    config?.cloudinaryCloudName?.trim() || DEFAULT_CLOUDINARY_CLOUD_NAME;
+  const rawPreset =
+    config?.cloudinaryUploadPreset?.trim() || DEFAULT_CLOUDINARY_UPLOAD_PRESET;
 
-  // 1. Try Cloudinary Free Global CDN if configured
-  if (
-    config?.provider === 'cloudinary' &&
-    cloudName &&
-    uploadPreset
-  ) {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('folder', `food_specialists_${folder}`);
+  // Build candidate preset names in case Cloudinary normalized spaces to underscores/hyphens
+  const presetCandidates = Array.from(
+    new Set([
+      rawPreset,
+      rawPreset.replace(/\s+/g, '_'),
+      rawPreset.toLowerCase().replace(/\s+/g, '_'),
+      rawPreset.replace(/\s+/g, '-'),
+      rawPreset.toLowerCase().replace(/\s+/g, '-')
+    ].filter(Boolean))
+  );
 
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/auto/upload`,
-        {
-          method: 'POST',
-          body: formData
+  // 1. Try Cloudinary Free Global CDN (25 GB Free) unless explicitly switched off
+  if (config?.provider !== 'smart-firestore' && cloudName && presetCandidates.length > 0) {
+    for (const preset of presetCandidates) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', preset);
+        formData.append('folder', `food_specialists_${folder}`);
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/auto/upload`,
+          {
+            method: 'POST',
+            body: formData
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.secure_url) {
+            return {
+              url: data.secure_url,
+              provider: 'cloudinary-cdn',
+              sizeKb: Math.max(1, Math.round((data.bytes || file.size) / 1024)),
+              fileName: file.name
+            };
+          }
         }
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.secure_url) {
-          return {
-            url: data.secure_url,
-            provider: 'cloudinary-cdn',
-            sizeKb: Math.max(1, Math.round((data.bytes || file.size) / 1024)),
-            fileName: file.name
-          };
-        }
+      } catch {
+        // Continue to next candidate or fallback to Smart Firestore Compression
       }
-    } catch {
-      // Automatically fall back to Smart Firestore Compression if network/preset fails
     }
   }
 

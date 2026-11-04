@@ -366,10 +366,10 @@ export default function App() {
     []
   );
   const [storageConfig, setStorageConfig] = useState<CloudStorageConfig>({
-    provider: 'smart-firestore',
-    cloudinaryCloudName: '',
-    cloudinaryUploadPreset: '',
-    updatedAt: '2026-11-01T00:00:00Z'
+    provider: 'cloudinary',
+    cloudinaryCloudName: 'mhjkrdlh',
+    cloudinaryUploadPreset: 'Food Specialists',
+    updatedAt: '2026-11-03T11:45:00Z'
   });
 
   // Applied Jobs & Scholarships Local Tracking ('Mark as Applied' checkbox)
@@ -774,7 +774,28 @@ export default function App() {
       doc(db, 'settings', 'storageConfig'),
       (snap) => {
         if (snap.exists()) {
-          setStorageConfig(snap.data() as CloudStorageConfig);
+          const data = snap.data() as CloudStorageConfig;
+          const hydrated: CloudStorageConfig = {
+            provider: data.cloudinaryCloudName?.trim()
+              ? data.provider
+              : 'cloudinary',
+            cloudinaryCloudName:
+              data.cloudinaryCloudName?.trim() || 'mhjkrdlh',
+            cloudinaryUploadPreset:
+              data.cloudinaryUploadPreset?.trim() || 'Food Specialists',
+            updatedAt: data.updatedAt || '2026-11-03T11:45:00Z'
+          };
+          setStorageConfig(hydrated);
+        } else if (isAdminUser) {
+          const defaultCfg: CloudStorageConfig = {
+            provider: 'cloudinary',
+            cloudinaryCloudName: 'mhjkrdlh',
+            cloudinaryUploadPreset: 'Food Specialists',
+            updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+          };
+          setDoc(doc(db, 'settings', 'storageConfig'), defaultCfg, {
+            merge: true
+          }).catch(() => {});
         }
       },
       () => {}
