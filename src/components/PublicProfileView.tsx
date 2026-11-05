@@ -235,7 +235,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
           <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
         </button>
 
-        <h1 className="text-[22px] sm:text-[24px] font-extrabold text-[#14291D] tracking-tight">
+        <h1 className="text-[18px] sm:text-[22px] font-extrabold text-[#14291D] tracking-tight">
           Profile
         </h1>
 
@@ -364,17 +364,17 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
       <div className="px-4 sm:px-6 pt-3 space-y-4">
         <div className="text-center space-y-1.5">
           {/* Name + Verified Green Check */}
-          <div className="flex items-center justify-center gap-1.5">
-            <h2 className="text-[23px] sm:text-[25px] font-extrabold text-[#14261C] leading-tight">
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+            <h2 className="text-[18px] sm:text-[23px] font-extrabold text-[#14261C] leading-snug break-words">
               {displayName}
             </h2>
-            <CheckCircle2 className="w-5 h-5 text-[#229A54] fill-[#DCFCE7] shrink-0" />
+            <CheckCircle2 className="w-4.5 h-4.5 text-[#229A54] fill-[#DCFCE7] shrink-0" />
           </div>
 
           {/* Title • Company */}
           {((canSeeTitle && displayTitle) ||
             (canSeeCompany && member.company)) && (
-            <div className="flex items-center justify-center gap-1.5 text-[14px] font-semibold text-[#1F2937] flex-wrap">
+            <div className="flex items-center justify-center gap-1.5 text-[12.5px] sm:text-[14px] font-semibold text-[#1F2937] flex-wrap leading-snug break-words">
               <UserCheck className="w-4 h-4 text-[#228B4E] shrink-0" />
               <span>
                 {canSeeTitle && displayTitle ? displayTitle : ''}
@@ -475,11 +475,11 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 <div className="w-11 h-11 rounded-xl bg-[#0A66C2] text-white font-black text-[22px] flex items-center justify-center shrink-0 leading-none shadow-2xs">
                   in
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[15.5px] font-extrabold text-[#14261C]">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[14px] sm:text-[15.5px] font-extrabold text-[#14261C]">
                     LinkedIn
                   </div>
-                  <div className="text-[13px] font-semibold text-[#0A66C2] truncate">
+                  <div className="text-[11.5px] sm:text-[13px] font-semibold text-[#0A66C2] break-all">
                     {cleanLinkedinDisplay}
                   </div>
                 </div>
@@ -491,11 +491,11 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
 
         {/* CV VAULT CARD (SHOWN WHEN OWNER TOGGLES CV ON) */}
         {canSeeCvField && (
-          <div className="bg-[#FDFBF5] border-[1.5px] border-[#C6A34F] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-2xs">
-            <div className="flex items-center gap-3 min-w-0">
+          <div className="bg-[#FDFBF5] border-[1.5px] border-[#C6A34F] rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-2xs flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               {/* Gold Shield Icon matching Reference Image 2 */}
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-[#FEF3C7] to-[#FDE68A] border border-[#D97706]/40 flex items-center justify-center shrink-0 shadow-2xs">
-                <svg viewBox="0 0 32 32" className="w-7 h-7">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-[#FEF3C7] to-[#FDE68A] border border-[#D97706]/40 flex items-center justify-center shrink-0 shadow-2xs">
+                <svg viewBox="0 0 32 32" className="w-6 h-6">
                   <defs>
                     <linearGradient id="goldShield" x1="0" y1="0" x2="1" y2="1">
                       <stop offset="0%" stopColor="#FBBF24" />
@@ -512,11 +512,11 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 </svg>
               </div>
 
-              <div className="min-w-0">
-                <div className="text-[15.5px] font-extrabold text-[#14261C] leading-tight">
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] sm:text-[15.5px] font-extrabold text-[#14261C] leading-snug">
                   CV / Resume (PDF)
                 </div>
-                <div className="text-[12px] font-medium text-gray-700 truncate mt-0.5">
+                <div className="text-[11.5px] sm:text-[12px] font-medium text-gray-700 break-all mt-0.5">
                   {member.cvFileName
                     ? `${member.cvFileName}`
                     : `${displayName.replace(/\s+/g, '_')}_Professional_CV.pdf`}

@@ -7,15 +7,29 @@
 }
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    font-size: 15px;
+  }
+
+  @media (min-width: 640px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
   body {
     font-family: var(--font-sans);
     color: #0f172a;
     background-color: #f8fafc;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   h1, h2, h3, h4, .font-display {
     font-family: var(--font-display);
-    text-wrap: balance;
+    overflow-wrap: break-word;
   }
 }
 

@@ -406,14 +406,14 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <ArrowLeft className="w-5 h-5 stroke-[2.4]" />
           </button>
 
-          <h1 className="text-[22px] sm:text-[24px] font-extrabold text-[#14261C] tracking-tight">
+          <h1 className="text-[18px] sm:text-[22px] font-extrabold text-[#14261C] tracking-tight">
             Edit Profile
           </h1>
 
           <button
             type="submit"
             disabled={isSaving}
-            className="text-[16px] font-extrabold text-[#228B4E] hover:text-[#14532D] transition-colors cursor-pointer disabled:opacity-50"
+            className="text-[14.5px] sm:text-[16px] font-extrabold text-[#228B4E] hover:text-[#14532D] transition-colors cursor-pointer disabled:opacity-50"
           >
             {isSaving ? 'Saving...' : 'Save'}
           </button>
@@ -709,8 +709,8 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   <FileText className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-[15.5px] font-extrabold text-[#14261C]">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-[14.5px] sm:text-[15.5px] font-extrabold text-[#14261C]">
                       CV / Resume
                     </h3>
                     <VisibilityPill
@@ -719,7 +719,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       onChange={(next) => updateVisibility('cv', next)}
                     />
                   </div>
-                  <p className="text-[12.5px] font-semibold text-gray-700 truncate mt-0.5">
+                  <p className="text-[11.5px] sm:text-[12.5px] font-semibold text-gray-700 break-all mt-0.5">
                     {cvDisplayFileName
                       ? `${cvDisplayFileName}${
                           profile.cvFileSize ? ` • ${profile.cvFileSize}` : ''

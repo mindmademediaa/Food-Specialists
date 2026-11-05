@@ -2493,33 +2493,26 @@ export default function App() {
           {/* ==================== 1. HOME SCREEN (/) ==================== */}
           {route.name === 'home' && (
             <div className="space-y-4 px-0.5">
-              {/* Greeting + View All Row */}
+              {/* Greeting Row */}
               <div className="flex items-center justify-between pt-0.5">
-                <h1 className="text-[24px] sm:text-[26px] font-extrabold text-[#0F291E] tracking-tight leading-tight">
+                <h1 className="text-[17px] sm:text-[20px] font-extrabold text-[#0F291E] tracking-tight leading-snug break-words">
                   Good morning, {firstName}
                 </h1>
-                <button
-                  type="button"
-                  onClick={() => navigateToJobs('All')}
-                  className="text-[14px] font-bold text-[#0E9F6E] hover:underline cursor-pointer shrink-0"
-                >
-                  View all
-                </button>
               </div>
 
               {/* ADMIN QUICK BANNER FOR PENDING PAYMENT APPROVALS */}
               {isUserAdmin && (
-                <div className="bg-gradient-to-r from-[#FFFBEB] to-[#FEF3C7] border-[1.5px] border-[#F59E0B] rounded-[22px] p-4 shadow-xs flex items-center justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <div className="text-xs font-extrabold text-[#92400E] flex items-center gap-1.5">
-                      <Shield className="w-4 h-4 text-[#D97706]" />
+                <div className="bg-gradient-to-r from-[#FFFBEB] to-[#FEF3C7] border-[1.5px] border-[#F59E0B] rounded-[20px] p-3.5 shadow-xs flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="text-[11.5px] font-extrabold text-[#92400E] flex items-center gap-1.5 flex-wrap">
+                      <Shield className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
                       <span>
                         Admin Panel • {pendingPaymentRequestsCount} Pending Payment{' '}
                         {pendingPaymentRequestsCount === 1 ? 'Request' : 'Requests'}
                       </span>
                     </div>
-                    <p className="text-[11.5px] text-[#78350F] font-semibold">
-                      Review uploaded Rs. 100 payment slips &amp; approve 1-Month Premium memberships.
+                    <p className="text-[11px] text-[#78350F] font-semibold leading-snug break-words">
+                      Review uploaded payment slips &amp; approve Premium memberships.
                     </p>
                   </div>
                   <button
@@ -2528,130 +2521,122 @@ export default function App() {
                       setAdminTab('receipts');
                       setRoute({ name: 'admin' });
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-extrabold shrink-0 cursor-pointer transition-colors shadow-xs"
+                    className="px-3 py-1.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-[11px] font-extrabold shrink-0 cursor-pointer transition-colors shadow-xs"
                   >
                     Open Receipts ({adminAllPaymentRequests.length}) →
                   </button>
                 </div>
               )}
 
-              {/* CARD 1 - JOBS (Styled in Theme 1: Emerald Trust) */}
-              <div
-                onClick={() => navigateToJobs('All')}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    navigateToJobs('All');
-                  }
-                }}
-                className="bg-white border border-[#D4E9DF] hover:border-[#0E9F6E] rounded-[22px] p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] hover:shadow-[0_10px_28px_rgba(14,159,110,0.12)] transition-all cursor-pointer space-y-3.5 group"
-              >
+              {/* CARD 1 - JOBS (Styled in Theme 1: Emerald Trust — Tags strictly unclickable) */}
+              <div className="bg-white border border-[#D4E9DF] rounded-[20px] p-4 sm:p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] transition-all space-y-3">
                 {/* Top Row: Mint Icon Box + Title & Subtitle */}
-                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3.5">
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-14 h-14 rounded-[16px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <Briefcase className="w-7 h-7 stroke-[2.2]" />
+                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-[14px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
+                      <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                     </div>
-                    <div className="pt-0.5">
-                      <h2 className="text-[22px] font-extrabold text-[#0F291E] leading-tight group-hover:text-[#0E9F6E] transition-colors">
+                    <div className="pt-0.5 min-w-0">
+                      <h2 className="text-[17px] sm:text-[20px] font-extrabold text-[#0F291E] leading-snug break-words">
                         Jobs
                       </h2>
-                      <p className="text-[13.5px] font-medium text-[#5C7267] mt-0.5 leading-snug">
+                      <p className="text-[12px] sm:text-[13px] font-medium text-[#5C7267] mt-0.5 leading-snug break-words">
                         Find roles in food R&amp;D, QA, production &amp; more
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Middle Row: 3 Mint Pill Badges (Production, R&D Lab, Quality & Safety) */}
-                <div className="flex flex-wrap items-center gap-2 border-b border-[#ECF4EF] pb-3.5 select-none">
-                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
-                    <Wheat className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                {/* Middle Row: 3 Unclickable Mint Pill Badges (Production, R&D Lab, Quality & Safety) */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex flex-wrap items-center gap-1.5 border-b border-[#ECF4EF] pb-3 select-none cursor-default pointer-events-none"
+                >
+                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                    <Wheat className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
                     <span>Production</span>
                   </span>
 
-                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
-                    <FlaskConical className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                    <FlaskConical className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
                     <span>R&amp;D Lab</span>
                   </span>
 
-                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                    <ShieldCheck className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
                     <span>Quality &amp; Safety</span>
                   </span>
                 </div>
 
                 {/* Bottom Row: Active Count + Emerald Green Button */}
-                <div className="flex items-center justify-between gap-2 pt-0.5">
-                  <span className="text-[12.5px] font-semibold text-[#4B6356]">
+                <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
+                  <span className="text-[11.5px] sm:text-[12.5px] font-semibold text-[#4B6356]">
                     {activeJobs.length} Verified Roles Available
                   </span>
-                  <span className="px-4 py-2 rounded-[11px] bg-[#0E9F6E] group-hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => navigateToJobs('All')}
+                    className="px-3.5 py-1.5 rounded-[10px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[11.5px] sm:text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
                     <span>Browse Jobs</span>
                     <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                  </span>
+                  </button>
                 </div>
               </div>
 
-              {/* CARD 2 - SCHOLARSHIPS (Styled in Theme 1: Emerald Trust) */}
-              <div
-                onClick={() => navigateToScholarships('All')}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    navigateToScholarships('All');
-                  }
-                }}
-                className="bg-white border border-[#D4E9DF] hover:border-[#0E9F6E] rounded-[22px] p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] hover:shadow-[0_10px_28px_rgba(14,159,110,0.12)] transition-all cursor-pointer space-y-3.5 group"
-              >
+              {/* CARD 2 - SCHOLARSHIPS (Styled in Theme 1: Emerald Trust — Tags strictly unclickable) */}
+              <div className="bg-white border border-[#D4E9DF] rounded-[20px] p-4 sm:p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] transition-all space-y-3">
                 {/* Top Row: Mint Icon Box + Title & Subtitle */}
-                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3.5">
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-14 h-14 rounded-[16px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <GraduationCap className="w-7 h-7 stroke-[2.2]" />
+                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-[14px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                     </div>
-                    <div className="pt-0.5">
-                      <h2 className="text-[22px] font-extrabold text-[#0F291E] leading-tight group-hover:text-[#0E9F6E] transition-colors">
+                    <div className="pt-0.5 min-w-0">
+                      <h2 className="text-[17px] sm:text-[20px] font-extrabold text-[#0F291E] leading-snug break-words">
                         Scholarships
                       </h2>
-                      <p className="text-[13.5px] font-medium text-[#5C7267] mt-0.5 leading-snug">
+                      <p className="text-[12px] sm:text-[13px] font-medium text-[#5C7267] mt-0.5 leading-snug break-words">
                         Grants, fellowships &amp; programs for food tech
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Middle Row: 3 Mint Pill Badges (Fellowships, International, Grants) */}
-                <div className="flex flex-wrap items-center gap-2 border-b border-[#ECF4EF] pb-3.5 select-none">
-                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                {/* Middle Row: 3 Unclickable Mint Pill Badges (Fellowships, International, Grants) */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex flex-wrap items-center gap-1.5 border-b border-[#ECF4EF] pb-3 select-none cursor-default pointer-events-none"
+                >
+                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                    <BookOpen className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
                     <span>Fellowships</span>
                   </span>
 
-                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                    <Globe className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
                     <span>International</span>
                   </span>
 
-                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
-                    <Trophy className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                    <Trophy className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
                     <span>Grants</span>
                   </span>
                 </div>
 
                 {/* Bottom Row: Active Count + Emerald Green Button */}
-                <div className="flex items-center justify-between gap-2 pt-0.5">
-                  <span className="text-[12.5px] font-semibold text-[#4B6356]">
+                <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
+                  <span className="text-[11.5px] sm:text-[12.5px] font-semibold text-[#4B6356]">
                     {activeScholarships.length} Global Programs Open
                   </span>
-                  <span className="px-4 py-2 rounded-[11px] bg-[#0E9F6E] group-hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => navigateToScholarships('All')}
+                    className="px-3.5 py-1.5 rounded-[10px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[11.5px] sm:text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
                     <span>Explore Grants</span>
                     <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                  </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2662,7 +2647,7 @@ export default function App() {
             <div className="space-y-4 px-0.5">
               <div className="flex items-center justify-between pt-0.5">
                 <div>
-                  <h1 className="text-[24px] font-extrabold text-[#0F291E] tracking-tight leading-tight">
+                  <h1 className="text-[18px] sm:text-[20px] font-extrabold text-[#0F291E] tracking-tight leading-snug">
                     Browse Jobs
                   </h1>
                 </div>
@@ -2673,9 +2658,9 @@ export default function App() {
                     setJobCountryFilter('All');
                     setJobCategoryFilter('All');
                   }}
-                  className="inline-flex items-center gap-1.5 text-[14px] font-bold text-[#0E9F6E] hover:underline transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 text-[12px] font-bold text-[#0E9F6E] hover:underline transition-colors cursor-pointer"
                 >
-                  <span>View all</span>
+                  <span>Reset Filters</span>
                 </button>
               </div>
 
@@ -2795,23 +2780,23 @@ export default function App() {
                 <div className="bg-white border border-emerald-200 rounded-[26px] p-5 shadow-sm space-y-4">
                   <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-4">
                     <div className="space-y-1">
-                      {/* Top tags: Only Category & Country */}
-                      <div className="flex flex-wrap items-center gap-1.5">
+                      {/* Top tags: Unclickable Category & Country */}
+                      <div className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none">
                         {displayCategory && (
-                          <span className="inline-block px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-xs font-bold">
+                          <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#BCE3C5] text-[#0B3B1E] text-[11px] font-bold cursor-default pointer-events-none">
                             {displayCategory}
                           </span>
                         )}
                         {displayCountry && (
-                          <span className="inline-block px-3 py-1 rounded-[10px] bg-[#EAF5EC] text-[#15803D] text-xs font-bold">
+                          <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#EAF5EC] text-[#15803D] text-[11px] font-bold cursor-default pointer-events-none">
                             {displayCountry}
                           </span>
                         )}
                       </div>
-                      <h1 className="text-[22px] font-extrabold text-[#0B3B1E] leading-snug pt-1">
+                      <h1 className="text-[16.5px] sm:text-[19px] font-extrabold text-[#0B3B1E] leading-snug pt-1 break-words">
                         {job.title}
                       </h1>
-                      <p className="text-sm font-semibold text-gray-600">
+                      <p className="text-[12.5px] sm:text-sm font-semibold text-gray-600 break-words">
                         {job.company}
                       </p>
                     </div>
@@ -3049,7 +3034,7 @@ export default function App() {
             <div className="space-y-4 px-1">
               <div className="flex items-center justify-between pt-1">
                 <div>
-                  <h1 className="text-[26px] sm:text-[28px] font-extrabold text-[#0B3B1E] tracking-tight leading-tight">
+                  <h1 className="text-[18px] sm:text-[20px] font-extrabold text-[#0B3B1E] tracking-tight leading-snug">
                     Scholarships for you
                   </h1>
                 </div>
@@ -3060,21 +3045,21 @@ export default function App() {
                     setSchCountryFilter('All');
                     setSchFundingFilter('All');
                   }}
-                  className="inline-flex items-center gap-1.5 text-[14px] font-bold text-[#15803D] hover:text-[#0B3B1E] transition-colors cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1 text-[12px] font-bold text-[#15803D] hover:text-[#0B3B1E] transition-colors cursor-pointer shrink-0"
                 >
-                  <ListFilter className="w-4 h-4 stroke-[2.5]" />
+                  <ListFilter className="w-3.5 h-3.5 stroke-[2.5]" />
                   <span>Reset</span>
                 </button>
               </div>
 
               {/* 2 Dropdowns: Country & Funding */}
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="relative">
                   <select
                     value={schCountryFilter}
                     onChange={(e) => setSchCountryFilter(e.target.value)}
                     aria-label="Filter by Country"
-                    className="w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[18px] bg-[#15803D] text-white text-[13.5px] font-bold shadow-xs focus:outline-none cursor-pointer truncate"
+                    className="w-full appearance-none pl-3 pr-6 py-2 rounded-[14px] bg-[#15803D] text-white text-[12px] font-bold shadow-xs focus:outline-none cursor-pointer truncate"
                   >
                     <option value="All">All Countries</option>
                     {availableScholarshipCountries.map((country) => (
@@ -3083,7 +3068,7 @@ export default function App() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="w-4 h-4 text-white stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-white stroke-[2.5] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
 
                 <div className="relative">
@@ -3091,7 +3076,7 @@ export default function App() {
                     value={schFundingFilter}
                     onChange={(e) => setSchFundingFilter(e.target.value)}
                     aria-label="Filter by Funding"
-                    className={`w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[18px] text-[13.5px] font-bold border-[2px] border-[#16A34A] focus:outline-none cursor-pointer truncate ${
+                    className={`w-full appearance-none pl-3 pr-6 py-2 rounded-[14px] text-[12px] font-bold border-[1.5px] border-[#16A34A] focus:outline-none cursor-pointer truncate ${
                       schFundingFilter !== 'All'
                         ? 'bg-[#15803D] text-white'
                         : 'bg-white text-[#15803D]'
@@ -3103,17 +3088,17 @@ export default function App() {
                     <option value="Grants">Grants</option>
                   </select>
                   <ChevronDown
-                    className={`w-4 h-4 stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${
+                    className={`w-3.5 h-3.5 stroke-[2.5] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none ${
                       schFundingFilter !== 'All' ? 'text-white' : 'text-[#15803D]'
                     }`}
                   />
                 </div>
               </div>
 
-              {/* Scholarships Card List (Styled in Theme 1: Emerald Trust) */}
-              <div className="space-y-3.5 pt-1">
+              {/* Scholarships Card List (Styled in Theme 1: Emerald Trust — Tags strictly unclickable) */}
+              <div className="space-y-3 pt-1">
                 {visibleScholarships.length === 0 ? (
-                  <div className="bg-white border border-[#D4E9DF] rounded-[22px] p-8 text-center text-gray-500 font-medium">
+                  <div className="bg-white border border-[#D4E9DF] rounded-[20px] p-6 text-center text-gray-500 font-medium text-xs">
                     No scholarships match the selected filters.
                   </div>
                 ) : (
@@ -3132,37 +3117,28 @@ export default function App() {
                     return (
                       <div
                         key={sch.id}
-                        onClick={() => {
-                          setRoute({
-                            name: 'scholarship-detail',
-                            scholarshipId: sch.id
-                          });
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setRoute({
-                              name: 'scholarship-detail',
-                              scholarshipId: sch.id
-                            });
-                          }
-                        }}
-                        className="bg-white border border-[#D4E9DF] hover:border-[#0E9F6E] rounded-[22px] p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] hover:shadow-[0_10px_28px_rgba(14,159,110,0.12)] transition-all cursor-pointer space-y-3.5"
+                        className="bg-white border border-[#D4E9DF] rounded-[20px] p-4 shadow-[0_6px_22px_rgba(19,66,43,0.06)] transition-all space-y-3"
                       >
                         {/* Top Row: Soft Mint Icon Box + Title & Organization */}
-                        <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3.5">
-                          <div className="flex items-start gap-3.5 min-w-0">
-                            <div className="w-13 h-13 rounded-[15px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
-                              <BadgeIcon className="w-6 h-6 stroke-[2.2]" />
+                        <div className="flex items-start justify-between gap-2.5 border-b border-[#ECF4EF] pb-3">
+                          <div
+                            onClick={() => {
+                              setRoute({
+                                name: 'scholarship-detail',
+                                scholarshipId: sch.id
+                              });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="flex items-start gap-3 min-w-0 cursor-pointer flex-1"
+                          >
+                            <div className="w-11 h-11 rounded-[13px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
+                              <BadgeIcon className="w-5 h-5 stroke-[2.2]" />
                             </div>
-                            <div className="min-w-0 pt-0.5">
-                              <h3 className="text-[18.5px] font-extrabold text-[#0F291E] leading-snug">
+                            <div className="min-w-0 pt-0.5 flex-1">
+                              <h3 className="text-[14.5px] sm:text-[16px] font-extrabold text-[#0F291E] leading-snug break-words">
                                 {sch.title}
                               </h3>
-                              <p className="text-[14px] font-medium text-[#5C7267] mt-0.5 truncate">
+                              <p className="text-[12px] sm:text-[13px] font-medium text-[#5C7267] mt-0.5 leading-snug break-words">
                                 {sch.organization}
                               </p>
                             </div>
@@ -3179,7 +3155,7 @@ export default function App() {
                             className="p-1.5 rounded-xl text-[#0E9F6E] hover:bg-[#E2F2E9] transition-colors shrink-0 cursor-pointer"
                           >
                             <Bookmark
-                              className={`w-5 h-5 stroke-[2.2] ${
+                              className={`w-4.5 h-4.5 stroke-[2.2] ${
                                 isSaved
                                   ? 'fill-[#0E9F6E] text-[#0E9F6E]'
                                   : 'text-[#0E9F6E]'
@@ -3188,34 +3164,47 @@ export default function App() {
                           </button>
                         </div>
 
-                        {/* Middle Row: Mint Pill Badges */}
-                        <div className="flex flex-wrap items-center gap-2 border-b border-[#ECF4EF] pb-3.5">
-                          <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.3]" />
+                        {/* Middle Row: Unclickable Mint Pill Badges */}
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex flex-wrap items-center gap-1.5 border-b border-[#ECF4EF] pb-3 select-none cursor-default pointer-events-none"
+                        >
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                            <MapPin className="w-3 h-3 text-[#0E9F6E] stroke-[2.3] shrink-0" />
                             <span>{sch.country}</span>
                           </span>
 
-                          <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
-                            <GraduationCap className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.3]" />
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                            <GraduationCap className="w-3 h-3 text-[#0E9F6E] stroke-[2.3] shrink-0" />
                             <span>{sch.fundingType}</span>
                           </span>
 
                           {isApplied && (
-                            <span className="px-2.5 py-1 rounded-full bg-[#0E9F6E] text-white text-[11px] font-bold inline-flex items-center gap-1">
-                              <Check className="w-3 h-3 stroke-[2.5]" />
+                            <span className="px-2 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[10.5px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                              <Check className="w-3 h-3 stroke-[2.5] shrink-0" />
                               <span>Applied</span>
                             </span>
                           )}
                         </div>
 
                         {/* Bottom Row: Deadline + Emerald Green Button */}
-                        <div className="flex items-center justify-between gap-2 pt-0.5">
-                          <span className="text-[12.5px] font-semibold text-[#4B6356] tabular-nums">
+                        <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
+                          <span className="text-[11px] sm:text-[12px] font-semibold text-[#4B6356] tabular-nums">
                             Deadline {sch.deadline} ({daysLeft}d left)
                           </span>
-                          <span className="px-4 py-2 rounded-[11px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-xs transition-colors">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRoute({
+                                name: 'scholarship-detail',
+                                scholarshipId: sch.id
+                              });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="px-3.5 py-1.5 rounded-[10px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[11.5px] font-bold shadow-xs transition-colors cursor-pointer"
+                          >
                             See Details
-                          </span>
+                          </button>
                         </div>
                       </div>
                     );
@@ -3274,19 +3263,19 @@ export default function App() {
                 <div className="bg-white border border-emerald-200 rounded-[26px] p-5 shadow-sm space-y-4">
                   <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-4">
                     <div className="space-y-1">
-                      {/* Top tags: Only Funding Type & Country */}
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-block px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-xs font-bold">
+                      {/* Top tags: Unclickable Funding Type & Country */}
+                      <div className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none">
+                        <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#BCE3C5] text-[#0B3B1E] text-[11px] font-bold cursor-default pointer-events-none">
                           {displayFunding}
                         </span>
-                        <span className="inline-block px-3 py-1 rounded-[10px] bg-[#EAF5EC] text-[#15803D] text-xs font-bold">
+                        <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#EAF5EC] text-[#15803D] text-[11px] font-bold cursor-default pointer-events-none">
                           {displayCountry}
                         </span>
                       </div>
-                      <h1 className="text-[22px] font-extrabold text-[#0B3B1E] leading-snug pt-1">
+                      <h1 className="text-[16.5px] sm:text-[19px] font-extrabold text-[#0B3B1E] leading-snug pt-1 break-words">
                         {sch.title}
                       </h1>
-                      <p className="text-sm font-semibold text-gray-600">
+                      <p className="text-[12.5px] sm:text-sm font-semibold text-gray-600 break-words">
                         {sch.organization}
                       </p>
                     </div>
@@ -3687,7 +3676,7 @@ export default function App() {
                       <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
                       <span>Premium Community Directory</span>
                     </span>
-                    <h1 className="text-[22px] sm:text-[24px] font-extrabold text-[#0D2E1B] leading-tight">
+                    <h1 className="text-[17px] sm:text-[21px] font-extrabold text-[#0D2E1B] leading-snug break-words">
                       Connect with Verified Food Specialists
                     </h1>
                     <p className="text-xs sm:text-[13px] text-gray-600 max-w-md mx-auto leading-relaxed font-medium">
@@ -3713,7 +3702,7 @@ export default function App() {
                         setPaySubmitBanner(null);
                         setShowPremiumUpgradeModal(true);
                       }}
-                      className="w-full py-4 px-5 rounded-[22px] bg-gradient-to-r from-[#14532D] via-[#15803D] to-[#166534] hover:from-[#0D2E1B] hover:to-[#14532D] text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                      className="w-full py-3.5 px-4 rounded-[20px] bg-gradient-to-r from-[#14532D] via-[#15803D] to-[#166534] hover:from-[#0D2E1B] hover:to-[#14532D] text-white font-extrabold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
                     >
                       <Crown className="w-4 h-4 text-amber-300 shrink-0" />
                       <span>Purchase / Buy Premium Membership</span>
@@ -3725,7 +3714,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setShowApplicationStatusModal(true)}
-                        className="w-full py-3.5 px-5 rounded-[22px] bg-[#FFFBEB] hover:bg-[#FEF3C7] border-[1.5px] border-[#F59E0B] text-[#92400E] font-extrabold text-xs shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        className="w-full py-3 px-4 rounded-[20px] bg-[#FFFBEB] hover:bg-[#FEF3C7] border-[1.5px] border-[#F59E0B] text-[#92400E] font-extrabold text-xs shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
                       >
                         <Clock className="w-4 h-4 text-[#D97706] shrink-0" />
                         <span>
@@ -3745,19 +3734,19 @@ export default function App() {
                 /* PAID USER VIEW IN COMMUNITIES: Show Other Paid Members' Profiles (Only Visible Information) */
                 <>
                   {/* Top Community Header & Search/Location Filter Card */}
-                  <div className="bg-white border border-[#C6DFCB] rounded-[28px] p-5 shadow-[0_6px_20px_rgba(22,163,74,0.06)] space-y-3.5">
+                  <div className="bg-white border border-[#C6DFCB] rounded-[24px] p-4 shadow-[0_6px_20px_rgba(22,163,74,0.06)] space-y-3">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <h1 className="text-[23px] sm:text-[25px] font-extrabold text-[#0D2E1B] leading-tight tracking-tight">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h1 className="text-[17.5px] sm:text-[21px] font-extrabold text-[#0D2E1B] leading-snug tracking-tight">
                             Premium Community
                           </h1>
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#538257] border border-[#D4AF37] text-white text-[10.5px] font-extrabold inline-flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full bg-[#538257] border border-[#D4AF37] text-white text-[10px] font-extrabold inline-flex items-center gap-1">
                             <Sparkles className="w-3 h-3 text-[#FDE047]" />
                             <span>Premium</span>
                           </span>
                         </div>
-                        <p className="text-[12.5px] text-gray-600 font-medium mt-0.5">
+                        <p className="text-[11.5px] sm:text-[12.5px] text-gray-600 font-medium mt-0.5 leading-snug break-words">
                           {paidCommunityMembers.length} Verified Premium Specialists • Connect, View LinkedIn &amp; Download CVs
                         </p>
                       </div>
@@ -3771,7 +3760,7 @@ export default function App() {
                               uid: myProfile.uid
                             })
                           }
-                          className="px-3 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EAD8] text-[#15803D] text-xs font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
+                          className="px-3 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EAD8] text-[#15803D] text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>My Public View</span>
@@ -3780,7 +3769,7 @@ export default function App() {
                     </div>
 
                     {/* Search by Name / Title / Company + Filter by Location */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div className="relative sm:col-span-2">
                         <Search className="w-4 h-4 text-[#0D2E1B] absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
@@ -3788,7 +3777,7 @@ export default function App() {
                           value={memberSearchQuery}
                           onChange={(e) => setMemberSearchQuery(e.target.value)}
                           placeholder="Search by Name, Title, or Company..."
-                          className="w-full pl-10 pr-8 py-2.5 text-[13.5px] bg-[#F2F7F3] border border-[#AECBB5] rounded-[16px] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-[#16A34A] focus:bg-white transition-colors"
+                          className="w-full pl-9 pr-8 py-2 text-[12.5px] bg-[#F2F7F3] border border-[#AECBB5] rounded-[14px] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-[#16A34A] focus:bg-white transition-colors"
                         />
                         {memberSearchQuery && (
                           <button
@@ -3805,7 +3794,7 @@ export default function App() {
                         <select
                           value={commCountryFilter}
                           onChange={(e) => setCommCountryFilter(e.target.value)}
-                          className="w-full appearance-none pl-3.5 pr-8 py-2.5 rounded-[16px] bg-[#F2F7F3] border border-[#AECBB5] text-[#0D2E1B] text-xs font-bold focus:outline-none cursor-pointer"
+                          className="w-full appearance-none pl-3.5 pr-8 py-2 rounded-[14px] bg-[#F2F7F3] border border-[#AECBB5] text-[#0D2E1B] text-xs font-bold focus:outline-none cursor-pointer"
                         >
                           <option value="All">All Locations</option>
                           {availableCommunityLocations.map((loc) => (
@@ -3830,11 +3819,11 @@ export default function App() {
 
                   {/* PREMIUM PROFILES LIST FOR PAID USERS */}
                   {filteredMembers.length === 0 ? (
-                    <div className="bg-white border border-[#B8D3BE] rounded-[26px] p-6 text-center space-y-2 shadow-xs">
-                      <div className="w-12 h-12 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
-                        <Search className="w-6 h-6" />
+                    <div className="bg-white border border-[#B8D3BE] rounded-[24px] p-6 text-center space-y-2 shadow-xs">
+                      <div className="w-11 h-11 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
+                        <Search className="w-5 h-5" />
                       </div>
-                      <h2 className="text-[17px] font-extrabold text-[#0D2E1B]">
+                      <h2 className="text-[15.5px] font-extrabold text-[#0D2E1B]">
                         No Matching Paid Members Found
                       </h2>
                       <p className="text-xs text-gray-600">
@@ -3842,7 +3831,7 @@ export default function App() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3.5">
+                    <div className="space-y-3">
                       {filteredMembers.map((member) => (
                         <MemberCard
                           key={member.uid}
@@ -3899,12 +3888,12 @@ export default function App() {
 
           {/* ==================== 6. TRAININGS MAIN PAGE (/trainings) ==================== */}
           {route.name === 'trainings' && (
-            <div className="space-y-4 px-1">
-              <div className="bg-gradient-to-r from-[#2E7D47] via-[#469A61] to-[#2E7D47] rounded-[22px] px-4 py-4 text-center text-white shadow-sm border border-emerald-600/30">
-                <h1 className="text-[22px] font-extrabold tracking-tight leading-snug">
+            <div className="space-y-3.5 px-1">
+              <div className="bg-gradient-to-r from-[#2E7D47] via-[#469A61] to-[#2E7D47] rounded-[20px] px-4 py-3.5 text-center text-white shadow-sm border border-emerald-600/30">
+                <h1 className="text-[17px] sm:text-[20px] font-extrabold tracking-tight leading-snug">
                   Build Your Expertise
                 </h1>
-                <p className="text-[12px] sm:text-[13px] font-semibold text-emerald-50 mt-0.5">
+                <p className="text-[11.5px] sm:text-[13px] font-semibold text-emerald-50 mt-0.5 leading-snug">
                   Select a training category below to view accredited courses
                 </p>
               </div>
@@ -3923,40 +3912,40 @@ export default function App() {
                     setRoute({ name: 'trainings-highfield' });
                   }
                 }}
-                className="relative bg-white border-[1.5px] border-[#78AF88] hover:border-[#16A34A] rounded-[24px] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+                className="relative bg-white border-[1.5px] border-[#78AF88] hover:border-[#16A34A] rounded-[22px] p-4 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
               >
-                <LeafWatermark className="w-8 h-8 absolute right-6 bottom-4 opacity-60 pointer-events-none" />
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-4">
-                    <div className="w-[68px] h-[68px] rounded-2xl bg-[#228B4E] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Shield className="w-9 h-9 stroke-[2.2]" />
+                <LeafWatermark className="w-7 h-7 absolute right-5 bottom-3 opacity-60 pointer-events-none" />
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#228B4E] text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Shield className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
                     </div>
-                    <div className="pt-0.5">
-                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#DCF2E3] text-[#138A3E] text-[11px] font-extrabold">
+                    <div className="pt-0.5 min-w-0">
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-[#DCF2E3] text-[#138A3E] text-[10.5px] font-extrabold">
                         Highfield UK Accredited
                       </span>
-                      <h2 className="text-[24px] font-extrabold text-[#0D2E1B] leading-tight mt-1">
+                      <h2 className="text-[16.5px] sm:text-[20px] font-extrabold text-[#0D2E1B] leading-snug mt-1 break-words">
                         Highfield Trainings
                       </h2>
-                      <p className="text-[13.5px] text-[#2F4737] mt-1 leading-snug">
+                      <p className="text-[12px] sm:text-[13px] text-[#2F4737] mt-0.5 leading-snug break-words">
                         HACCP Level 1, HACCP Level 2, HACCP Level 3 &amp; HACCP Level 4
                       </p>
                     </div>
                   </div>
 
-                  <span className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] flex items-center justify-center shrink-0">
-                    <ArrowRight className="w-5 h-5 stroke-[2.4]" />
+                  <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-[#16A34A] text-[#16A34A] flex items-center justify-center shrink-0">
+                    <ArrowRight className="w-4 h-4 stroke-[2.4]" />
                   </span>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-emerald-100 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[12.5px] font-bold">
+                <div className="mt-3 pt-2.5 border-t border-emerald-100 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[11px] sm:text-[12px] font-bold">
                     <span className="text-[#16A34A]">●</span>
                     <span>
                       {highfieldTrainings.length} Highfield Courses Available
                     </span>
                   </span>
-                  <span className="text-xs font-extrabold text-[#15803D]">
+                  <span className="text-[11.5px] font-extrabold text-[#15803D]">
                     Open Trainings →
                   </span>
                 </div>
@@ -3976,40 +3965,40 @@ export default function App() {
                     setRoute({ name: 'trainings-lead-auditor-hub' });
                   }
                 }}
-                className="relative bg-white border-[1.5px] border-[#78AF88] hover:border-[#16A34A] rounded-[24px] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+                className="relative bg-white border-[1.5px] border-[#78AF88] hover:border-[#16A34A] rounded-[22px] p-4 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
               >
-                <WheatWatermark className="w-9 h-9 absolute right-6 bottom-4 opacity-60 pointer-events-none" />
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-4">
-                    <div className="w-[68px] h-[68px] rounded-2xl bg-[#14532D] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Award className="w-9 h-9 stroke-[2.2]" />
+                <WheatWatermark className="w-8 h-8 absolute right-5 bottom-3 opacity-60 pointer-events-none" />
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#14532D] text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Award className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
                     </div>
-                    <div className="pt-0.5">
-                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#DCF2E3] text-[#14532D] text-[11px] font-extrabold">
+                    <div className="pt-0.5 min-w-0">
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-[#DCF2E3] text-[#14532D] text-[10.5px] font-extrabold">
                         1. IRCA CQI • 2. Exemplar Global
                       </span>
-                      <h2 className="text-[24px] font-extrabold text-[#0D2E1B] leading-tight mt-1">
+                      <h2 className="text-[16.5px] sm:text-[20px] font-extrabold text-[#0D2E1B] leading-snug mt-1 break-words">
                         Lead Auditor Trainings
                       </h2>
-                      <p className="text-[13.5px] text-[#2F4737] mt-1 leading-snug">
+                      <p className="text-[12px] sm:text-[13px] text-[#2F4737] mt-0.5 leading-snug break-words">
                         ISO 22000, FSSC 22000, ISO 9001 &amp; ISO 14001 Lead Auditor
                       </p>
                     </div>
                   </div>
 
-                  <span className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] flex items-center justify-center shrink-0">
-                    <ArrowRight className="w-5 h-5 stroke-[2.4]" />
+                  <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-[#16A34A] text-[#16A34A] flex items-center justify-center shrink-0">
+                    <ArrowRight className="w-4 h-4 stroke-[2.4]" />
                   </span>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-emerald-100 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[12.5px] font-bold">
+                <div className="mt-3 pt-2.5 border-t border-emerald-100 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[11px] sm:text-[12px] font-bold">
                     <span className="text-[#16A34A]">●</span>
                     <span>
                       {leadAuditorTrainings.length} Certified Lead Auditor Courses
                     </span>
                   </span>
-                  <span className="text-xs font-extrabold text-[#15803D]">
+                  <span className="text-[11.5px] font-extrabold text-[#15803D]">
                     Open Trainings →
                   </span>
                 </div>
@@ -4019,24 +4008,24 @@ export default function App() {
 
           {/* ==================== 6A. HIGHFIELD TRAININGS SUB-PAGE ==================== */}
           {route.name === 'trainings-highfield' && (
-            <div className="space-y-4 px-1">
+            <div className="space-y-3.5 px-1">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-[24px] font-extrabold text-[#0B3B1E] leading-tight">
+                    <h1 className="text-[18px] sm:text-[21px] font-extrabold text-[#0B3B1E] leading-snug">
                       Highfield Trainings
                     </h1>
-                    <span className="w-7 h-7 rounded-full bg-[#138A3E] text-white flex items-center justify-center">
-                      <Leaf className="w-4 h-4 stroke-[2.3]" />
+                    <span className="w-6 h-6 rounded-full bg-[#138A3E] text-white flex items-center justify-center shrink-0">
+                      <Leaf className="w-3.5 h-3.5 stroke-[2.3]" />
                     </span>
                   </div>
-                  <p className="text-[13px] text-gray-700 font-medium">
+                  <p className="text-[12px] text-gray-700 font-medium leading-snug">
                     Highfield UK Accredited Food Safety &amp; HACCP Qualifications
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {highfieldTrainings.map((tr) => (
                   <div
                     key={tr.id}
@@ -4058,18 +4047,18 @@ export default function App() {
                         });
                       }
                     }}
-                    className="bg-white border border-emerald-100 hover:border-[#16A34A] rounded-[22px] p-4 shadow-[0_4px_16px_rgba(22,163,74,0.07)] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                    className="bg-white border border-emerald-100 hover:border-[#16A34A] rounded-[20px] p-3.5 shadow-[0_4px_16px_rgba(22,163,74,0.07)] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
                   >
-                    <div className="space-y-2.5">
+                    <div className="space-y-2">
                       <div className="flex items-start gap-2.5">
-                        <div className="w-10 h-10 rounded-[14px] bg-[#228B4E] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                          <Shield className="w-5 h-5 stroke-[2.2]" />
+                        <div className="w-9 h-9 rounded-[12px] bg-[#228B4E] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                          <Shield className="w-4.5 h-4.5 stroke-[2.2]" />
                         </div>
-                        <div className="min-w-0">
-                          <h3 className="text-[15px] font-extrabold text-[#0B3B1E] leading-tight">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-[14px] sm:text-[15px] font-extrabold text-[#0B3B1E] leading-snug break-words">
                             {tr.title}
                           </h3>
-                          <p className="text-[11.5px] text-gray-600 leading-snug mt-0.5 line-clamp-2">
+                          <p className="text-[11.5px] text-gray-600 leading-relaxed mt-0.5 break-words">
                             {tr.description}
                           </p>
                         </div>
@@ -4088,7 +4077,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="mt-3.5 flex items-center justify-end">
+                    <div className="mt-3 flex items-center justify-end">
                       <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] hover:bg-[#0E6F30] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shadow-2xs transition-colors">
                         <span>Enroll</span>
                         <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -4102,33 +4091,33 @@ export default function App() {
 
           {/* ==================== 6B. LEAD AUDITOR TRAININGS SUB-PAGE (1. IRCA CQI & 2. Exemplar Global) ==================== */}
           {route.name === 'trainings-lead-auditor-hub' && (
-            <div className="space-y-6 px-1">
+            <div className="space-y-4 px-1">
               <div>
-                <h1 className="text-[24px] font-extrabold text-[#0B3B1E] leading-tight">
+                <h1 className="text-[18px] sm:text-[21px] font-extrabold text-[#0B3B1E] leading-snug">
                   Lead Auditor Trainings
                 </h1>
-                <p className="text-[13px] text-gray-600 font-medium">
+                <p className="text-[12px] text-gray-600 font-medium leading-snug">
                   Accredited under 1. IRCA CQI &amp; 2. Exemplar Global
                 </p>
               </div>
 
               {/* SECTION 1: 1. IRCA CQI */}
-              <div className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[26px] p-4 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-2xl bg-[#14532D] text-white flex items-center justify-center font-extrabold text-xs">
+              <div className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[22px] p-3.5 shadow-xs space-y-2.5">
+                <div className="flex items-center justify-between border-b border-emerald-100 pb-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-[#14532D] text-white flex items-center justify-center font-extrabold text-[11px] shrink-0">
                       IRCA
                     </div>
-                    <div>
-                      <h2 className="text-[19px] font-extrabold text-[#0B3B1E] leading-none">
+                    <div className="min-w-0">
+                      <h2 className="text-[16px] sm:text-[18px] font-extrabold text-[#0B3B1E] leading-tight">
                         1. IRCA CQI
                       </h2>
-                      <p className="text-[12px] text-gray-600 font-medium mt-1">
+                      <p className="text-[11px] text-gray-600 font-medium mt-0.5 leading-snug break-words">
                         Chartered Quality Institute • Certified Lead Auditor Courses
                       </p>
                     </div>
                   </div>
-                  <CheckCircle2 className="w-5 h-5 text-[#16A34A] shrink-0" />
+                  <CheckCircle2 className="w-4.5 h-4.5 text-[#16A34A] shrink-0" />
                 </div>
 
                 <div className="space-y-2.5">
@@ -4158,55 +4147,57 @@ export default function App() {
                             });
                           }
                         }}
-                        className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[20px] p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all"
+                        className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[18px] p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 cursor-pointer transition-all"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-full bg-[#14532D] text-white flex items-center justify-center shrink-0">
-                            <Award className="w-5 h-5 stroke-[2.2]" />
+                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                          <div className="w-9 h-9 rounded-full bg-[#14532D] text-white flex items-center justify-center shrink-0 mt-0.5">
+                            <Award className="w-4.5 h-4.5 stroke-[2.2]" />
                           </div>
-                          <div className="min-w-0">
-                            <div className="text-[14.5px] font-extrabold text-[#0B3B1E] leading-tight">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[13.5px] sm:text-[14.5px] font-extrabold text-[#0B3B1E] leading-snug break-words">
                               {course.title}
                             </div>
-                            <div className="text-[12px] font-semibold text-gray-700 truncate">
+                            <div className="text-[11.5px] font-medium text-gray-700 leading-relaxed mt-0.5 break-words">
                               {course.description}
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#15803D] font-bold mt-0.5">
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#15803D] font-bold mt-1">
                               <span>{course.duration}</span>
                               <span>•</span>
-                              <span className="px-2 py-0.2 rounded-md bg-[#D7EFE2] text-[#0D6845] font-extrabold">
+                              <span className="px-2 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] font-extrabold">
                                 Fee: {course.fees}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
-                          <span>Enroll</span>
-                          <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                        </span>
+                        <div className="flex justify-end shrink-0">
+                          <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
+                            <span>Enroll</span>
+                            <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                          </span>
+                        </div>
                       </div>
                     ))}
                 </div>
               </div>
 
               {/* SECTION 2: 2. Exemplar Global */}
-              <div className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[26px] p-4 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-2xl bg-[#138A3E] text-white flex items-center justify-center font-extrabold text-xs">
+              <div className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[22px] p-3.5 shadow-xs space-y-2.5">
+                <div className="flex items-center justify-between border-b border-emerald-100 pb-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-[#138A3E] text-white flex items-center justify-center font-extrabold text-[11px] shrink-0">
                       EG
                     </div>
-                    <div>
-                      <h2 className="text-[19px] font-extrabold text-[#0B3B1E] leading-none">
+                    <div className="min-w-0">
+                      <h2 className="text-[16px] sm:text-[18px] font-extrabold text-[#0B3B1E] leading-tight">
                         2. Exemplar Global
                       </h2>
-                      <p className="text-[12px] text-gray-600 font-medium mt-1">
+                      <p className="text-[11px] text-gray-600 font-medium mt-0.5 leading-snug break-words">
                         Certified Training Provider • Lead Auditor Courses
                       </p>
                     </div>
                   </div>
-                  <CheckCircle2 className="w-5 h-5 text-[#16A34A] shrink-0" />
+                  <CheckCircle2 className="w-4.5 h-4.5 text-[#16A34A] shrink-0" />
                 </div>
 
                 <div className="space-y-2.5">
@@ -4235,33 +4226,35 @@ export default function App() {
                             });
                           }
                         }}
-                        className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[20px] p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all"
+                        className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[18px] p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 cursor-pointer transition-all"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-full bg-[#1E8244] text-white flex items-center justify-center shrink-0">
-                            <Award className="w-5 h-5 stroke-[2.2]" />
+                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                          <div className="w-9 h-9 rounded-full bg-[#1E8244] text-white flex items-center justify-center shrink-0 mt-0.5">
+                            <Award className="w-4.5 h-4.5 stroke-[2.2]" />
                           </div>
-                          <div className="min-w-0">
-                            <div className="text-[14.5px] font-extrabold text-[#0B3B1E] leading-tight">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[13.5px] sm:text-[14.5px] font-extrabold text-[#0B3B1E] leading-snug break-words">
                               {course.title}
                             </div>
-                            <div className="text-[12px] font-semibold text-gray-700 truncate">
+                            <div className="text-[11.5px] font-medium text-gray-700 leading-relaxed mt-0.5 break-words">
                               {course.description}
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#15803D] font-bold mt-0.5">
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#15803D] font-bold mt-1">
                               <span>{course.duration}</span>
                               <span>•</span>
-                              <span className="px-2 py-0.2 rounded-md bg-[#D7EFE2] text-[#0D6845] font-extrabold">
+                              <span className="px-2 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] font-extrabold">
                                 Fee: {course.fees}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
-                          <span>Enroll</span>
-                          <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                        </span>
+                        <div className="flex justify-end shrink-0">
+                          <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
+                            <span>Enroll</span>
+                            <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                          </span>
+                        </div>
                       </div>
                     ))}
                 </div>
@@ -4278,19 +4271,19 @@ export default function App() {
               if (!tr) return null;
 
               return (
-                <div className="bg-white border border-emerald-200 rounded-[26px] p-5 shadow-sm space-y-4">
+                <div className="bg-white border border-emerald-200 rounded-[22px] p-4 sm:p-5 shadow-sm space-y-4">
                   <div className="space-y-1 border-b border-emerald-100 pb-3">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="inline-block px-3 py-1 rounded-[10px] bg-[#BCE3C5] text-[#0B3B1E] text-xs font-bold">
+                    <div className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none">
+                      <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#BCE3C5] text-[#0B3B1E] text-[11px] font-bold cursor-default pointer-events-none">
                         {tr.category}
                       </span>
                       {tr.subType && (
-                        <span className="inline-block px-3 py-1 rounded-[10px] bg-[#EAF5EC] text-[#15803D] text-xs font-bold">
+                        <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#EAF5EC] text-[#15803D] text-[11px] font-bold cursor-default pointer-events-none">
                           {tr.subType}
                         </span>
                       )}
                     </div>
-                    <h1 className="text-2xl font-extrabold text-[#0B3B1E] leading-tight pt-1">
+                    <h1 className="text-[17px] sm:text-[21px] font-extrabold text-[#0B3B1E] leading-snug pt-1 break-words">
                       {tr.title}
                     </h1>
                   </div>
