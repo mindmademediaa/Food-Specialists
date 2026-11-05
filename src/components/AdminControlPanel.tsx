@@ -387,66 +387,81 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const todayFormatted = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="min-h-screen bg-[#E3F3EA] text-[#0F291E] pb-12">
-      {/* TOP DEDICATED ADMIN COMMAND HEADER */}
-      <header className="bg-[#13422B] text-white sticky top-0 z-40 shadow-md border-b border-emerald-900/60">
-        <div className="max-w-5xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-emerald-200">
+    <div className="h-[100dvh] bg-[#E3F3EA] text-[#0F291E] flex flex-col overflow-hidden">
+      {/* TOP DEDICATED ADMIN COMMAND HEADER (CONSTANT — DOES NOT SCROLL) */}
+      <header className="shrink-0 z-40 bg-[#13422B] text-white shadow-md border-b border-emerald-900/60">
+        <div className="max-w-5xl mx-auto px-4 pt-3 pb-2.5 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-emerald-200">
               <img
                 src={FS_PORTAL_LOGO_DATA_URI}
                 alt="FS Portal Admin"
                 className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
               />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-[19px] sm:text-[21px] font-extrabold tracking-tight leading-none text-white">
-                  FS Portal — Admin Control Panel
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-[18px] sm:text-[20px] font-extrabold tracking-tight leading-none text-white truncate">
+                  FS Portal
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[10.5px] font-extrabold uppercase tracking-wider">
-                  Master Admin
+                <span className="px-2 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[10px] font-extrabold uppercase tracking-wider">
+                  Admin Control Panel
                 </span>
               </div>
-              <p className="text-[11.5px] text-emerald-200 font-medium mt-1">
-                Logged in as {adminEmail} • Real-Time Full Platform Control
+              <p className="text-[11px] text-emerald-200 font-medium mt-0.5 truncate">
+                {adminEmail} • Full Platform Control
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Integrated Quick Search Bar + Filter + Sign Out in Constant Header */}
+          <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
+            <div className="relative flex-1 sm:w-56 max-w-xs">
+              <Search className="w-3.5 h-3.5 text-[#2C4C3B] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={userSearch}
+                onChange={(e) => {
+                  setUserSearch(e.target.value);
+                  if (activeTab !== 'users') setActiveTab('users');
+                }}
+                placeholder="Search users, email, role..."
+                className="w-full h-9 pl-8 pr-3 rounded-xl bg-[#D5E6DC] text-[#13422B] placeholder:text-[#3B5949] text-xs font-semibold focus:outline-none"
+              />
+            </div>
+
             <button
               type="button"
               onClick={onPreviewUserApp}
-              className="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors"
+              className="px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
               title="Preview how the user app looks right now"
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>View Live App ↗</span>
+              <span className="hidden md:inline">View App</span>
             </button>
 
             <button
               type="button"
               onClick={onExportBackup}
-              className="px-3.5 py-2 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold hidden sm:flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+              className="px-3 py-2 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold hidden sm:flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs shrink-0"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Backup JSON</span>
+              <span className="hidden lg:inline">Backup</span>
             </button>
 
             <button
               type="button"
               onClick={onSignOut}
-              className="px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/35 border border-red-400/30 text-red-100 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors"
+              className="px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/35 border border-red-400/30 text-red-100 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Logout</span>
+              <span>Sign Out</span>
             </button>
           </div>
         </div>
 
         {/* NAVIGATION PILLS BAR INSIDE HEADER */}
-        <div className="max-w-5xl mx-auto px-4 pb-3 pt-1 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className="max-w-5xl mx-auto px-4 pb-2.5 pt-0.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {(
             [
               {
@@ -530,9 +545,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         </div>
       </header>
 
-      {/* MAIN ADMIN CONTENT CONTAINER */}
-      <main className="max-w-5xl mx-auto px-3.5 sm:px-5 pt-5 space-y-5">
-        {/* LIVE FEEDBACK BANNER */}
+      {/* MAIN ADMIN SCROLLABLE CONTENT CONTAINER */}
+      <main className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="max-w-5xl mx-auto px-3.5 sm:px-5 py-5 space-y-5">
+          {/* LIVE FEEDBACK BANNER */}
         {adminStatusBanner && (
           <div className="p-4 rounded-2xl bg-[#13422B] border-2 border-[#0E9F6E] text-white text-xs sm:text-sm font-extrabold flex items-center justify-between gap-3 shadow-md">
             <div className="flex items-center gap-2">
@@ -1411,7 +1427,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                             Experience: {expCount}
                           </span>
                           <span className="px-2.5 py-0.5 rounded-md bg-white border border-[#D4E9DF] text-[#0F291E]">
-                            Certifications: {certCount}
+                            Trainings: {certCount}
                           </span>
                           <span
                             className={`px-2.5 py-0.5 rounded-md ${
@@ -2714,7 +2730,69 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             </form>
           </div>
         )}
+        </div>
       </main>
+
+      {/* CONSTANT BOTTOM FOOTER IN ADMIN CONTROL PANEL */}
+      <footer className="shrink-0 z-40 bg-white border-t border-[#CBE3D6] px-4 py-2 shadow-[0_-6px_24px_rgba(19,66,43,0.08)]">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5 text-center">
+          <div className="flex items-center gap-3 text-[11px] font-bold text-[#0F291E]">
+            <button
+              type="button"
+              onClick={() => setActiveTab('overview')}
+              className={`cursor-pointer ${
+                activeTab === 'overview' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+              }`}
+            >
+              Dashboard
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setActiveTab('users')}
+              className={`cursor-pointer ${
+                activeTab === 'users' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+              }`}
+            >
+              Users ({stats.totalUsers})
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setActiveTab('jobs')}
+              className={`cursor-pointer ${
+                activeTab === 'jobs' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+              }`}
+            >
+              Jobs ({jobs.length})
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setActiveTab('scholarships')}
+              className={`cursor-pointer ${
+                activeTab === 'scholarships' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+              }`}
+            >
+              Scholarships ({scholarships.length})
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setActiveTab('payments')}
+              className={`cursor-pointer ${
+                activeTab === 'payments' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+              }`}
+            >
+              Payments
+            </button>
+          </div>
+          <p className="text-[10.5px] font-medium text-[#5C7267] leading-tight">
+            Developed by{' '}
+            <span className="font-bold text-[#13422B]">Food Specialist</span>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

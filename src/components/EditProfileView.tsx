@@ -1209,12 +1209,12 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             )}
           </div>
 
-          {/* ==================== 5C. CERTIFICATIONS ==================== */}
+          {/* ==================== 5C. TRAININGS ==================== */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-[17px] font-extrabold text-[#14261C]">
-                  Certifications
+                  Trainings
                 </span>
                 <VisibilityPill
                   size="sm"
@@ -1245,7 +1245,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
               <div className="bg-white border-2 border-[#229A54] rounded-2xl p-4 space-y-2.5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold text-[#14532D] uppercase">
-                    Certification Entry
+                    Training Entry
                   </span>
                   <VisibilityPill
                     size="sm"
@@ -1257,7 +1257,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                 </div>
                 <input
                   type="text"
-                  placeholder="Certificate Name (e.g. ISO 22000 Lead Auditor / HACCP Level 4)"
+                  placeholder="Training Name (e.g. ISO 22000 Lead Auditor / HACCP Level 4)"
                   value={editingCert.name}
                   onChange={(e) =>
                     setEditingCert({ ...editingCert, name: e.target.value })
@@ -1266,7 +1266,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                 />
                 <input
                   type="text"
-                  placeholder="Issuer (e.g. Highfield UK / IRCA CQI)"
+                  placeholder="Training Body / Issuer (e.g. Highfield UK / IRCA CQI)"
                   value={editingCert.issuer}
                   onChange={(e) =>
                     setEditingCert({ ...editingCert, issuer: e.target.value })
@@ -1276,7 +1276,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="text"
-                    placeholder="Issue Date (e.g. Oct 2024)"
+                    placeholder="Completion Date (e.g. Oct 2024)"
                     value={editingCert.issueDate}
                     onChange={(e) =>
                       setEditingCert({
@@ -1324,7 +1324,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     }}
                     className="px-4 py-1.5 rounded-xl bg-[#228B4E] text-white text-xs font-extrabold cursor-pointer"
                   >
-                    Save Certification
+                    Save Training
                   </button>
                 </div>
               </div>

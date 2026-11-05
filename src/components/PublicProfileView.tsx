@@ -612,13 +612,13 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
           </div>
         )}
 
-        {/* CERTIFICATIONS SECTION */}
+        {/* TRAININGS SECTION */}
         {visibleCertifications.length > 0 && (
           <div className="space-y-2.5 pt-1">
             <div className="flex items-center gap-2">
               <Award className="w-5 h-5 text-[#278549]" />
               <h3 className="text-[18px] font-extrabold text-[#14261C]">
-                Certifications
+                Trainings
               </h3>
             </div>
 

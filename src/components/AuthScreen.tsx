@@ -613,7 +613,7 @@ export const AuthScreen: React.FC = () => {
         {/* Footer Branding */}
         <div className="text-center">
           <p className="text-[11px] font-semibold text-[#14532D]">
-            Developed by Muneeb Khan, Food Safety Specialist, +923240906384
+            Developed by Food Specialist
           </p>
         </div>
       </div>

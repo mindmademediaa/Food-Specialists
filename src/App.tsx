@@ -392,9 +392,11 @@ export default function App() {
     return () => clearTimeout(splashTimer);
   }, []);
 
-  // Firebase Authentication State (Strict Gate)
-  const [authUser, setAuthUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  // Firebase Authentication State (Instant Check — No Slow Blocking Screen)
+  const [authUser, setAuthUser] = useState<User | null>(() => auth.currentUser);
+  const [authLoading, setAuthLoading] = useState<boolean>(
+    () => !auth.currentUser
+  );
 
   // Navigation & Route Stack
   const [route, setRoute] = useState<RouteView>({ name: 'home' });
@@ -544,8 +546,17 @@ export default function App() {
 
   // Monitor real-time Firebase Authentication state and auto-persist user record in Firestore
   useEffect(() => {
+    // Fast fallback timer so the loading screen never hangs on slow mobile connections
+    const fastFallback = setTimeout(() => {
+      setAuthLoading(false);
+    }, 400);
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       setAuthUser(firebaseUser);
+      // Clear auth loading IMMEDIATELY so the user enters the app right away without waiting for Firestore network calls
+      setAuthLoading(false);
+      clearTimeout(fastFallback);
+
       if (firebaseUser) {
         const displayName =
           firebaseUser.displayName?.trim() ||
@@ -588,7 +599,7 @@ export default function App() {
           profilePicUrl: prev.profilePicUrl || prev.profilePhotoUrl || defaultAvatar
         }));
 
-        // Check if user profile already exists in Firestore; hydrate both public doc and private owner vault
+        // Check if user profile already exists in Firestore; hydrate both public doc and private owner vault in background
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const privateVaultRef = doc(db, 'users', firebaseUser.uid, 'private', 'profile');
         try {
@@ -728,10 +739,12 @@ export default function App() {
           } catch {}
         }
       }
-      setAuthLoading(false);
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      clearTimeout(fastFallback);
+      unsubscribeAuth();
+    };
   }, []);
 
   const handleSignOut = async () => {
@@ -2384,10 +2397,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E8F5EE] text-gray-900 flex flex-col items-center justify-start py-0 sm:py-6 px-0 sm:px-4">
+    <div className="h-[100dvh] bg-[#E8F5EE] text-gray-900 flex flex-col items-center justify-start py-0 sm:py-3 px-0 sm:px-4 overflow-hidden">
       {/* If Admin is previewing the user-facing app, show a top bar to return to Admin Control Panel */}
       {isUserAdmin && adminPreviewUserMode && (
-        <div className="w-full max-w-[480px] mb-2 px-3 py-2.5 bg-[#13422B] text-white sm:rounded-2xl flex items-center justify-between gap-2 shadow-md">
+        <div className="w-full max-w-[480px] shrink-0 mb-1.5 px-3 py-2 bg-[#13422B] text-white sm:rounded-2xl flex items-center justify-between gap-2 shadow-md">
           <div className="text-xs font-extrabold flex items-center gap-1.5">
             <Shield className="w-4 h-4 text-[#34D399]" />
             <span>Previewing User App Mode</span>
@@ -2402,9 +2415,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Mobile-First App Container — Theme 1: Emerald Trust */}
-      <div className="w-full max-w-[480px] bg-[#E3F3EA] sm:rounded-[38px] sm:border-[1.5px] sm:border-[#A7D3BD] sm:shadow-2xl flex flex-col relative overflow-hidden">
-        {/* TOP FULL-WIDTH DEEP FOREST EMERALD HEADER (#13422B) */}
+      {/* Mobile-First App Container — Constant Top Header + Scrollable Middle Content + Constant Bottom Footer */}
+      <div className="w-full max-w-[480px] flex-1 min-h-0 bg-[#E3F3EA] sm:rounded-[34px] sm:border-[1.5px] sm:border-[#A7D3BD] sm:shadow-2xl flex flex-col relative overflow-hidden">
+        {/* TOP FULL-WIDTH DEEP FOREST EMERALD HEADER (#13422B) — CONSTANT */}
         <Header
           showBack={route.name !== 'home'}
           onBack={() => {
@@ -2440,88 +2453,47 @@ export default function App() {
           }
         />
 
-        {/* LAST 5 DAYS PREMIUM EXPIRY COUNTDOWN BANNER (Shows across app when 1–5 days remain) */}
-        {globalPremiumCountdown && (
-          <div className="mx-3.5 mt-3 rounded-2xl bg-gradient-to-r from-[#7C2D12] via-[#B45309] to-[#92400E] text-white p-3.5 shadow-md border border-amber-300/40 flex items-center justify-between gap-3">
-            <div className="flex items-start gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5 text-amber-200 animate-pulse" />
+        {/* MIDDLE SCROLLABLE PAGE CONTENT AREA (Header & Footer remain constant) */}
+        <main className="flex-1 overflow-y-auto overscroll-contain p-3.5 sm:p-5 pb-6 space-y-4">
+          {/* LAST 5 DAYS PREMIUM EXPIRY COUNTDOWN BANNER (Shows across app when 1–5 days remain) */}
+          {globalPremiumCountdown && (
+            <div className="rounded-2xl bg-gradient-to-r from-[#7C2D12] via-[#B45309] to-[#92400E] text-white p-3.5 shadow-md border border-amber-300/40 flex items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center shrink-0">
+                  <Clock className="w-5 h-5 text-amber-200 animate-pulse" />
+                </div>
+                <div className="min-w-0">
+                  <span className="inline-block px-2 py-0.5 rounded-full bg-amber-300 text-[#7C2D12] text-[10px] font-extrabold uppercase tracking-wider">
+                    ⏳ Final 5-Day Countdown: {globalPremiumCountdown.daysLeft}{' '}
+                    {globalPremiumCountdown.daysLeft === 1 ? 'Day' : 'Days'} Left
+                  </span>
+                  <p className="text-xs font-extrabold text-white mt-1 leading-snug">
+                    Your Premium Membership ends in{' '}
+                    <span className="underline decoration-amber-300">
+                      {globalPremiumCountdown.daysLeft}{' '}
+                      {globalPremiumCountdown.daysLeft === 1 ? 'day' : 'days'}
+                    </span>{' '}
+                    on {globalPremiumCountdown.formattedEndDate}.
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <span className="inline-block px-2 py-0.5 rounded-full bg-amber-300 text-[#7C2D12] text-[10px] font-extrabold uppercase tracking-wider">
-                  ⏳ Final 5-Day Countdown: {globalPremiumCountdown.daysLeft}{' '}
-                  {globalPremiumCountdown.daysLeft === 1 ? 'Day' : 'Days'} Left
-                </span>
-                <p className="text-xs font-extrabold text-white mt-1 leading-snug">
-                  Your Premium Membership ends in{' '}
-                  <span className="underline decoration-amber-300">
-                    {globalPremiumCountdown.daysLeft}{' '}
-                    {globalPremiumCountdown.daysLeft === 1 ? 'day' : 'days'}
-                  </span>{' '}
-                  on {globalPremiumCountdown.formattedEndDate}.
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPaySubmitBanner(null);
+                  setShowPremiumUpgradeModal(true);
+                }}
+                className="px-3 py-2 rounded-xl bg-amber-300 hover:bg-amber-200 text-[#7C2D12] text-[11px] font-extrabold shrink-0 cursor-pointer shadow-xs"
+              >
+                Renew Now
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setPaySubmitBanner(null);
-                setShowPremiumUpgradeModal(true);
-              }}
-              className="px-3 py-2 rounded-xl bg-amber-300 hover:bg-amber-200 text-[#7C2D12] text-[11px] font-extrabold shrink-0 cursor-pointer shadow-xs"
-            >
-              Renew Now
-            </button>
-          </div>
-        )}
+          )}
 
-        <div className="p-3.5 sm:p-5 pb-5 space-y-4">
           {/* ==================== 1. HOME SCREEN (/) ==================== */}
           {route.name === 'home' && (
             <div className="space-y-4 px-0.5">
-              {/* Theme 1: Emerald Trust Horizontal Quick Pills Bar */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                <button
-                  type="button"
-                  onClick={() => setRoute({ name: 'search' })}
-                  className="px-4 py-2 rounded-full bg-[#0E9F6E] hover:bg-[#059669] text-white text-[13px] font-bold inline-flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer transition-colors"
-                >
-                  <Search className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Search</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setJobCategoryFilter('Quality & Safety');
-                    navigateToJobs('All');
-                  }}
-                  className="px-4 py-2 rounded-full bg-[#CFEAD9] hover:bg-[#BFE2CD] border border-[#9BCAB0] text-[#0F291E] text-[13px] font-semibold shrink-0 cursor-pointer transition-colors"
-                >
-                  Quality &amp; Safety
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setJobCategoryFilter('R&D Lab');
-                    navigateToJobs('All');
-                  }}
-                  className="px-4 py-2 rounded-full bg-[#CFEAD9] hover:bg-[#BFE2CD] border border-[#9BCAB0] text-[#0F291E] text-[13px] font-semibold shrink-0 cursor-pointer transition-colors"
-                >
-                  R&amp;D Lab
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setJobCategoryFilter('Production');
-                    navigateToJobs('All');
-                  }}
-                  className="px-4 py-2 rounded-full bg-[#CFEAD9] hover:bg-[#BFE2CD] border border-[#9BCAB0] text-[#0F291E] text-[13px] font-semibold shrink-0 cursor-pointer transition-colors"
-                >
-                  Production
-                </button>
-              </div>
-
-              {/* Greeting + View All Row (Matching "Browse Jobs / View all" in Theme 1) */}
+              {/* Greeting + View All Row */}
               <div className="flex items-center justify-between pt-0.5">
                 <h1 className="text-[24px] sm:text-[26px] font-extrabold text-[#0F291E] tracking-tight leading-tight">
                   Good morning, {firstName}
@@ -2688,34 +2660,6 @@ export default function App() {
           {/* ==================== 2. JOBS PAGE (/jobs) ==================== */}
           {route.name === 'jobs' && (
             <div className="space-y-4 px-0.5">
-              {/* Theme 1: Emerald Trust Filter Pills Row */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                {(
-                  [
-                    { label: 'All Jobs', val: 'All' },
-                    { label: 'Quality & Safety', val: 'Quality & Safety' },
-                    { label: 'R&D Lab', val: 'R&D Lab' },
-                    { label: 'Production', val: 'Production' }
-                  ] as const
-                ).map((pill) => {
-                  const active = jobCategoryFilter === pill.val;
-                  return (
-                    <button
-                      key={pill.val}
-                      type="button"
-                      onClick={() => setJobCategoryFilter(pill.val)}
-                      className={`px-4 py-2 rounded-full text-[13px] font-bold shrink-0 cursor-pointer transition-colors ${
-                        active
-                          ? 'bg-[#0E9F6E] text-white shadow-xs'
-                          : 'bg-[#CFEAD9] hover:bg-[#BFE2CD] border border-[#9BCAB0] text-[#0F291E]'
-                      }`}
-                    >
-                      {pill.label}
-                    </button>
-                  );
-                })}
-              </div>
-
               <div className="flex items-center justify-between pt-0.5">
                 <div>
                   <h1 className="text-[24px] font-extrabold text-[#0F291E] tracking-tight leading-tight">
@@ -3270,7 +3214,7 @@ export default function App() {
                             Deadline {sch.deadline} ({daysLeft}d left)
                           </span>
                           <span className="px-4 py-2 rounded-[11px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-xs transition-colors">
-                            Apply Now
+                            See Details
                           </span>
                         </div>
                       </div>
@@ -4896,7 +4840,7 @@ export default function App() {
               )}
             </div>
           )}
-        </div>
+        </main>
 
         {/* ==================== HIRE / CONTACT MEMBER MODAL ==================== */}
         {contactModalMember && (

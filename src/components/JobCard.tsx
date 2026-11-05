@@ -119,7 +119,7 @@ export const JobCard: React.FC<JobCardProps> = ({
         </div>
 
         <span className="px-4 py-2 rounded-[11px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-xs transition-colors">
-          Apply Now
+          See Details
         </span>
       </div>
     </div>

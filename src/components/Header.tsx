@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
   pendingAdminCount = 0
 }) => {
   return (
-    <header className="bg-[#13422B] text-white px-4 sm:px-5 pt-4 pb-4 space-y-3.5 shadow-md">
+    <header className="shrink-0 z-30 bg-[#13422B] text-white px-4 sm:px-5 pt-3.5 pb-3.5 space-y-3 shadow-md">
       {/* Top Row: Brand Logo + Title on Left, Admin / Bell / Sign Out on Right */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">

@@ -23,7 +23,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   ];
 
   return (
-    <footer className="sticky bottom-0 inset-x-0 z-30 bg-white border-t border-[#CBE3D6] px-2 pb-2 shadow-[0_-6px_24px_rgba(19,66,43,0.08)]">
+    <footer className="shrink-0 z-30 bg-white border-t border-[#CBE3D6] px-2 pb-2 shadow-[0_-6px_24px_rgba(19,66,43,0.08)]">
       <nav
         aria-label="Bottom Navigation"
         className="grid grid-cols-4 items-center"
@@ -64,16 +64,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       <div className="mt-1 pt-1.5 border-t border-[#EDF5F0] text-center">
         <p className="text-[10.5px] font-medium text-[#5C7267] leading-tight">
           Developed by{' '}
-          <span className="font-bold text-[#13422B]">Muneeb Khan</span>, Food
-          Safety Specialist,{' '}
-          <a
-            href="https://wa.me/923240906384"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-[#0E9F6E] hover:underline"
-          >
-            +923240906384
-          </a>
+          <span className="font-bold text-[#13422B]">Food Specialist</span>
         </p>
       </div>
     </footer>
