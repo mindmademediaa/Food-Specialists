@@ -107,6 +107,7 @@ import {
   normalizeExperienceArray
 } from './components/EditProfileView';
 import { PublicProfileView } from './components/PublicProfileView';
+import { AdminControlPanel } from './components/AdminControlPanel';
 
 // Custom Duotone SVGs & Botanical Watermarks for the Home Screen Cards
 const DuotoneBriefcaseIcon = () => (
@@ -459,6 +460,9 @@ export default function App() {
   const [adminStatusBanner, setAdminStatusBanner] = useState<string | null>(
     null
   );
+  // When Admin logs in, land directly in the dedicated Admin Control Panel (not the user app)
+  const [adminPreviewUserMode, setAdminPreviewUserMode] =
+    useState<boolean>(false);
 
   // Admin Quick Add Job / Scholarship State
   const [adminOppType, setAdminOppType] = useState<'job' | 'scholarship'>(
@@ -778,21 +782,26 @@ export default function App() {
     const unsubJobs = onSnapshot(
       collection(db, 'jobs'),
       (snap) => {
-        if (!snap.empty) {
-          const fsJobs = snap.docs.map((d) => ({
-            ...(d.data() as HubJob),
-            id: d.id
-          }));
-          setJobs(() => {
-            const map = new Map<string, HubJob>();
-            INITIAL_JOBS.forEach((j) => map.set(j.id, j));
-            fsJobs.forEach((j) => {
-              const initMatch = INITIAL_JOBS.find((ij) => ij.id === j.id);
+        const fsJobs = snap.docs.map((d) => ({
+          ...(d.data() as HubJob),
+          id: d.id
+        }));
+        setJobs(() => {
+          const map = new Map<string, HubJob>();
+          // Put custom/newly added jobs first (sorted newest first)
+          fsJobs
+            .filter((j) => !INITIAL_JOBS.some((ij) => ij.id === j.id))
+            .sort((a, b) => b.id.localeCompare(a.id))
+            .forEach((j) => map.set(j.id, j));
+          INITIAL_JOBS.forEach((j) => map.set(j.id, j));
+          fsJobs.forEach((j) => {
+            const initMatch = INITIAL_JOBS.find((ij) => ij.id === j.id);
+            if (initMatch) {
               map.set(j.id, { ...initMatch, ...j });
-            });
-            return Array.from(map.values()).filter((j) => j.isActive);
+            }
           });
-        }
+          return Array.from(map.values()).filter((j) => j.isActive);
+        });
       },
       (err) => {
         try {
@@ -804,23 +813,27 @@ export default function App() {
     const unsubSch = onSnapshot(
       collection(db, 'scholarships'),
       (snap) => {
-        if (!snap.empty) {
-          const fsSch = snap.docs.map((d) => ({
-            ...(d.data() as HubScholarship),
-            id: d.id
-          }));
-          setScholarships(() => {
-            const map = new Map<string, HubScholarship>();
-            INITIAL_SCHOLARSHIPS.forEach((s) => map.set(s.id, s));
-            fsSch.forEach((s) => {
-              const initMatch = INITIAL_SCHOLARSHIPS.find(
-                (is) => is.id === s.id
-              );
+        const fsSch = snap.docs.map((d) => ({
+          ...(d.data() as HubScholarship),
+          id: d.id
+        }));
+        setScholarships(() => {
+          const map = new Map<string, HubScholarship>();
+          fsSch
+            .filter((s) => !INITIAL_SCHOLARSHIPS.some((is) => is.id === s.id))
+            .sort((a, b) => b.id.localeCompare(a.id))
+            .forEach((s) => map.set(s.id, s));
+          INITIAL_SCHOLARSHIPS.forEach((s) => map.set(s.id, s));
+          fsSch.forEach((s) => {
+            const initMatch = INITIAL_SCHOLARSHIPS.find(
+              (is) => is.id === s.id
+            );
+            if (initMatch) {
               map.set(s.id, { ...initMatch, ...s });
-            });
-            return Array.from(map.values()).filter((s) => s.isActive);
+            }
           });
-        }
+          return Array.from(map.values()).filter((s) => s.isActive);
+        });
       },
       (err) => {
         try {
@@ -832,18 +845,19 @@ export default function App() {
     const unsubTr = onSnapshot(
       collection(db, 'trainings'),
       (snap) => {
-        if (!snap.empty) {
-          const fsTr = snap.docs.map((d) => ({
-            ...(d.data() as HubTraining),
-            id: d.id
-          }));
-          setTrainings(() => {
-            const map = new Map<string, HubTraining>();
-            INITIAL_TRAININGS.forEach((t) => map.set(t.id, t));
-            fsTr.forEach((t) => map.set(t.id, t));
-            return Array.from(map.values()).filter((t) => t.isActive);
+        const fsTr = snap.docs.map((d) => ({
+          ...(d.data() as HubTraining),
+          id: d.id
+        }));
+        setTrainings(() => {
+          const map = new Map<string, HubTraining>();
+          INITIAL_TRAININGS.forEach((t) => map.set(t.id, t));
+          fsTr.forEach((t) => {
+            const initMatch = INITIAL_TRAININGS.find((it) => it.id === t.id);
+            map.set(t.id, initMatch ? { ...initMatch, ...t } : t);
           });
-        }
+          return Array.from(map.values()).filter((t) => t.isActive);
+        });
       },
       (err) => {
         try {
@@ -1260,6 +1274,11 @@ export default function App() {
         t.title.toLowerCase().includes('haccp')
       ),
     [highfieldTrainings]
+  );
+
+  const leadAuditorTrainings = useMemo(
+    () => trainings.filter((t) => t.isActive && t.category === 'Lead Auditor'),
+    [trainings]
   );
 
   // Global Search Results for /search
@@ -1706,68 +1725,387 @@ export default function App() {
     }
   };
 
+  const handleDeletePaymentRequest = async (reqId: string) => {
+    try {
+      if (!reqId.startsWith('user-pay-')) {
+        await deleteDoc(doc(db, 'paymentRequests', reqId));
+      }
+      setPaymentRequests((prev) => prev.filter((r) => r.id !== reqId));
+      setAdminStatusBanner('Payment request record removed.');
+      setTimeout(() => setAdminStatusBanner(null), 3500);
+    } catch {}
+  };
+
+  const handleToggleUserPremium = async (
+    targetUser: HubUser,
+    makePremium: boolean
+  ) => {
+    try {
+      const now = new Date();
+      const nowIso = now.toISOString().slice(0, 19) + 'Z';
+      const expiresDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const expiresIso = expiresDate.toISOString().slice(0, 19) + 'Z';
+
+      const updatedUser: HubUser = {
+        ...targetUser,
+        uid: targetUser.uid,
+        name: targetUser.name || 'Food Specialist',
+        isPaid: makePremium,
+        isPremium: makePremium,
+        plan: makePremium ? 'premium' : 'free',
+        paymentStatus: makePremium ? 'verified' : 'rejected',
+        subscriptionPlan: makePremium ? '1 Month (Rs. 100)' : '',
+        premiumActivatedAt: makePremium ? nowIso : '',
+        premiumExpiresAt: makePremium ? expiresIso : ''
+      };
+
+      await Promise.all([
+        setDoc(doc(db, 'users', targetUser.uid), updatedUser, { merge: true }),
+        setDoc(
+          doc(db, 'users', targetUser.uid, 'private', 'profile'),
+          updatedUser,
+          { merge: true }
+        ),
+        setDoc(
+          doc(db, 'users', targetUser.uid, 'profile', 'main'),
+          updatedUser,
+          { merge: true }
+        )
+      ]);
+
+      // Also update any matching paymentRequests for this user
+      const matchingReqs = paymentRequests.filter(
+        (r) => r.uid === targetUser.uid
+      );
+      await Promise.all(
+        matchingReqs.map((r) =>
+          setDoc(
+            doc(db, 'paymentRequests', r.id),
+            {
+              ...r,
+              status: makePremium ? 'verified' : 'rejected',
+              approvedAt: makePremium ? nowIso : '',
+              premiumExpiresAt: makePremium ? expiresIso : ''
+            },
+            { merge: true }
+          )
+        )
+      );
+
+      setAdminStatusBanner(
+        makePremium
+          ? `Accepted ${targetUser.name}! 1-Month Premium Membership activated immediately.`
+          : `Updated ${targetUser.name} to Free Tier / Rejected.`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch {}
+  };
+
+  const handleDeleteUser = async (uid: string, userName: string) => {
+    try {
+      await Promise.all([
+        deleteDoc(doc(db, 'users', uid)),
+        deleteDoc(doc(db, 'users', uid, 'private', 'profile')),
+        deleteDoc(doc(db, 'users', uid, 'profile', 'main'))
+      ]);
+      setUsers((prev) => prev.filter((u) => u.uid !== uid));
+      setAdminStatusBanner(`Removed user "${userName}" from the platform.`);
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch {}
+  };
+
+  // 1-Box Smart Paste Job Publisher
+  const handleQuickPasteJob = async (
+    rawText: string,
+    category: 'Quality & Safety' | 'R&D Lab' | 'Production'
+  ) => {
+    const cleanText = rawText.trim();
+    if (!cleanText) return;
+
+    const lines = cleanText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const firstLine = (lines[0] || 'Food Specialist Opportunity')
+      .replace(/^[•*#\-–—\s]+/, '')
+      .slice(0, 180);
+
+    // Auto-detect Company if present, or extract from "Role — Company"
+    const companyLineMatch = cleanText.match(
+      /(?:company|organization|employer|industry|firm)\s*[:\-]\s*([^\r\n]+)/i
+    );
+    let detectedCompany = companyLineMatch?.[1]?.trim() || '';
+    if (!detectedCompany && firstLine.includes('—')) {
+      detectedCompany = firstLine.split('—')[1]?.trim() || '';
+    } else if (!detectedCompany && firstLine.includes(' - ')) {
+      detectedCompany = firstLine.split(' - ')[1]?.trim() || '';
+    }
+    if (!detectedCompany) {
+      detectedCompany =
+        lines[1] && lines[1].length <= 70
+          ? lines[1]
+          : 'Verified Food Industry Employer';
+    }
+    detectedCompany = detectedCompany.slice(0, 180);
+
+    // Auto-detect Country & Location
+    const countryCandidates = [
+      'Pakistan',
+      'UAE',
+      'Dubai',
+      'Saudi Arabia',
+      'KSA',
+      'Qatar',
+      'Oman',
+      'Kuwait',
+      'Bahrain',
+      'UK',
+      'United Kingdom',
+      'USA',
+      'Canada',
+      'Australia',
+      'Germany',
+      'Europe',
+      'International',
+      'Remote'
+    ];
+    const matchedCountry =
+      countryCandidates.find((c) =>
+        new RegExp(`\\b${c}\\b`, 'i').test(cleanText)
+      ) || 'Pakistan';
+
+    const locMatch = cleanText.match(
+      /(?:location|city|based in)\s*[:\-]\s*([^\r\n]+)/i
+    );
+    const detectedLocation = (
+      locMatch?.[1]?.trim() || matchedCountry
+    ).slice(0, 180);
+
+    const detectedEmail =
+      cleanText.match(
+        /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+      )?.[0] || '';
+    const detectedLink =
+      cleanText.match(/https?:\/\/[^\s)]+/)?.[0]?.slice(0, 480) || '#';
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const id = `job-${Date.now()}`;
+
+    const newJob: HubJob = {
+      id,
+      title: firstLine,
+      company: detectedCompany,
+      location: detectedLocation,
+      country: matchedCountry === 'Dubai' ? 'UAE' : matchedCountry,
+      specialization: category,
+      experienceRequired: 'See Job Post',
+      category,
+      description: cleanText.slice(0, 7800),
+      requirements:
+        'Please refer to the complete job description above for requirements and application details.',
+      hrEmail: detectedEmail.slice(0, 190),
+      applyLink: detectedLink,
+      tags: [category, matchedCountry],
+      postedAt: todayStr,
+      expiryAt: '2026-12-31',
+      isActive: true
+    };
+
+    try {
+      await setDoc(doc(db, 'jobs', id), newJob);
+      setJobs((prev) => [newJob, ...prev.filter((j) => j.id !== id)]);
+      setAdminStatusBanner(
+        `Job shared in "${category}" with date ${todayStr}! Live on app now.`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch {}
+  };
+
+  const handleDeleteJob = async (job: HubJob) => {
+    try {
+      await setDoc(
+        doc(db, 'jobs', job.id),
+        { ...job, isActive: false },
+        { merge: true }
+      );
+      setJobs((prev) => prev.filter((j) => j.id !== job.id));
+      setAdminStatusBanner(`Removed job "${job.title}" from the app.`);
+      setTimeout(() => setAdminStatusBanner(null), 3500);
+    } catch {}
+  };
+
+  // 1-Box Smart Paste Scholarship Publisher
+  const handleQuickPasteScholarship = async (
+    rawText: string,
+    fundingType: 'Fellowships' | 'International' | 'Grants'
+  ) => {
+    const cleanText = rawText.trim();
+    if (!cleanText) return;
+
+    const lines = cleanText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const firstLine = (lines[0] || 'Food Science & Technology Scholarship')
+      .replace(/^[•*#\-–—\s]+/, '')
+      .slice(0, 220);
+
+    const orgLineMatch = cleanText.match(
+      /(?:university|organization|institute|host|program)\s*[:\-]\s*([^\r\n]+)/i
+    );
+    const detectedOrg = (
+      orgLineMatch?.[1]?.trim() ||
+      (lines[1] && lines[1].length <= 80
+        ? lines[1]
+        : 'Global Food Science Scholarship')
+    ).slice(0, 220);
+
+    const countryCandidates = [
+      'Europe',
+      'UK',
+      'United Kingdom',
+      'USA',
+      'Germany',
+      'Netherlands',
+      'Australia',
+      'Canada',
+      'China',
+      'Japan',
+      'South Korea',
+      'Italy',
+      'France',
+      'Sweden',
+      'Denmark',
+      'Pakistan',
+      'International'
+    ];
+    const matchedCountry =
+      countryCandidates.find((c) =>
+        new RegExp(`\\b${c}\\b`, 'i').test(cleanText)
+      ) || 'International';
+
+    const detectedEmail =
+      cleanText.match(
+        /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+      )?.[0] || '';
+    const detectedLink =
+      cleanText.match(/https?:\/\/[^\s)]+/)?.[0]?.slice(0, 480) || '#';
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const id = `sch-${Date.now()}`;
+
+    const newSch: HubScholarship = {
+      id,
+      title: firstLine,
+      organization: detectedOrg,
+      country: matchedCountry,
+      specialization: 'Food Science & Technology',
+      deadline: todayStr,
+      fundingType,
+      degreeLevel: 'BS / MS / PhD',
+      description: cleanText.slice(0, 7800),
+      eligibility:
+        'Please refer to the complete scholarship announcement above for eligibility & application steps.',
+      hrEmail: detectedEmail.slice(0, 190),
+      applyLink: detectedLink,
+      isActive: true
+    };
+
+    try {
+      await setDoc(doc(db, 'scholarships', id), newSch);
+      setScholarships((prev) => [newSch, ...prev.filter((s) => s.id !== id)]);
+      setAdminStatusBanner(
+        `Scholarship shared in "${fundingType}" with date ${todayStr}! Live on app now.`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch {}
+  };
+
+  const handleDeleteScholarship = async (sch: HubScholarship) => {
+    try {
+      await setDoc(
+        doc(db, 'scholarships', sch.id),
+        { ...sch, isActive: false },
+        { merge: true }
+      );
+      setScholarships((prev) => prev.filter((s) => s.id !== sch.id));
+      setAdminStatusBanner(`Removed scholarship "${sch.title}" from the app.`);
+      setTimeout(() => setAdminStatusBanner(null), 3500);
+    } catch {}
+  };
+
+  // Trainings & Live Price Manager
+  const handleSaveTraining = async (training: HubTraining) => {
+    try {
+      const payload: HubTraining = {
+        ...training,
+        title: training.title.slice(0, 195),
+        category: training.category,
+        subType: training.subType || null,
+        duration: (training.duration || '5 Days').slice(0, 110),
+        fees: (training.fees || 'PKR 25,000').slice(0, 110),
+        description: (training.description || '').slice(0, 7800),
+        enrollLink: (training.enrollLink || 'https://wa.me/923240906384').slice(
+          0,
+          480
+        ),
+        isActive: true
+      };
+      await setDoc(doc(db, 'trainings', payload.id), payload, { merge: true });
+      setTrainings((prev) => {
+        const exists = prev.some((t) => t.id === payload.id);
+        if (exists) {
+          return prev.map((t) => (t.id === payload.id ? payload : t));
+        }
+        return [payload, ...prev];
+      });
+      setAdminStatusBanner(
+        `Saved training "${payload.title}" (Fee: ${payload.fees}) — Live on App!`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch {}
+  };
+
+  const handleDeleteTraining = async (training: HubTraining) => {
+    try {
+      await setDoc(
+        doc(db, 'trainings', training.id),
+        {
+          category: training.category,
+          title: training.title,
+          isActive: false
+        },
+        { merge: true }
+      );
+      setTrainings((prev) => prev.filter((t) => t.id !== training.id));
+      setAdminStatusBanner(`Removed training "${training.title}" from the app.`);
+      setTimeout(() => setAdminStatusBanner(null), 3500);
+    } catch {}
+  };
+
   const handleAdminPublishOpportunity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminOppTitle.trim() || !adminOppOrg.trim()) return;
     if (adminOppType === 'job') {
-      const id = `job-${Date.now()}`;
-      const newJob: HubJob = {
-        id,
-        title: adminOppTitle.trim(),
-        company: adminOppOrg.trim(),
-        location: adminOppLocation.trim() || 'Lahore, Pakistan',
-        country: adminOppCountry.trim() || 'Pakistan',
-        specialization: adminOppCat,
-        experienceRequired: adminOppExpOrDeadline.trim() || '2+ Years',
-        category: adminOppCat,
-        description: adminOppDesc.trim() || 'Role in Food Quality & Safety.',
-        requirements: 'BS/MS Food Science & Technology, HACCP / ISO 22000.',
-        hrEmail: adminOppEmail.trim(),
-        applyLink: adminOppLink.trim() || '#',
-        tags: [adminOppCat, adminOppCountry],
-        postedAt: new Date().toISOString().slice(0, 10),
-        expiryAt: '2026-12-31',
-        isActive: true
-      };
-      try {
-        await setDoc(doc(db, 'jobs', id), newJob);
-        setJobs((prev) => [newJob, ...prev]);
-        setAdminStatusBanner(`Job "${newJob.title}" saved to Cloud Storage!`);
-      } catch {}
+      await handleQuickPasteJob(
+        `${adminOppTitle.trim()} — ${adminOppOrg.trim()}\nLocation: ${adminOppLocation}, ${adminOppCountry}\n${adminOppDesc}\nEmail: ${adminOppEmail}\nApply: ${adminOppLink}`,
+        (adminOppCat as 'Quality & Safety' | 'R&D Lab' | 'Production') ||
+          'Quality & Safety'
+      );
     } else {
-      const id = `sch-${Date.now()}`;
-      const newSch: HubScholarship = {
-        id,
-        title: adminOppTitle.trim(),
-        organization: adminOppOrg.trim(),
-        country: adminOppCountry.trim() || 'International',
-        specialization: 'Food Science & Technology',
-        deadline: adminOppExpOrDeadline.trim() || '2026-12-31',
-        fundingType:
-          (adminOppCat as 'Fellowships' | 'International' | 'Grants') ||
-          'Fellowships',
-        degreeLevel: 'MS / PhD',
-        description:
-          adminOppDesc.trim() || 'Funded Food Science & Technology Scholarship.',
-        eligibility: 'BS/MS in Food Science, Human Nutrition, or Dairy Tech.',
-        hrEmail: adminOppEmail.trim(),
-        applyLink: adminOppLink.trim() || '#',
-        isActive: true
-      };
-      try {
-        await setDoc(doc(db, 'scholarships', id), newSch);
-        setScholarships((prev) => [newSch, ...prev]);
-        setAdminStatusBanner(
-          `Scholarship "${newSch.title}" saved to Cloud Storage!`
-        );
-      } catch {}
+      await handleQuickPasteScholarship(
+        `${adminOppTitle.trim()} — ${adminOppOrg.trim()}\nCountry: ${adminOppCountry}\n${adminOppDesc}\nEmail: ${adminOppEmail}\nApply: ${adminOppLink}`,
+        (adminOppCat as 'Fellowships' | 'International' | 'Grants') ||
+          'Fellowships'
+      );
     }
     setAdminOppTitle('');
     setAdminOppOrg('');
     setAdminOppDesc('');
     setAdminOppEmail('');
     setAdminOppLink('');
-    setTimeout(() => setAdminStatusBanner(null), 4000);
   };
 
   const handleSaveStorageConfig = async (e: React.FormEvent) => {
@@ -1883,54 +2221,157 @@ export default function App() {
     return <AuthScreen />;
   }
 
-  return (
-    <div className="min-h-screen bg-[#F0FDF4] text-gray-900 flex flex-col items-center justify-start py-0 sm:py-6 px-0 sm:px-4">
-      {/* Mobile-First App Container — Tight fit with zero unnecessary white space */}
-      <div className="w-full max-w-[480px] bg-[#EEF7F0] sm:rounded-[38px] sm:border-[1.5px] sm:border-[#9EC4A7] sm:shadow-xl flex flex-col relative overflow-hidden">
-        <div className="p-3.5 sm:p-5 pb-5 space-y-5">
-          {/* TOP ROUNDED GREEN HEADER */}
-          <Header
-            showBack={route.name !== 'home'}
-            onBack={() => {
-              if (route.name === 'job-detail') setRoute({ name: 'jobs' });
-              else if (route.name === 'scholarship-detail')
-                setRoute({ name: 'scholarships' });
-              else if (route.name === 'community-member')
-                setRoute({ name: 'communities' });
-              else if (route.name === 'training-detail')
-                setRoute({ name: 'trainings' });
-              else if (
-                route.name === 'trainings-highfield' ||
-                route.name === 'trainings-lead-auditor-hub'
-              )
-                setRoute({ name: 'trainings' });
-              else if (route.name === 'admin') setRoute({ name: 'profile' });
-              else setRoute({ name: 'home' });
-            }}
-            onHomeClick={() => setRoute({ name: 'home' })}
-            onSearchClick={() => setRoute({ name: 'search' })}
-            onBellClick={() => navigateToJobs('All')}
-            onProfileClick={() => setRoute({ name: 'profile' })}
-            onAdminClick={() => {
-              setAdminTab('receipts');
-              setRoute({ name: 'admin' });
-            }}
-            isAdmin={isUserAdmin}
-            pendingAdminCount={pendingPaymentRequestsCount}
-            onSignOutClick={handleSignOut}
-            userEmail={authUser.email}
-            userInitial={userInitial}
-            userAvatarUrl={myProfile.profilePicUrl || authUser.photoURL || undefined}
-          />
+  // 3. Dedicated Admin Control Panel Entry: When Admin logs in, enter AdminControlPanel directly (not as a normal user)
+  if (isUserAdmin && !adminPreviewUserMode) {
+    return (
+      <AdminControlPanel
+        adminEmail={authUser.email || 'mindmademedia9@gmail.com'}
+        users={users}
+        paymentRequests={adminAllPaymentRequests}
+        jobs={activeJobs}
+        scholarships={activeScholarships}
+        trainings={trainings.filter((t) => t.isActive)}
+        storageConfig={storageConfig}
+        adminStatusBanner={adminStatusBanner}
+        onClearBanner={() => setAdminStatusBanner(null)}
+        onSetBanner={(msg) => {
+          setAdminStatusBanner(msg);
+          setTimeout(() => setAdminStatusBanner(null), 4000);
+        }}
+        onVerifyPayment={handleAdminVerifyPayment}
+        onDeletePaymentRequest={handleDeletePaymentRequest}
+        onToggleUserPremium={handleToggleUserPremium}
+        onDeleteUser={handleDeleteUser}
+        onQuickPasteJob={handleQuickPasteJob}
+        onDeleteJob={handleDeleteJob}
+        onQuickPasteScholarship={handleQuickPasteScholarship}
+        onDeleteScholarship={handleDeleteScholarship}
+        onSaveTraining={handleSaveTraining}
+        onDeleteTraining={handleDeleteTraining}
+        onChangeStorageConfig={setStorageConfig}
+        onSaveStorageConfig={handleSaveStorageConfig}
+        onExportBackup={handleExportFullBackupJson}
+        onPreviewUserApp={() => setAdminPreviewUserMode(true)}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
 
+  return (
+    <div className="min-h-screen bg-[#E8F5EE] text-gray-900 flex flex-col items-center justify-start py-0 sm:py-6 px-0 sm:px-4">
+      {/* If Admin is previewing the user-facing app, show a top bar to return to Admin Control Panel */}
+      {isUserAdmin && adminPreviewUserMode && (
+        <div className="w-full max-w-[480px] mb-2 px-3 py-2.5 bg-[#13422B] text-white sm:rounded-2xl flex items-center justify-between gap-2 shadow-md">
+          <div className="text-xs font-extrabold flex items-center gap-1.5">
+            <Shield className="w-4 h-4 text-[#34D399]" />
+            <span>Previewing User App Mode</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAdminPreviewUserMode(false)}
+            className="px-3 py-1 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold cursor-pointer transition-colors"
+          >
+            ← Back to Admin Control Panel
+          </button>
+        </div>
+      )}
+
+      {/* Mobile-First App Container — Theme 1: Emerald Trust */}
+      <div className="w-full max-w-[480px] bg-[#E3F3EA] sm:rounded-[38px] sm:border-[1.5px] sm:border-[#A7D3BD] sm:shadow-2xl flex flex-col relative overflow-hidden">
+        {/* TOP FULL-WIDTH DEEP FOREST EMERALD HEADER (#13422B) */}
+        <Header
+          showBack={route.name !== 'home'}
+          onBack={() => {
+            if (route.name === 'job-detail') setRoute({ name: 'jobs' });
+            else if (route.name === 'scholarship-detail')
+              setRoute({ name: 'scholarships' });
+            else if (route.name === 'community-member')
+              setRoute({ name: 'communities' });
+            else if (route.name === 'training-detail')
+              setRoute({ name: 'trainings' });
+            else if (
+              route.name === 'trainings-highfield' ||
+              route.name === 'trainings-lead-auditor-hub'
+            )
+              setRoute({ name: 'trainings' });
+            else if (route.name === 'admin') setRoute({ name: 'profile' });
+            else setRoute({ name: 'home' });
+          }}
+          onHomeClick={() => setRoute({ name: 'home' })}
+          onSearchClick={() => setRoute({ name: 'search' })}
+          onBellClick={() => navigateToJobs('All')}
+          onProfileClick={() => setRoute({ name: 'profile' })}
+          onAdminClick={() => {
+            setAdminPreviewUserMode(false);
+          }}
+          isAdmin={isUserAdmin}
+          pendingAdminCount={pendingPaymentRequestsCount}
+          onSignOutClick={handleSignOut}
+          userEmail={authUser.email}
+          userInitial={userInitial}
+          userAvatarUrl={
+            myProfile.profilePicUrl || authUser.photoURL || undefined
+          }
+        />
+
+        <div className="p-3.5 sm:p-5 pb-5 space-y-4">
           {/* ==================== 1. HOME SCREEN (/) ==================== */}
           {route.name === 'home' && (
-            <div className="space-y-4 px-1">
-              {/* Greeting */}
-              <div className="pt-1">
-                <h1 className="text-[28px] sm:text-[30px] font-bold text-[#0D2E1B] tracking-tight leading-tight">
+            <div className="space-y-4 px-0.5">
+              {/* Theme 1: Emerald Trust Horizontal Quick Pills Bar */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => setRoute({ name: 'search' })}
+                  className="px-4 py-2 rounded-full bg-[#0E9F6E] hover:bg-[#059669] text-white text-[13px] font-bold inline-flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer transition-colors"
+                >
+                  <Search className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Search</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setJobCategoryFilter('Quality & Safety');
+                    navigateToJobs('All');
+                  }}
+                  className="px-4 py-2 rounded-full bg-[#CFEAD9] hover:bg-[#BFE2CD] border border-[#9BCAB0] text-[#0F291E] text-[13px] font-semibold shrink-0 cursor-pointer transition-colors"
+                >
+                  Quality &amp; Safety
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setJobCategoryFilter('R&D Lab');
+                    navigateToJobs('All');
+                  }}
+                  className="px-4 py-2 rounded-full bg-[#CFEAD9] hover:bg-[#BFE2CD] border border-[#9BCAB0] text-[#0F291E] text-[13px] font-semibold shrink-0 cursor-pointer transition-colors"
+                >
+                  R&amp;D Lab
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setJobCategoryFilter('Production');
+                    navigateToJobs('All');
+                  }}
+                  className="px-4 py-2 rounded-full bg-[#CFEAD9] hover:bg-[#BFE2CD] border border-[#9BCAB0] text-[#0F291E] text-[13px] font-semibold shrink-0 cursor-pointer transition-colors"
+                >
+                  Production
+                </button>
+              </div>
+
+              {/* Greeting + View All Row (Matching "Browse Jobs / View all" in Theme 1) */}
+              <div className="flex items-center justify-between pt-0.5">
+                <h1 className="text-[24px] sm:text-[26px] font-extrabold text-[#0F291E] tracking-tight leading-tight">
                   Good morning, {firstName}
                 </h1>
+                <button
+                  type="button"
+                  onClick={() => navigateToJobs('All')}
+                  className="text-[14px] font-bold text-[#0E9F6E] hover:underline cursor-pointer shrink-0"
+                >
+                  View all
+                </button>
               </div>
 
               {/* ADMIN QUICK BANNER FOR PENDING PAYMENT APPROVALS */}
@@ -1961,131 +2402,123 @@ export default function App() {
                 </div>
               )}
 
-              {/* CARD 1 - JOBS */}
-              <div className="relative bg-white border-[1.5px] border-[#78AF88] rounded-[24px] p-5 shadow-sm overflow-hidden">
-                <LeafWatermark className="w-8 h-8 absolute left-5 top-[108px] opacity-65 pointer-events-none" />
-                <AppleWatermark className="w-8 h-8 absolute right-6 top-[110px] opacity-55 pointer-events-none" />
-                <TestTubeWatermark className="w-9 h-9 absolute right-14 bottom-3.5 opacity-75 pointer-events-none" />
-                <WheatWatermark className="w-9 h-9 absolute right-4 bottom-3.5 opacity-75 pointer-events-none" />
-
-                {/* Clickable Header Area */}
-                <div
-                  onClick={() => navigateToJobs('All')}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      navigateToJobs('All');
-                    }
-                  }}
-                  className="flex items-start justify-between gap-3 cursor-pointer group"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#D0ECDA] to-[#EAF6EE] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <DuotoneBriefcaseIcon />
+              {/* CARD 1 - JOBS (Styled in Theme 1: Emerald Trust) */}
+              <div
+                onClick={() => navigateToJobs('All')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigateToJobs('All');
+                  }
+                }}
+                className="bg-white border border-[#D4E9DF] hover:border-[#0E9F6E] rounded-[22px] p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] hover:shadow-[0_10px_28px_rgba(14,159,110,0.12)] transition-all cursor-pointer space-y-3.5 group"
+              >
+                {/* Top Row: Mint Icon Box + Title & Subtitle */}
+                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3.5">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-14 h-14 rounded-[16px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <Briefcase className="w-7 h-7 stroke-[2.2]" />
                     </div>
-                    <div className="pt-1">
-                      <h2 className="text-[28px] font-bold text-[#0D2E1B] leading-none tracking-tight group-hover:text-[#16A34A] transition-colors">
+                    <div className="pt-0.5">
+                      <h2 className="text-[22px] font-extrabold text-[#0F291E] leading-tight group-hover:text-[#0E9F6E] transition-colors">
                         Jobs
                       </h2>
-                      <p className="text-[14.5px] text-[#2F4737] mt-2 leading-snug max-w-[210px]">
+                      <p className="text-[13.5px] font-medium text-[#5C7267] mt-0.5 leading-snug">
                         Find roles in food R&amp;D, QA, production &amp; more
                       </p>
                     </div>
                   </div>
+                </div>
 
-                  <span className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] group-hover:bg-[#16A34A] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
-                    <ArrowRight className="w-5 h-5 stroke-[2.4]" />
+                {/* Middle Row: 3 Mint Pill Badges (Production, R&D Lab, Quality & Safety) */}
+                <div className="flex flex-wrap items-center gap-2 border-b border-[#ECF4EF] pb-3.5 select-none">
+                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
+                    <Wheat className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                    <span>Production</span>
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
+                    <FlaskConical className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                    <span>R&amp;D Lab</span>
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                    <span>Quality &amp; Safety</span>
                   </span>
                 </div>
 
-                {/* Middle row 3 tags: Production, R&D Lab, Quality & Safety (100% NON-CLICKABLE, display only) */}
-                <div className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none cursor-default">
-                  <div className="flex flex-col items-center gap-1.5 py-1">
-                    <Wheat className="w-6 h-6 text-[#143622] stroke-[2]" />
-                    <span className="text-[12.5px] font-medium text-[#2F4737]">
-                      Production
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-1.5 py-1">
-                    <FlaskConical className="w-6 h-6 text-[#143622] stroke-[2]" />
-                    <span className="text-[12.5px] font-medium text-[#2F4737]">
-                      R&amp;D Lab
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-1.5 py-1">
-                    <ShieldCheck className="w-6 h-6 text-[#143622] stroke-[2]" />
-                    <span className="text-[12.5px] font-medium text-[#2F4737] whitespace-nowrap">
-                      Quality &amp; Safety
-                    </span>
-                  </div>
+                {/* Bottom Row: Active Count + Emerald Green Button */}
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <span className="text-[12.5px] font-semibold text-[#4B6356]">
+                    {activeJobs.length} Verified Roles Available
+                  </span>
+                  <span className="px-4 py-2 rounded-[11px] bg-[#0E9F6E] group-hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors">
+                    <span>Browse Jobs</span>
+                    <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                  </span>
                 </div>
               </div>
 
-              {/* CARD 2 - SCHOLARSHIPS */}
-              <div className="relative bg-white border-[1.5px] border-[#78AF88] rounded-[24px] p-5 shadow-sm overflow-hidden">
-                <LeafWatermark className="w-8 h-8 absolute left-5 top-[112px] opacity-65 pointer-events-none" />
-                <TestTubeWatermark className="w-9 h-9 absolute right-5 top-[106px] opacity-45 pointer-events-none" />
-                <WheatWatermark className="w-9 h-9 absolute right-14 bottom-3.5 opacity-75 pointer-events-none" />
-                <AppleWatermark className="w-8 h-8 absolute right-4 bottom-3.5 opacity-75 pointer-events-none" />
-
-                {/* Clickable Header Area */}
-                <div
-                  onClick={() => navigateToScholarships('All')}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      navigateToScholarships('All');
-                    }
-                  }}
-                  className="flex items-start justify-between gap-3 cursor-pointer group"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-[74px] h-[74px] rounded-full bg-gradient-to-br from-[#D0ECDA] to-[#EAF6EE] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <DuotoneGradCapIcon />
+              {/* CARD 2 - SCHOLARSHIPS (Styled in Theme 1: Emerald Trust) */}
+              <div
+                onClick={() => navigateToScholarships('All')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigateToScholarships('All');
+                  }
+                }}
+                className="bg-white border border-[#D4E9DF] hover:border-[#0E9F6E] rounded-[22px] p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] hover:shadow-[0_10px_28px_rgba(14,159,110,0.12)] transition-all cursor-pointer space-y-3.5 group"
+              >
+                {/* Top Row: Mint Icon Box + Title & Subtitle */}
+                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3.5">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-14 h-14 rounded-[16px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <GraduationCap className="w-7 h-7 stroke-[2.2]" />
                     </div>
-                    <div className="pt-1">
-                      <h2 className="text-[28px] font-bold text-[#0D2E1B] leading-none tracking-tight group-hover:text-[#16A34A] transition-colors">
+                    <div className="pt-0.5">
+                      <h2 className="text-[22px] font-extrabold text-[#0F291E] leading-tight group-hover:text-[#0E9F6E] transition-colors">
                         Scholarships
                       </h2>
-                      <p className="text-[14.5px] text-[#2F4737] mt-2 leading-snug max-w-[215px]">
+                      <p className="text-[13.5px] font-medium text-[#5C7267] mt-0.5 leading-snug">
                         Grants, fellowships &amp; programs for food tech
                       </p>
                     </div>
                   </div>
+                </div>
 
-                  <span className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] group-hover:bg-[#16A34A] group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
-                    <ArrowRight className="w-5 h-5 stroke-[2.4]" />
+                {/* Middle Row: 3 Mint Pill Badges (Fellowships, International, Grants) */}
+                <div className="flex flex-wrap items-center gap-2 border-b border-[#ECF4EF] pb-3.5 select-none">
+                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                    <span>Fellowships</span>
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                    <span>International</span>
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.2]" />
+                    <span>Grants</span>
                   </span>
                 </div>
 
-                {/* Middle row 3 tags: Fellowships, International, Grants (100% NON-CLICKABLE, display only) */}
-                <div className="grid grid-cols-3 gap-2 mt-6 px-2 relative z-10 select-none cursor-default">
-                  <div className="flex flex-col items-center gap-1.5 py-1">
-                    <BookOpen className="w-6 h-6 text-[#143622] stroke-[2]" />
-                    <span className="text-[12.5px] font-medium text-[#2F4737]">
-                      Fellowships
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-1.5 py-1">
-                    <Globe className="w-6 h-6 text-[#143622] stroke-[2]" />
-                    <span className="text-[12.5px] font-medium text-[#2F4737]">
-                      International
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-1.5 py-1">
-                    <Trophy className="w-6 h-6 text-[#143622] stroke-[2]" />
-                    <span className="text-[12.5px] font-medium text-[#2F4737]">
-                      Grants
-                    </span>
-                  </div>
+                {/* Bottom Row: Active Count + Emerald Green Button */}
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <span className="text-[12.5px] font-semibold text-[#4B6356]">
+                    {activeScholarships.length} Global Programs Open
+                  </span>
+                  <span className="px-4 py-2 rounded-[11px] bg-[#0E9F6E] group-hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors">
+                    <span>Explore Grants</span>
+                    <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                  </span>
                 </div>
               </div>
             </div>
@@ -2093,11 +2526,39 @@ export default function App() {
 
           {/* ==================== 2. JOBS PAGE (/jobs) ==================== */}
           {route.name === 'jobs' && (
-            <div className="space-y-4 px-1">
-              <div className="flex items-center justify-between pt-1">
+            <div className="space-y-4 px-0.5">
+              {/* Theme 1: Emerald Trust Filter Pills Row */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {(
+                  [
+                    { label: 'All Jobs', val: 'All' },
+                    { label: 'Quality & Safety', val: 'Quality & Safety' },
+                    { label: 'R&D Lab', val: 'R&D Lab' },
+                    { label: 'Production', val: 'Production' }
+                  ] as const
+                ).map((pill) => {
+                  const active = jobCategoryFilter === pill.val;
+                  return (
+                    <button
+                      key={pill.val}
+                      type="button"
+                      onClick={() => setJobCategoryFilter(pill.val)}
+                      className={`px-4 py-2 rounded-full text-[13px] font-bold shrink-0 cursor-pointer transition-colors ${
+                        active
+                          ? 'bg-[#0E9F6E] text-white shadow-xs'
+                          : 'bg-[#CFEAD9] hover:bg-[#BFE2CD] border border-[#9BCAB0] text-[#0F291E]'
+                      }`}
+                    >
+                      {pill.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between pt-0.5">
                 <div>
-                  <h1 className="text-[28px] font-extrabold text-[#0B3B1E] tracking-tight leading-tight">
-                    Jobs for you
+                  <h1 className="text-[24px] font-extrabold text-[#0F291E] tracking-tight leading-tight">
+                    Browse Jobs
                   </h1>
                 </div>
                 <button
@@ -2107,21 +2568,20 @@ export default function App() {
                     setJobCountryFilter('All');
                     setJobCategoryFilter('All');
                   }}
-                  className="inline-flex items-center gap-1.5 text-[14px] font-bold text-[#15803D] hover:text-[#0B3B1E] transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-[14px] font-bold text-[#0E9F6E] hover:underline transition-colors cursor-pointer"
                 >
-                  <ListFilter className="w-4 h-4 stroke-[2.5]" />
-                  <span>Reset</span>
+                  <span>View all</span>
                 </button>
               </div>
 
-              {/* 2 Dropdowns: Country & Category (Dynamically Populated from Posted Jobs) */}
+              {/* 2 Dropdowns: Country & Category */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="relative">
                   <select
                     value={jobCountryFilter}
                     onChange={(e) => setJobCountryFilter(e.target.value)}
                     aria-label="Filter by Country"
-                    className="w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[18px] bg-[#15803D] text-white text-[13.5px] font-bold shadow-xs focus:outline-none cursor-pointer truncate"
+                    className="w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[14px] bg-[#0E9F6E] text-white text-[13px] font-bold shadow-xs focus:outline-none cursor-pointer truncate"
                   >
                     <option value="All">All Countries</option>
                     {availableJobCountries.map((country) => (
@@ -2138,10 +2598,10 @@ export default function App() {
                     value={jobCategoryFilter}
                     onChange={(e) => setJobCategoryFilter(e.target.value)}
                     aria-label="Filter by Category"
-                    className={`w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[18px] text-[13.5px] font-bold border-[2px] border-[#16A34A] focus:outline-none cursor-pointer truncate ${
+                    className={`w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[14px] text-[13px] font-bold border border-[#9BCAB0] focus:outline-none cursor-pointer truncate ${
                       jobCategoryFilter !== 'All'
-                        ? 'bg-[#15803D] text-white'
-                        : 'bg-white text-[#15803D]'
+                        ? 'bg-[#0E9F6E] text-white border-[#0E9F6E]'
+                        : 'bg-[#CFEAD9] text-[#0F291E]'
                     }`}
                   >
                     <option value="All">All Categories</option>
@@ -2153,16 +2613,16 @@ export default function App() {
                   </select>
                   <ChevronDown
                     className={`w-4 h-4 stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${
-                      jobCategoryFilter !== 'All' ? 'text-white' : 'text-[#15803D]'
+                      jobCategoryFilter !== 'All' ? 'text-white' : 'text-[#0F291E]'
                     }`}
                   />
                 </div>
               </div>
 
               {/* Jobs Card List (All Jobs accessible to everyone) */}
-              <div className="space-y-4 pt-1">
+              <div className="space-y-3.5 pt-1">
                 {visibleJobs.length === 0 ? (
-                  <div className="bg-white border border-emerald-100 rounded-[24px] p-8 text-center text-gray-500 font-medium">
+                  <div className="bg-white border border-[#D4E9DF] rounded-[22px] p-8 text-center text-gray-500 font-medium">
                     No jobs match the selected filters.
                   </div>
                 ) : (
@@ -2545,10 +3005,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Scholarships Card List (All Scholarships accessible to everyone) */}
-              <div className="space-y-4 pt-1">
+              {/* Scholarships Card List (Styled in Theme 1: Emerald Trust) */}
+              <div className="space-y-3.5 pt-1">
                 {visibleScholarships.length === 0 ? (
-                  <div className="bg-white border border-emerald-100 rounded-[24px] p-8 text-center text-gray-500 font-medium">
+                  <div className="bg-white border border-[#D4E9DF] rounded-[22px] p-8 text-center text-gray-500 font-medium">
                     No scholarships match the selected filters.
                   </div>
                 ) : (
@@ -2556,14 +3016,6 @@ export default function App() {
                     const daysLeft = getDaysRemaining(sch.deadline);
                     const isSaved = savedScholarshipIds.includes(sch.id);
                     const isApplied = appliedScholarshipIds.includes(sch.id);
-                    const orgInitials =
-                      sch.organization
-                        .split(' ')
-                        .filter((w) => /^[A-Za-z]/.test(w))
-                        .slice(0, 2)
-                        .map((w) => w.charAt(0))
-                        .join('')
-                        .toUpperCase() || 'FS';
 
                     const BadgeIcon =
                       sch.fundingType === 'International'
@@ -2593,58 +3045,72 @@ export default function App() {
                             });
                           }
                         }}
-                        className="bg-white border border-emerald-100/90 hover:border-[#16A34A] rounded-[26px] p-5 shadow-[0_6px_24px_rgba(22,163,74,0.07)] hover:shadow-[0_10px_28px_rgba(22,163,74,0.13)] transition-all cursor-pointer"
+                        className="bg-white border border-[#D4E9DF] hover:border-[#0E9F6E] rounded-[22px] p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] hover:shadow-[0_10px_28px_rgba(14,159,110,0.12)] transition-all cursor-pointer space-y-3.5"
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="w-14 h-14 rounded-[18px] bg-gradient-to-b from-[#49A55E] to-[#2F8944] border-2 border-white shadow-[0_4px_12px_rgba(22,163,74,0.22)] ring-2 ring-emerald-50 flex flex-col items-center justify-center text-white shrink-0 mt-1">
-                            <BadgeIcon className="w-5 h-5 stroke-[2.2] mb-0.5" />
-                            <span className="text-[12px] font-extrabold tracking-wider leading-none">
-                              {orgInitials}
-                            </span>
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-[19px] font-extrabold text-[#0B3B1E] leading-snug">
-                              {sch.title}
-                            </h3>
-
-                            <p className="text-[13.5px] font-medium text-gray-700 mt-1 leading-snug">
-                              {sch.organization} • {sch.country}
-                            </p>
-
-                            {/* Status & Metadata Row without tags */}
-                            <div className="flex items-center justify-between gap-2 mt-3 pt-1">
-                              <div>
-                                {isApplied && (
-                                  <span className="px-2.5 py-1 rounded-[10px] bg-[#16A34A] text-white text-[11px] font-bold leading-none inline-flex items-center gap-1">
-                                    <Check className="w-3 h-3 stroke-[2.5]" />
-                                    <span>Applied</span>
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-2.5">
-                                <span className="text-[12.5px] font-semibold text-[#15803D] tabular-nums">
-                                  Deadline {sch.deadline} • {daysLeft}d left
-                                </span>
-
-                                <button
-                                  type="button"
-                                  title={isSaved ? 'Saved Scholarship' : 'Save Scholarship'}
-                                  onClick={(e) => handleToggleSavedScholarship(sch.id, e)}
-                                  className="p-1 rounded-lg text-[#15803D] hover:bg-emerald-50 transition-colors shrink-0 cursor-pointer"
-                                >
-                                  <Bookmark
-                                    className={`w-5 h-5 stroke-[2.2] ${
-                                      isSaved
-                                        ? 'fill-[#15803D] text-[#15803D]'
-                                        : 'text-[#15803D]'
-                                    }`}
-                                  />
-                                </button>
-                              </div>
+                        {/* Top Row: Soft Mint Icon Box + Title & Organization */}
+                        <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3.5">
+                          <div className="flex items-start gap-3.5 min-w-0">
+                            <div className="w-13 h-13 rounded-[15px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
+                              <BadgeIcon className="w-6 h-6 stroke-[2.2]" />
+                            </div>
+                            <div className="min-w-0 pt-0.5">
+                              <h3 className="text-[18.5px] font-extrabold text-[#0F291E] leading-snug">
+                                {sch.title}
+                              </h3>
+                              <p className="text-[14px] font-medium text-[#5C7267] mt-0.5 truncate">
+                                {sch.organization}
+                              </p>
                             </div>
                           </div>
+
+                          <button
+                            type="button"
+                            title={
+                              isSaved ? 'Saved Scholarship' : 'Save Scholarship'
+                            }
+                            onClick={(e) =>
+                              handleToggleSavedScholarship(sch.id, e)
+                            }
+                            className="p-1.5 rounded-xl text-[#0E9F6E] hover:bg-[#E2F2E9] transition-colors shrink-0 cursor-pointer"
+                          >
+                            <Bookmark
+                              className={`w-5 h-5 stroke-[2.2] ${
+                                isSaved
+                                  ? 'fill-[#0E9F6E] text-[#0E9F6E]'
+                                  : 'text-[#0E9F6E]'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Middle Row: Mint Pill Badges */}
+                        <div className="flex flex-wrap items-center gap-2 border-b border-[#ECF4EF] pb-3.5">
+                          <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.3]" />
+                            <span>{sch.country}</span>
+                          </span>
+
+                          <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[12px] font-bold inline-flex items-center gap-1.5">
+                            <GraduationCap className="w-3.5 h-3.5 text-[#0E9F6E] stroke-[2.3]" />
+                            <span>{sch.fundingType}</span>
+                          </span>
+
+                          {isApplied && (
+                            <span className="px-2.5 py-1 rounded-full bg-[#0E9F6E] text-white text-[11px] font-bold inline-flex items-center gap-1">
+                              <Check className="w-3 h-3 stroke-[2.5]" />
+                              <span>Applied</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Bottom Row: Deadline + Emerald Green Button */}
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          <span className="text-[12.5px] font-semibold text-[#4B6356] tabular-nums">
+                            Deadline {sch.deadline} ({daysLeft}d left)
+                          </span>
+                          <span className="px-4 py-2 rounded-[11px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[12.5px] font-bold shadow-xs transition-colors">
+                            Apply Now
+                          </span>
                         </div>
                       </div>
                     );
@@ -3370,7 +3836,9 @@ export default function App() {
                 <div className="mt-4 pt-3 border-t border-emerald-100 flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[12.5px] font-bold">
                     <span className="text-[#16A34A]">●</span>
-                    <span>4 HACCP Qualification Levels</span>
+                    <span>
+                      {highfieldTrainings.length} Highfield Courses Available
+                    </span>
                   </span>
                   <span className="text-xs font-extrabold text-[#15803D]">
                     Open Trainings →
@@ -3421,7 +3889,9 @@ export default function App() {
                 <div className="mt-4 pt-3 border-t border-emerald-100 flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[12.5px] font-bold">
                     <span className="text-[#16A34A]">●</span>
-                    <span>8 Certified Lead Auditor Courses</span>
+                    <span>
+                      {leadAuditorTrainings.length} Certified Lead Auditor Courses
+                    </span>
                   </span>
                   <span className="text-xs font-extrabold text-[#15803D]">
                     Open Trainings →
@@ -3431,7 +3901,7 @@ export default function App() {
             </div>
           )}
 
-          {/* ==================== 6A. HIGHFIELD TRAININGS SUB-PAGE (HACCP Level 1–4) ==================== */}
+          {/* ==================== 6A. HIGHFIELD TRAININGS SUB-PAGE ==================== */}
           {route.name === 'trainings-highfield' && (
             <div className="space-y-4 px-1">
               <div className="flex items-center justify-between">
@@ -3445,109 +3915,71 @@ export default function App() {
                     </span>
                   </div>
                   <p className="text-[13px] text-gray-700 font-medium">
-                    HACCP Level 1, Level 2, Level 3 &amp; Level 4 Qualifications
+                    Highfield UK Accredited Food Safety &amp; HACCP Qualifications
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3.5">
-                {[
-                  {
-                    id: 'tr-hf-haccp-1',
-                    title: 'HACCP Level 1',
-                    subtitle: 'Foundation Food Safety & Hazard Awareness',
-                    levelTag: 'Level 1',
-                    icon: Shield
-                  },
-                  {
-                    id: 'tr-hf-haccp-2',
-                    title: 'HACCP Level 2',
-                    subtitle: 'Codex 7 Principles & CCP Monitoring',
-                    levelTag: 'Level 2',
-                    icon: CheckCircle2
-                  },
-                  {
-                    id: 'tr-hf-haccp-3',
-                    title: 'HACCP Level 3',
-                    subtitle: 'HACCP Plan Implementation for Supervisors',
-                    levelTag: 'Level 3',
-                    icon: Utensils
-                  },
-                  {
-                    id: 'tr-hf-haccp-4',
-                    title: 'HACCP Level 4',
-                    subtitle: 'Managing HACCP Systems for QA Leaders',
-                    levelTag: 'Level 4',
-                    icon: Award
-                  }
-                ].map((card) => {
-                  const IconComp = card.icon;
-                  const matchingTr =
-                    haccpTrainings.find((t) => t.id === card.id) ||
-                    highfieldTrainings[0];
-
-                  return (
-                    <div
-                      key={card.id}
-                      onClick={() => {
-                        if (matchingTr) {
-                          setRoute({
-                            name: 'training-detail',
-                            trainingId: matchingTr.id
-                          });
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (
-                          (e.key === 'Enter' || e.key === ' ') &&
-                          matchingTr
-                        ) {
-                          e.preventDefault();
-                          setRoute({
-                            name: 'training-detail',
-                            trainingId: matchingTr.id
-                          });
-                        }
-                      }}
-                      className="bg-white border border-emerald-100 hover:border-[#16A34A] rounded-[22px] p-4 shadow-[0_4px_16px_rgba(22,163,74,0.07)] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-                    >
-                      <div className="space-y-2.5">
-                        <div className="flex items-start gap-2.5">
-                          <div className="w-10 h-10 rounded-[14px] bg-[#228B4E] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                            <IconComp className="w-5 h-5 stroke-[2.2]" />
-                          </div>
-                          <div>
-                            <h3 className="text-[15px] font-extrabold text-[#0B3B1E] leading-tight">
-                              {card.title}
-                            </h3>
-                            <p className="text-[11.5px] text-gray-600 leading-snug mt-0.5">
-                              {card.subtitle}
-                            </p>
-                          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {highfieldTrainings.map((tr) => (
+                  <div
+                    key={tr.id}
+                    onClick={() => {
+                      setRoute({
+                        name: 'training-detail',
+                        trainingId: tr.id
+                      });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setRoute({
+                          name: 'training-detail',
+                          trainingId: tr.id
+                        });
+                      }
+                    }}
+                    className="bg-white border border-emerald-100 hover:border-[#16A34A] rounded-[22px] p-4 shadow-[0_4px_16px_rgba(22,163,74,0.07)] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-10 h-10 rounded-[14px] bg-[#228B4E] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                          <Shield className="w-5 h-5 stroke-[2.2]" />
                         </div>
-
-                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                          <span className="px-2 py-0.5 rounded-md bg-[#E8F3EB] text-[#14532D] text-[10.5px] font-bold">
-                            Highfield UK
-                          </span>
-                          <span className="px-2 py-0.5 rounded-md bg-[#E8F3EB] text-[#14532D] text-[10.5px] font-bold">
-                            {card.levelTag}
-                          </span>
+                        <div className="min-w-0">
+                          <h3 className="text-[15px] font-extrabold text-[#0B3B1E] leading-tight">
+                            {tr.title}
+                          </h3>
+                          <p className="text-[11.5px] text-gray-600 leading-snug mt-0.5 line-clamp-2">
+                            {tr.description}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="mt-3.5 flex items-center justify-end">
-                        <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] hover:bg-[#0E6F30] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shadow-2xs transition-colors">
-                          <span>Enroll</span>
-                          <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                        <span className="px-2 py-0.5 rounded-md bg-[#E8F3EB] text-[#14532D] text-[10.5px] font-bold">
+                          Highfield UK
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#E8F3EB] text-[#14532D] text-[10.5px] font-bold">
+                          {tr.duration}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] text-[11px] font-extrabold">
+                          Fee: {tr.fees}
                         </span>
                       </div>
                     </div>
-                  );
-                })}
+
+                    <div className="mt-3.5 flex items-center justify-end">
+                      <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] hover:bg-[#0E6F30] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shadow-2xs transition-colors">
+                        <span>Enroll</span>
+                        <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -3576,7 +4008,7 @@ export default function App() {
                         1. IRCA CQI
                       </h2>
                       <p className="text-[12px] text-gray-600 font-medium mt-1">
-                        Chartered Quality Institute • 5-Day Lead Auditor Courses
+                        Chartered Quality Institute • Certified Lead Auditor Courses
                       </p>
                     </div>
                   </div>
@@ -3584,77 +4016,61 @@ export default function App() {
                 </div>
 
                 <div className="space-y-2.5">
-                  {[
-                    {
-                      id: 'tr-la-fssc22000-irca',
-                      title: 'ISO 22000 Lead Auditor',
-                      sub: 'Food Safety Management Systems (FSMS)',
-                      meta: 'IRCA CQI Certified • 5 Days (40 Hours)'
-                    },
-                    {
-                      id: 'tr-la-fssc22000-irca',
-                      title: 'FSSC 22000 Lead Auditor',
-                      sub: 'FSSC 22000 Version 6 Food Safety Systems',
-                      meta: 'IRCA CQI Certified • 5 Days (40 Hours)'
-                    },
-                    {
-                      id: 'tr-la-iso9001-irca',
-                      title: 'ISO 9001 Lead Auditor',
-                      sub: 'Quality Management Systems (QMS)',
-                      meta: 'IRCA CQI Certified • 5 Days (40 Hours)'
-                    },
-                    {
-                      id: 'tr-la-iso14001-irca',
-                      title: 'ISO 14001 Lead Auditor',
-                      sub: 'Environmental Management Systems (EMS)',
-                      meta: 'IRCA CQI Certified • 5 Days (40 Hours)'
-                    }
-                  ].map((course, idx) => (
-                    <div
-                      key={`irca-${idx}`}
-                      onClick={() => {
-                        setRoute({
-                          name: 'training-detail',
-                          trainingId: course.id
-                        });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
+                  {leadAuditorTrainings
+                    .filter(
+                      (t) =>
+                        !t.subType || t.subType.toLowerCase().includes('irca')
+                    )
+                    .map((course) => (
+                      <div
+                        key={course.id}
+                        onClick={() => {
                           setRoute({
                             name: 'training-detail',
                             trainingId: course.id
                           });
-                        }
-                      }}
-                      className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[20px] p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-[#14532D] text-white flex items-center justify-center shrink-0">
-                          <Award className="w-5 h-5 stroke-[2.2]" />
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setRoute({
+                              name: 'training-detail',
+                              trainingId: course.id
+                            });
+                          }
+                        }}
+                        className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[20px] p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-full bg-[#14532D] text-white flex items-center justify-center shrink-0">
+                            <Award className="w-5 h-5 stroke-[2.2]" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[14.5px] font-extrabold text-[#0B3B1E] leading-tight">
+                              {course.title}
+                            </div>
+                            <div className="text-[12px] font-semibold text-gray-700 truncate">
+                              {course.description}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#15803D] font-bold mt-0.5">
+                              <span>{course.duration}</span>
+                              <span>•</span>
+                              <span className="px-2 py-0.2 rounded-md bg-[#D7EFE2] text-[#0D6845] font-extrabold">
+                                Fee: {course.fees}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-[14.5px] font-extrabold text-[#0B3B1E] leading-tight">
-                            {course.title}
-                          </div>
-                          <div className="text-[12px] font-semibold text-gray-700 truncate">
-                            {course.sub}
-                          </div>
-                          <div className="text-[11px] text-[#15803D] font-bold mt-0.5">
-                            {course.meta}
-                          </div>
-                        </div>
-                      </div>
 
-                      <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
-                        <span>Enroll</span>
-                        <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </span>
-                    </div>
-                  ))}
+                        <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
+                          <span>Enroll</span>
+                          <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                        </span>
+                      </div>
+                    ))}
                 </div>
               </div>
 
@@ -3670,7 +4086,7 @@ export default function App() {
                         2. Exemplar Global
                       </h2>
                       <p className="text-[12px] text-gray-600 font-medium mt-1">
-                        Certified Training Provider • 5-Day Lead Auditor Courses
+                        Certified Training Provider • Lead Auditor Courses
                       </p>
                     </div>
                   </div>
@@ -3678,77 +4094,60 @@ export default function App() {
                 </div>
 
                 <div className="space-y-2.5">
-                  {[
-                    {
-                      id: 'tr-la-fssc22000-eg',
-                      title: 'ISO 22000 Lead Auditor',
-                      sub: 'Food Safety Management Systems (FSMS)',
-                      meta: 'Exemplar Global Certified • 5 Days (40 Hours)'
-                    },
-                    {
-                      id: 'tr-la-fssc22000-eg',
-                      title: 'FSSC 22000 Lead Auditor',
-                      sub: 'FSSC 22000 Version 6 Food Safety Systems',
-                      meta: 'Exemplar Global Certified • 5 Days (40 Hours)'
-                    },
-                    {
-                      id: 'tr-la-iso9001-eg',
-                      title: 'ISO 9001 Lead Auditor',
-                      sub: 'Quality Management Systems (QMS)',
-                      meta: 'Exemplar Global Certified • 5 Days (40 Hours)'
-                    },
-                    {
-                      id: 'tr-la-iso14001-eg',
-                      title: 'ISO 14001 Lead Auditor',
-                      sub: 'Environmental Management Systems (EMS)',
-                      meta: 'Exemplar Global Certified • 5 Days (40 Hours)'
-                    }
-                  ].map((course, idx) => (
-                    <div
-                      key={`eg-${idx}`}
-                      onClick={() => {
-                        setRoute({
-                          name: 'training-detail',
-                          trainingId: course.id
-                        });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
+                  {leadAuditorTrainings
+                    .filter((t) =>
+                      Boolean(t.subType?.toLowerCase().includes('exemplar'))
+                    )
+                    .map((course) => (
+                      <div
+                        key={course.id}
+                        onClick={() => {
                           setRoute({
                             name: 'training-detail',
                             trainingId: course.id
                           });
-                        }
-                      }}
-                      className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[20px] p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-[#1E8244] text-white flex items-center justify-center shrink-0">
-                          <Award className="w-5 h-5 stroke-[2.2]" />
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setRoute({
+                              name: 'training-detail',
+                              trainingId: course.id
+                            });
+                          }
+                        }}
+                        className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[20px] p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-full bg-[#1E8244] text-white flex items-center justify-center shrink-0">
+                            <Award className="w-5 h-5 stroke-[2.2]" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[14.5px] font-extrabold text-[#0B3B1E] leading-tight">
+                              {course.title}
+                            </div>
+                            <div className="text-[12px] font-semibold text-gray-700 truncate">
+                              {course.description}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#15803D] font-bold mt-0.5">
+                              <span>{course.duration}</span>
+                              <span>•</span>
+                              <span className="px-2 py-0.2 rounded-md bg-[#D7EFE2] text-[#0D6845] font-extrabold">
+                                Fee: {course.fees}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-[14.5px] font-extrabold text-[#0B3B1E] leading-tight">
-                            {course.title}
-                          </div>
-                          <div className="text-[12px] font-semibold text-gray-700 truncate">
-                            {course.sub}
-                          </div>
-                          <div className="text-[11px] text-[#15803D] font-bold mt-0.5">
-                            {course.meta}
-                          </div>
-                        </div>
-                      </div>
 
-                      <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
-                        <span>Enroll</span>
-                        <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </span>
-                    </div>
-                  ))}
+                        <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
+                          <span>Enroll</span>
+                          <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                        </span>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>

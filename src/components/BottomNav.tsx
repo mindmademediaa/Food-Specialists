@@ -7,8 +7,15 @@ interface BottomNavProps {
   onSelectTab: (tab: NavTab) => void;
 }
 
-export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSelectTab }) => {
-  const tabs: { id: NavTab; label: string; icon: React.FC<{ className?: string }> }[] = [
+export const BottomNav: React.FC<BottomNavProps> = ({
+  activeTab,
+  onSelectTab
+}) => {
+  const tabs: {
+    id: NavTab;
+    label: string;
+    icon: React.FC<{ className?: string }>;
+  }[] = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'communities', label: 'Communities', icon: Users },
     { id: 'trainings', label: 'Trainings', icon: BookOpen },
@@ -16,7 +23,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSelectTab }) 
   ];
 
   return (
-    <footer className="sticky bottom-0 inset-x-0 z-30 bg-white border-t border-emerald-100 rounded-t-[28px] px-3 pt-2.5 pb-2 shadow-[0_-4px_20px_rgba(22,163,74,0.08)]">
+    <footer className="sticky bottom-0 inset-x-0 z-30 bg-white border-t border-[#CBE3D6] px-2 pb-2 shadow-[0_-6px_24px_rgba(19,66,43,0.08)]">
       <nav
         aria-label="Bottom Navigation"
         className="grid grid-cols-4 items-center"
@@ -29,17 +36,24 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSelectTab }) 
               key={tab.id}
               type="button"
               onClick={() => onSelectTab(tab.id)}
-              className={`flex flex-col items-center justify-center gap-1 py-1 rounded-xl transition-colors cursor-pointer ${
-                isActive ? 'text-[#16A34A] font-bold' : 'text-gray-500 hover:text-gray-800'
+              className={`relative flex flex-col items-center justify-center gap-1 pt-2.5 pb-1.5 transition-colors cursor-pointer ${
+                isActive
+                  ? 'text-[#0E9F6E] font-extrabold'
+                  : 'text-[#64748B] hover:text-[#13422B] font-medium'
               }`}
             >
+              {/* Top Active Emerald Indicator Bar (Theme 1: Emerald Trust) */}
+              <span
+                className={`absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-12 rounded-b-full transition-all ${
+                  isActive ? 'bg-[#0E9F6E]' : 'bg-transparent'
+                }`}
+              />
+
               <Icon
                 className={`w-5 h-5 ${
-                  isActive && tab.id === 'home'
-                    ? 'fill-[#16A34A] text-[#16A34A]'
-                    : isActive
-                    ? 'text-[#16A34A] stroke-[2.3]'
-                    : 'text-gray-500'
+                  isActive
+                    ? 'text-[#0E9F6E] stroke-[2.4]'
+                    : 'text-[#64748B] stroke-[2]'
                 }`}
               />
               <span className="text-[11.5px] leading-none">{tab.label}</span>
@@ -47,14 +61,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSelectTab }) 
           );
         })}
       </nav>
-      <div className="mt-1.5 pt-1.5 border-t border-emerald-50 text-center">
-        <p className="text-[10.5px] font-medium text-gray-500 leading-tight">
-          Developed by <span className="font-bold text-[#15803D]">Muneeb Khan</span>, Food Safety Specialist,{' '}
+      <div className="mt-1 pt-1.5 border-t border-[#EDF5F0] text-center">
+        <p className="text-[10.5px] font-medium text-[#5C7267] leading-tight">
+          Developed by{' '}
+          <span className="font-bold text-[#13422B]">Muneeb Khan</span>, Food
+          Safety Specialist,{' '}
           <a
             href="https://wa.me/923240906384"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-[#16A34A] hover:underline"
+            className="font-semibold text-[#0E9F6E] hover:underline"
           >
             +923240906384
           </a>
@@ -63,4 +79,3 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSelectTab }) 
     </footer>
   );
 };
-
