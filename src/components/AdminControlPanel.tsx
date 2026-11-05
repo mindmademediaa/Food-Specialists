@@ -6,6 +6,7 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  CreditCard,
   Crown,
   Database,
   Download,
@@ -47,6 +48,7 @@ export type AdminSectionTab =
   | 'jobs'
   | 'scholarships'
   | 'trainings'
+  | 'payments'
   | 'storage';
 
 interface AdminControlPanelProps {
@@ -481,8 +483,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 badge: `${trainings.length}`
               },
               {
+                id: 'payments',
+                label: '6. Payment Gateway',
+                icon: CreditCard,
+                badge: 'Edit'
+              },
+              {
                 id: 'storage',
-                label: '6. Cloud Storage',
+                label: '7. Cloud Storage',
                 icon: Database,
                 badge: null
               }
@@ -608,7 +616,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   {stats.premiumUsers}
                 </div>
                 <div className="text-[11px] font-bold text-[#D97706] mt-0.5">
-                  Rs. 100 / Month Active
+                  Rs. 200/Mo • Rs. 1,800/Yr
                 </div>
               </div>
 
@@ -1049,8 +1057,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     </span>
                   </h2>
                   <p className="text-xs text-[#5C7267] font-medium">
-                    When a user submits a Rs. 100 payment screenshot, accept it
-                    here to unlock their 1-Month Premium Membership immediately.
+                    When a user submits a Rs. 200 (1 Month) or Rs. 1,800 (1 Year
+                    — 25% OFF) payment screenshot, accept it here to unlock
+                    their Premium Membership immediately.
                   </p>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] text-xs font-extrabold">
@@ -1150,7 +1159,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           className="py-2.5 px-3 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs"
                         >
                           <Check className="w-4 h-4 stroke-[2.5]" />
-                          <span>Accept (1 Month)</span>
+                          <span>
+                            Accept (
+                            {req.subscriptionPlan
+                              ?.toLowerCase()
+                              .includes('year') ||
+                            req.amount?.includes('1800') ||
+                            req.amount?.includes('1,800')
+                              ? '1 Year'
+                              : '1 Month'}
+                            )
+                          </span>
                         </button>
                         <button
                           type="button"
@@ -2072,7 +2091,547 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         )}
 
         {/* =====================================================================
-            TAB 6: CLOUD STORAGE & FULL BACKUP (storage)
+            TAB 6: PAYMENT GATEWAY SETTINGS (JazzCash, EasyPaisa, Bank Transfer & Prices)
+           ===================================================================== */}
+        {activeTab === 'payments' && (
+          <div className="space-y-5">
+            <form
+              onSubmit={onSaveStorageConfig}
+              className="bg-white border-2 border-[#0E9F6E] rounded-[26px] p-5 shadow-sm space-y-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3.5">
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-extrabold">
+                    Live Payment Gateway Configuration
+                  </span>
+                  <h2 className="text-lg font-extrabold text-[#0F291E] mt-1">
+                    Modify EasyPaisa, JazzCash, Bank Transfer &amp; Subscription Fees
+                  </h2>
+                  <p className="text-xs text-[#5C7267] font-medium">
+                    Any changes saved here immediately update the payment
+                    details shown to all users when purchasing Premium
+                    Membership.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] text-xs font-extrabold">
+                  25% OFF Yearly Active
+                </span>
+              </div>
+
+              {/* SUBSCRIPTION PLAN FEES (Monthly Rs. 200 & Yearly Rs. 1800 with 25% Discount) */}
+              <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
+                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-[#D97706]" />
+                  <span>Subscription Plan Prices (PKR)</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                      1-Month Subscription Fee (Rs.)
+                    </label>
+                    <input
+                      type="number"
+                      value={storageConfig.paymentGateway?.monthlyFeeRs ?? 200}
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ||
+                              'Muneeb Khan',
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ||
+                              '0324-0906384',
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ||
+                              'Muneeb Khan',
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ||
+                              '0324-0906384',
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ||
+                              'Muneeb Khan',
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ||
+                              'Bank Transfer',
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ||
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ||
+                              '+92 324 0906384',
+                            monthlyFeeRs: Number(e.target.value) || 200,
+                            yearlyFeeRs:
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                          }
+                        })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                      Full Year (12 Months) Fee — 25% Discount (Rs.)
+                    </label>
+                    <input
+                      type="number"
+                      value={storageConfig.paymentGateway?.yearlyFeeRs ?? 1800}
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ||
+                              'Muneeb Khan',
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ||
+                              '0324-0906384',
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ||
+                              'Muneeb Khan',
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ||
+                              '0324-0906384',
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ||
+                              'Muneeb Khan',
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ||
+                              'Bank Transfer',
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ||
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ||
+                              '+92 324 0906384',
+                            monthlyFeeRs:
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                            yearlyFeeRs: Number(e.target.value) || 1800
+                          }
+                        })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 1. JAZZCASH DETAILS */}
+              <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
+                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+                  1. JazzCash Account Details
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      JazzCash Account Title
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.paymentGateway?.jazzCashTitle ??
+                        'Muneeb Khan'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle: e.target.value,
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ??
+                              '0324-0906384',
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ??
+                              'Muneeb Khan',
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ??
+                              '0324-0906384',
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ??
+                              'Muneeb Khan',
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ??
+                              'Bank Transfer',
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ??
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ??
+                              '+92 324 0906384',
+                            monthlyFeeRs:
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                            yearlyFeeRs:
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                          }
+                        })
+                      }
+                      placeholder="e.g. Muneeb Khan"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      JazzCash Account Number
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.paymentGateway?.jazzCashNumber ??
+                        '0324-0906384'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ??
+                              'Muneeb Khan',
+                            jazzCashNumber: e.target.value,
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ??
+                              'Muneeb Khan',
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ??
+                              '0324-0906384',
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ??
+                              'Muneeb Khan',
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ??
+                              'Bank Transfer',
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ??
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ??
+                              '+92 324 0906384',
+                            monthlyFeeRs:
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                            yearlyFeeRs:
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                          }
+                        })
+                      }
+                      placeholder="e.g. 0324-0906384"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. EASYPAISA DETAILS */}
+              <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
+                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+                  2. EasyPaisa Account Details
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      EasyPaisa Account Title
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.paymentGateway?.easyPaisaTitle ??
+                        'Muneeb Khan'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ??
+                              'Muneeb Khan',
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ??
+                              '0324-0906384',
+                            easyPaisaTitle: e.target.value,
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ??
+                              '0324-0906384',
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ??
+                              'Muneeb Khan',
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ??
+                              'Bank Transfer',
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ??
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ??
+                              '+92 324 0906384',
+                            monthlyFeeRs:
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                            yearlyFeeRs:
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                          }
+                        })
+                      }
+                      placeholder="e.g. Muneeb Khan"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      EasyPaisa Account Number
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.paymentGateway?.easyPaisaNumber ??
+                        '0324-0906384'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ??
+                              'Muneeb Khan',
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ??
+                              '0324-0906384',
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ??
+                              'Muneeb Khan',
+                            easyPaisaNumber: e.target.value,
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ??
+                              'Muneeb Khan',
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ??
+                              'Bank Transfer',
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ??
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ??
+                              '+92 324 0906384',
+                            monthlyFeeRs:
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                            yearlyFeeRs:
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                          }
+                        })
+                      }
+                      placeholder="e.g. 0324-0906384"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. BANK TRANSFER DETAILS */}
+              <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
+                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+                  3. Bank Transfer Details
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      Bank Account Title
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.paymentGateway?.bankTitle ?? 'Muneeb Khan'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ??
+                              'Muneeb Khan',
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ??
+                              '0324-0906384',
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ??
+                              'Muneeb Khan',
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ??
+                              '0324-0906384',
+                            bankTitle: e.target.value,
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ??
+                              'Bank Transfer',
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ??
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ??
+                              '+92 324 0906384',
+                            monthlyFeeRs:
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                            yearlyFeeRs:
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                          }
+                        })
+                      }
+                      placeholder="e.g. Muneeb Khan"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      Bank Name
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.paymentGateway?.bankName ??
+                        'Allied Bank / Bank Transfer'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ??
+                              'Muneeb Khan',
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ??
+                              '0324-0906384',
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ??
+                              'Muneeb Khan',
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ??
+                              '0324-0906384',
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ??
+                              'Muneeb Khan',
+                            bankName: e.target.value,
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ??
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ??
+                              '+92 324 0906384',
+                            monthlyFeeRs:
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                            yearlyFeeRs:
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                          }
+                        })
+                      }
+                      placeholder="e.g. Meezan Bank / Allied Bank"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      Account Number / IBAN
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.paymentGateway?.bankAccountOrIban ??
+                        'Contact on WhatsApp for IBAN'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ??
+                              'Muneeb Khan',
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ??
+                              '0324-0906384',
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ??
+                              'Muneeb Khan',
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ??
+                              '0324-0906384',
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ??
+                              'Muneeb Khan',
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ??
+                              'Bank Transfer',
+                            bankAccountOrIban: e.target.value,
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ??
+                              '+92 324 0906384',
+                            monthlyFeeRs:
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                            yearlyFeeRs:
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                          }
+                        })
+                      }
+                      placeholder="e.g. PK36 MEZN 0000 ..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      WhatsApp / Contact Number
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.paymentGateway?.bankWhatsapp ??
+                        '+92 324 0906384'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ??
+                              'Muneeb Khan',
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ??
+                              '0324-0906384',
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ??
+                              'Muneeb Khan',
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ??
+                              '0324-0906384',
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ??
+                              'Muneeb Khan',
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ??
+                              'Bank Transfer',
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ??
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp: e.target.value,
+                            monthlyFeeRs:
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                            yearlyFeeRs:
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                          }
+                        })
+                      }
+                      placeholder="e.g. +92 324 0906384"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+              >
+                <Check className="w-4 h-4 stroke-[2.5]" />
+                <span>Save Payment Gateway &amp; Update Live on App</span>
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB 7: CLOUD STORAGE & FULL BACKUP (storage)
            ===================================================================== */}
         {activeTab === 'storage' && (
           <div className="space-y-4">

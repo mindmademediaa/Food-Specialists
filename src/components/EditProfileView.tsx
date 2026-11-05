@@ -21,7 +21,8 @@ import {
   AlertCircle,
   Crown,
   ShieldCheck,
-  Download
+  Download,
+  Clock
 } from 'lucide-react';
 import {
   HubUser,
@@ -233,6 +234,29 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
   );
   const isPremium = Boolean(profile.isPremium || profile.isPaid);
 
+  // Calculate remaining days/hours for Paid Premium Member 5-Day Countdown
+  const expiryCountdown = React.useMemo(() => {
+    if (!isPremium || !profile.premiumExpiresAt) return null;
+    const expMs = new Date(profile.premiumExpiresAt).getTime();
+    if (Number.isNaN(expMs)) return null;
+    const diffMs = expMs - Date.now();
+    if (diffMs <= 0) return null;
+    const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const hoursRemainder = totalHours % 24;
+    const formattedEndDate = new Date(expMs).toLocaleDateString('en-PK', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+    return {
+      daysLeft,
+      hoursRemainder,
+      formattedEndDate,
+      isLastFiveDays: daysLeft >= 1 && daysLeft <= 5
+    };
+  }, [isPremium, profile.premiumExpiresAt]);
+
   const updateVisibility = (
     field: keyof ProfileVisibilityMap,
     nextLevel: VisibilityLevel
@@ -415,6 +439,43 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <span>View Public Profile</span>
           </button>
         </div>
+
+        {/* LAST 5 DAYS PREMIUM EXPIRY COUNTDOWN BANNER (Only shows when Paid Member is in last 5 days) */}
+        {isPremium && expiryCountdown && expiryCountdown.isLastFiveDays && (
+          <div className="bg-gradient-to-r from-[#FFFBEB] to-[#FEF3C7] border-2 border-[#F59E0B] rounded-2xl p-4 shadow-sm space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-xl bg-[#D97706] text-white flex items-center justify-center shrink-0">
+                  <Clock className="w-4 h-4 stroke-[2.4]" />
+                </span>
+                <div>
+                  <span className="inline-block px-2 py-0.5 rounded-full bg-amber-200 text-[#92400E] text-[10px] font-extrabold uppercase tracking-wider">
+                    Final {expiryCountdown.daysLeft}{' '}
+                    {expiryCountdown.daysLeft === 1 ? 'Day' : 'Days'} Countdown
+                  </span>
+                  <h3 className="text-sm font-extrabold text-[#78350F] mt-0.5">
+                    Your Premium Membership Ends in {expiryCountdown.daysLeft}{' '}
+                    {expiryCountdown.daysLeft === 1 ? 'Day' : 'Days'} (
+                    {expiryCountdown.hoursRemainder}h remaining)
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenPremiumModal}
+                className="px-3 py-1.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-extrabold shrink-0 cursor-pointer transition-colors"
+              >
+                Renew Now
+              </button>
+            </div>
+            <p className="text-xs font-semibold text-[#92400E] leading-relaxed">
+              Your paid subscription will expire on{' '}
+              <strong>{expiryCountdown.formattedEndDate}</strong>. Renew for 1
+              Month (Rs. 200) or Full Year (Rs. 1,800 — 25% OFF) to keep your
+              profile visible in the Community.
+            </p>
+          </div>
+        )}
 
         {profileSaveMsg && (
           <div className="bg-[#15803D] text-white rounded-2xl p-3.5 text-xs font-extrabold flex items-center justify-between gap-2 shadow-xs">
@@ -1598,17 +1659,139 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
         </div>
       </form>
 
-      {/* CLEAN PURCHASE / BUY PREMIUM MEMBERSHIP BUTTON (No extra membership window in Profile) */}
-      <div className="space-y-2.5">
+      {/* FREE USER NOTIFICATION MESSAGE: FREE VS PREMIUM MEMBERSHIP DETAILS LIST + UPGRADE BUTTON */}
+      <div className="space-y-3">
         {!isPremium && (
-          <button
-            type="button"
-            onClick={onOpenPremiumModal}
-            className="w-full py-4 px-5 rounded-[20px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[15px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
-          >
-            <Crown className="w-5 h-5 text-amber-300 shrink-0" />
-            <span>Purchase / Buy Premium Membership</span>
-          </button>
+          <div className="bg-white border-[1.5px] border-[#0E9F6E] rounded-[26px] p-4 sm:p-5 shadow-sm space-y-4">
+            <div className="flex items-start justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+              <div className="flex items-start gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#D7EFE2] text-[#0D6845] flex items-center justify-center shrink-0 mt-0.5">
+                  <AlertCircle className="w-5 h-5 stroke-[2.3]" />
+                </div>
+                <div>
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10.5px] font-extrabold">
+                    Membership Notification &amp; Guide
+                  </span>
+                  <h3 className="text-[16px] font-extrabold text-[#0F291E] leading-snug mt-0.5">
+                    Free User Plan vs. Paid Premium Membership
+                  </h3>
+                  <p className="text-xs text-[#5C7267] font-medium">
+                    See what is included in your Free account and the benefits
+                    of upgrading to Paid Premium:
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* List 1: What is Allowed for Free Users */}
+              <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+                    ✓ Free User (Allowed)
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-white border border-[#CBE4D6] text-[#0D6845] text-[10px] font-extrabold">
+                    Current Plan
+                  </span>
+                </div>
+                <ul className="space-y-1.5 text-xs font-semibold text-[#1F2937]">
+                  <li className="flex items-start gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0 mt-0.5 stroke-[2.5]" />
+                    <span>
+                      Browse &amp; apply to all verified <strong>Jobs</strong>{' '}
+                      (QA, R&amp;D, Production)
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0 mt-0.5 stroke-[2.5]" />
+                    <span>
+                      Explore &amp; apply for global{' '}
+                      <strong>Scholarships &amp; Grants</strong>
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0 mt-0.5 stroke-[2.5]" />
+                    <span>
+                      Enroll in <strong>Highfield UK &amp; Lead Auditor</strong>{' '}
+                      trainings
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0 mt-0.5 stroke-[2.5]" />
+                    <span>
+                      Complete your Profile &amp; download{' '}
+                      <strong>Professional PDF CV</strong>
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* List 2: Benefits of Becoming a Paid Premium Member */}
+              <div className="p-3.5 rounded-2xl bg-[#FFFDF5] border-[1.5px] border-[#F59E0B] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-[#92400E] uppercase tracking-wider flex items-center gap-1">
+                    <Crown className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>Paid Premium Benefits</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10px] font-extrabold">
+                    25% OFF Yearly
+                  </span>
+                </div>
+                <ul className="space-y-1.5 text-xs font-semibold text-[#1F2937]">
+                  <li className="flex items-start gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Show Your Profile in Community:</strong> Visible
+                      to all paid members &amp; recruiters
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>View Other Specialists&apos; Profiles:</strong>{' '}
+                      See full bio, experience, education &amp; LinkedIn
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Community CV Vault Access:</strong> View &amp;
+                      download CVs of fellow specialists
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Direct Contact &amp; Hire Me:</strong> Direct
+                      WhatsApp, Email &amp; recruiter hiring access
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Pricing Summary Strip inside Notification */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#E3F3EA] border border-[#9BCAB0] text-xs">
+              <div className="font-bold text-[#0F291E]">
+                Plans: <strong>Rs. 200 / 1 Month</strong> or{' '}
+                <strong>Rs. 1,800 / Full Year</strong>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[10.5px] font-extrabold">
+                Save 25% on Yearly Plan
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={onOpenPremiumModal}
+              className="w-full py-4 px-5 rounded-[20px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[15px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <Crown className="w-5 h-5 text-amber-300 shrink-0" />
+              <span>
+                Purchase / Buy Premium Membership (Rs. 200/Mo • Rs. 1,800/Yr)
+              </span>
+            </button>
+          </div>
         )}
 
         {(profile.paymentStatus === 'pending' ||

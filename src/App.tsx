@@ -416,7 +416,19 @@ export default function App() {
     provider: 'cloudinary',
     cloudinaryCloudName: 'mhjkrdlh',
     cloudinaryUploadPreset: 'Food Specialists',
-    updatedAt: '2026-11-03T11:45:00Z'
+    updatedAt: '2026-11-03T11:45:00Z',
+    paymentGateway: {
+      jazzCashTitle: 'Muneeb Khan',
+      jazzCashNumber: '0324-0906384',
+      easyPaisaTitle: 'Muneeb Khan',
+      easyPaisaNumber: '0324-0906384',
+      bankTitle: 'Muneeb Khan',
+      bankName: 'Allied Bank / Bank Transfer',
+      bankAccountOrIban: 'Contact on WhatsApp for IBAN',
+      bankWhatsapp: '+92 324 0906384',
+      monthlyFeeRs: 200,
+      yearlyFeeRs: 1800
+    }
   });
 
   // Applied Jobs & Scholarships Local Tracking ('Mark as Applied' checkbox)
@@ -444,11 +456,14 @@ export default function App() {
     useState<boolean>(false);
   const [isSubmittingPayment, setIsSubmittingPayment] =
     useState<boolean>(false);
+  const [selectedPlanDuration, setSelectedPlanDuration] = useState<
+    '1-month' | '1-year'
+  >('1-month');
   const [payMethod, setPayMethod] = useState<
     'JazzCash' | 'EasyPaisa' | 'Bank Transfer'
   >('JazzCash');
   const [payTransactionId, setPayTransactionId] = useState<string>('');
-  const [payAmount, setPayAmount] = useState<string>('Rs. 100');
+  const [payAmount, setPayAmount] = useState<string>('Rs. 200');
   const [payNotes, setPayNotes] = useState<string>('');
   const [payReceiptUrl, setPayReceiptUrl] = useState<string>('');
   const [paySubmitBanner, setPaySubmitBanner] = useState<string | null>(null);
@@ -879,7 +894,27 @@ export default function App() {
               data.cloudinaryCloudName?.trim() || 'mhjkrdlh',
             cloudinaryUploadPreset:
               data.cloudinaryUploadPreset?.trim() || 'Food Specialists',
-            updatedAt: data.updatedAt || '2026-11-03T11:45:00Z'
+            updatedAt: data.updatedAt || '2026-11-03T11:45:00Z',
+            paymentGateway: {
+              jazzCashTitle:
+                data.paymentGateway?.jazzCashTitle || 'Muneeb Khan',
+              jazzCashNumber:
+                data.paymentGateway?.jazzCashNumber || '0324-0906384',
+              easyPaisaTitle:
+                data.paymentGateway?.easyPaisaTitle || 'Muneeb Khan',
+              easyPaisaNumber:
+                data.paymentGateway?.easyPaisaNumber || '0324-0906384',
+              bankTitle: data.paymentGateway?.bankTitle || 'Muneeb Khan',
+              bankName:
+                data.paymentGateway?.bankName || 'Allied Bank / Bank Transfer',
+              bankAccountOrIban:
+                data.paymentGateway?.bankAccountOrIban ||
+                'Contact on WhatsApp for IBAN',
+              bankWhatsapp:
+                data.paymentGateway?.bankWhatsapp || '+92 324 0906384',
+              monthlyFeeRs: Number(data.paymentGateway?.monthlyFeeRs) || 200,
+              yearlyFeeRs: Number(data.paymentGateway?.yearlyFeeRs) || 1800
+            }
           };
           setStorageConfig(hydrated);
         } else if (isAdminUser) {
@@ -887,7 +922,19 @@ export default function App() {
             provider: 'cloudinary',
             cloudinaryCloudName: 'mhjkrdlh',
             cloudinaryUploadPreset: 'Food Specialists',
-            updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+            updatedAt: new Date().toISOString().slice(0, 19) + 'Z',
+            paymentGateway: {
+              jazzCashTitle: 'Muneeb Khan',
+              jazzCashNumber: '0324-0906384',
+              easyPaisaTitle: 'Muneeb Khan',
+              easyPaisaNumber: '0324-0906384',
+              bankTitle: 'Muneeb Khan',
+              bankName: 'Allied Bank / Bank Transfer',
+              bankAccountOrIban: 'Contact on WhatsApp for IBAN',
+              bankWhatsapp: '+92 324 0906384',
+              monthlyFeeRs: 200,
+              yearlyFeeRs: 1800
+            }
           };
           setDoc(doc(db, 'settings', 'storageConfig'), defaultCfg, {
             merge: true
@@ -1564,7 +1611,7 @@ export default function App() {
               (u.paymentStatus as 'pending' | 'verified' | 'rejected') ||
               'pending',
             submittedAt: u.createdAt || '',
-            subscriptionPlan: u.subscriptionPlan || '1 Month (Rs. 100)',
+            subscriptionPlan: u.subscriptionPlan || '1 Month (Rs. 200)',
             approvedAt: u.premiumActivatedAt || '',
             premiumExpiresAt: u.premiumExpiresAt || ''
           });
@@ -1584,11 +1631,69 @@ export default function App() {
     [adminAllPaymentRequests]
   );
 
+  // Live Payment Gateway Fees & Details (Editable from Admin Control Panel -> 6. Payment Gateway)
+  const liveGateway = useMemo(
+    () => ({
+      jazzCashTitle:
+        storageConfig.paymentGateway?.jazzCashTitle || 'Muneeb Khan',
+      jazzCashNumber:
+        storageConfig.paymentGateway?.jazzCashNumber || '0324-0906384',
+      easyPaisaTitle:
+        storageConfig.paymentGateway?.easyPaisaTitle || 'Muneeb Khan',
+      easyPaisaNumber:
+        storageConfig.paymentGateway?.easyPaisaNumber || '0324-0906384',
+      bankTitle: storageConfig.paymentGateway?.bankTitle || 'Muneeb Khan',
+      bankName:
+        storageConfig.paymentGateway?.bankName || 'Allied Bank / Bank Transfer',
+      bankAccountOrIban:
+        storageConfig.paymentGateway?.bankAccountOrIban ||
+        'Contact on WhatsApp for IBAN',
+      bankWhatsapp:
+        storageConfig.paymentGateway?.bankWhatsapp || '+92 324 0906384',
+      monthlyFeeRs: Number(storageConfig.paymentGateway?.monthlyFeeRs) || 200,
+      yearlyFeeRs: Number(storageConfig.paymentGateway?.yearlyFeeRs) || 1800
+    }),
+    [storageConfig.paymentGateway]
+  );
+
+  // Last 5 Days Expiry Countdown for Paid Premium Members
+  const globalPremiumCountdown = useMemo(() => {
+    if (!isCurrentUserPaid || !myProfile.premiumExpiresAt) return null;
+    const endMs = new Date(myProfile.premiumExpiresAt).getTime();
+    if (isNaN(endMs)) return null;
+    const diffMs = endMs - Date.now();
+    if (diffMs <= 0) return null;
+    const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (daysLeft < 1 || daysLeft > 5) return null;
+    const formattedEndDate = new Date(
+      myProfile.premiumExpiresAt
+    ).toLocaleDateString('en-PK', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+    return { daysLeft, formattedEndDate };
+  }, [isCurrentUserPaid, myProfile.premiumExpiresAt]);
+
   const handleSubmitPaymentVerification = async () => {
     if (!authUser || isSubmittingPayment) return;
+    const chosenFee =
+      selectedPlanDuration === '1-year'
+        ? liveGateway.yearlyFeeRs
+        : liveGateway.monthlyFeeRs;
+    const chosenAmountLabel =
+      selectedPlanDuration === '1-year'
+        ? `Rs. ${chosenFee.toLocaleString()} (1 Year - 25% OFF)`
+        : `Rs. ${chosenFee.toLocaleString()} (1 Month)`;
+    const chosenPlanLabel =
+      selectedPlanDuration === '1-year'
+        ? `1 Year (Rs. ${chosenFee.toLocaleString()} - 25% OFF)`
+        : `1 Month (Rs. ${chosenFee.toLocaleString()})`;
+
     if (!payReceiptUrl && !payTransactionId.trim()) {
       setPaySubmitBanner(
-        'Please upload your Payment Screenshot (or enter the Transaction ID) after sending Rs. 100.'
+        `Please upload your Payment Screenshot (or enter the Transaction ID) after sending Rs. ${chosenFee.toLocaleString()}.`
       );
       return;
     }
@@ -1605,12 +1710,12 @@ export default function App() {
       currentRole: myProfile.title || myProfile.currentRole || '',
       paymentMethod: payMethod,
       transactionId: payTransactionId.trim() || 'SCREENSHOT-UPLOADED',
-      amount: 'Rs. 100 (1 Month)',
-      notes: payNotes.trim() || '1 Month Premium Subscription (Rs. 100)',
+      amount: chosenAmountLabel,
+      notes: payNotes.trim() || `${chosenPlanLabel} Premium Subscription`,
       receiptImageUrl: payReceiptUrl || '',
       status: 'pending',
       submittedAt: new Date().toISOString().slice(0, 19) + 'Z',
-      subscriptionPlan: '1 Month (Rs. 100)'
+      subscriptionPlan: chosenPlanLabel
     };
 
     try {
@@ -1621,8 +1726,8 @@ export default function App() {
         paymentStatus: 'pending',
         paymentMethod: payMethod,
         paymentReference: payload.transactionId,
-        paymentAmount: 'Rs. 100 (1 Month)',
-        subscriptionPlan: '1 Month (Rs. 100)',
+        paymentAmount: chosenAmountLabel,
+        subscriptionPlan: chosenPlanLabel,
         receiptImageUrl: payReceiptUrl || myProfile.receiptImageUrl || ''
       };
       setMyProfile(updatedUser);
@@ -1657,7 +1762,18 @@ export default function App() {
     try {
       const now = new Date();
       const nowIso = now.toISOString().slice(0, 19) + 'Z';
-      const expiresDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const isYearlyPlan =
+        (req.subscriptionPlan || '').toLowerCase().includes('year') ||
+        (req.amount || '').toLowerCase().includes('year') ||
+        (req.amount || '').includes('1800') ||
+        (req.amount || '').includes('1,800');
+      const durationDays = isYearlyPlan ? 365 : 30;
+      const planLabel = isYearlyPlan
+        ? `1 Year (Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} - 25% OFF)`
+        : `1 Month (Rs. ${liveGateway.monthlyFeeRs.toLocaleString()})`;
+      const expiresDate = new Date(
+        now.getTime() + durationDays * 24 * 60 * 60 * 1000
+      );
       const expiresIso = expiresDate.toISOString().slice(0, 19) + 'Z';
 
       await setDoc(
@@ -1665,6 +1781,7 @@ export default function App() {
         {
           ...req,
           status: decision,
+          subscriptionPlan: req.subscriptionPlan || planLabel,
           approvedAt: decision === 'verified' ? nowIso : '',
           premiumExpiresAt: decision === 'verified' ? expiresIso : ''
         },
@@ -1689,7 +1806,7 @@ export default function App() {
         isPremium: decision === 'verified',
         plan: decision === 'verified' ? 'premium' : 'free',
         paymentStatus: decision,
-        subscriptionPlan: '1 Month (Rs. 100)',
+        subscriptionPlan: req.subscriptionPlan || planLabel,
         premiumActivatedAt:
           decision === 'verified'
             ? nowIso
@@ -1710,7 +1827,7 @@ export default function App() {
 
       setAdminStatusBanner(
         decision === 'verified'
-          ? `Approved ${req.userName}! 1-Month Premium Subscription (Rs. 100) activated until ${expiresDate.toLocaleDateString()}.`
+          ? `Approved ${req.userName}! ${isYearlyPlan ? 'Full Year (365 Days)' : '1-Month (30 Days)'} Premium Subscription activated until ${expiresDate.toLocaleDateString()}.`
           : `Marked ${req.userName}'s payment request as Rejected.`
       );
       setTimeout(() => setAdminStatusBanner(null), 5000);
@@ -1743,7 +1860,13 @@ export default function App() {
     try {
       const now = new Date();
       const nowIso = now.toISOString().slice(0, 19) + 'Z';
-      const expiresDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const isYearlyPlan = (targetUser.subscriptionPlan || '')
+        .toLowerCase()
+        .includes('year');
+      const durationDays = isYearlyPlan ? 365 : 30;
+      const expiresDate = new Date(
+        now.getTime() + durationDays * 24 * 60 * 60 * 1000
+      );
       const expiresIso = expiresDate.toISOString().slice(0, 19) + 'Z';
 
       const updatedUser: HubUser = {
@@ -1754,7 +1877,10 @@ export default function App() {
         isPremium: makePremium,
         plan: makePremium ? 'premium' : 'free',
         paymentStatus: makePremium ? 'verified' : 'rejected',
-        subscriptionPlan: makePremium ? '1 Month (Rs. 100)' : '',
+        subscriptionPlan: makePremium
+          ? targetUser.subscriptionPlan ||
+            `1 Month (Rs. ${liveGateway.monthlyFeeRs})`
+          : '',
         premiumActivatedAt: makePremium ? nowIso : '',
         premiumExpiresAt: makePremium ? expiresIso : ''
       };
@@ -1794,7 +1920,7 @@ export default function App() {
 
       setAdminStatusBanner(
         makePremium
-          ? `Accepted ${targetUser.name}! 1-Month Premium Membership activated immediately.`
+          ? `Accepted ${targetUser.name}! Premium Membership activated until ${expiresDate.toLocaleDateString()}.`
           : `Updated ${targetUser.name} to Free Tier / Rejected.`
       );
       setTimeout(() => setAdminStatusBanner(null), 4000);
@@ -2313,6 +2439,41 @@ export default function App() {
             myProfile.profilePicUrl || authUser.photoURL || undefined
           }
         />
+
+        {/* LAST 5 DAYS PREMIUM EXPIRY COUNTDOWN BANNER (Shows across app when 1–5 days remain) */}
+        {globalPremiumCountdown && (
+          <div className="mx-3.5 mt-3 rounded-2xl bg-gradient-to-r from-[#7C2D12] via-[#B45309] to-[#92400E] text-white p-3.5 shadow-md border border-amber-300/40 flex items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5 text-amber-200 animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <span className="inline-block px-2 py-0.5 rounded-full bg-amber-300 text-[#7C2D12] text-[10px] font-extrabold uppercase tracking-wider">
+                  ⏳ Final 5-Day Countdown: {globalPremiumCountdown.daysLeft}{' '}
+                  {globalPremiumCountdown.daysLeft === 1 ? 'Day' : 'Days'} Left
+                </span>
+                <p className="text-xs font-extrabold text-white mt-1 leading-snug">
+                  Your Premium Membership ends in{' '}
+                  <span className="underline decoration-amber-300">
+                    {globalPremiumCountdown.daysLeft}{' '}
+                    {globalPremiumCountdown.daysLeft === 1 ? 'day' : 'days'}
+                  </span>{' '}
+                  on {globalPremiumCountdown.formattedEndDate}.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPaySubmitBanner(null);
+                setShowPremiumUpgradeModal(true);
+              }}
+              className="px-3 py-2 rounded-xl bg-amber-300 hover:bg-amber-200 text-[#7C2D12] text-[11px] font-extrabold shrink-0 cursor-pointer shadow-xs"
+            >
+              Renew Now
+            </button>
+          </div>
+        )}
 
         <div className="p-3.5 sm:p-5 pb-5 space-y-4">
           {/* ==================== 1. HOME SCREEN (/) ==================== */}
@@ -3586,7 +3747,18 @@ export default function App() {
                       Connect with Verified Food Specialists
                     </h1>
                     <p className="text-xs sm:text-[13px] text-gray-600 max-w-md mx-auto leading-relaxed font-medium">
-                      Upgrade to Premium Membership (Only Rs. 100 / Month) to showcase your profile in the Community, view other paid members&apos; visible profile details, connect on LinkedIn, and download CVs.
+                      Upgrade to Premium Membership (Only{' '}
+                      <strong>
+                        Rs. {liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month
+                      </strong>{' '}
+                      or{' '}
+                      <strong>
+                        Rs. {liveGateway.yearlyFeeRs.toLocaleString()} / Full Year
+                        with 25% Discount
+                      </strong>
+                      ) to showcase your profile in the Community, view other paid
+                      members&apos; visible profile details, connect on LinkedIn,
+                      and download CVs.
                     </p>
                   </div>
 
@@ -4843,7 +5015,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ==================== PREMIUM MEMBERSHIP & PAYMENT POPUP MODAL (RS. 100 / 1 MONTH) ==================== */}
+        {/* ==================== PREMIUM MEMBERSHIP & PAYMENT POPUP MODAL (RS. 200 / MONTH OR RS. 1,800 / YEAR - 25% OFF) ==================== */}
         {showPremiumUpgradeModal && (
           <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3.5 overflow-y-auto">
             <div className="w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-5 shadow-2xl space-y-4 border-2 border-[#16A34A]">
@@ -4856,13 +5028,18 @@ export default function App() {
                   <div>
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10.5px] font-extrabold">
                       <Sparkles className="w-3 h-3 text-[#D97706]" />
-                      <span>Only Rs. 100 for 1 Month</span>
+                      <span>
+                        Rs. {liveGateway.monthlyFeeRs} / Month • Rs.{' '}
+                        {liveGateway.yearlyFeeRs.toLocaleString()} / Year (25%
+                        OFF)
+                      </span>
                     </span>
                     <h2 className="text-[20px] font-extrabold text-[#0D2E1B] leading-tight mt-1">
                       Become a Premium Member
                     </h2>
                     <p className="text-xs font-medium text-gray-600 mt-0.5">
-                      Unlock full Community visibility &amp; networking for 30 days
+                      Unlock full Community visibility, networking &amp; CV
+                      vault access
                     </p>
                   </div>
                 </div>
@@ -4875,6 +5052,85 @@ export default function App() {
                 </button>
               </div>
 
+              {/* STEP 1: CHOOSE SUBSCRIPTION PLAN (1 MONTH vs FULL YEAR 25% DISCOUNT) */}
+              <div className="space-y-2">
+                <label className="block text-xs font-extrabold text-[#0D2E1B]">
+                  1. Select Subscription Plan
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* 1-Month Plan Card */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPlanDuration('1-month');
+                      setPayAmount(`Rs. ${liveGateway.monthlyFeeRs}`);
+                    }}
+                    className={`p-3 rounded-2xl border-2 text-left transition-all cursor-pointer relative ${
+                      selectedPlanDuration === '1-month'
+                        ? 'bg-[#EAF5EC] border-[#15803D] shadow-xs'
+                        : 'bg-white border-gray-200 hover:border-emerald-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#14532D]">
+                        1 Month Plan
+                      </span>
+                      {selectedPlanDuration === '1-month' && (
+                        <CheckCircle2 className="w-4 h-4 text-[#15803D]" />
+                      )}
+                    </div>
+                    <div className="text-lg font-black text-[#0D2E1B] mt-1">
+                      Rs. {liveGateway.monthlyFeeRs.toLocaleString()}
+                    </div>
+                    <div className="text-[10.5px] font-semibold text-gray-600">
+                      Valid for 30 Days
+                    </div>
+                  </button>
+
+                  {/* Full Year Plan Card (25% Discount) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPlanDuration('1-year');
+                      setPayAmount(`Rs. ${liveGateway.yearlyFeeRs}`);
+                    }}
+                    className={`p-3 rounded-2xl border-2 text-left transition-all cursor-pointer relative ${
+                      selectedPlanDuration === '1-year'
+                        ? 'bg-[#FFFBEB] border-[#D97706] shadow-xs'
+                        : 'bg-white border-gray-200 hover:border-amber-300'
+                    }`}
+                  >
+                    <span className="inline-block px-2 py-0.5 rounded-full bg-[#D97706] text-white text-[9.5px] font-extrabold uppercase tracking-wider mb-1">
+                      🔥 25% Discount
+                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#92400E]">
+                        Full Year (12 Mo)
+                      </span>
+                      {selectedPlanDuration === '1-year' && (
+                        <CheckCircle2 className="w-4 h-4 text-[#D97706]" />
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-1.5 mt-0.5">
+                      <span className="text-lg font-black text-[#0D2E1B]">
+                        Rs. {liveGateway.yearlyFeeRs.toLocaleString()}
+                      </span>
+                      <span className="text-[10.5px] font-bold text-gray-400 line-through">
+                        Rs. {(liveGateway.monthlyFeeRs * 12).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-[10.5px] font-extrabold text-[#15803D]">
+                      Save Rs.{' '}
+                      {(
+                        liveGateway.monthlyFeeRs * 12 -
+                        liveGateway.yearlyFeeRs
+                      ).toLocaleString()}{' '}
+                      (365 Days)
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               {/* Premium Member Features List */}
               <div className="bg-[#F2F9F4] border border-[#B8D8C0] rounded-2xl p-4 space-y-2.5">
                 <div className="flex items-center justify-between">
@@ -4882,7 +5138,9 @@ export default function App() {
                     Premium Member Benefits
                   </h3>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#15803D] text-white text-[11px] font-extrabold">
-                    Rs. 100 / Month
+                    {selectedPlanDuration === '1-year'
+                      ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Year (25% OFF)`
+                      : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / Month`}
                   </span>
                 </div>
 
@@ -4918,7 +5176,11 @@ export default function App() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-extrabold text-[#0D2E1B]">
-                    1. Choose Payment Option (Fee: Rs. 100 / 1 Month)
+                    2. Choose Payment Method (
+                    {selectedPlanDuration === '1-year'
+                      ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Full Year`
+                      : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month`}
+                    )
                   </label>
                 </div>
 
@@ -4941,7 +5203,7 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Selected Payment Account Instructions */}
+                {/* Selected Payment Account Instructions (Live from Admin Payment Gateway Settings) */}
                 <div className="bg-[#FFFBEB] border border-[#FCD34D] rounded-2xl p-3.5 space-y-1.5 text-xs">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-extrabold text-[#92400E]">
@@ -4949,9 +5211,18 @@ export default function App() {
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        handleCopyText('03240906384', 'pay-acc-num')
-                      }
+                      onClick={() => {
+                        const copyTarget =
+                          payMethod === 'JazzCash'
+                            ? liveGateway.jazzCashNumber
+                            : payMethod === 'EasyPaisa'
+                            ? liveGateway.easyPaisaNumber
+                            : liveGateway.bankAccountOrIban !==
+                              'Contact on WhatsApp for IBAN'
+                            ? liveGateway.bankAccountOrIban
+                            : liveGateway.bankWhatsapp;
+                        handleCopyText(copyTarget, 'pay-acc-num');
+                      }}
                       className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-[#92400E] text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
                     >
                       {copiedId === 'pay-acc-num' ? (
@@ -4962,7 +5233,7 @@ export default function App() {
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span>Copy Number</span>
+                          <span>Copy Details</span>
                         </>
                       )}
                     </button>
@@ -4971,13 +5242,20 @@ export default function App() {
                   {payMethod === 'JazzCash' && (
                     <div className="text-gray-800 space-y-0.5">
                       <div>
-                        Account Title: <strong>Muneeb Khan</strong>
+                        Account Title:{' '}
+                        <strong>{liveGateway.jazzCashTitle}</strong>
                       </div>
                       <div>
-                        JazzCash Number: <strong>0324-0906384</strong>
+                        JazzCash Number:{' '}
+                        <strong>{liveGateway.jazzCashNumber}</strong>
                       </div>
                       <div>
-                        Subscription Fee: <strong>Rs. 100 (For 1 Month)</strong>
+                        Subscription Fee:{' '}
+                        <strong>
+                          {selectedPlanDuration === '1-year'
+                            ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - 25% Discount)`
+                            : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
+                        </strong>
                       </div>
                     </div>
                   )}
@@ -4985,13 +5263,20 @@ export default function App() {
                   {payMethod === 'EasyPaisa' && (
                     <div className="text-gray-800 space-y-0.5">
                       <div>
-                        Account Title: <strong>Muneeb Khan</strong>
+                        Account Title:{' '}
+                        <strong>{liveGateway.easyPaisaTitle}</strong>
                       </div>
                       <div>
-                        EasyPaisa Number: <strong>0324-0906384</strong>
+                        EasyPaisa Number:{' '}
+                        <strong>{liveGateway.easyPaisaNumber}</strong>
                       </div>
                       <div>
-                        Subscription Fee: <strong>Rs. 100 (For 1 Month)</strong>
+                        Subscription Fee:{' '}
+                        <strong>
+                          {selectedPlanDuration === '1-year'
+                            ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - 25% Discount)`
+                            : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
+                        </strong>
                       </div>
                     </div>
                   )}
@@ -4999,14 +5284,26 @@ export default function App() {
                   {payMethod === 'Bank Transfer' && (
                     <div className="text-gray-800 space-y-0.5">
                       <div>
-                        Account Title: <strong>Muneeb Khan</strong>
+                        Account Title: <strong>{liveGateway.bankTitle}</strong>
                       </div>
                       <div>
-                        WhatsApp / Contact for Bank IBAN:{' '}
-                        <strong>+92 324 0906384</strong>
+                        Bank Name: <strong>{liveGateway.bankName}</strong>
                       </div>
                       <div>
-                        Subscription Fee: <strong>Rs. 100 (For 1 Month)</strong>
+                        Account / IBAN:{' '}
+                        <strong>{liveGateway.bankAccountOrIban}</strong>
+                      </div>
+                      <div>
+                        WhatsApp / Contact:{' '}
+                        <strong>{liveGateway.bankWhatsapp}</strong>
+                      </div>
+                      <div>
+                        Subscription Fee:{' '}
+                        <strong>
+                          {selectedPlanDuration === '1-year'
+                            ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - 25% Discount)`
+                            : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
+                        </strong>
                       </div>
                     </div>
                   )}
@@ -5016,16 +5313,21 @@ export default function App() {
               {/* Upload Screenshot & Transaction Details */}
               <div className="space-y-3">
                 <label className="block text-xs font-extrabold text-[#0D2E1B]">
-                  2. Upload Payment Screenshot After Paying Rs. 100
+                  3. Upload Payment Screenshot After Paying Rs.{' '}
+                  {selectedPlanDuration === '1-year'
+                    ? liveGateway.yearlyFeeRs.toLocaleString()
+                    : liveGateway.monthlyFeeRs.toLocaleString()}
                 </label>
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <span className="block text-[10.5px] font-bold text-gray-500 mb-1">
-                      Subscription Fee (1 Month)
+                      Selected Plan &amp; Fee
                     </span>
                     <div className="w-full px-3 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#C6DFCB] text-xs font-extrabold text-[#0D2E1B]">
-                      Rs. 100 / 1 Month
+                      {selectedPlanDuration === '1-year'
+                        ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / 1 Year (25% OFF)`
+                        : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month`}
                     </div>
                   </div>
                   <div>
@@ -5054,7 +5356,11 @@ export default function App() {
                             : 'Upload Payment Screenshot'}
                         </span>
                         <span className="text-[10.5px] text-gray-500 block">
-                          Attach screenshot of your Rs. 100 payment
+                          Attach screenshot of your Rs.{' '}
+                          {selectedPlanDuration === '1-year'
+                            ? liveGateway.yearlyFeeRs.toLocaleString()
+                            : liveGateway.monthlyFeeRs.toLocaleString()}{' '}
+                          payment
                         </span>
                       </div>
                     </div>
@@ -5189,10 +5495,10 @@ export default function App() {
                           </h2>
                           <p className="text-xs font-medium text-gray-600 mt-0.5 leading-relaxed">
                             {isApproved
-                              ? 'Admin has verified your Rs. 100 payment and activated your 1-Month Premium Membership.'
+                              ? 'Admin has verified your payment slip and activated your Premium Membership.'
                               : isRejected
                               ? 'Admin reviewed your request and marked it as not approved. You can submit a new valid payment slip below.'
-                              : 'Your request is under review and has been sent to Admin for approval. Once Admin approves your payment slip, your 1-Month Premium Membership will activate automatically.'}
+                              : 'Your request is under review and has been sent to Admin for approval. Once Admin approves your payment slip, your Premium Membership will activate automatically.'}
                           </p>
                         </div>
                       </div>
@@ -5350,10 +5656,12 @@ export default function App() {
 
                           <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100">
                             <span className="text-[10px] font-bold text-gray-500 block uppercase">
-                              Subscription Fee
+                              Subscription Plan &amp; Fee
                             </span>
                             <span className="font-extrabold text-[#15803D] block mt-0.5">
-                              {myLatestApplication.amount || 'Rs. 100 (1 Month)'}
+                              {myLatestApplication.amount ||
+                                myLatestApplication.subscriptionPlan ||
+                                `Rs. ${liveGateway.monthlyFeeRs} (1 Month)`}
                             </span>
                           </div>
                         </div>
@@ -5375,7 +5683,7 @@ export default function App() {
                           (myLatestApplication.premiumExpiresAt ||
                             myProfile.premiumExpiresAt) && (
                             <div className="p-3 rounded-xl bg-[#DCFCE7] border border-[#16A34A] text-xs font-extrabold text-[#0D2E1B] flex items-center justify-between">
-                              <span>1-Month Subscription Valid Until:</span>
+                              <span>Premium Subscription Valid Until:</span>
                               <span className="text-[#15803D]">
                                 {new Date(
                                   myLatestApplication.premiumExpiresAt ||

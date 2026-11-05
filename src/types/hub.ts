@@ -175,11 +175,25 @@ export interface HubCertificate {
   createdAt: string;
 }
 
+export interface PaymentGatewayConfig {
+  jazzCashTitle: string;
+  jazzCashNumber: string;
+  easyPaisaTitle: string;
+  easyPaisaNumber: string;
+  bankTitle: string;
+  bankName: string;
+  bankAccountOrIban: string;
+  bankWhatsapp: string;
+  monthlyFeeRs: number;
+  yearlyFeeRs: number;
+}
+
 export interface CloudStorageConfig {
   provider: 'smart-firestore' | 'cloudinary';
   cloudinaryCloudName: string;
   cloudinaryUploadPreset: string;
   updatedAt: string;
+  paymentGateway?: PaymentGatewayConfig;
 }
 
 export interface HubChatMessage {
