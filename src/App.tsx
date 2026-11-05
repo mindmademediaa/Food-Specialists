@@ -71,6 +71,7 @@ import {
   OperationType,
   handleFirestoreError
 } from './lib/firebase';
+import { FS_PORTAL_LOGO_DATA_URI } from './lib/brandLogo';
 import {
   HubUser,
   PrivacySettings,
@@ -1834,11 +1835,11 @@ export default function App() {
     return (
       <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-fade-in">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white shadow-[0_12px_40px_rgba(13,46,27,0.12)] border border-emerald-100 flex items-center justify-center p-4">
+          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white shadow-[0_12px_40px_rgba(13,46,27,0.12)] border border-emerald-100 flex items-center justify-center overflow-hidden">
             <img
-              src="/assets/aistudio/Untitled_design_20261105_004327_0000_25d32177.webp"
-              alt="FS Portal Logo"
-              className="w-full h-full object-contain"
+              src={FS_PORTAL_LOGO_DATA_URI}
+              alt="FS Portal"
+              className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
             />
           </div>
           <div className="space-y-1">
@@ -1859,11 +1860,11 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#F0FDF4] flex flex-col items-center justify-center p-4">
         <div className="bg-white border-[1.5px] border-[#9EC4A7] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-xs w-full">
-          <div className="w-16 h-16 rounded-2xl bg-white border border-emerald-100 shadow-xs flex items-center justify-center p-2">
+          <div className="w-20 h-20 rounded-2xl bg-white border border-emerald-100 shadow-xs flex items-center justify-center overflow-hidden">
             <img
-              src="/assets/aistudio/Untitled_design_20261105_004327_0000_25d32177.webp"
-              alt="FS Portal Logo"
-              className="w-full h-full object-contain"
+              src={FS_PORTAL_LOGO_DATA_URI}
+              alt="FS Portal"
+              className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
             />
           </div>
           <h2 className="text-base font-extrabold text-[#0D2E1B]">

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Search, Bell, ArrowLeft, Shield, LogOut } from 'lucide-react';
+import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -36,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="bg-[#16A34A] text-white rounded-[24px] px-3 sm:px-5 py-3 flex items-center justify-between gap-2 shadow-sm">
-      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
         {showBack && onBack && (
           <button
             type="button"
@@ -48,18 +49,18 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* FS Portal Brand Logo before FS Portal Title */}
+        {/* FS Portal Brand Logo before FS Portal Title — Zoomed to cover full circular logo area */}
         <button
           type="button"
           onClick={onHomeClick}
           aria-label="FS Portal Home"
           title="FS Portal"
-          className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border-2 border-white flex items-center justify-center overflow-hidden shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer"
+          className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border-2 border-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm hover:scale-105 transition-transform cursor-pointer"
         >
           <img
-            src="/assets/aistudio/Untitled_design_20261105_004327_0000_25d32177.webp"
-            alt="FS Portal Logo"
-            className="w-full h-full object-contain p-0.5"
+            src={FS_PORTAL_LOGO_DATA_URI}
+            alt="FS Portal"
+            className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
           />
         </button>
 

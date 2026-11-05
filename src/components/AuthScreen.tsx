@@ -21,6 +21,7 @@ import {
   sendPasswordResetEmail,
   updateProfile
 } from '../lib/firebase';
+import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -285,13 +286,15 @@ export const AuthScreen: React.FC = () => {
         <div className="bg-white rounded-[28px] border border-[#CFE5D6] shadow-[0_16px_50px_rgba(21,128,61,0.08)] p-6 sm:p-7 space-y-5">
           {/* Top Brand & Icon Header */}
           <div className="flex flex-col items-center text-center space-y-2.5">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF7EE] border border-[#BDE3C6] text-[#15803D]">
-              <img
-                src="/assets/aistudio/Untitled_design_20261105_004327_0000_25d32177.webp"
-                alt="FS Portal Logo"
-                className="w-6 h-6 rounded-full bg-white object-contain p-0.5 shrink-0 shadow-2xs"
-              />
-              <span className="text-[12px] font-extrabold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#EBF7EE] border border-[#BDE3C6] text-[#15803D]">
+              <div className="w-8 h-8 rounded-full bg-white border border-emerald-200 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                <img
+                  src={FS_PORTAL_LOGO_DATA_URI}
+                  alt="FS Portal"
+                  className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
+                />
+              </div>
+              <span className="text-[13px] font-extrabold uppercase tracking-wider">
                 FS Portal
               </span>
             </div>
