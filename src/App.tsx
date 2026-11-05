@@ -451,10 +451,10 @@ export default function App() {
   const [payReceiptUrl, setPayReceiptUrl] = useState<string>('');
   const [paySubmitBanner, setPaySubmitBanner] = useState<string | null>(null);
 
-  // Admin Console Active Tab & Forms
+  // Admin Console Active Tab & Forms (Default to 'receipts' so payment approvals are immediately visible)
   const [adminTab, setAdminTab] = useState<
     'storage' | 'receipts' | 'opportunities'
-  >('storage');
+  >('receipts');
   const [adminStatusBanner, setAdminStatusBanner] = useState<string | null>(
     null
   );
@@ -1509,6 +1509,61 @@ export default function App() {
 
   const myLatestApplication = myPaymentApplications[0] || null;
 
+  // All payment requests for Admin (combines /paymentRequests collection + any /users doc with paymentStatus/receiptImageUrl)
+  const adminAllPaymentRequests = useMemo<HubPaymentRequest[]>(() => {
+    const map = new Map<string, HubPaymentRequest>();
+    paymentRequests.forEach((req) => {
+      map.set(req.id, req);
+    });
+    users.forEach((u) => {
+      if (
+        (u.paymentStatus && u.paymentStatus !== 'none') ||
+        Boolean(u.receiptImageUrl)
+      ) {
+        const hasExistingForUid = Array.from(map.values()).some(
+          (r) => r.uid === u.uid
+        );
+        if (!hasExistingForUid) {
+          const fallbackId = `user-pay-${u.uid}`;
+          map.set(fallbackId, {
+            id: fallbackId,
+            uid: u.uid,
+            userName: u.name || 'Food Specialist',
+            userEmail: u.email || '',
+            userPhone: u.phone || '',
+            qualification: u.qualification || '',
+            currentRole: u.title || u.currentRole || '',
+            paymentMethod:
+              (u.paymentMethod as 'JazzCash' | 'EasyPaisa' | 'Bank Transfer') ||
+              'JazzCash',
+            transactionId: u.paymentReference || 'SCREENSHOT-UPLOADED',
+            amount: u.paymentAmount || 'Rs. 100 (1 Month)',
+            notes: '1 Month Premium Subscription (Rs. 100)',
+            receiptImageUrl: u.receiptImageUrl || '',
+            status:
+              (u.paymentStatus as 'pending' | 'verified' | 'rejected') ||
+              'pending',
+            submittedAt: u.createdAt || '',
+            subscriptionPlan: u.subscriptionPlan || '1 Month (Rs. 100)',
+            approvedAt: u.premiumActivatedAt || '',
+            premiumExpiresAt: u.premiumExpiresAt || ''
+          });
+        }
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      return (b.submittedAt || '').localeCompare(a.submittedAt || '');
+    });
+  }, [paymentRequests, users]);
+
+  const pendingPaymentRequestsCount = useMemo(
+    () =>
+      adminAllPaymentRequests.filter((r) => r.status === 'pending').length,
+    [adminAllPaymentRequests]
+  );
+
   const handleSubmitPaymentVerification = async () => {
     if (!authUser || isSubmittingPayment) return;
     if (!payReceiptUrl && !payTransactionId.trim()) {
@@ -1855,8 +1910,12 @@ export default function App() {
             onSearchClick={() => setRoute({ name: 'search' })}
             onBellClick={() => navigateToJobs('All')}
             onProfileClick={() => setRoute({ name: 'profile' })}
-            onAdminClick={() => setRoute({ name: 'admin' })}
+            onAdminClick={() => {
+              setAdminTab('receipts');
+              setRoute({ name: 'admin' });
+            }}
             isAdmin={isUserAdmin}
+            pendingAdminCount={pendingPaymentRequestsCount}
             onSignOutClick={handleSignOut}
             userEmail={authUser.email}
             userInitial={userInitial}
@@ -1872,6 +1931,34 @@ export default function App() {
                   Good morning, {firstName}
                 </h1>
               </div>
+
+              {/* ADMIN QUICK BANNER FOR PENDING PAYMENT APPROVALS */}
+              {isUserAdmin && (
+                <div className="bg-gradient-to-r from-[#FFFBEB] to-[#FEF3C7] border-[1.5px] border-[#F59E0B] rounded-[22px] p-4 shadow-xs flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-extrabold text-[#92400E] flex items-center gap-1.5">
+                      <Shield className="w-4 h-4 text-[#D97706]" />
+                      <span>
+                        Admin Panel • {pendingPaymentRequestsCount} Pending Payment{' '}
+                        {pendingPaymentRequestsCount === 1 ? 'Request' : 'Requests'}
+                      </span>
+                    </div>
+                    <p className="text-[11.5px] text-[#78350F] font-semibold">
+                      Review uploaded Rs. 100 payment slips &amp; approve 1-Month Premium memberships.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminTab('receipts');
+                      setRoute({ name: 'admin' });
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-extrabold shrink-0 cursor-pointer transition-colors shadow-xs"
+                  >
+                    Open Receipts ({adminAllPaymentRequests.length}) →
+                  </button>
+                </div>
+              )}
 
               {/* CARD 1 - JOBS */}
               <div className="relative bg-white border-[1.5px] border-[#78AF88] rounded-[24px] p-5 shadow-sm overflow-hidden">
@@ -3806,7 +3893,7 @@ export default function App() {
                     { id: 'storage', label: '1. Cloud Storage' },
                     {
                       id: 'receipts',
-                      label: `2. Receipts (${paymentRequests.length})`
+                      label: `2. Receipts (${adminAllPaymentRequests.length})`
                     },
                     { id: 'opportunities', label: '3. Jobs & Scholars' }
                   ] as const
@@ -3858,7 +3945,7 @@ export default function App() {
                           Payment Receipts
                         </div>
                         <div className="text-lg font-extrabold text-[#0D2E1B] mt-0.5">
-                          {paymentRequests.length} Receipts
+                          {adminAllPaymentRequests.length} Receipts
                         </div>
                         <div className="text-[10.5px] text-[#15803D] font-bold">
                           /paymentRequests
@@ -4002,7 +4089,7 @@ export default function App() {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <h2 className="text-base font-extrabold text-[#0D2E1B]">
-                        Premium Subscription Requests ({paymentRequests.length})
+                        Premium Subscription Requests ({adminAllPaymentRequests.length})
                       </h2>
                       <p className="text-[11px] text-gray-600">
                         Verify Rs. 100 payment screenshots and approve to activate 1-Month Premium Membership
@@ -4012,13 +4099,13 @@ export default function App() {
                       Rs. 100 / 1 Month
                     </span>
                   </div>
-                  {paymentRequests.length === 0 ? (
+                  {adminAllPaymentRequests.length === 0 ? (
                     <p className="text-xs text-gray-500 py-4 text-center">
                       No payment requests submitted yet. When users click &ldquo;Become a Premium Member&rdquo; and upload their Rs. 100 payment screenshot, it appears here.
                     </p>
                   ) : (
                     <div className="space-y-3">
-                      {paymentRequests.map((req) => (
+                      {adminAllPaymentRequests.map((req) => (
                         <div
                           key={req.id}
                           className="p-4 rounded-2xl bg-[#F6FBF7] border border-emerald-200 space-y-2.5"

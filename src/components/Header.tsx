@@ -15,6 +15,7 @@ interface HeaderProps {
   userInitial?: string;
   userAvatarUrl?: string;
   notificationCount?: number;
+  pendingAdminCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -30,7 +31,8 @@ export const Header: React.FC<HeaderProps> = ({
   isAdmin = false,
   userInitial = 'A',
   userAvatarUrl,
-  notificationCount = 1
+  notificationCount = 1,
+  pendingAdminCount = 0
 }) => {
   return (
     <header className="bg-[#16A34A] text-white rounded-[24px] px-3 sm:px-5 py-3 flex items-center justify-between gap-2 shadow-sm">
@@ -87,10 +89,15 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onAdminClick}
             title="Open Admin Panel"
-            className="px-2 py-1 rounded-full bg-white/15 hover:bg-white/25 text-[11px] font-bold text-white flex items-center gap-1 transition-colors cursor-pointer"
+            className="relative px-2.5 py-1.5 rounded-full bg-[#FEF3C7] hover:bg-[#FDE68A] text-[11px] font-extrabold text-[#92400E] border border-[#F59E0B] flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
           >
-            <Shield className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Admin</span>
+            <Shield className="w-3.5 h-3.5 text-[#D97706]" />
+            <span>Admin</span>
+            {pendingAdminCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-[#DC2626] text-white text-[9.5px] font-extrabold tabular-nums">
+                {pendingAdminCount}
+              </span>
+            )}
           </button>
         )}
 

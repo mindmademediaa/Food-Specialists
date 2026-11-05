@@ -18,6 +18,7 @@ import {
   getRedirectResult,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   updateProfile
 } from '../lib/firebase';
 
@@ -117,6 +118,9 @@ export const AuthScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(
+    null
+  );
   const [isUnauthorizedDomainError, setIsUnauthorizedDomainError] =
     useState(false);
   const [copiedDomain, setCopiedDomain] = useState(false);
@@ -157,6 +161,26 @@ export const AuthScreen: React.FC = () => {
       navigator.clipboard.writeText(currentDomain);
       setCopiedDomain(true);
       setTimeout(() => setCopiedDomain(false), 2500);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setErrorMessage(null);
+    setResetSuccessMessage(null);
+    const trimmedEmail = email.trim();
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setErrorMessage(
+        'Please enter your Email Address above first, then click "Forgot Password?".'
+      );
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, trimmedEmail);
+      setResetSuccessMessage(
+        `Password reset link has been sent to ${trimmedEmail}. Please check your Gmail Inbox / Spam folder.`
+      );
+    } catch (err) {
+      setErrorMessage(getFriendlyFirebaseAuthError(err));
     }
   };
 
@@ -350,6 +374,13 @@ export const AuthScreen: React.FC = () => {
             </div>
           )}
 
+          {/* Reset Password Success Box */}
+          {resetSuccessMessage && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-[#0D2E1B] text-xs font-semibold">
+              {resetSuccessMessage}
+            </div>
+          )}
+
           {/* Sign In / Sign Up Form */}
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             {/* Google Sign In Button */}
@@ -435,12 +466,23 @@ export const AuthScreen: React.FC = () => {
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label
-                htmlFor="auth-password"
-                className="block text-xs font-bold text-[#0D2E1B]"
-              >
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="auth-password"
+                  className="block text-xs font-bold text-[#0D2E1B]"
+                >
+                  Password
+                </label>
+                {mode === 'signin' && (
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-[11px] font-extrabold text-[#15803D] hover:underline cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input

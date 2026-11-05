@@ -12,6 +12,7 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
+  sendPasswordResetEmail,
   type User
 } from 'firebase/auth';
 import {
@@ -164,5 +165,6 @@ export {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
+  sendPasswordResetEmail,
   type User
 };
