@@ -131,6 +131,8 @@ service cloud.firestore {
         data.provider in ['smart-firestore', 'cloudinary'] &&
         (!('cloudinaryCloudName' in data) || (data.cloudinaryCloudName is string && data.cloudinaryCloudName.size() <= 120)) &&
         (!('cloudinaryUploadPreset' in data) || (data.cloudinaryUploadPreset is string && data.cloudinaryUploadPreset.size() <= 120)) &&
+        (!('whatsappChannelUrl' in data) || (data.whatsappChannelUrl is string && data.whatsappChannelUrl.size() <= 500)) &&
+        (!('whatsappChannelButtonText' in data) || (data.whatsappChannelButtonText is string && data.whatsappChannelButtonText.size() <= 120)) &&
         (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 

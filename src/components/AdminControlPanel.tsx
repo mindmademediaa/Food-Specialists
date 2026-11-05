@@ -1053,6 +1053,110 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* OFFICIAL WHATSAPP CHANNEL BUTTON & LINK CONTROL (HOME SCREEN) */}
+            <form
+              onSubmit={onSaveStorageConfig}
+              className="bg-white border-2 border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <MessageSquare className="w-5 h-5 stroke-[2.3]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+                      Home Screen WhatsApp Channel Button &amp; Link Control
+                    </h3>
+                    <p className="text-[11.5px] text-[#5C7267] font-medium">
+                      Edit or amend the official WhatsApp Channel URL and button text shown on the Home front page.
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-extrabold">
+                  Live on Home Screen
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Official WhatsApp Channel Link (URL)
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      storageConfig.whatsappChannelUrl ??
+                      'https://whatsapp.com/channel/0029VaFoodSpecialists'
+                    }
+                    onChange={(e) =>
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        whatsappChannelUrl: e.target.value
+                      })
+                    }
+                    placeholder="https://whatsapp.com/channel/..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-semibold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Button Text on Home Page
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      storageConfig.whatsappChannelButtonText ??
+                      'Follow WhatsApp Channel'
+                    }
+                    onChange={(e) =>
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        whatsappChannelButtonText: e.target.value
+                      })
+                    }
+                    placeholder="Follow WhatsApp Channel"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-semibold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <a
+                  href={
+                    (
+                      storageConfig.whatsappChannelUrl ||
+                      'https://whatsapp.com/channel/0029VaFoodSpecialists'
+                    )
+                      .trim()
+                      .match(/^https?:\/\//i)
+                      ? (
+                          storageConfig.whatsappChannelUrl ||
+                          'https://whatsapp.com/channel/0029VaFoodSpecialists'
+                        ).trim()
+                      : `https://${(
+                          storageConfig.whatsappChannelUrl ||
+                          'https://whatsapp.com/channel/0029VaFoodSpecialists'
+                        ).trim()}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 rounded-xl bg-[#E3F3EA] hover:bg-[#CFEAD9] text-[#0D6845] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Test Current Channel Link</span>
+                </a>
+
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                >
+                  <Check className="w-4 h-4 stroke-[2.5]" />
+                  <span>Save WhatsApp Channel Link</span>
+                </button>
+              </div>
+            </form>
           </div>
         )}
 
@@ -2635,12 +2739,64 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
               </div>
 
+              {/* 4. OFFICIAL WHATSAPP CHANNEL BUTTON & LINK CONTROL (HOME SCREEN) */}
+              <div className="p-4 rounded-2xl bg-[#F4FAF7] border-2 border-[#0E9F6E] space-y-3">
+                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider flex items-center gap-1.5">
+                  <MessageSquare className="w-4 h-4 text-[#0E9F6E]" />
+                  <span>4. Home Screen WhatsApp Channel Link &amp; Button</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      Official WhatsApp Channel URL
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.whatsappChannelUrl ??
+                        'https://whatsapp.com/channel/0029VaFoodSpecialists'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          whatsappChannelUrl: e.target.value
+                        })
+                      }
+                      placeholder="https://whatsapp.com/channel/..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                      WhatsApp Button Label on Home Page
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.whatsappChannelButtonText ??
+                        'Follow WhatsApp Channel'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          whatsappChannelButtonText: e.target.value
+                        })
+                      }
+                      placeholder="Follow WhatsApp Channel"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <button
                 type="submit"
                 className="w-full py-3.5 px-5 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
               >
                 <Check className="w-4 h-4 stroke-[2.5]" />
-                <span>Save Payment Gateway &amp; Update Live on App</span>
+                <span>
+                  Save Payment Gateway &amp; WhatsApp Channel Link (Live on App)
+                </span>
               </button>
             </form>
           </div>

@@ -193,6 +193,8 @@ export interface CloudStorageConfig {
   cloudinaryCloudName: string;
   cloudinaryUploadPreset: string;
   updatedAt: string;
+  whatsappChannelUrl?: string;
+  whatsappChannelButtonText?: string;
   paymentGateway?: PaymentGatewayConfig;
 }
 
