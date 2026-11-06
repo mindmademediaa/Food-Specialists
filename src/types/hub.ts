@@ -201,6 +201,24 @@ export interface UserInterviewSession {
   completedAt: string;
 }
 
+export interface UserCourseProgress {
+  courseId: string;
+  courseTitle: string;
+  completedModuleIds: string[];
+  lastModuleIndex: number;
+  lastAccessedAt: string;
+  examPassed: boolean;
+  bestExamScore: number;
+  bestExamTotal: number;
+  bestExamPercentage: number;
+  distinctionEarned: boolean;
+  examCompletedAt?: string;
+  certificateNumber?: string;
+  certificateFeePaid?: boolean;
+  certificateFeePending?: boolean;
+  certificateUnlockedAt?: string;
+}
+
 export interface UserToolsData {
   nutrition: NutritionProfileData;
   examAttempts: UserExamAttempt[];
@@ -209,6 +227,8 @@ export interface UserToolsData {
   seenInterviewQuestionIds?: string[];
   masteredInterviewIds: string[];
   bookmarkedInterviewIds: string[];
+  courseProgress?: Record<string, UserCourseProgress>;
+  lastActiveCourseId?: string;
   lastActiveTool?: 'nutrition' | 'exam' | 'interview';
   updatedAt: string;
 }
@@ -242,6 +262,9 @@ export interface HubPaymentRequest {
   status: 'pending' | 'verified' | 'rejected';
   submittedAt: string;
   subscriptionPlan?: string;
+  certificateCourseId?: string;
+  certificateCourseTitle?: string;
+  certificateNumber?: string;
   approvedAt?: string;
   premiumExpiresAt?: string;
 }
@@ -252,10 +275,12 @@ export interface HubCertificate {
   recipientUid?: string;
   recipientName: string;
   recipientEmail: string;
-  trainingCategory: 'Highfield' | 'Lead Auditor' | string;
+  trainingCategory: 'Highfield' | 'Lead Auditor' | 'International Certification' | string;
   trainingTitle: string;
   accreditationBody: string;
   issueDate: string;
+  scorePercentage?: number;
+  distinction?: boolean;
   certificateImageUrl?: string;
   verificationStatus: 'valid' | 'revoked';
   issuedBy: string;
@@ -341,10 +366,10 @@ export interface HubScholarship {
 
 export interface HubTraining {
   id: string;
-  category: 'Highfield' | 'Lead Auditor';
+  category: 'Highfield' | 'Lead Auditor' | 'International Certification';
   title: string;
-  standardCode?: 'ISO 9001' | 'FSSC 22000' | 'ISO 14001' | 'ISO 45001';
-  subType: null | 'Exemplar Global' | 'IRCA | CQI';
+  standardCode?: 'ISO 9001' | 'FSSC 22000' | 'ISO 14001' | 'ISO 45001' | string;
+  subType: null | 'Exemplar Global' | 'IRCA | CQI' | string;
   description: string;
   duration: string;
   fees: string;

@@ -212,13 +212,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const [isPostingSch, setIsPostingSch] = useState(false);
 
   // Trainings & Price Editor State
-  const [trCategory, setTrCategory] = useState<'Highfield' | 'Lead Auditor'>(
-    'Highfield'
+  const [trCategory, setTrCategory] = useState<
+    'International Certification' | 'Highfield' | 'Lead Auditor'
+  >('International Certification');
+  const [trSubType, setTrSubType] = useState<string>(
+    'International Foundation & Practitioner'
   );
-  const [trSubType, setTrSubType] = useState<string>('Highfield UK');
   const [trTitle, setTrTitle] = useState('');
-  const [trFees, setTrFees] = useState('');
-  const [trDuration, setTrDuration] = useState('');
+  const [trFees, setTrFees] = useState(
+    'Free Study & Exam · Rs. 1,000 Certificate Download'
+  );
+  const [trDuration, setTrDuration] = useState('14 Guided Hours · 5 Modules');
   const [trEnrollLink, setTrEnrollLink] = useState(
     'https://wa.me/923240906384'
   );
@@ -427,20 +431,20 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         subType:
           trCategory === 'Highfield'
             ? null
-            : (trSubType as 'IRCA | CQI' | 'Exemplar Global'),
+            : trSubType || 'International Certification',
         title: trTitle.trim(),
         description:
           trDesc.trim() ||
-          `Official ${trTitle.trim()} qualification for food safety & quality professionals.`,
-        duration: trDuration.trim() || '5 Days (40 Hours)',
-        fees: trFees.trim() || 'PKR 25,000',
+          `Official ${trTitle.trim()} international certification with 5 modules and 40-MCQ final exam.`,
+        duration: trDuration.trim() || '14 Guided Hours · 5 Modules',
+        fees:
+          trFees.trim() ||
+          'Free Study & Exam · Rs. 1,000 Certificate Download',
         enrollLink: trEnrollLink.trim() || 'https://wa.me/923240906384',
         isActive: true
       };
       await onSaveTraining(newTr);
       setTrTitle('');
-      setTrFees('');
-      setTrDuration('');
       setTrDesc('');
     } finally {
       setIsSavingTraining(false);
@@ -1494,6 +1498,16 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                             {req.amount || 'Rs. 100 (1 Month)'} • TID:{' '}
                             {req.transactionId}
                           </div>
+                          {(req.certificateCourseTitle ||
+                            req.subscriptionPlan === 'certificate_unlock') && (
+                            <div className="mt-1.5 px-2.5 py-1 rounded-lg bg-amber-100 border border-amber-300 text-[11px] font-extrabold text-amber-950">
+                              🎓 Certificate Request:{' '}
+                              {req.certificateCourseTitle || req.notes}
+                              {req.certificateNumber
+                                ? ` (ID: ${req.certificateNumber})`
+                                : ''}
+                            </div>
+                          )}
                           {req.submittedAt && (
                             <div className="text-[11px] text-gray-500 mt-0.5">
                               Submitted:{' '}
@@ -1556,17 +1570,20 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         >
                           <Check className="w-4 h-4 stroke-[2.5]" />
                           <span>
-                            Accept (
-                            {req.subscriptionPlan
-                              ?.toLowerCase()
-                              .includes('year') ||
-                            req.amount?.includes(String(liveYearlyFee)) ||
-                            req.amount?.includes('900') ||
-                            req.amount?.includes('1800') ||
-                            req.amount?.includes('1,800')
-                              ? '1 Year'
-                              : '1 Month'}
-                            )
+                            {req.certificateCourseId ||
+                            req.subscriptionPlan === 'certificate_unlock'
+                              ? 'Allow Certificate Download'
+                              : `Accept (${
+                                  req.subscriptionPlan
+                                    ?.toLowerCase()
+                                    .includes('year') ||
+                                  req.amount?.includes(String(liveYearlyFee)) ||
+                                  req.amount?.includes('900') ||
+                                  req.amount?.includes('1800') ||
+                                  req.amount?.includes('1,800')
+                                    ? '1 Year'
+                                    : '1 Month'
+                                })`}
                           </span>
                         </button>
                         <button
@@ -2353,10 +2370,119 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         )}
 
         {/* =====================================================================
-            TAB 5: TRAININGS & LIVE PRICES MANAGER (trainings)
+            TAB 5: TRAININGS, CERTIFICATE REQUESTS & LIVE PRICES MANAGER (trainings)
            ===================================================================== */}
         {activeTab === 'trainings' && (
           <div className="space-y-5">
+            {/* CERTIFICATE DOWNLOAD APPROVAL REQUESTS (Rs. 1,000 PER CERTIFICATE) */}
+            <div className="bg-white border-2 border-amber-500 rounded-[26px] p-5 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold">
+                    Rs. 1,000 Certificate Download &amp; Live Verification Requests
+                  </span>
+                  <h2 className="text-lg font-extrabold text-[#0F291E] mt-1">
+                    Approve / Allow User Certificate Downloads
+                  </h2>
+                  <p className="text-xs text-[#5C7267] font-medium">
+                    Jab user 40-MCQ exam pass kar k Rs. 1,000 certificate fee submit karta hy, uski request yahan ati hy. Jab ap payment confirm kar k <strong>Allow Certificate Download</strong> par click karengay, tab user ka PDF Certificate download unlock hoga aur website portal par live verify hoga.
+                  </p>
+                </div>
+              </div>
+
+              {sortedPaymentRequests.filter(
+                (r) =>
+                  Boolean(r.certificateCourseId) ||
+                  r.subscriptionPlan === 'certificate_unlock' ||
+                  r.amount?.toLowerCase().includes('certificate')
+              ).length === 0 ? (
+                <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold text-[#5C7267] text-center">
+                  Abhi koi Rs. 1,000 Certificate Download request pending nahi hy.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {sortedPaymentRequests
+                    .filter(
+                      (r) =>
+                        Boolean(r.certificateCourseId) ||
+                        r.subscriptionPlan === 'certificate_unlock' ||
+                        r.amount?.toLowerCase().includes('certificate')
+                    )
+                    .map((req) => (
+                      <div
+                        key={req.id}
+                        className={`p-4 rounded-2xl border space-y-2.5 ${
+                          req.status === 'pending'
+                            ? 'bg-[#FFFDF5] border-2 border-[#F59E0B]'
+                            : 'bg-[#F4FAF7] border-[#CBE4D6]'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="text-sm font-extrabold text-[#0F291E]">
+                              {req.userName} ({req.userEmail})
+                            </div>
+                            <div className="text-xs font-extrabold text-[#0D6845] mt-0.5">
+                              Course: {req.certificateCourseTitle || req.notes}
+                            </div>
+                            {req.certificateNumber && (
+                              <div className="text-xs font-mono font-bold text-slate-800">
+                                Certificate ID: {req.certificateNumber}
+                              </div>
+                            )}
+                            <div className="text-xs text-[#5C7267] mt-0.5">
+                              {req.paymentMethod} • {req.amount} • TID: {req.transactionId}
+                            </div>
+                          </div>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                              req.status === 'verified'
+                                ? 'bg-[#D7EFE2] text-[#0D6845]'
+                                : req.status === 'rejected'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-amber-200 text-amber-950'
+                            }`}
+                          >
+                            {req.status === 'verified'
+                              ? 'APPROVED & LIVE'
+                              : req.status.toUpperCase()}
+                          </span>
+                        </div>
+
+                        {req.receiptImageUrl && (
+                          <div className="rounded-xl overflow-hidden border border-[#CBE4D6] bg-white p-2">
+                            <img
+                              src={req.receiptImageUrl}
+                              alt="Certificate Fee Receipt"
+                              className="max-h-36 mx-auto object-contain rounded-lg"
+                            />
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => onVerifyPayment(req, 'verified')}
+                            className="py-2 px-3 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Check className="w-4 h-4" />
+                            <span>Allow Certificate Download</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onVerifyPayment(req, 'rejected')}
+                            className="py-2 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <X className="w-4 h-4" />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
             {/* ADD NEW TRAINING FORM */}
             <form
               onSubmit={handleCreateNewTraining}
@@ -2367,67 +2493,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   Add New Accredited Training Course
                 </span>
                 <h2 className="text-lg font-extrabold text-[#0F291E] mt-1">
-                  Add Training &amp; Set Course Price
+                  Add International Training &amp; Set Course Details
                 </h2>
                 <p className="text-xs text-[#5C7267] font-medium">
-                  Add a new training under Highfield UK or Lead Auditor (IRCA
-                  CQI / Exemplar Global) or edit existing prices below.
+                  Add a new training to the International Certification catalog or manage all 14 courses below.
                 </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
-                    Main Training Category
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['Highfield', 'Lead Auditor'] as const).map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => {
-                          setTrCategory(c);
-                          setTrSubType(
-                            c === 'Highfield' ? 'Highfield UK' : 'IRCA | CQI'
-                          );
-                        }}
-                        className={`py-2.5 px-3 rounded-xl text-xs font-extrabold border cursor-pointer ${
-                          trCategory === c
-                            ? 'bg-[#0E9F6E] text-white border-[#0E9F6E]'
-                            : 'bg-[#F4FAF7] text-[#0F291E] border-[#CBE4D6]'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {trCategory === 'Lead Auditor' && (
-                  <div>
-                    <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
-                      Lead Auditor Accreditation Body
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['IRCA | CQI', 'Exemplar Global'] as const).map(
-                        (sub) => (
-                          <button
-                            key={sub}
-                            type="button"
-                            onClick={() => setTrSubType(sub)}
-                            className={`py-2.5 px-3 rounded-xl text-xs font-extrabold border cursor-pointer ${
-                              trSubType === sub
-                                ? 'bg-[#13422B] text-white border-[#13422B]'
-                                : 'bg-[#F4FAF7] text-[#0F291E] border-[#CBE4D6]'
-                            }`}
-                          >
-                            {sub}
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -2440,34 +2510,34 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     required
                     value={trTitle}
                     onChange={(e) => setTrTitle(e.target.value)}
-                    placeholder="e.g. HACCP Level 3 / BRCGS Lead Auditor"
+                    placeholder="e.g. Food Safety Certified / HACCP Level 4"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
-                    Course Price / Fee *
+                    Certificate / Course Fee *
                   </label>
                   <input
                     type="text"
                     required
                     value={trFees}
                     onChange={(e) => setTrFees(e.target.value)}
-                    placeholder="e.g. PKR 18,000 or $120"
+                    placeholder="Free Study & Exam · Rs. 1,000 Certificate"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
-                    Duration
+                    Duration &amp; Modules
                   </label>
                   <input
                     type="text"
                     value={trDuration}
                     onChange={(e) => setTrDuration(e.target.value)}
-                    placeholder="e.g. 3 Days (24 Hours)"
+                    placeholder="e.g. 14 Guided Hours · 5 Modules"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold"
                   />
                 </div>
@@ -2477,7 +2547,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 rows={3}
                 value={trDesc}
                 onChange={(e) => setTrDesc(e.target.value)}
-                placeholder="Course overview, syllabus highlights & certification details..."
+                placeholder="Course overview, syllabus highlights & international certification details..."
                 className="w-full p-3.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold"
               />
 
@@ -2491,16 +2561,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </button>
             </form>
 
-            {/* EDIT TRAINING PRICES OR REMOVE TRAININGS */}
+            {/* EDIT TRAINING PRICES, TOGGLE VISIBILITY OR REMOVE TRAININGS */}
             <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs space-y-4">
               <div className="border-b border-[#ECF4EF] pb-3">
                 <h3 className="text-base font-extrabold text-[#0F291E]">
-                  All Live Trainings — Edit Prices or Remove ({trainings.length})
+                  All 14+ Live Trainings — Control Visibility, Edit Prices or Remove ({trainings.length})
                 </h3>
                 <p className="text-xs text-[#5C7267]">
-                  Change any training&apos;s price or duration below and click{' '}
-                  <strong>Save Price</strong> — it updates immediately across
-                  the entire app.
+                  Manage every training course from here: edit its fee/duration, toggle Active/Hidden on the frontend app, or remove it.
                 </p>
               </div>
 
@@ -2526,11 +2594,25 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                             <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[10.5px] font-extrabold">
                               {tr.category}
                             </span>
+                            {tr.standardCode && (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-900 text-white text-[10px] font-mono font-bold">
+                                {tr.standardCode}
+                              </span>
+                            )}
                             {tr.subType && (
                               <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#CBE4D6] text-[#0F291E] text-[10.5px] font-bold">
                                 {tr.subType}
                               </span>
                             )}
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                tr.isActive !== false
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-slate-200 text-slate-600'
+                              }`}
+                            >
+                              {tr.isActive !== false ? 'ACTIVE ON APP' : 'HIDDEN'}
+                            </span>
                           </div>
                           <h4 className="text-sm font-extrabold text-[#0F291E] mt-1">
                             {tr.title}
@@ -2540,14 +2622,28 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           </p>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => onDeleteTraining(tr)}
-                          className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Remove</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onSaveTraining({
+                                ...tr,
+                                isActive: tr.isActive === false ? true : false
+                              })
+                            }
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-[#0F291E] border border-[#CBE4D6] text-xs font-extrabold cursor-pointer"
+                          >
+                            {tr.isActive === false ? 'Show on App' : 'Hide'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteTraining(tr)}
+                            className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* INLINE PRICE & DURATION EDITOR */}

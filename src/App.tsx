@@ -82,11 +82,13 @@ import {
   HubScholarship,
   HubTraining,
   HubPaymentRequest,
+  HubCertificate,
   CloudStorageConfig,
   DevRole,
   SpecializationTag,
   NavTab,
-  UserToolsData
+  UserToolsData,
+  UserCourseProgress
 } from './types/hub';
 import {
   INITIAL_JOBS,
@@ -94,6 +96,7 @@ import {
   INITIAL_TRAININGS,
   makeAvatarSvg
 } from './data/mockHubData';
+import { INTERNATIONAL_TRAINING_COURSES } from './data/internationalTrainingsData';
 import { DEFAULT_USER_TOOLS_DATA } from './data/examPrepData';
 import {
   uploadMediaFile,
@@ -117,6 +120,7 @@ import {
   LegalTabType
 } from './components/LegalComplianceModal';
 import { ToolsHubView, ActiveToolSection } from './components/ToolsHubView';
+import { TrainingsAcademyView } from './components/TrainingsAcademyView';
 
 // Custom Duotone SVGs & Botanical Watermarks for the Home Screen Cards
 const DuotoneBriefcaseIcon = () => (
@@ -421,6 +425,7 @@ export default function App() {
     INITIAL_SCHOLARSHIPS
   );
   const [trainings, setTrainings] = useState<HubTraining[]>(INITIAL_TRAININGS);
+  const [certificates, setCertificates] = useState<HubCertificate[]>([]);
   const [paymentRequests, setPaymentRequests] = useState<HubPaymentRequest[]>(
     []
   );
@@ -832,7 +837,8 @@ export default function App() {
             subscriptionPlan: data.subscriptionPlan || prev.subscriptionPlan,
             premiumActivatedAt:
               data.premiumActivatedAt || prev.premiumActivatedAt,
-            premiumExpiresAt: data.premiumExpiresAt || prev.premiumExpiresAt
+            premiumExpiresAt: data.premiumExpiresAt || prev.premiumExpiresAt,
+            toolsData: data.toolsData || prev.toolsData
           }));
         }
       },
@@ -920,10 +926,19 @@ export default function App() {
     const unsubTr = onSnapshot(
       collection(db, 'trainings'),
       (snap) => {
-        const fsTr = snap.docs.map((d) => ({
-          ...(d.data() as HubTraining),
-          id: d.id
-        }));
+        const fsTr = snap.docs
+          .map((d) => ({
+            ...(d.data() as HubTraining),
+            id: d.id
+          }))
+          // Exclude archived Highfield & Lead Auditor trainings from earlier sessions
+          .filter(
+            (t) =>
+              !t.id.startsWith('tr-hf-') &&
+              !t.id.startsWith('tr-la-') &&
+              t.category !== 'Highfield' &&
+              t.category !== 'Lead Auditor'
+          );
         setTrainings(() => {
           const map = new Map<string, HubTraining>();
           INITIAL_TRAININGS.forEach((t) => map.set(t.id, t));
@@ -931,7 +946,7 @@ export default function App() {
             const initMatch = INITIAL_TRAININGS.find((it) => it.id === t.id);
             map.set(t.id, initMatch ? { ...initMatch, ...t } : t);
           });
-          return Array.from(map.values()).filter((t) => t.isActive);
+          return Array.from(map.values());
         });
       },
       (err) => {
@@ -939,6 +954,18 @@ export default function App() {
           handleFirestoreError(err, OperationType.LIST, 'trainings');
         } catch {}
       }
+    );
+
+    const unsubCerts = onSnapshot(
+      collection(db, 'certificates'),
+      (snap) => {
+        const list = snap.docs.map((d) => ({
+          ...(d.data() as HubCertificate),
+          id: d.id
+        }));
+        setCertificates(list);
+      },
+      () => {}
     );
 
     const unsubStorageCfg = onSnapshot(
@@ -1061,6 +1088,7 @@ export default function App() {
       unsubJobs();
       unsubSch();
       unsubTr();
+      unsubCerts();
       unsubStorageCfg();
       unsubPay();
     };
@@ -1566,6 +1594,87 @@ export default function App() {
     await persistUserProfileToFirestore(updatedUser);
   };
 
+  // Save User's Training Course Progress (Module Tracking + 40-MCQ Exam Score + Resume Point)
+  const handleSaveCourseProgress = async (
+    courseId: string,
+    _updatedProgress: UserCourseProgress,
+    allProgress: Record<string, UserCourseProgress>
+  ) => {
+    const cleanUid = authUser?.uid || myProfile.uid;
+    if (!cleanUid) return;
+    const baseTools: UserToolsData =
+      myProfile.toolsData || DEFAULT_USER_TOOLS_DATA;
+    const updatedToolsData: UserToolsData = {
+      ...baseTools,
+      courseProgress: allProgress,
+      lastActiveCourseId: courseId
+    };
+    const updatedUser: HubUser = {
+      ...myProfile,
+      uid: cleanUid,
+      toolsData: updatedToolsData
+    };
+    setMyProfile(updatedUser);
+    await persistUserProfileToFirestore(updatedUser);
+  };
+
+  // Submit Rs. 1,000 Certificate Download & Online Verification Request to Admin
+  const handleSubmitCertificatePaymentRequest = async (params: {
+    courseId: string;
+    courseTitle: string;
+    certificateNumber: string;
+    scorePercentage: number;
+    distinction: boolean;
+    paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Bank Transfer';
+    transactionId: string;
+    receiptImageUrl: string;
+    notes: string;
+  }) => {
+    const cleanUid = authUser?.uid || myProfile.uid;
+    if (!cleanUid) return;
+    const nowIso = new Date().toISOString().slice(0, 19) + 'Z';
+    const reqId = `certpay-${cleanUid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 14)}-${Date.now()}`;
+
+    const payload: HubPaymentRequest = {
+      id: reqId,
+      uid: cleanUid,
+      userName: myProfile.name || authUser?.displayName || 'Food Specialist',
+      userEmail: myProfile.email || authUser?.email || '',
+      userPhone: myProfile.phone || '',
+      qualification: myProfile.qualification || '',
+      currentRole: myProfile.title || myProfile.currentRole || '',
+      paymentMethod: params.paymentMethod,
+      transactionId: params.transactionId.trim() || 'CERT-FEE-1000',
+      amount: 'Rs. 1,000 (Certificate Fee)',
+      notes:
+        params.notes.trim() ||
+        `Certificate Unlock: ${params.courseTitle} (${params.certificateNumber}) — Score: ${params.scorePercentage}%`,
+      receiptImageUrl: params.receiptImageUrl || '',
+      status: 'pending',
+      submittedAt: nowIso,
+      subscriptionPlan: 'certificate_unlock',
+      certificateCourseId: params.courseId,
+      certificateCourseTitle: params.courseTitle,
+      certificateNumber: params.certificateNumber
+    };
+
+    try {
+      await setDoc(doc(db, 'paymentRequests', reqId), payload);
+      setPaymentRequests((prev) => [
+        payload,
+        ...prev.filter((r) => r.id !== payload.id)
+      ]);
+    } catch (err) {
+      try {
+        handleFirestoreError(
+          err,
+          OperationType.WRITE,
+          `paymentRequests/${reqId}`
+        );
+      } catch {}
+    }
+  };
+
   const isUserAdmin = Boolean(
     myProfile.isAdmin ||
       authUser?.email?.toLowerCase() === 'mindmademedia9@gmail.com'
@@ -1892,6 +2001,147 @@ export default function App() {
     try {
       const now = new Date();
       const nowIso = now.toISOString().slice(0, 19) + 'Z';
+      const isCertRequest = Boolean(
+        req.certificateCourseId ||
+          req.subscriptionPlan === 'certificate_unlock' ||
+          (req.amount || '').toLowerCase().includes('certificate')
+      );
+
+      if (isCertRequest) {
+        await setDoc(
+          doc(db, 'paymentRequests', req.id),
+          {
+            ...req,
+            status: decision,
+            approvedAt: decision === 'verified' ? nowIso : ''
+          },
+          { merge: true }
+        );
+        setPaymentRequests((prev) =>
+          prev.map((r) =>
+            r.id === req.id
+              ? {
+                  ...r,
+                  status: decision,
+                  approvedAt: decision === 'verified' ? nowIso : ''
+                }
+              : r
+          )
+        );
+
+        const userSnap = await getDoc(doc(db, 'users', req.uid));
+        const baseUser = userSnap.exists()
+          ? (userSnap.data() as HubUser)
+          : ({
+              ...DEFAULT_CURRENT_USER_PROFILE,
+              uid: req.uid,
+              name: req.userName || 'Food Specialist',
+              email: req.userEmail || '',
+              phone: req.userPhone || ''
+            } as HubUser);
+
+        const courseId = req.certificateCourseId || 'int-tr-01';
+        const matchedCourse = INTERNATIONAL_TRAINING_COURSES.find(
+          (c) => c.id === courseId
+        );
+        const baseTools: UserToolsData =
+          baseUser.toolsData || DEFAULT_USER_TOOLS_DATA;
+        const existingCourseProg = baseTools.courseProgress?.[courseId];
+        const certNumber =
+          req.certificateNumber ||
+          existingCourseProg?.certificateNumber ||
+          `FSP-${matchedCourse?.code || 'CERT'}-${req.uid.slice(0, 5).toUpperCase()}`;
+
+        const updatedCourseProg: UserCourseProgress = {
+          courseId,
+          courseTitle:
+            req.certificateCourseTitle ||
+            existingCourseProg?.courseTitle ||
+            matchedCourse?.title ||
+            'International Certification',
+          completedModuleIds: existingCourseProg?.completedModuleIds || [],
+          lastModuleIndex: existingCourseProg?.lastModuleIndex || 0,
+          lastAccessedAt: existingCourseProg?.lastAccessedAt || nowIso,
+          bestExamScore: existingCourseProg?.bestExamScore || 32,
+          bestExamTotal: existingCourseProg?.bestExamTotal || 40,
+          bestExamPercentage: existingCourseProg?.bestExamPercentage || 80,
+          examPassed: true,
+          distinctionEarned: Boolean(
+            (existingCourseProg?.bestExamPercentage || 80) >= 75
+          ),
+          examCompletedAt: existingCourseProg?.examCompletedAt || nowIso,
+          certificateNumber: certNumber,
+          certificateFeePaid: decision === 'verified',
+          certificateFeePending: false,
+          certificateUnlockedAt: decision === 'verified' ? nowIso : undefined
+        };
+
+        const updatedUser: HubUser = {
+          ...baseUser,
+          uid: req.uid,
+          name: baseUser.name || req.userName || 'Food Specialist',
+          toolsData: {
+            ...baseTools,
+            courseProgress: {
+              ...(baseTools.courseProgress || {}),
+              [courseId]: updatedCourseProg
+            }
+          }
+        };
+
+        await Promise.all([
+          setDoc(doc(db, 'users', req.uid), updatedUser, { merge: true }),
+          setDoc(doc(db, 'users', req.uid, 'private', 'profile'), updatedUser, {
+            merge: true
+          }),
+          setDoc(doc(db, 'users', req.uid, 'profile', 'main'), updatedUser, {
+            merge: true
+          })
+        ]);
+
+        if (decision === 'verified') {
+          const cleanCertDocId = `cert-${certNumber.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+          const newCertRecord: HubCertificate = {
+            id: cleanCertDocId,
+            certificateNumber: certNumber,
+            recipientUid: req.uid,
+            recipientName:
+              updatedUser.name || req.userName || 'Food Specialist',
+            recipientEmail: updatedUser.email || req.userEmail || '',
+            trainingCategory: 'International Certification',
+            trainingTitle:
+              req.certificateCourseTitle ||
+              matchedCourse?.title ||
+              'International Certification',
+            accreditationBody:
+              matchedCourse?.accreditationStandard ||
+              'FS Portal International Academy',
+            issueDate: nowIso.slice(0, 10),
+            issuedBy: 'FS Portal International Academy',
+            verificationStatus: 'valid',
+            createdAt: nowIso,
+            scorePercentage: updatedCourseProg.bestExamPercentage,
+            distinction: updatedCourseProg.distinctionEarned
+          };
+
+          await setDoc(doc(db, 'certificates', cleanCertDocId), newCertRecord, {
+            merge: true
+          });
+          setCertificates((prev) => [
+            newCertRecord,
+            ...prev.filter((c) => c.id !== cleanCertDocId)
+          ]);
+        }
+
+        setAdminStatusBanner(
+          decision === 'verified'
+            ? `Allowed Certificate Download for ${req.userName} (${req.certificateCourseTitle || 'Course'})! PDF Download & Online Verification Portal are now LIVE.`
+            : `Rejected Certificate Download request for ${req.userName}.`
+        );
+        setTimeout(() => setAdminStatusBanner(null), 5000);
+        return;
+      }
+
       const isYearlyPlan =
         (req.subscriptionPlan || '').toLowerCase().includes('year') ||
         (req.amount || '').toLowerCase().includes('year') ||
@@ -2540,7 +2790,7 @@ export default function App() {
         paymentRequests={adminAllPaymentRequests}
         jobs={activeJobs}
         scholarships={activeScholarships}
-        trainings={trainings.filter((t) => t.isActive)}
+        trainings={trainings}
         storageConfig={storageConfig}
         adminStatusBanner={adminStatusBanner}
         onClearBanner={() => setAdminStatusBanner(null)}
@@ -4112,441 +4362,32 @@ export default function App() {
               );
             })()}
 
-          {/* ==================== 6. TRAININGS MAIN PAGE (/trainings) ==================== */}
-          {route.name === 'trainings' && (
-            <div className="space-y-3.5 px-1">
-              <div className="bg-gradient-to-r from-[#2E7D47] via-[#469A61] to-[#2E7D47] rounded-[20px] px-4 py-3.5 text-center text-white shadow-sm border border-emerald-600/30">
-                <h1 className="text-[17px] sm:text-[20px] font-extrabold tracking-tight leading-snug">
-                  Build Your Expertise
-                </h1>
-                <p className="text-[11.5px] sm:text-[13px] font-semibold text-emerald-50 mt-0.5 leading-snug">
-                  Select a training category below to view accredited courses
-                </p>
-              </div>
-
-              {/* CARD 1: HIGHFIELD TRAININGS */}
-              <div
-                onClick={() => {
-                  setRoute({ name: 'trainings-highfield' });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setRoute({ name: 'trainings-highfield' });
-                  }
-                }}
-                className="relative bg-white border-[1.5px] border-[#78AF88] hover:border-[#16A34A] rounded-[22px] p-4 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
-              >
-                <LeafWatermark className="w-7 h-7 absolute right-5 bottom-3 opacity-60 pointer-events-none" />
-                <div className="flex items-start justify-between gap-2.5">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#228B4E] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Shield className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-                    </div>
-                    <div className="pt-0.5 min-w-0">
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-[#DCF2E3] text-[#138A3E] text-[10.5px] font-extrabold">
-                        Highfield UK Accredited
-                      </span>
-                      <h2 className="text-[16.5px] sm:text-[20px] font-extrabold text-[#0D2E1B] leading-snug mt-1 break-words">
-                        Highfield Trainings
-                      </h2>
-                      <p className="text-[12px] sm:text-[13px] text-[#2F4737] mt-0.5 leading-snug break-words">
-                        HACCP Level 1, HACCP Level 2, HACCP Level 3 &amp; HACCP Level 4
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-[#16A34A] text-[#16A34A] flex items-center justify-center shrink-0">
-                    <ArrowRight className="w-4 h-4 stroke-[2.4]" />
-                  </span>
-                </div>
-
-                <div className="mt-3 pt-2.5 border-t border-emerald-100 flex items-center justify-between gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[11px] sm:text-[12px] font-bold">
-                    <span className="text-[#16A34A]">●</span>
-                    <span>
-                      {highfieldTrainings.length} Highfield Courses Available
-                    </span>
-                  </span>
-                  <span className="text-[11.5px] font-extrabold text-[#15803D]">
-                    Open Trainings →
-                  </span>
-                </div>
-              </div>
-
-              {/* CARD 2: LEAD AUDITOR TRAININGS */}
-              <div
-                onClick={() => {
-                  setRoute({ name: 'trainings-lead-auditor-hub' });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setRoute({ name: 'trainings-lead-auditor-hub' });
-                  }
-                }}
-                className="relative bg-white border-[1.5px] border-[#78AF88] hover:border-[#16A34A] rounded-[22px] p-4 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
-              >
-                <WheatWatermark className="w-8 h-8 absolute right-5 bottom-3 opacity-60 pointer-events-none" />
-                <div className="flex items-start justify-between gap-2.5">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#14532D] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Award className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-                    </div>
-                    <div className="pt-0.5 min-w-0">
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-[#DCF2E3] text-[#14532D] text-[10.5px] font-extrabold">
-                        1. IRCA CQI • 2. Exemplar Global
-                      </span>
-                      <h2 className="text-[16.5px] sm:text-[20px] font-extrabold text-[#0D2E1B] leading-snug mt-1 break-words">
-                        Lead Auditor Trainings
-                      </h2>
-                      <p className="text-[12px] sm:text-[13px] text-[#2F4737] mt-0.5 leading-snug break-words">
-                        ISO 22000, FSSC 22000, ISO 9001 &amp; ISO 14001 Lead Auditor
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-[#16A34A] text-[#16A34A] flex items-center justify-center shrink-0">
-                    <ArrowRight className="w-4 h-4 stroke-[2.4]" />
-                  </span>
-                </div>
-
-                <div className="mt-3 pt-2.5 border-t border-emerald-100 flex items-center justify-between gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C6E4C9] text-[#0D2E1B] text-[11px] sm:text-[12px] font-bold">
-                    <span className="text-[#16A34A]">●</span>
-                    <span>
-                      {leadAuditorTrainings.length} Certified Lead Auditor Courses
-                    </span>
-                  </span>
-                  <span className="text-[11.5px] font-extrabold text-[#15803D]">
-                    Open Trainings →
-                  </span>
-                </div>
-              </div>
-            </div>
+          {/* ==================== 6. INTERNATIONAL CERTIFICATION TRAININGS ACADEMY & VERIFICATION PORTAL (/trainings) ==================== */}
+          {(route.name === 'trainings' ||
+            route.name === 'trainings-highfield' ||
+            route.name === 'trainings-lead-auditor-hub' ||
+            route.name === 'training-detail') && (
+            <TrainingsAcademyView
+              trainings={trainings}
+              currentUser={myProfile}
+              users={users}
+              certificates={certificates}
+              paymentRequests={adminAllPaymentRequests}
+              paymentGatewayConfig={liveGateway}
+              isCurrentUserPremiumActive={isCurrentUserPaid}
+              isUserPremiumActiveFn={(u) =>
+                Boolean(u && (isMemberPremiumActive(u) || u.isAdmin))
+              }
+              onSaveCourseProgress={handleSaveCourseProgress}
+              onSubmitCertificatePaymentRequest={
+                handleSubmitCertificatePaymentRequest
+              }
+              onOpenUpgradeModal={() => {
+                setPaySubmitBanner(null);
+                setShowPremiumUpgradeModal(true);
+              }}
+            />
           )}
-
-          {/* ==================== 6A. HIGHFIELD TRAININGS SUB-PAGE ==================== */}
-          {route.name === 'trainings-highfield' && (
-            <div className="space-y-3.5 px-1">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-[18px] sm:text-[21px] font-extrabold text-[#0B3B1E] leading-snug">
-                      Highfield Trainings
-                    </h1>
-                    <span className="w-6 h-6 rounded-full bg-[#138A3E] text-white flex items-center justify-center shrink-0">
-                      <Leaf className="w-3.5 h-3.5 stroke-[2.3]" />
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-gray-700 font-medium leading-snug">
-                    Highfield UK Accredited Food Safety &amp; HACCP Qualifications
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {highfieldTrainings.map((tr) => (
-                  <div
-                    key={tr.id}
-                    onClick={() => {
-                      setRoute({
-                        name: 'training-detail',
-                        trainingId: tr.id
-                      });
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setRoute({
-                          name: 'training-detail',
-                          trainingId: tr.id
-                        });
-                      }
-                    }}
-                    className="bg-white border border-emerald-100 hover:border-[#16A34A] rounded-[20px] p-3.5 shadow-[0_4px_16px_rgba(22,163,74,0.07)] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2.5">
-                        <div className="w-9 h-9 rounded-[12px] bg-[#228B4E] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                          <Shield className="w-4.5 h-4.5 stroke-[2.2]" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-[14px] sm:text-[15px] font-extrabold text-[#0B3B1E] leading-snug break-words">
-                            {tr.title}
-                          </h3>
-                          <p className="text-[11.5px] text-gray-600 leading-relaxed mt-0.5 break-words">
-                            {tr.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                        <span className="px-2 py-0.5 rounded-md bg-[#E8F3EB] text-[#14532D] text-[10.5px] font-bold">
-                          Highfield UK
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-[#E8F3EB] text-[#14532D] text-[10.5px] font-bold">
-                          {tr.duration}
-                        </span>
-                        <span className="px-2.5 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] text-[11px] font-extrabold">
-                          Fee: {tr.fees}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-end">
-                      <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] hover:bg-[#0E6F30] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shadow-2xs transition-colors">
-                        <span>Enroll</span>
-                        <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ==================== 6B. LEAD AUDITOR TRAININGS SUB-PAGE (1. IRCA CQI & 2. Exemplar Global) ==================== */}
-          {route.name === 'trainings-lead-auditor-hub' && (
-            <div className="space-y-4 px-1">
-              <div>
-                <h1 className="text-[18px] sm:text-[21px] font-extrabold text-[#0B3B1E] leading-snug">
-                  Lead Auditor Trainings
-                </h1>
-                <p className="text-[12px] text-gray-600 font-medium leading-snug">
-                  Accredited under 1. IRCA CQI &amp; 2. Exemplar Global
-                </p>
-              </div>
-
-              {/* SECTION 1: 1. IRCA CQI */}
-              <div className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[22px] p-3.5 shadow-xs space-y-2.5">
-                <div className="flex items-center justify-between border-b border-emerald-100 pb-2.5">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-[#14532D] text-white flex items-center justify-center font-extrabold text-[11px] shrink-0">
-                      IRCA
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-[16px] sm:text-[18px] font-extrabold text-[#0B3B1E] leading-tight">
-                        1. IRCA CQI
-                      </h2>
-                      <p className="text-[11px] text-gray-600 font-medium mt-0.5 leading-snug break-words">
-                        Chartered Quality Institute • Certified Lead Auditor Courses
-                      </p>
-                    </div>
-                  </div>
-                  <CheckCircle2 className="w-4.5 h-4.5 text-[#16A34A] shrink-0" />
-                </div>
-
-                <div className="space-y-2.5">
-                  {leadAuditorTrainings
-                    .filter(
-                      (t) =>
-                        !t.subType || t.subType.toLowerCase().includes('irca')
-                    )
-                    .map((course) => (
-                      <div
-                        key={course.id}
-                        onClick={() => {
-                          setRoute({
-                            name: 'training-detail',
-                            trainingId: course.id
-                          });
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setRoute({
-                              name: 'training-detail',
-                              trainingId: course.id
-                            });
-                          }
-                        }}
-                        className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[18px] p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 cursor-pointer transition-all"
-                      >
-                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                          <div className="w-9 h-9 rounded-full bg-[#14532D] text-white flex items-center justify-center shrink-0 mt-0.5">
-                            <Award className="w-4.5 h-4.5 stroke-[2.2]" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[13.5px] sm:text-[14.5px] font-extrabold text-[#0B3B1E] leading-snug break-words">
-                              {course.title}
-                            </div>
-                            <div className="text-[11.5px] font-medium text-gray-700 leading-relaxed mt-0.5 break-words">
-                              {course.description}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#15803D] font-bold mt-1">
-                              <span>{course.duration}</span>
-                              <span>•</span>
-                              <span className="px-2 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] font-extrabold">
-                                Fee: {course.fees}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end shrink-0">
-                          <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
-                            <span>Enroll</span>
-                            <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* SECTION 2: 2. Exemplar Global */}
-              <div className="bg-white border-[1.5px] border-[#B8D3BE] rounded-[22px] p-3.5 shadow-xs space-y-2.5">
-                <div className="flex items-center justify-between border-b border-emerald-100 pb-2.5">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-[#138A3E] text-white flex items-center justify-center font-extrabold text-[11px] shrink-0">
-                      EG
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-[16px] sm:text-[18px] font-extrabold text-[#0B3B1E] leading-tight">
-                        2. Exemplar Global
-                      </h2>
-                      <p className="text-[11px] text-gray-600 font-medium mt-0.5 leading-snug break-words">
-                        Certified Training Provider • Lead Auditor Courses
-                      </p>
-                    </div>
-                  </div>
-                  <CheckCircle2 className="w-4.5 h-4.5 text-[#16A34A] shrink-0" />
-                </div>
-
-                <div className="space-y-2.5">
-                  {leadAuditorTrainings
-                    .filter((t) =>
-                      Boolean(t.subType?.toLowerCase().includes('exemplar'))
-                    )
-                    .map((course) => (
-                      <div
-                        key={course.id}
-                        onClick={() => {
-                          setRoute({
-                            name: 'training-detail',
-                            trainingId: course.id
-                          });
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setRoute({
-                              name: 'training-detail',
-                              trainingId: course.id
-                            });
-                          }
-                        }}
-                        className="bg-[#F6FBF7] border border-emerald-200/80 hover:border-[#16A34A] rounded-[18px] p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 cursor-pointer transition-all"
-                      >
-                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                          <div className="w-9 h-9 rounded-full bg-[#1E8244] text-white flex items-center justify-center shrink-0 mt-0.5">
-                            <Award className="w-4.5 h-4.5 stroke-[2.2]" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[13.5px] sm:text-[14.5px] font-extrabold text-[#0B3B1E] leading-snug break-words">
-                              {course.title}
-                            </div>
-                            <div className="text-[11.5px] font-medium text-gray-700 leading-relaxed mt-0.5 break-words">
-                              {course.description}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#15803D] font-bold mt-1">
-                              <span>{course.duration}</span>
-                              <span>•</span>
-                              <span className="px-2 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] font-extrabold">
-                                Fee: {course.fees}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end shrink-0">
-                          <span className="px-3.5 py-1.5 rounded-full bg-[#138A3E] text-white text-[11.5px] font-bold inline-flex items-center gap-1 shrink-0">
-                            <span>Enroll</span>
-                            <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ==================== TRAINING DETAIL PAGE ==================== */}
-          {route.name === 'training-detail' &&
-            (() => {
-              const tr =
-                trainings.find((t) => t.id === route.trainingId) ||
-                trainings[0];
-              if (!tr) return null;
-
-              return (
-                <div className="bg-white border border-emerald-200 rounded-[22px] p-4 sm:p-5 shadow-sm space-y-4">
-                  <div className="space-y-1 border-b border-emerald-100 pb-3">
-                    <div className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none">
-                      <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#BCE3C5] text-[#0B3B1E] text-[11px] font-bold cursor-default pointer-events-none">
-                        {tr.category}
-                      </span>
-                      {tr.subType && (
-                        <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#EAF5EC] text-[#15803D] text-[11px] font-bold cursor-default pointer-events-none">
-                          {tr.subType}
-                        </span>
-                      )}
-                    </div>
-                    <h1 className="text-[17px] sm:text-[21px] font-extrabold text-[#0B3B1E] leading-snug pt-1 break-words">
-                      {tr.title}
-                    </h1>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="p-3.5 rounded-2xl bg-[#F0FDF4]">
-                      <div className="text-gray-500">Duration</div>
-                      <div className="font-bold text-gray-900 mt-0.5">{tr.duration}</div>
-                    </div>
-                    <div className="p-3.5 rounded-2xl bg-[#DCF2E3]">
-                      <div className="text-[#14532D]">Course Fee</div>
-                      <div className="font-extrabold text-[#0B3B1E] mt-0.5">{tr.fees}</div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                      Course Overview
-                    </h2>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                      {tr.description}
-                    </p>
-                  </div>
-
-                  <a
-                    href={tr.enrollLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-3.5 px-5 rounded-2xl bg-[#138A3E] hover:bg-emerald-800 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm transition-colors"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>Enroll via WhatsApp</span>
-                    <ExternalLink className="w-4 h-4 ml-0.5" />
-                  </a>
-                </div>
-              );
-            })()}
 
           {/* ==================== 6C. SPECIALIST TOOLS HUB (/tools) ==================== */}
           {route.name === 'tools' && (
