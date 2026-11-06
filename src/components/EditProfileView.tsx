@@ -22,7 +22,11 @@ import {
   Crown,
   ShieldCheck,
   Download,
-  Clock
+  Clock,
+  Activity,
+  GraduationCap,
+  MessageSquare,
+  Wrench
 } from 'lucide-react';
 import {
   HubUser,
@@ -36,6 +40,15 @@ import {
 import { makeAvatarSvg } from '../data/mockHubData';
 import { formatFileSizeLabel } from '../lib/storage';
 import { downloadProfessionalCvPdf } from '../lib/cvGenerator';
+import {
+  DEFAULT_USER_TOOLS_DATA,
+  EXAM_PREP_SETS,
+  computeNutritionMetrics
+} from '../data/examPrepData';
+import {
+  downloadNutritionReportPdf,
+  downloadExamReportPdf
+} from '../lib/toolsPdfGenerator';
 
 export const DEFAULT_VISIBILITY_MAP: ProfileVisibilityMap = {
   name: 'public',
@@ -188,6 +201,9 @@ interface EditProfileViewProps {
   onOpenApplicationStatusModal: () => void;
   onOpenLegalModal?: (tab: 'privacy' | 'terms' | 'ads' | 'deletion') => void;
   onDeleteOwnAccount?: () => Promise<void>;
+  onOpenToolsSection?: (
+    section?: 'hub' | 'nutrition' | 'exam' | 'interview'
+  ) => void;
 }
 
 export const EditProfileView: React.FC<EditProfileViewProps> = ({
@@ -208,7 +224,8 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
   hasSubmittedApplication,
   onOpenApplicationStatusModal,
   onOpenLegalModal,
-  onDeleteOwnAccount
+  onDeleteOwnAccount,
+  onOpenToolsSection
 }) => {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const cvInputRef = useRef<HTMLInputElement | null>(null);
@@ -240,7 +257,21 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
   const hireMe = Boolean(
     profile.hireMe ?? profile.privacySettings?.hireMe_public ?? true
   );
-  const isPremium = Boolean(profile.isPremium || profile.isPaid);
+  const isPremiumNotExpired =
+    !profile.premiumExpiresAt ||
+    Number.isNaN(new Date(profile.premiumExpiresAt).getTime()) ||
+    new Date(profile.premiumExpiresAt).getTime() > Date.now();
+  const isPremium = Boolean(
+    isUserAdmin || ((profile.isPremium || profile.isPaid) && isPremiumNotExpired)
+  );
+  const isExpiredPremium = Boolean(
+    !isUserAdmin &&
+      (profile.isPremium ||
+        profile.isPaid ||
+        profile.paymentStatus === 'verified') &&
+      profile.premiumExpiresAt &&
+      new Date(profile.premiumExpiresAt).getTime() <= Date.now()
+  );
 
   // Calculate remaining days/hours for Paid Premium Member 5-Day Countdown
   const expiryCountdown = React.useMemo(() => {
@@ -1774,6 +1805,14 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       WhatsApp, Email &amp; recruiter hiring access
                     </span>
                   </li>
+                  <li className="flex items-start gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Full Specialist Tools Access:</strong> Daily
+                      Nutrition &amp; BMI Tracker, 5 Exam Prep Sets (250 MCQs)
+                      &amp; 5 Interview Sets (100 Q&amp;As) with PDF Reports
+                    </span>
+                  </li>
                 </ul>
               </div>
             </div>
@@ -1821,6 +1860,308 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           </button>
         )}
       </div>
+
+      {/* ==================== MY PERSONAL TOOLS, HEALTH, EXAM & INTERVIEW CONTROL PANEL ==================== */}
+      {(() => {
+        const userTools = profile.toolsData || DEFAULT_USER_TOOLS_DATA;
+        const nut = userTools.nutrition || DEFAULT_USER_TOOLS_DATA.nutrition;
+        const metrics = computeNutritionMetrics(nut);
+        const examAttempts = userTools.examAttempts || [];
+        const completedInterviews = userTools.masteredInterviewIds || [];
+        const bookmarkedInterviews = userTools.bookmarkedInterviewIds || [];
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const todayMeals = (nut.mealLogs || []).filter(
+          (m) => m.date === todayIso
+        );
+        const todayCalories =
+          todayMeals.length > 0
+            ? todayMeals.reduce((sum, m) => sum + (Number(m.calories) || 0), 0)
+            : metrics.consumedKcal;
+
+        const handleControlPanelToolClick = (
+          sec: 'hub' | 'nutrition' | 'exam' | 'interview'
+        ) => {
+          if (!isPremium) {
+            onOpenPremiumModal();
+            return;
+          }
+          if (onOpenToolsSection) {
+            onOpenToolsSection(sec);
+          }
+        };
+
+        return (
+          <div className="bg-white border-[1.5px] border-[#9BCAB0] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-[#ECF4EF] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#13422B] text-white flex items-center justify-center shrink-0">
+                  <Wrench className="w-5 h-5 text-emerald-300" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+                      My Tools, Nutrition &amp; Exam Control Panel
+                    </h3>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                        isPremium
+                          ? 'bg-[#DCFCE7] text-[#14532D]'
+                          : isExpiredPremium
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-amber-100 text-amber-900'
+                      }`}
+                    >
+                      {isPremium
+                        ? '✓ Premium Active'
+                        : isExpiredPremium
+                        ? '🔒 Membership Expired'
+                        : '🔒 Premium Member Feature'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#5C7267] font-medium">
+                    Saved personal health metrics, BMI &amp; weight goal, exam
+                    attempts (250 MCQs) &amp; interview prep (100 Q&amp;As)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleControlPanelToolClick('hub')}
+                className="px-3.5 py-2 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+              >
+                <Wrench className="w-3.5 h-3.5" />
+                <span>Open Tools Hub</span>
+              </button>
+            </div>
+
+            {!isPremium && (
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FFFBEB] to-[#FEF3C7] border border-amber-300 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <div className="text-xs font-extrabold text-amber-950 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>
+                      {isExpiredPremium
+                        ? 'Your Paid Premium Membership has ended — Tools access is locked'
+                        : 'Free Member Preview — Upgrade to unlock all 3 Specialist Tools'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-900 font-medium leading-snug">
+                    Click any tool card below to purchase or renew Paid Premium
+                    Membership (Rs. 200 / Month or Rs. 1,800 / Year).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenPremiumModal}
+                  className="px-3.5 py-2 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-xs font-extrabold shrink-0 cursor-pointer transition-colors"
+                >
+                  {isExpiredPremium ? 'Renew Premium' : 'Buy Premium'}
+                </button>
+              </div>
+            )}
+
+            {/* 3 Saved Tool Data Summary Cards inside User Profile Control Panel */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* 1. Saved Nutrition & BMI Status */}
+              <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE3D6] flex flex-col justify-between space-y-2.5">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#0E9F6E]">
+                      <Activity className="w-3.5 h-3.5" />
+                      <span>1. Health &amp; BMI Tracker</span>
+                    </span>
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[10px] font-extrabold text-white"
+                      style={{ backgroundColor: metrics.bmiColorHex }}
+                    >
+                      BMI {metrics.bmi}
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold text-[#0F291E]">
+                    {nut.weightKg} kg • {nut.heightCm} cm ({metrics.bmiCategory})
+                  </div>
+                  <div className="text-[11px] font-bold text-[#13422B] bg-white px-2.5 py-1.5 rounded-xl border border-[#D4E9DF]">
+                    Goal:{' '}
+                    <span className="text-[#0E9F6E]">
+                      {metrics.weightAction === 'REDUCE WEIGHT'
+                        ? `Reduce ${
+                            metrics.kgDifferenceToHealthy ||
+                            metrics.kgDifferenceToTarget
+                          } kg`
+                        : metrics.weightAction === 'GAIN WEIGHT'
+                        ? `Gain ${
+                            metrics.kgDifferenceToHealthy ||
+                            metrics.kgDifferenceToTarget
+                          } kg`
+                        : 'Maintain Healthy Weight'}
+                    </span>
+                  </div>
+                  <div className="text-[10.5px] text-[#5C7267] font-semibold">
+                    Today: <strong>{todayCalories}</strong> /{' '}
+                    {metrics.dailyTargetKcal} kcal • Water:{' '}
+                    {nut.waterGlassesToday}/8
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleControlPanelToolClick('nutrition')}
+                    className="flex-1 py-2 px-2.5 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-[11px] font-extrabold cursor-pointer transition-colors"
+                  >
+                    Open Tracker
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isPremium) {
+                        onOpenPremiumModal();
+                        return;
+                      }
+                      downloadNutritionReportPdf(
+                        profile.name || 'Food Specialist',
+                        nut,
+                        metrics
+                      );
+                    }}
+                    title="Download Full Nutrition Report PDF"
+                    className="p-2 rounded-xl bg-white hover:bg-[#E2F2E9] border border-[#9BCAB0] text-[#13422B] cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Saved Exam Prep Attempts (5 Sets x 50 MCQs) */}
+              <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE3D6] flex flex-col justify-between space-y-2.5">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#1D4ED8]">
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      <span>2. Exam Prep (250 MCQs)</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-extrabold">
+                      {examAttempts.length} Attempts
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold text-[#0F291E]">
+                    5 Exam Sets × 50 MCQs
+                  </div>
+                  {examAttempts.length > 0 ? (
+                    <div className="text-[11px] font-bold text-[#13422B] bg-white px-2.5 py-1.5 rounded-xl border border-[#D4E9DF]">
+                      Latest: <strong>{examAttempts[0].percentage}%</strong> (
+                      {examAttempts[0].scoreMarks}/{examAttempts[0].totalMarks} •
+                      Grade {examAttempts[0].grade})
+                    </div>
+                  ) : (
+                    <div className="text-[11px] font-medium text-[#5C7267] bg-white px-2.5 py-1.5 rounded-xl border border-[#D4E9DF]">
+                      No exam sets submitted yet. Start Set 1–5 to test your
+                      score!
+                    </div>
+                  )}
+                  <div className="text-[10.5px] text-[#5C7267] font-semibold">
+                    Food Safety, HACCP, ISO 22000 &amp; Food Tech
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleControlPanelToolClick('exam')}
+                  className="w-full py-2 px-2.5 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-[11px] font-extrabold cursor-pointer transition-colors"
+                >
+                  Open 5 Exam Sets
+                </button>
+              </div>
+
+              {/* 3. Saved Interview Prep Progress (5 Sets x 20 Questions) */}
+              <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE3D6] flex flex-col justify-between space-y-2.5">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#B45309]">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>3. Interview Prep</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold">
+                      {completedInterviews.length} / 100 Prepared
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold text-[#0F291E]">
+                    5 Interview Sets × 20 Q&amp;As
+                  </div>
+                  <div className="text-[11px] font-bold text-[#13422B] bg-white px-2.5 py-1.5 rounded-xl border border-[#D4E9DF]">
+                    Prepared: <strong>{completedInterviews.length}</strong> Qs •
+                    Saved: <strong>{bookmarkedInterviews.length}</strong> Qs
+                  </div>
+                  <div className="text-[10.5px] text-[#5C7267] font-semibold">
+                    HACCP, ISO 22000, FSSC 22000 v6 &amp; QA Audits
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleControlPanelToolClick('interview')}
+                  className="w-full py-2 px-2.5 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-[11px] font-extrabold cursor-pointer transition-colors"
+                >
+                  Open 5 Interview Sets
+                </button>
+              </div>
+            </div>
+
+            {/* If User has saved Exam Attempts, list them with 1-click PDF Result Download */}
+            {examAttempts.length > 0 && (
+              <div className="pt-2 border-t border-[#ECF4EF] space-y-2">
+                <div className="text-xs font-extrabold text-[#0F291E]">
+                  Saved Exam Result Reports ({examAttempts.length})
+                </div>
+                <div className="space-y-1.5">
+                  {examAttempts.slice(0, 5).map((att) => {
+                    const matchedSet =
+                      EXAM_PREP_SETS.find((s) => s.id === att.setId) ||
+                      EXAM_PREP_SETS[0];
+                    return (
+                      <div
+                        key={att.id}
+                        className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF] flex flex-wrap items-center justify-between gap-2"
+                      >
+                        <div>
+                          <div className="text-xs font-extrabold text-[#0F291E]">
+                            {att.setTitle}
+                          </div>
+                          <div className="text-[10.5px] text-[#5C7267] font-semibold">
+                            Marks: <strong>{att.scoreMarks}</strong> /{' '}
+                            {att.totalMarks} ({att.percentage}%) • Grade:{' '}
+                            <strong>{att.grade}</strong> •{' '}
+                            {new Date(att.completedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isPremium) {
+                              onOpenPremiumModal();
+                              return;
+                            }
+                            downloadExamReportPdf(
+                              profile.name || 'Food Specialist',
+                              att,
+                              matchedSet
+                            );
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#DCFCE7] border border-[#9BCAB0] text-[#13422B] text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Download className="w-3 h-3 text-[#0E9F6E]" />
+                          <span>PDF Report</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {isUserAdmin && (
         <button

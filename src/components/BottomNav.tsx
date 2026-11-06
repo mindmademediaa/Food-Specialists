@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Users, BookOpen, User } from 'lucide-react';
+import { Home, Users, BookOpen, Wrench, User } from 'lucide-react';
 import { NavTab } from '../types/hub';
 import { LegalTabType } from './LegalComplianceModal';
 
@@ -20,6 +20,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     icon: React.FC<{ className?: string }>;
   }[] = [
     { id: 'home', label: 'Home', icon: Home },
+    { id: 'tools', label: 'Tools', icon: Wrench },
     { id: 'communities', label: 'Communities', icon: Users },
     { id: 'trainings', label: 'Trainings', icon: BookOpen },
     { id: 'profile', label: 'Profile', icon: User }
@@ -29,7 +30,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     <footer className="shrink-0 z-30 bg-white border-t border-[#CBE3D6] px-2 pb-1.5 shadow-[0_-6px_24px_rgba(19,66,43,0.08)]">
       <nav
         aria-label="Bottom Navigation"
-        className="grid grid-cols-4 items-center"
+        className="grid grid-cols-5 items-center"
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;

@@ -82,7 +82,8 @@ service cloud.firestore {
         (!('receiptImageUrl' in data) || (data.receiptImageUrl is string && data.receiptImageUrl.size() <= 450000)) &&
         (!('subscriptionPlan' in data) || (data.subscriptionPlan is string && data.subscriptionPlan.size() <= 80)) &&
         (!('premiumActivatedAt' in data) || (data.premiumActivatedAt is string && data.premiumActivatedAt.size() <= 64)) &&
-        (!('premiumExpiresAt' in data) || (data.premiumExpiresAt is string && data.premiumExpiresAt.size() <= 64));
+        (!('premiumExpiresAt' in data) || (data.premiumExpiresAt is string && data.premiumExpiresAt.size() <= 64)) &&
+        (!('toolsData' in data) || data.toolsData is map);
     }
 
     function isValidPaymentRequest(data) {

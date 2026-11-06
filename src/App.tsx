@@ -50,7 +50,9 @@ import {
   Trash2,
   Plus,
   CreditCard,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Wrench,
+  Activity
 } from 'lucide-react';
 import {
   collection,
@@ -83,7 +85,8 @@ import {
   CloudStorageConfig,
   DevRole,
   SpecializationTag,
-  NavTab
+  NavTab,
+  UserToolsData
 } from './types/hub';
 import {
   INITIAL_JOBS,
@@ -91,6 +94,7 @@ import {
   INITIAL_TRAININGS,
   makeAvatarSvg
 } from './data/mockHubData';
+import { DEFAULT_USER_TOOLS_DATA } from './data/examPrepData';
 import {
   uploadMediaFile,
   formatFileSizeLabel
@@ -112,6 +116,7 @@ import {
   LegalComplianceModal,
   LegalTabType
 } from './components/LegalComplianceModal';
+import { ToolsHubView, ActiveToolSection } from './components/ToolsHubView';
 
 // Custom Duotone SVGs & Botanical Watermarks for the Home Screen Cards
 const DuotoneBriefcaseIcon = () => (
@@ -273,6 +278,7 @@ type RouteView =
   | { name: 'trainings-highfield' }
   | { name: 'trainings-lead-auditor-hub' }
   | { name: 'training-detail'; trainingId: string }
+  | { name: 'tools'; initialSection?: ActiveToolSection }
   | { name: 'profile' }
   | { name: 'admin' };
 
@@ -715,7 +721,11 @@ export default function App() {
                 publicData.paymentStatus || privateData.paymentStatus || 'none',
               isAdmin: isAdminUser || Boolean(publicData.isAdmin),
               visibility: mergedVisibility,
-              privacySettings: mergedPrivacy
+              privacySettings: mergedPrivacy,
+              toolsData:
+                privateData.toolsData ||
+                publicData.toolsData ||
+                DEFAULT_USER_TOOLS_DATA
             };
             setMyProfile(mergedProfile);
             setHasSavedProfile(true);
@@ -1043,6 +1053,8 @@ export default function App() {
       case 'scholarship-detail':
       case 'search':
         return 'home';
+      case 'tools':
+        return 'tools';
       case 'communities':
       case 'community-member':
         return 'communities';
@@ -1060,6 +1072,7 @@ export default function App() {
   const handleSelectBottomTab = (tab: NavTab) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tab === 'home') setRoute({ name: 'home' });
+    if (tab === 'tools') setRoute({ name: 'tools', initialSection: 'hub' });
     if (tab === 'communities') setRoute({ name: 'communities' });
     if (tab === 'trainings') setRoute({ name: 'trainings' });
     if (tab === 'profile') setRoute({ name: 'profile' });
@@ -1199,6 +1212,16 @@ export default function App() {
     isMemberPremiumActive(myProfile) ||
       myProfile.isAdmin ||
       authUser?.email?.toLowerCase() === 'mindmademedia9@gmail.com'
+  );
+
+  // Detect if user previously had Paid Premium Membership that has now expired
+  const hasExpiredPremium = Boolean(
+    !isCurrentUserPaid &&
+      (myProfile.isPaid ||
+        myProfile.isPremium ||
+        myProfile.paymentStatus === 'verified') &&
+      myProfile.premiumExpiresAt &&
+      new Date(myProfile.premiumExpiresAt).getTime() <= Date.now()
   );
 
   // Filtered Jobs for /jobs (Country + Category)
@@ -1505,6 +1528,19 @@ export default function App() {
       'Profile & visibility settings saved to Cloud Firestore!'
     );
     setTimeout(() => setProfileSaveMsg(null), 4500);
+  };
+
+  // Save User's Nutrition, Exam Prep & Interview Prep Tools Data to Profile Control Panel in Cloud Firestore
+  const handleSaveUserToolsData = async (updatedToolsData: UserToolsData) => {
+    const cleanUid = authUser?.uid || myProfile.uid;
+    if (!cleanUid) return;
+    const updatedUser: HubUser = {
+      ...myProfile,
+      uid: cleanUid,
+      toolsData: updatedToolsData
+    };
+    setMyProfile(updatedUser);
+    await persistUserProfileToFirestore(updatedUser);
   };
 
   const isUserAdmin = Boolean(
@@ -2697,6 +2733,68 @@ export default function App() {
                     className="px-3.5 py-1.5 rounded-[10px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[11.5px] sm:text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <span>Explore Grants</span>
+                    <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                  </button>
+                </div>
+              </div>
+
+              {/* CARD 3 - SPECIALIST TOOLS HUB (Nutrition Tracker & BMI Graph, 5 Exam Sets x 50 MCQs, 5 Interview Sets x 20 Q&As) */}
+              <div className="bg-white border border-[#D4E9DF] rounded-[20px] p-4 sm:p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] transition-all space-y-3">
+                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-[14px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
+                      <Wrench className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+                    </div>
+                    <div className="pt-0.5 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h2 className="text-[17px] sm:text-[20px] font-extrabold text-[#0F291E] leading-snug break-words">
+                          Specialist Tools Hub
+                        </h2>
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold">
+                          {isCurrentUserPaid ? '✓ Premium Unlocked' : '👑 Premium'}
+                        </span>
+                      </div>
+                      <p className="text-[12px] sm:text-[13px] font-medium text-[#5C7267] mt-0.5 leading-snug break-words">
+                        Daily Nutrition &amp; BMI Tracker, 5 Exam Sets (250 MCQs) &amp; 5 Interview Sets (100 Q&amp;As)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Middle Row: 3 Unclickable Mint Pill Badges */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex flex-wrap items-center gap-1.5 border-b border-[#ECF4EF] pb-3 select-none cursor-default pointer-events-none"
+                >
+                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                    <Activity className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
+                    <span>Nutrition &amp; BMI Graph</span>
+                  </span>
+
+                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                    <GraduationCap className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
+                    <span>5 Exam Sets (250 MCQs)</span>
+                  </span>
+
+                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                    <MessageSquare className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
+                    <span>5 Interview Sets (100 Q&amp;As)</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
+                  <span className="text-[11.5px] sm:text-[12.5px] font-semibold text-[#4B6356]">
+                    3 Interactive Tools + PDF Report Downloads
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoute({ name: 'tools', initialSection: 'hub' });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="px-3.5 py-1.5 rounded-[10px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[11.5px] sm:text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>Explore Tools</span>
                     <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
                   </button>
                 </div>
@@ -4459,6 +4557,27 @@ export default function App() {
               );
             })()}
 
+          {/* ==================== 6C. SPECIALIST TOOLS HUB (/tools) ==================== */}
+          {route.name === 'tools' && (
+            <ToolsHubView
+              user={myProfile}
+              isUserPaid={isCurrentUserPaid}
+              hasExpiredPremium={hasExpiredPremium}
+              monthlyFeeRs={liveGateway.monthlyFeeRs}
+              yearlyFeeRs={liveGateway.yearlyFeeRs}
+              onSaveToolsData={handleSaveUserToolsData}
+              onOpenPremiumModal={() => {
+                setPaySubmitBanner(null);
+                setShowPremiumUpgradeModal(true);
+              }}
+              onGoToProfileTools={() => {
+                setRoute({ name: 'profile' });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              initialSection={route.initialSection || 'hub'}
+            />
+          )}
+
           {/* ==================== 7. MY OWN PROFILE — CREATE / EDIT VIEW (/profile & /profile/edit) ==================== */}
           {route.name === 'profile' && (
             <EditProfileView
@@ -4493,6 +4612,10 @@ export default function App() {
               }}
               onOpenLegalModal={(tab) => setLegalModalTab(tab)}
               onDeleteOwnAccount={handleDeleteOwnAccount}
+              onOpenToolsSection={(sec) => {
+                setRoute({ name: 'tools', initialSection: sec || 'hub' });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
             />
           )}
 

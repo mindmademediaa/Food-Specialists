@@ -48,7 +48,8 @@
         "receiptImageUrl": { "type": "string", "maxLength": 450000 },
         "subscriptionPlan": { "type": "string", "maxLength": 80 },
         "premiumActivatedAt": { "type": "string", "maxLength": 64 },
-        "premiumExpiresAt": { "type": "string", "maxLength": 64 }
+        "premiumExpiresAt": { "type": "string", "maxLength": 64 },
+        "toolsData": { "type": "object" }
       },
       "required": ["uid", "name"]
     },

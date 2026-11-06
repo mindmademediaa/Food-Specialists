@@ -124,6 +124,76 @@ export interface HubUser {
   subscriptionPlan?: string;
   premiumActivatedAt?: string;
   premiumExpiresAt?: string;
+  toolsData?: UserToolsData;
+}
+
+export interface MealLogItem {
+  id: string;
+  date: string;
+  mealType: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
+  foodName: string;
+  portion: string;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatsG: number;
+}
+
+export interface DailyMealPlanItem {
+  id: string;
+  day: string;
+  breakfast: string;
+  breakfastKcal: number;
+  lunch: string;
+  lunchKcal: number;
+  snack: string;
+  snackKcal: number;
+  dinner: string;
+  dinnerKcal: number;
+}
+
+export interface WeightHistoryEntry {
+  date: string;
+  weightKg: number;
+  bmi: number;
+}
+
+export interface NutritionProfileData {
+  age: number;
+  gender: 'male' | 'female';
+  heightCm: number;
+  weightKg: number;
+  targetWeightKg: number;
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'athlete';
+  goalType: 'lose' | 'maintain' | 'gain';
+  waterGlassesToday: number;
+  mealLogs: MealLogItem[];
+  mealPlans: DailyMealPlanItem[];
+  weightHistory: WeightHistoryEntry[];
+  updatedAt: string;
+}
+
+export interface UserExamAttempt {
+  id: string;
+  setId: string;
+  setTitle: string;
+  scoreMarks: number;
+  totalMarks: number;
+  correctCount: number;
+  totalQuestions: number;
+  percentage: number;
+  grade: string;
+  passed: boolean;
+  completedAt: string;
+}
+
+export interface UserToolsData {
+  nutrition: NutritionProfileData;
+  examAttempts: UserExamAttempt[];
+  masteredInterviewIds: string[];
+  bookmarkedInterviewIds: string[];
+  lastActiveTool?: 'nutrition' | 'exam' | 'interview';
+  updatedAt: string;
 }
 
 export interface HubCommunityThread {
@@ -264,7 +334,8 @@ export interface HubTraining {
   isActive: boolean;
 }
 
-export type NavTab = 'home' | 'search' | 'communities' | 'trainings' | 'profile';
+export type NavTab = 'home' | 'search' | 'communities' | 'trainings' | 'tools' | 'profile';
+
 
 
 
