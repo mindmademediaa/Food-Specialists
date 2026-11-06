@@ -2738,68 +2738,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* CARD 3 - SPECIALIST TOOLS HUB (Nutrition Tracker & BMI Graph, 2,000 Exam MCQs, 2,000 Interview Q&As) */}
-              <div className="bg-white border border-[#D4E9DF] rounded-[20px] p-4 sm:p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] transition-all space-y-3">
-                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-[14px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
-                      <Wrench className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                    </div>
-                    <div className="pt-0.5 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h2 className="text-[17px] sm:text-[20px] font-extrabold text-[#0F291E] leading-snug break-words">
-                          Specialist Tools Hub
-                        </h2>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold">
-                          {isCurrentUserPaid ? '✓ Premium Unlocked' : '👑 Premium'}
-                        </span>
-                      </div>
-                      <p className="text-[12px] sm:text-[13px] font-medium text-[#5C7267] mt-0.5 leading-snug break-words">
-                        Daily Nutrition &amp; BMI Tracker, 2,000 Exam MCQs (30/Test) &amp; 2,000 Interview Q&amp;As (30/Session)
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Middle Row: 3 Unclickable Mint Pill Badges */}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex flex-wrap items-center gap-1.5 border-b border-[#ECF4EF] pb-3 select-none cursor-default pointer-events-none"
-                >
-                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                    <Activity className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>Nutrition &amp; BMI Graph</span>
-                  </span>
-
-                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                    <GraduationCap className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>2,000 Exam MCQs (30/Test)</span>
-                  </span>
-
-                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                    <MessageSquare className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>2,000 Interview Q&amp;As (30/Set)</span>
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
-                  <span className="text-[11.5px] sm:text-[12.5px] font-semibold text-[#4B6356]">
-                    3 Interactive Tools + Personalized Graph &amp; PDF Reports
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRoute({ name: 'tools', initialSection: 'hub' });
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="px-3.5 py-1.5 rounded-[10px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[11.5px] sm:text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <span>Explore Tools</span>
-                    <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                  </button>
-                </div>
-              </div>
-
               {/* OFFICIAL WHATSAPP CHANNEL CARD ON HOME FRONT PAGE (Controlled via Admin Control Panel) */}
               {(() => {
                 const rawWaUrl = (

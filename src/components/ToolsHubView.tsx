@@ -791,116 +791,18 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
         </div>
       )}
 
-      {/* TOP NAVIGATION STRIP ACROSS ALL TOOLS */}
-      <div className="bg-white border border-[#CBE3D6] rounded-[22px] p-3.5 shadow-xs space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5 stroke-[2.2]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h1 className="text-base sm:text-lg font-extrabold text-[#0F291E] leading-tight">
-                  Specialist Tools &amp; Career Suite
-                </h1>
-                {isUserPaid ? (
-                  <span className="px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#14532D] text-[10px] font-extrabold">
-                    ✓ Premium Unlocked
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-[#92400E] text-[10px] font-extrabold">
-                    🔒 Premium Tools
-                  </span>
-                )}
-              </div>
-              <p className="text-[11.5px] text-[#5C7267] font-medium">
-                1. Daily Nutrition &amp; BMI Tracker • 2. Exam Prep (2,000 MCQs)
-                • 3. Interview Prep (2,000 Q&amp;As)
-              </p>
-            </div>
-          </div>
-
-          {onGoToProfileTools && (
-            <button
-              type="button"
-              onClick={onGoToProfileTools}
-              className="px-3 py-1.5 rounded-xl bg-[#F0FDF4] hover:bg-[#DCFCE7] border border-[#9BCAB0] text-[#13422B] text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition-colors"
-            >
-              <Target className="w-3.5 h-3.5 text-[#0E9F6E]" />
-              <span>Saved in Profile Control Panel</span>
-            </button>
-          )}
-        </div>
-
-        {/* 4 Quick Switch Buttons: All Tools Hub | 1. Nutrition | 2. Exam Prep (30/2000) | 3. Interview Prep (30/2000) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+      {/* BACK BUTTON ONLY WHEN INSIDE A SPECIFIC TOOL */}
+      {activeSection !== 'hub' && (
+        <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={() => setActiveSection('hub')}
-            className={`py-2 px-2.5 rounded-xl text-[11.5px] font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-              activeSection === 'hub'
-                ? 'bg-[#13422B] text-white border-[#13422B] shadow-xs'
-                : 'bg-[#F6FBF8] text-[#0F291E] border-[#CBE3D6] hover:bg-[#E2F2E9]'
-            }`}
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#E2F2E9] border border-[#CBE3D6] text-[#0F291E] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
           >
-            <span>All 3 Tools Hub</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              handleSelectToolOrAction(
-                'nutrition',
-                'Daily Personal Health & Nutrition Tracker'
-              )
-            }
-            className={`py-2 px-2.5 rounded-xl text-[11.5px] font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-1 ${
-              activeSection === 'nutrition'
-                ? 'bg-[#0E9F6E] text-white border-[#0E9F6E] shadow-xs'
-                : 'bg-[#F6FBF8] text-[#0F291E] border-[#CBE3D6] hover:bg-[#E2F2E9]'
-            }`}
-          >
-            {!isUserPaid && <Lock className="w-3 h-3 text-amber-600 shrink-0" />}
-            <span>1. Nutrition &amp; BMI</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              handleSelectToolOrAction(
-                'exam',
-                'Food Safety & Science Exam Prep (2,000 MCQs — 30 per Test)'
-              )
-            }
-            className={`py-2 px-2.5 rounded-xl text-[11.5px] font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-1 ${
-              activeSection === 'exam'
-                ? 'bg-[#0E9F6E] text-white border-[#0E9F6E] shadow-xs'
-                : 'bg-[#F6FBF8] text-[#0F291E] border-[#CBE3D6] hover:bg-[#E2F2E9]'
-            }`}
-          >
-            {!isUserPaid && <Lock className="w-3 h-3 text-amber-600 shrink-0" />}
-            <span>2. Exam (30 MCQs)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              handleSelectToolOrAction(
-                'interview',
-                'Food Science, HACCP & ISO Interview Prep (2,000 Q&As — 30 per Session)'
-              )
-            }
-            className={`py-2 px-2.5 rounded-xl text-[11.5px] font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-1 ${
-              activeSection === 'interview'
-                ? 'bg-[#0E9F6E] text-white border-[#0E9F6E] shadow-xs'
-                : 'bg-[#F6FBF8] text-[#0F291E] border-[#CBE3D6] hover:bg-[#E2F2E9]'
-            }`}
-          >
-            {!isUserPaid && <Lock className="w-3 h-3 text-amber-600 shrink-0" />}
-            <span>3. Interview (30 Qs)</span>
+            <span>← Back to All Tools</span>
           </button>
         </div>
-      </div>
+      )}
 
       {/* =====================================================================
           VIEW 0: UNIFIED TOOLS HUB OVERVIEW (ALL 3 TOOLS ON ONE PAGE — NO 5 SETS)
