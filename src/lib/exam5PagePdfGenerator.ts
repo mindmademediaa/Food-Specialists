@@ -499,12 +499,13 @@ export function download5PageExamReportPdf(
     pdf.setLineWidth(0.45);
     pdf.roundedRect(14, qY, 182, boxH, 2.5, 2.5, 'FD');
 
-    // Top row inside MCQ box: Q# + Category + Status Badge
+    // Top row inside MCQ box: Q# + Clean Question Text + Status Badge
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8.8);
     pdf.setTextColor(15, 41, 30);
+    const cleanQText = ans.questionText.replace(/^\[[^\]]+\]\s*/, '').trim();
     const qLines = pdf.splitTextToSize(
-      `Q${ans.questionNumber}. [${ans.category}] ${ans.questionText}`,
+      `Q${ans.questionNumber}. ${cleanQText}`,
       148
     );
     pdf.text(qLines.slice(0, 2), 17, qY + 5.5);
@@ -550,12 +551,12 @@ export function download5PageExamReportPdf(
       qY + 26
     );
 
-    // 2-line Explanation + Reference
+    // 2-line Explanation
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7.5);
     pdf.setTextColor(71, 85, 105);
     const expLine = pdf.splitTextToSize(
-      `Explanation: ${ans.explanation} (${ans.reference})`,
+      `Explanation: ${ans.explanation}`,
       176
     );
     pdf.text(expLine.slice(0, 2), 17, qY + 31.5);

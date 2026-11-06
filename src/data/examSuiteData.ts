@@ -467,7 +467,7 @@ export function draw30ExamSuiteQuestions(options: {
       category: mappedCat,
       subcategory: q.subject,
       difficulty: diff,
-      questionText: q.question,
+      questionText: q.question.replace(/^\[[^\]]+\]\s*/, '').trim(),
       optionA: q.options[0] || 'Option A',
       optionB: q.options[1] || 'Option B',
       optionC: q.options[2] || 'Option C',

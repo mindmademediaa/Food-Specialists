@@ -987,7 +987,10 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
     counter++;
   }
 
-  return result.slice(0, 2000);
+  return result.slice(0, 2000).map((item) => ({
+    ...item,
+    question: item.question.replace(/^\[[^\]]+\]\s*/, '').trim()
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -1248,7 +1251,10 @@ function buildAll2000InterviewQuestions(): UnifiedInterviewQuestion[] {
     counter++;
   }
 
-  return result.slice(0, 2000);
+  return result.slice(0, 2000).map((item) => ({
+    ...item,
+    question: item.question.replace(/^\[[^\]]+\]\s*/, '').trim()
+  }));
 }
 
 export const ALL_2000_EXAM_MCQS: UnifiedExamQuestion[] = buildAll2000ExamMcqs();

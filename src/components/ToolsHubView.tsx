@@ -924,12 +924,12 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             </div>
           </div>
 
-          {/* TOOL CARD 2: NEW FOOD SCIENCE EXAM PREPARATION SUITE (17 CATEGORIES, 30 Qs / 30 MINS, 5-PAGE PDF REPORT) */}
+          {/* TOOL CARD 2: FOOD SCIENCE & FOOD SAFETY EXAM PREPARATION (30 DIFFERENT MCQs PER EXAM + SCORE REPORT & PDF DOWNLOAD) */}
           <div
             onClick={() =>
               handleSelectToolOrAction(
                 'exam',
-                'Food Science Exam Preparation Suite'
+                'Food Science Exam Preparation (30 MCQs)'
               )
             }
             className="bg-white border-[1.5px] border-[#BCE3C8] hover:border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all space-y-3.5 cursor-pointer"
@@ -942,7 +942,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="px-2 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] text-[10px] font-extrabold uppercase">
-                      Tool 2 • 17 Categories • 30 Questions / 30 Mins
+                      Tool 2 • 30 MCQs / Exam • Score Report &amp; PDF
                     </span>
                     {!isUserPaid && (
                       <span className="px-2 py-0.5 rounded-md bg-amber-100 text-[#92400E] text-[10px] font-extrabold inline-flex items-center gap-1">
@@ -951,74 +951,54 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                     )}
                   </div>
                   <h2 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-1">
-                    Food Science Exam Preparation (Timed Exam, Mock Test &amp;
-                    5-Page PDF Report)
+                    Food Science &amp; Food Safety Exam Preparation (30 MCQs per
+                    Exam)
                   </h2>
                   <p className="text-xs text-[#5C7267] leading-relaxed mt-0.5">
-                    Includes <strong>17 Food Science &amp; Food Safety Categories</strong>{' '}
-                    (Food Safety, HACCP, FSSC 22000, Auditing, Microbiology, Food
-                    Chemistry &amp; more), <strong>30 Fresh Shuffled MCQs</strong> on
-                    every attempt, Question Palette, Practice Mode, Leaderboard, and a{' '}
-                    <strong>5-Page Professional Visual PDF Report</strong>!
+                    Click to start your <strong>30-MCQs Exam</strong> immediately.
+                    Upon completion, view your complete{' '}
+                    <strong>Score Report (Correct vs. Wrong MCQs)</strong>,
+                    download your <strong>PDF Report</strong>, and click{' '}
+                    <strong>Next Exam / Give Exam Again</strong> to take another
+                    exam with <strong>30 brand-new, different MCQs</strong> every
+                    time!
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Subject Coverage Pills */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              {[
-                'Food Safety',
-                'HACCP',
-                'FSSC 22000',
-                'Auditing',
-                'Microbiology',
-                'Food Chemistry',
-                'ISO 22000',
-                'GMP & GHP',
-                'Allergen Management'
-              ].map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2.5 py-1 rounded-full bg-[#F4FAF7] border border-[#D4E9DF] text-[#13422B] text-[10.5px] font-bold"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-
             <div className="grid grid-cols-3 gap-2">
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
                 <div className="text-[10px] font-bold text-[#5C7267]">
-                  Categories
+                  Each Exam
                 </div>
                 <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  17 Subjects
+                  30 MCQs
                 </div>
                 <div className="text-[10px] text-[#0E9F6E] font-bold">
-                  Category &amp; Mock Mode
+                  30 Mins Timed
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
                 <div className="text-[10px] font-bold text-[#5C7267]">
-                  Per Attempt
+                  Next Exam
                 </div>
                 <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  30 Different MCQs
+                  30 New MCQs
                 </div>
                 <div className="text-[10px] text-[#5C7267] font-semibold">
-                  30 Mins Timed + Palette
+                  Different Every Time
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
                 <div className="text-[10px] font-bold text-[#5C7267]">
-                  Official Report
+                  Score Report
                 </div>
                 <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  5-Page PDF
+                  PDF Download
                 </div>
                 <div className="text-[10px] text-[#0E9F6E] font-bold">
-                  Charts + 30 MCQ Boxes
+                  Correct &amp; Wrong Key
                 </div>
               </div>
             </div>
@@ -1029,13 +1009,13 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 e.stopPropagation();
                 handleSelectToolOrAction(
                   'exam',
-                  'Food Science Exam Preparation Suite'
+                  'Food Science Exam Preparation (30 MCQs)'
                 );
               }}
               className="w-full py-3.5 px-4 rounded-2xl bg-[#169C46] hover:bg-[#13873C] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
             >
               <Award className="w-4 h-4 text-emerald-100" />
-              <span>Open Food Science Exam Preparation Tool →</span>
+              <span>Start 30-MCQs Exam Preparation →</span>
             </button>
           </div>
 
