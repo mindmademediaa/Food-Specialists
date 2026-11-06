@@ -282,6 +282,30 @@ service cloud.firestore {
         allow create, update: if (isOwner(uid) || isAdmin()) && isValidId(docId) && request.resource.data is map;
         allow delete: if isOwner(uid) || isAdmin();
       }
+
+      match /examResults/{examId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidId(examId) && request.resource.data is map;
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      match /bookmarks/{docId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidId(docId) && request.resource.data is map;
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      match /progress/{docId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidId(docId) && request.resource.data is map;
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    // Exam Questions Collection
+    match /examQuestions/{questionId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin() && isValidId(questionId);
     }
 
     // Community & Pre-loaded Recipes: Signed-in users can read and submit valid community recipes

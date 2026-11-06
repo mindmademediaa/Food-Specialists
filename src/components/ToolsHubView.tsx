@@ -59,6 +59,7 @@ import {
   downloadInterviewSessionReportPdf
 } from '../lib/toolsPdfGenerator';
 import { NutritionSuiteTool } from './NutritionSuiteTool';
+import { ExamSuiteTool } from './ExamSuiteTool';
 
 export type ActiveToolSection = 'hub' | 'nutrition' | 'exam' | 'interview';
 
@@ -113,9 +114,11 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     };
   }, [user.toolsData]);
 
-  // Allow opening 'nutrition' (which has built-in Free vs Premium limits) or any tool if isUserPaid
+  // Allow opening 'nutrition' or 'exam' (which have built-in Free vs Premium limits) or any tool if isUserPaid
   const [activeSection, setActiveSection] = useState<ActiveToolSection>(() =>
-    isUserPaid || (initialSection === 'nutrition' && !hasExpiredPremium)
+    isUserPaid ||
+    ((initialSection === 'nutrition' || initialSection === 'exam') &&
+      !hasExpiredPremium)
       ? initialSection
       : 'hub'
   );
@@ -129,10 +132,16 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   useEffect(() => {
     if (
       initialSection &&
-      (isUserPaid || (initialSection === 'nutrition' && !hasExpiredPremium))
+      (isUserPaid ||
+        ((initialSection === 'nutrition' || initialSection === 'exam') &&
+          !hasExpiredPremium))
     ) {
       setActiveSection(initialSection);
-    } else if (!isUserPaid && initialSection !== 'nutrition') {
+    } else if (
+      !isUserPaid &&
+      initialSection !== 'nutrition' &&
+      initialSection !== 'exam'
+    ) {
       setActiveSection('hub');
     }
   }, [initialSection, isUserPaid, hasExpiredPremium]);
@@ -212,9 +221,12 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     featureName: string,
     afterUnlock?: () => void
   ) => {
-    // Nutrition tool allows Free non-expired users to enter and use the Free tier (1 BMI calc, 5 Recipes, 1-Day Meal Plan, 1 Health Condition Search)
-    if (targetSection === 'nutrition' && !hasExpiredPremium) {
-      setActiveSection('nutrition');
+    // Nutrition & Exam tools allow Free non-expired users to enter and use the Free tier (1 Exam/Day, 1 BMI calc, etc.)
+    if (
+      (targetSection === 'nutrition' || targetSection === 'exam') &&
+      !hasExpiredPremium
+    ) {
+      setActiveSection(targetSection);
       if (afterUnlock) afterUnlock();
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -912,8 +924,16 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             </div>
           </div>
 
-          {/* TOOL CARD 2: UNIFIED EXAM PREPARATION (2,000 DIFFERENT MCQs — 30 MCQs PER TEST) */}
-          <div className="bg-white border-[1.5px] border-[#BCE3C8] hover:border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all space-y-3.5">
+          {/* TOOL CARD 2: NEW FOOD SCIENCE EXAM PREPARATION SUITE (17 CATEGORIES, 30 Qs / 30 MINS, 5-PAGE PDF REPORT) */}
+          <div
+            onClick={() =>
+              handleSelectToolOrAction(
+                'exam',
+                'Food Science Exam Preparation Suite'
+              )
+            }
+            className="bg-white border-[1.5px] border-[#BCE3C8] hover:border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all space-y-3.5 cursor-pointer"
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
@@ -922,26 +942,24 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="px-2 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] text-[10px] font-extrabold uppercase">
-                      Tool 2 • {TOTAL_EXAM_BANK_SIZE.toLocaleString()} MCQs
-                      Master Bank • 30 MCQs / Attempt
+                      Tool 2 • 17 Categories • 30 Questions / 30 Mins
                     </span>
                     {!isUserPaid && (
                       <span className="px-2 py-0.5 rounded-md bg-amber-100 text-[#92400E] text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Premium Only
+                        <Lock className="w-3 h-3" /> Free: 1 Exam / Day
                       </span>
                     )}
                   </div>
                   <h2 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-1">
-                    Food Science, Food Safety, HACCP, ISO 9001, ISO 22000 &amp;
-                    FSSC 22000 Exam Preparation
+                    Food Science Exam Preparation (Timed Exam, Mock Test &amp;
+                    5-Page PDF Report)
                   </h2>
                   <p className="text-xs text-[#5C7267] leading-relaxed mt-0.5">
-                    Powered by a massive bank of{' '}
-                    <strong>2,000 different MCQs</strong> covering all relevant
-                    Food Science &amp; Food Safety subjects. Every time you start
-                    a test, you get <strong>30 fresh MCQs</strong>, followed by a
-                    personalized Performance Graph &amp; PDF Report in your name
-                    showing Passed, Failed &amp; Percentage Score!
+                    Includes <strong>17 Food Science &amp; Food Safety Categories</strong>{' '}
+                    (Food Safety, HACCP, FSSC 22000, Auditing, Microbiology, Food
+                    Chemistry &amp; more), <strong>30 Fresh Shuffled MCQs</strong> on
+                    every attempt, Question Palette, Practice Mode, Leaderboard, and a{' '}
+                    <strong>5-Page Professional Visual PDF Report</strong>!
                   </p>
                 </div>
               </div>
@@ -950,15 +968,15 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             {/* Subject Coverage Pills */}
             <div className="flex flex-wrap items-center gap-1.5">
               {[
-                'Food Safety & GMP',
-                'HACCP Principles',
-                'ISO 9001:2015',
-                'ISO 22000:2018',
-                'FSSC 22000 v6',
-                'Food Microbiology',
-                'Dairy & Beverage Tech',
-                'Cereal, Bakery & Meat Science',
-                'Food Chemistry & Nutrition'
+                'Food Safety',
+                'HACCP',
+                'FSSC 22000',
+                'Auditing',
+                'Microbiology',
+                'Food Chemistry',
+                'ISO 22000',
+                'GMP & GHP',
+                'Allergen Management'
               ].map((tag) => (
                 <span
                   key={tag}
@@ -972,13 +990,13 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
                 <div className="text-[10px] font-bold text-[#5C7267]">
-                  Total MCQ Bank
+                  Categories
                 </div>
                 <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  2,000 MCQs
+                  17 Subjects
                 </div>
                 <div className="text-[10px] text-[#0E9F6E] font-bold">
-                  All Relevant Subjects
+                  Category &amp; Mock Mode
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
@@ -989,41 +1007,35 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   30 Different MCQs
                 </div>
                 <div className="text-[10px] text-[#5C7267] font-semibold">
-                  New Questions Every Time
+                  30 Mins Timed + Palette
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
                 <div className="text-[10px] font-bold text-[#5C7267]">
-                  Completed Tests
+                  Official Report
                 </div>
                 <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  {toolsData.examAttempts?.length || 0} Tests
+                  5-Page PDF
                 </div>
                 <div className="text-[10px] text-[#0E9F6E] font-bold">
-                  {(toolsData.seenExamQuestionIds || []).length} / 2,000 Seen
+                  Charts + 30 MCQ Boxes
                 </div>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={() =>
+              onClick={(e) => {
+                e.stopPropagation();
                 handleSelectToolOrAction(
                   'exam',
-                  '30-MCQ Exam Preparation (2,000 MCQs Bank)',
-                  () => {
-                    if (submittedAttempt) {
-                      handleStartNew30McqExam();
-                    }
-                  }
-                )
-              }
-              className="w-full py-3.5 px-4 rounded-2xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
+                  'Food Science Exam Preparation Suite'
+                );
+              }}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#169C46] hover:bg-[#13873C] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
             >
-              <Award className="w-4 h-4 text-emerald-300" />
-              <span>
-                Start 30-MCQ Exam Preparation Now (2,000 MCQs Bank) →
-              </span>
+              <Award className="w-4 h-4 text-emerald-100" />
+              <span>Open Food Science Exam Preparation Tool →</span>
             </button>
           </div>
 
@@ -1132,452 +1144,17 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       )}
 
       {/* =====================================================================
-          VIEW 2: UNIFIED EXAM PREPARATION (30 MCQs AT A TIME FROM 2,000-MCQ BANK)
+          VIEW 2: NEW COMPLETE FOOD SCIENCE EXAM PREPARATION SUITE
          ===================================================================== */}
-      {activeSection === 'exam' && isUserPaid && (
-        <div className="space-y-4">
-          {/* Top Exam Header Banner */}
-          <div className="bg-gradient-to-r from-[#13422B] via-[#155E3A] to-[#0E9F6E] rounded-[24px] p-4 sm:p-5 text-white shadow-sm space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-200 text-[10.5px] font-extrabold uppercase tracking-wider">
-                2,000 Verified MCQs Bank • Showing 30 Unique MCQs (Attempt #
-                {examBatchNumber})
-              </span>
-              <button
-                type="button"
-                onClick={() => handleStartNew30McqExam()}
-                className="px-3.5 py-1.5 rounded-full bg-white text-[#13422B] hover:bg-emerald-50 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-[#0E9F6E]" />
-                <span>Load Next 30 Different MCQs</span>
-              </button>
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-extrabold leading-tight">
-                Food Science, Food Safety, HACCP, ISO 9001, ISO 22000 &amp; FSSC
-                22000 Exam
-              </h2>
-              <p className="text-xs text-emerald-100 mt-0.5">
-                Candidate: <strong>{user.name || 'Food Specialist'}</strong> •
-                30 MCQs per Test (60 Marks) • Every attempt loads 30 brand-new
-                questions!
-              </p>
-            </div>
-          </div>
-
-          {/* IF EXAM IS COMPLETED: SHOW PERSONALIZED ASSESSMENT REPORT + GRAPH + PDF DOWNLOAD */}
-          {submittedAttempt && (
-            <div className="bg-white border-2 border-[#0E9F6E] rounded-[26px] p-4 sm:p-5 shadow-md space-y-4 animate-fade-in">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3.5">
-                <div>
-                  <span
-                    className={`inline-block px-3 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase ${
-                      submittedAttempt.passed
-                        ? 'bg-[#DCFCE7] text-[#14532D]'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {submittedAttempt.passed
-                      ? '✓ OFFICIAL VERDICT: PASSED (QUALIFIED)'
-                      : '✗ OFFICIAL VERDICT: FAILED (NEEDS REVISION)'}
-                  </span>
-                  <h3 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-1">
-                    {user.name || 'Food Specialist'}&apos;s Official 30-MCQ Exam
-                    Assessment Report
-                  </h3>
-                  <p className="text-xs text-[#5C7267] font-medium">
-                    Email: {user.email || 'Verified Member'} • Role:{' '}
-                    {user.title || user.currentRole || 'Food Safety Specialist'}{' '}
-                    • Date:{' '}
-                    {new Date(
-                      submittedAttempt.completedAt
-                    ).toLocaleDateString()}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      downloadExamReportPdf(
-                        user,
-                        submittedAttempt,
-                        activeExamQuestions,
-                        examAnswers
-                      )
-                    }
-                    className="px-4 py-2.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download PDF Report</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStartNew30McqExam()}
-                    className="px-4 py-2.5 rounded-xl bg-[#13422B] hover:bg-[#0F291E] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
-                  >
-                    <RotateCcw className="w-4 h-4 text-emerald-300" />
-                    <span>Take Next Exam (30 New MCQs)</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 4 KPI Score Cards: Percentage, Passed MCQs, Failed MCQs, Grade */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="p-3 rounded-2xl bg-[#F0FDF4] border border-[#9BCAB0] text-center">
-                  <div className="text-[10.5px] font-bold text-[#13422B]">
-                    Percentage Score
-                  </div>
-                  <div className="text-2xl font-extrabold text-[#0E9F6E] mt-0.5">
-                    {submittedAttempt.percentage}%
-                  </div>
-                  <div className="text-[10.5px] font-bold text-[#13422B]">
-                    {submittedAttempt.scoreMarks} /{' '}
-                    {submittedAttempt.totalMarks} Marks
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
-                  <div className="text-[10.5px] font-bold text-emerald-900">
-                    Passed (Correct)
-                  </div>
-                  <div className="text-2xl font-extrabold text-emerald-700 mt-0.5">
-                    {submittedAttempt.correctCount} / 30
-                  </div>
-                  <div className="text-[10.5px] font-bold text-emerald-800">
-                    Correct Answers ✓
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-center">
-                  <div className="text-[10.5px] font-bold text-red-900">
-                    Failed (Wrong)
-                  </div>
-                  <div className="text-2xl font-extrabold text-red-600 mt-0.5">
-                    {submittedAttempt.failedCount ??
-                      30 - submittedAttempt.correctCount}{' '}
-                    / 30
-                  </div>
-                  <div className="text-[10.5px] font-bold text-red-800">
-                    Incorrect / Unanswered ✗
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-center">
-                  <div className="text-[10.5px] font-bold text-blue-900">
-                    Official Grade
-                  </div>
-                  <div className="text-base font-extrabold text-blue-800 mt-1">
-                    {submittedAttempt.grade}
-                  </div>
-                  <div className="text-[10.5px] font-bold text-blue-700">
-                    Pass Mark: 60%
-                  </div>
-                </div>
-              </div>
-
-              {/* VISUAL PERFORMANCE GRAPH: SVG DONUT + SUBJECT BREAKDOWN BAR CHART */}
-              <div className="p-4 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs sm:text-sm font-extrabold text-[#0F291E]">
-                    Visual Performance Graph — {user.name || 'Food Specialist'}
-                  </h4>
-                  <span className="text-[11px] font-bold text-[#0E9F6E]">
-                    Pass vs. Fail &amp; Subject Accuracy
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-                  {/* SVG Donut Chart */}
-                  <div className="flex flex-col items-center justify-center p-2">
-                    <svg viewBox="0 0 120 120" className="w-32 h-32">
-                      <circle
-                        cx="60"
-                        cy="60"
-                        r="46"
-                        fill="none"
-                        stroke="#FEE2E2"
-                        strokeWidth="14"
-                      />
-                      <circle
-                        cx="60"
-                        cy="60"
-                        r="46"
-                        fill="none"
-                        stroke="#0E9F6E"
-                        strokeWidth="14"
-                        strokeDasharray={`${
-                          (submittedAttempt.percentage / 100) * 289
-                        } 289`}
-                        strokeLinecap="round"
-                        transform="rotate(-90 60 60)"
-                      />
-                      <text
-                        x="60"
-                        y="56"
-                        textAnchor="middle"
-                        fontSize="18"
-                        fontWeight="bold"
-                        fill="#0F291E"
-                      >
-                        {submittedAttempt.percentage}%
-                      </text>
-                      <text
-                        x="60"
-                        y="72"
-                        textAnchor="middle"
-                        fontSize="9"
-                        fontWeight="bold"
-                        fill={submittedAttempt.passed ? '#0E9F6E' : '#DC2626'}
-                      >
-                        {submittedAttempt.passed ? 'PASSED' : 'FAILED'}
-                      </text>
-                    </svg>
-                    <div className="flex items-center gap-3 text-[11px] font-bold mt-1">
-                      <span className="inline-flex items-center gap-1 text-[#0E9F6E]">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#0E9F6E]" />
-                        Pass: {submittedAttempt.correctCount}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-red-600">
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                        Fail:{' '}
-                        {submittedAttempt.failedCount ??
-                          30 - submittedAttempt.correctCount}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Subject-Wise Accuracy Bars */}
-                  <div className="sm:col-span-2 space-y-2">
-                    <div className="text-[11px] font-extrabold text-[#13422B]">
-                      Subject-Wise Accuracy Breakdown (30 MCQs):
-                    </div>
-                    {examSubjectBreakdown.map((item) => (
-                      <div key={item.subject} className="space-y-1">
-                        <div className="flex justify-between text-[11px] font-bold">
-                          <span className="text-[#0F291E]">{item.subject}</span>
-                          <span className="text-[#13422B]">
-                            {item.passed}/{item.total} Passed ({item.pct}%)
-                          </span>
-                        </div>
-                        <div className="w-full h-2.5 rounded-full bg-gray-200 overflow-hidden flex">
-                          <div
-                            className="h-full bg-[#0E9F6E]"
-                            style={{ width: `${item.pct}%` }}
-                          />
-                          <div
-                            className="h-full bg-red-400"
-                            style={{ width: `${100 - item.pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Progress Strip Before Submission */}
-          {!submittedAttempt && (
-            <div className="bg-white border border-[#CBE3D6] rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <div className="text-xs font-extrabold text-[#0F291E]">
-                  Progress: {answeredExamCount} / {activeExamQuestions.length}{' '}
-                  MCQs Answered
-                </div>
-                <div className="text-[11px] text-[#5C7267]">
-                  Select your answer for all 30 questions, then click
-                  &ldquo;Submit 30-MCQ Exam &amp; View My Report&rdquo;.
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleSubmit30McqExam}
-                className="px-4 py-2.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold cursor-pointer shadow-xs"
-              >
-                Submit 30-MCQ Exam &amp; View Report
-              </button>
-            </div>
-          )}
-
-          {/* Subject Filter Pills for current 30 MCQs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            {[
-              'All',
-              'Food Safety',
-              'HACCP',
-              'ISO 22000',
-              'FSSC 22000',
-              'Food Microbiology',
-              'Food Science & Tech',
-              'Food Chemistry & Nutrition'
-            ].map((subj) => (
-              <button
-                key={subj}
-                type="button"
-                onClick={() => setExamFilterSubject(subj)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold whitespace-nowrap cursor-pointer ${
-                  examFilterSubject === subj
-                    ? 'bg-[#13422B] text-white'
-                    : 'bg-white text-[#13422B] border border-[#CBE3D6]'
-                }`}
-              >
-                {subj}
-              </button>
-            ))}
-          </div>
-
-          {/* 30 MCQs List */}
-          <div className="space-y-3">
-            {activeExamQuestions
-              .filter(
-                (q) =>
-                  examFilterSubject === 'All' || q.subject === examFilterSubject
-              )
-              .map((q) => {
-                const selectedIdx = examAnswers[q.id];
-                const isSubmitted = Boolean(submittedAttempt);
-                const isCorrect = selectedIdx === q.correctAnswerIndex;
-
-                return (
-                  <div
-                    key={q.id}
-                    className={`bg-white border rounded-[22px] p-4 shadow-xs space-y-3 ${
-                      isSubmitted
-                        ? isCorrect
-                          ? 'border-2 border-[#0E9F6E]'
-                          : 'border-2 border-red-400'
-                        : 'border-[#CBE3D6]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#E2F2E9] text-[#0D6845] text-[10.5px] font-extrabold">
-                        MCQ #{q.questionNumber} of 30 • {q.subject}
-                      </span>
-                      {isSubmitted && (
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
-                            isCorrect
-                              ? 'bg-[#DCFCE7] text-[#14532D]'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {isCorrect
-                            ? '✓ PASS (+2 Marks)'
-                            : '✗ FAIL (0 Marks)'}
-                        </span>
-                      )}
-                    </div>
-
-                    <h4 className="text-xs sm:text-sm font-extrabold text-[#0F291E] leading-snug">
-                      {q.question}
-                    </h4>
-
-                    <div className="space-y-2">
-                      {q.options.map((opt, optIdx) => {
-                        const isSelected = selectedIdx === optIdx;
-                        const isRightOption = optIdx === q.correctAnswerIndex;
-
-                        let btnClass =
-                          'bg-[#F8FCFA] border-[#D4E9DF] text-[#0F291E] hover:border-[#0E9F6E]';
-                        if (isSubmitted) {
-                          if (isRightOption) {
-                            btnClass =
-                              'bg-[#DCFCE7] border-2 border-[#0E9F6E] text-[#0F291E]';
-                          } else if (isSelected && !isRightOption) {
-                            btnClass =
-                              'bg-red-50 border-2 border-red-500 text-red-900';
-                          }
-                        } else if (isSelected) {
-                          btnClass =
-                            'bg-[#13422B] border-[#13422B] text-white';
-                        }
-
-                        return (
-                          <button
-                            key={optIdx}
-                            type="button"
-                            disabled={isSubmitted}
-                            onClick={() =>
-                              setExamAnswers((prev) => ({
-                                ...prev,
-                                [q.id]: optIdx
-                              }))
-                            }
-                            className={`w-full text-left p-3 rounded-xl border text-xs font-bold transition-all flex items-start justify-between gap-2 cursor-pointer ${btnClass}`}
-                          >
-                            <span>
-                              {String.fromCharCode(65 + optIdx)}. {opt}
-                            </span>
-                            {isSubmitted && isRightOption && (
-                              <CheckCircle2 className="w-4 h-4 text-[#0E9F6E] shrink-0 mt-0.5" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {isSubmitted && (
-                      <div className="p-3 rounded-xl bg-[#F0FDF4] border border-[#9BCAB0] text-xs space-y-1">
-                        <div className="font-extrabold text-[#13422B]">
-                          Correct Answer:{' '}
-                          {String.fromCharCode(65 + q.correctAnswerIndex)}.{' '}
-                          {q.options[q.correctAnswerIndex]}
-                        </div>
-                        <p className="text-[11.5px] text-[#334155] leading-relaxed">
-                          <strong>Explanation:</strong> {q.explanation}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-
-          {/* Bottom Submit or Next 30 MCQs Button */}
-          <div className="pt-2">
-            {!submittedAttempt ? (
-              <button
-                type="button"
-                onClick={handleSubmit30McqExam}
-                className="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-[#13422B] via-[#0E9F6E] to-[#15803D] text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Award className="w-5 h-5 text-amber-300" />
-                <span>
-                  Complete 30-MCQ Exam &amp; Generate Personalized Report +
-                  Graph
-                </span>
-              </button>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadExamReportPdf(
-                      user,
-                      submittedAttempt,
-                      activeExamQuestions,
-                      examAnswers
-                    )
-                  }
-                  className="w-full py-3.5 px-5 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download My 30-MCQ Report (PDF)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStartNew30McqExam()}
-                  className="w-full py-3.5 px-5 rounded-2xl bg-[#13422B] hover:bg-[#0F291E] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                >
-                  <RotateCcw className="w-4 h-4 text-emerald-300" />
-                  <span>Take Next Exam (30 Different MCQs)</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+      {activeSection === 'exam' && (
+        <ExamSuiteTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          toolsData={toolsData}
+          onSaveToolsData={onSaveToolsData}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
       )}
 
       {/* =====================================================================

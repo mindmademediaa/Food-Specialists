@@ -255,6 +255,22 @@
       "schema": { "$ref": "#/entities/NutritionSubDoc" },
       "description": "Saved health condition food recommendations and AI Dietitian chat history"
     },
+    "/users/{uid}/examResults/{examId}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Saved 30-MCQ exam attempt results, subject breakdown, time taken, and question answers"
+    },
+    "/users/{uid}/bookmarks/{docId}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Bookmarked and wrong-question bank IDs for exam preparation"
+    },
+    "/users/{uid}/progress/{docId}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Overall exam study time, streak days, and category progress counters"
+    },
+    "/examQuestions/{questionId}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Food Science & Safety MCQ bank items"
+    },
     "/recipes/{recipeId}": {
       "schema": { "$ref": "#/entities/CommunityRecipe" },
       "description": "Community and pre-loaded recipes with gram ingredients, macros, and doctor disclaimer"
