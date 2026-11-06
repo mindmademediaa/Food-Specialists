@@ -86,6 +86,14 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   onOpenPremiumModal,
   onGoToProfileTools
 }) => {
+  const yearlyDiscountPct = useMemo(() => {
+    const fullYear = (monthlyFeeRs || 100) * 12;
+    if (fullYear <= 0) return 25;
+    return Math.max(
+      0,
+      Math.round(((fullYear - (yearlyFeeRs || 900)) / fullYear) * 100)
+    );
+  }, [monthlyFeeRs, yearlyFeeRs]);
   // Normalize user's saved toolsData with defaults
   const toolsData: UserToolsData = useMemo(() => {
     const saved = user.toolsData;
@@ -768,7 +776,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </div>
               <div className="p-3 rounded-2xl bg-[#ECFDF5] border-2 border-[#0E9F6E] relative">
                 <span className="px-2 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[9px] font-extrabold uppercase">
-                  25% Discount
+                  {yearlyDiscountPct}% Discount
                 </span>
                 <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
                   Rs. {yearlyFeeRs}

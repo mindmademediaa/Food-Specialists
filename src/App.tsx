@@ -440,8 +440,8 @@ export default function App() {
       bankName: 'Allied Bank / Bank Transfer',
       bankAccountOrIban: 'Contact on WhatsApp for IBAN',
       bankWhatsapp: '+92 324 0906384',
-      monthlyFeeRs: 200,
-      yearlyFeeRs: 1800
+      monthlyFeeRs: 100,
+      yearlyFeeRs: 900
     }
   });
 
@@ -477,7 +477,7 @@ export default function App() {
     'JazzCash' | 'EasyPaisa' | 'Bank Transfer'
   >('JazzCash');
   const [payTransactionId, setPayTransactionId] = useState<string>('');
-  const [payAmount, setPayAmount] = useState<string>('Rs. 200');
+  const [payAmount, setPayAmount] = useState<string>('Rs. 100');
   const [payNotes, setPayNotes] = useState<string>('');
   const [payReceiptUrl, setPayReceiptUrl] = useState<string>('');
   const [paySubmitBanner, setPaySubmitBanner] = useState<string | null>(null);
@@ -978,11 +978,34 @@ export default function App() {
                 'Contact on WhatsApp for IBAN',
               bankWhatsapp:
                 data.paymentGateway?.bankWhatsapp || '+92 324 0906384',
-              monthlyFeeRs: Number(data.paymentGateway?.monthlyFeeRs) || 200,
-              yearlyFeeRs: Number(data.paymentGateway?.yearlyFeeRs) || 1800
+              monthlyFeeRs:
+                data.paymentGateway?.monthlyFeeRs === 200 &&
+                data.paymentGateway?.yearlyFeeRs === 1800 &&
+                !data.paymentGateway?.customPriceUpdated
+                  ? 100
+                  : Number(data.paymentGateway?.monthlyFeeRs) || 100,
+              yearlyFeeRs:
+                data.paymentGateway?.monthlyFeeRs === 200 &&
+                data.paymentGateway?.yearlyFeeRs === 1800 &&
+                !data.paymentGateway?.customPriceUpdated
+                  ? 900
+                  : Number(data.paymentGateway?.yearlyFeeRs) || 900,
+              customPriceUpdated: Boolean(
+                data.paymentGateway?.customPriceUpdated
+              )
             }
           };
           setStorageConfig(hydrated);
+          if (
+            isAdminUser &&
+            data.paymentGateway?.monthlyFeeRs === 200 &&
+            data.paymentGateway?.yearlyFeeRs === 1800 &&
+            !data.paymentGateway?.customPriceUpdated
+          ) {
+            setDoc(doc(db, 'settings', 'storageConfig'), hydrated, {
+              merge: true
+            }).catch(() => {});
+          }
         } else if (isAdminUser) {
           const defaultCfg: CloudStorageConfig = {
             provider: 'cloudinary',
@@ -1001,8 +1024,8 @@ export default function App() {
               bankName: 'Allied Bank / Bank Transfer',
               bankAccountOrIban: 'Contact on WhatsApp for IBAN',
               bankWhatsapp: '+92 324 0906384',
-              monthlyFeeRs: 200,
-              yearlyFeeRs: 1800
+              monthlyFeeRs: 100,
+              yearlyFeeRs: 900
             }
           };
           setDoc(doc(db, 'settings', 'storageConfig'), defaultCfg, {
@@ -1706,7 +1729,7 @@ export default function App() {
               (u.paymentStatus as 'pending' | 'verified' | 'rejected') ||
               'pending',
             submittedAt: u.createdAt || '',
-            subscriptionPlan: u.subscriptionPlan || '1 Month (Rs. 200)',
+            subscriptionPlan: u.subscriptionPlan || '1 Month (Rs. 100)',
             approvedAt: u.premiumActivatedAt || '',
             premiumExpiresAt: u.premiumExpiresAt || ''
           });
@@ -1726,9 +1749,21 @@ export default function App() {
     [adminAllPaymentRequests]
   );
 
-  // Live Payment Gateway Fees & Details (Editable from Admin Control Panel -> 6. Payment Gateway)
-  const liveGateway = useMemo(
-    () => ({
+  // Live Payment Gateway Fees & Auto-Calculated Discount % (Editable from Admin Control Panel)
+  const liveGateway = useMemo(() => {
+    const monthlyFeeRs =
+      Number(storageConfig.paymentGateway?.monthlyFeeRs) || 100;
+    const yearlyFeeRs =
+      Number(storageConfig.paymentGateway?.yearlyFeeRs) || 900;
+    const fullYearBase = monthlyFeeRs * 12;
+    const yearlyDiscountPct =
+      fullYearBase > 0
+        ? Math.max(
+            0,
+            Math.round(((fullYearBase - yearlyFeeRs) / fullYearBase) * 100)
+          )
+        : 25;
+    return {
       jazzCashTitle:
         storageConfig.paymentGateway?.jazzCashTitle || 'Muneeb Khan',
       jazzCashNumber:
@@ -1745,11 +1780,11 @@ export default function App() {
         'Contact on WhatsApp for IBAN',
       bankWhatsapp:
         storageConfig.paymentGateway?.bankWhatsapp || '+92 324 0906384',
-      monthlyFeeRs: Number(storageConfig.paymentGateway?.monthlyFeeRs) || 200,
-      yearlyFeeRs: Number(storageConfig.paymentGateway?.yearlyFeeRs) || 1800
-    }),
-    [storageConfig.paymentGateway]
-  );
+      monthlyFeeRs,
+      yearlyFeeRs,
+      yearlyDiscountPct
+    };
+  }, [storageConfig.paymentGateway]);
 
   // Last 5 Days Expiry Countdown for Paid Premium Members
   const globalPremiumCountdown = useMemo(() => {
@@ -1860,11 +1895,13 @@ export default function App() {
       const isYearlyPlan =
         (req.subscriptionPlan || '').toLowerCase().includes('year') ||
         (req.amount || '').toLowerCase().includes('year') ||
+        (req.amount || '').includes(String(liveGateway.yearlyFeeRs)) ||
+        (req.amount || '').includes('900') ||
         (req.amount || '').includes('1800') ||
         (req.amount || '').includes('1,800');
       const durationDays = isYearlyPlan ? 365 : 30;
       const planLabel = isYearlyPlan
-        ? `1 Year (Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} - 25% OFF)`
+        ? `1 Year (Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} - ${liveGateway.yearlyDiscountPct}% OFF)`
         : `1 Month (Rs. ${liveGateway.monthlyFeeRs.toLocaleString()})`;
       const expiresDate = new Date(
         now.getTime() + durationDays * 24 * 60 * 60 * 1000
@@ -2035,10 +2072,10 @@ export default function App() {
     } catch {}
   };
 
-  // 1-Box Smart Paste Job Publisher
+  // 1-Box Smart Paste Job Publisher (Supports auto-created tags from Job Title & custom tags)
   const handleQuickPasteJob = async (
     rawText: string,
-    category: 'Quality & Safety' | 'R&D Lab' | 'Production'
+    category: string
   ) => {
     const cleanText = rawText.trim();
     if (!cleanText) return;
@@ -2051,6 +2088,18 @@ export default function App() {
     const firstLine = (lines[0] || 'Food Specialist Opportunity')
       .replace(/^[•*#\-–—\s]+/, '')
       .slice(0, 180);
+
+    // Auto-extract tag from Job Title if category is empty or 'auto'
+    const autoTitlePart = firstLine
+      .replace(/^(?:job\s*title|position|role|vacancy|hiring)\s*[:\-]\s*/i, '')
+      .split(/\s+(?:—|-|\||@|at)\s+|\s*\(/i)[0]
+      ?.trim()
+      .slice(0, 42);
+    const effectiveTag = (
+      category && category !== 'auto'
+        ? category.trim()
+        : autoTitlePart || 'Quality & Safety'
+    ).slice(0, 80);
 
     // Auto-detect Company if present, or extract from "Role — Company"
     const companyLineMatch = cleanText.match(
@@ -2119,15 +2168,17 @@ export default function App() {
       company: detectedCompany,
       location: detectedLocation,
       country: matchedCountry === 'Dubai' ? 'UAE' : matchedCountry,
-      specialization: category,
+      specialization: effectiveTag,
       experienceRequired: 'See Job Post',
-      category,
+      category: effectiveTag,
       description: cleanText.slice(0, 7800),
       requirements:
         'Please refer to the complete job description above for requirements and application details.',
       hrEmail: detectedEmail.slice(0, 190),
       applyLink: detectedLink,
-      tags: [category, matchedCountry],
+      tags: Array.from(
+        new Set([effectiveTag, autoTitlePart || effectiveTag, matchedCountry])
+      ).filter(Boolean),
       postedAt: todayStr,
       expiryAt: '2026-12-31',
       isActive: true
@@ -2137,7 +2188,7 @@ export default function App() {
       await setDoc(doc(db, 'jobs', id), newJob);
       setJobs((prev) => [newJob, ...prev.filter((j) => j.id !== id)]);
       setAdminStatusBanner(
-        `Job shared in "${category}" with date ${todayStr}! Live on app now.`
+        `Job shared with Tag "${effectiveTag}" (${todayStr})! Live on app now.`
       );
       setTimeout(() => setAdminStatusBanner(null), 4000);
     } catch {}
@@ -2310,10 +2361,11 @@ export default function App() {
     e.preventDefault();
     if (!adminOppTitle.trim() || !adminOppOrg.trim()) return;
     if (adminOppType === 'job') {
+      const effectiveJobTag =
+        adminOppCat.trim() || adminOppTitle.trim().slice(0, 40) || 'Quality & Safety';
       await handleQuickPasteJob(
         `${adminOppTitle.trim()} — ${adminOppOrg.trim()}\nLocation: ${adminOppLocation}, ${adminOppCountry}\n${adminOppDesc}\nEmail: ${adminOppEmail}\nApply: ${adminOppLink}`,
-        (adminOppCat as 'Quality & Safety' | 'R&D Lab' | 'Production') ||
-          'Quality & Safety'
+        effectiveJobTag
       );
     } else {
       await handleQuickPasteScholarship(
@@ -2343,6 +2395,27 @@ export default function App() {
 
     const updated: CloudStorageConfig = {
       ...storageConfig,
+      paymentGateway: {
+        jazzCashTitle:
+          storageConfig.paymentGateway?.jazzCashTitle || 'Muneeb Khan',
+        jazzCashNumber:
+          storageConfig.paymentGateway?.jazzCashNumber || '0324-0906384',
+        easyPaisaTitle:
+          storageConfig.paymentGateway?.easyPaisaTitle || 'Muneeb Khan',
+        easyPaisaNumber:
+          storageConfig.paymentGateway?.easyPaisaNumber || '0324-0906384',
+        bankTitle: storageConfig.paymentGateway?.bankTitle || 'Muneeb Khan',
+        bankName:
+          storageConfig.paymentGateway?.bankName || 'Allied Bank / Bank Transfer',
+        bankAccountOrIban:
+          storageConfig.paymentGateway?.bankAccountOrIban ||
+          'Contact on WhatsApp for IBAN',
+        bankWhatsapp:
+          storageConfig.paymentGateway?.bankWhatsapp || '+92 324 0906384',
+        monthlyFeeRs: Number(storageConfig.paymentGateway?.monthlyFeeRs) || 100,
+        yearlyFeeRs: Number(storageConfig.paymentGateway?.yearlyFeeRs) || 900,
+        customPriceUpdated: true
+      },
       whatsappChannelUrl: normalizedWaLink.slice(0, 490),
       whatsappChannelButtonText: (
         storageConfig.whatsappChannelButtonText || 'Follow WhatsApp Channel'
@@ -4534,6 +4607,9 @@ export default function App() {
                 setRoute({ name: 'tools', initialSection: sec || 'hub' });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
+              monthlyFeeRs={liveGateway.monthlyFeeRs}
+              yearlyFeeRs={liveGateway.yearlyFeeRs}
+              yearlyDiscountPct={liveGateway.yearlyDiscountPct}
             />
           )}
 
@@ -4935,14 +5011,60 @@ export default function App() {
                     type="text"
                     required
                     value={adminOppTitle}
-                    onChange={(e) => setAdminOppTitle(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAdminOppTitle(val);
+                      if (adminOppType === 'job' && val.trim()) {
+                        setAdminOppCat(val.trim().slice(0, 40));
+                      }
+                    }}
                     placeholder={
                       adminOppType === 'job'
-                        ? 'Job Title (e.g. QA/QC Executive)'
+                        ? 'Job Title (e.g. QA/QC Executive — Auto-creates Tag)'
                         : 'Scholarship Title (e.g. MSc Food Science Fellowship)'
                     }
                     className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
                   />
+
+                  {adminOppType === 'job' && (
+                    <div className="space-y-1.5 p-2.5 rounded-xl bg-[#F2F7F3] border border-emerald-200">
+                      <label className="block text-[11px] font-extrabold text-[#0D2E1B]">
+                        Job Tag (Auto-Created from Job Title or Type Any Custom Tag):
+                      </label>
+                      <input
+                        type="text"
+                        value={adminOppCat}
+                        onChange={(e) => setAdminOppCat(e.target.value)}
+                        placeholder="Type custom tag or pick below (e.g. Dairy QA, Food Safety)..."
+                        className="w-full px-3 py-1.5 rounded-lg bg-white border border-emerald-200 text-xs font-bold text-[#0D2E1B]"
+                      />
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {[
+                          'Quality & Safety',
+                          'R&D Lab',
+                          'Production',
+                          'QA/QC',
+                          'Food Safety',
+                          'Dairy',
+                          'Bakery',
+                          'Microbiology'
+                        ].map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setAdminOppCat(t)}
+                            className={`px-2 py-0.5 rounded-md text-[10.5px] font-extrabold cursor-pointer ${
+                              adminOppCat === t
+                                ? 'bg-[#15803D] text-white'
+                                : 'bg-white border border-emerald-200 text-[#0D2E1B]'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <input
                     type="text"
@@ -5147,8 +5269,8 @@ export default function App() {
                       <Sparkles className="w-3 h-3 text-[#D97706]" />
                       <span>
                         Rs. {liveGateway.monthlyFeeRs} / Month • Rs.{' '}
-                        {liveGateway.yearlyFeeRs.toLocaleString()} / Year (25%
-                        OFF)
+                        {liveGateway.yearlyFeeRs.toLocaleString()} / Year (
+                        {liveGateway.yearlyDiscountPct}% OFF)
                       </span>
                     </span>
                     <h2 className="text-[20px] font-extrabold text-[#0D2E1B] leading-tight mt-1">
@@ -5169,7 +5291,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* STEP 1: CHOOSE SUBSCRIPTION PLAN (1 MONTH vs FULL YEAR 25% DISCOUNT) */}
+              {/* STEP 1: CHOOSE SUBSCRIPTION PLAN (1 MONTH vs FULL YEAR DISCOUNT) */}
               <div className="space-y-2">
                 <label className="block text-xs font-extrabold text-[#0D2E1B]">
                   1. Select Subscription Plan
@@ -5204,7 +5326,7 @@ export default function App() {
                     </div>
                   </button>
 
-                  {/* Full Year Plan Card (25% Discount) */}
+                  {/* Full Year Plan Card (Dynamic Discount %) */}
                   <button
                     type="button"
                     onClick={() => {
@@ -5218,7 +5340,7 @@ export default function App() {
                     }`}
                   >
                     <span className="inline-block px-2 py-0.5 rounded-full bg-[#D97706] text-white text-[9.5px] font-extrabold uppercase tracking-wider mb-1">
-                      🔥 25% Discount
+                      🔥 {liveGateway.yearlyDiscountPct}% Discount
                     </span>
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#92400E]">
@@ -5238,9 +5360,9 @@ export default function App() {
                     </div>
                     <div className="text-[10.5px] font-extrabold text-[#15803D]">
                       Save Rs.{' '}
-                      {(
-                        liveGateway.monthlyFeeRs * 12 -
-                        liveGateway.yearlyFeeRs
+                      {Math.max(
+                        0,
+                        liveGateway.monthlyFeeRs * 12 - liveGateway.yearlyFeeRs
                       ).toLocaleString()}{' '}
                       (365 Days)
                     </div>
@@ -5256,7 +5378,7 @@ export default function App() {
                   </h3>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#15803D] text-white text-[11px] font-extrabold">
                     {selectedPlanDuration === '1-year'
-                      ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Year (25% OFF)`
+                      ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Year (${liveGateway.yearlyDiscountPct}% OFF)`
                       : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / Month`}
                   </span>
                 </div>
@@ -5884,6 +6006,9 @@ export default function App() {
             setRoute({ name: 'profile' });
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
           }}
+          monthlyFeeRs={liveGateway.monthlyFeeRs}
+          yearlyFeeRs={liveGateway.yearlyFeeRs}
+          yearlyDiscountPct={liveGateway.yearlyDiscountPct}
         />
       </div>
     </div>

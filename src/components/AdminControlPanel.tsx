@@ -72,10 +72,7 @@ interface AdminControlPanelProps {
     makePremium: boolean
   ) => Promise<void>;
   onDeleteUser: (uid: string, userName: string) => Promise<void>;
-  onQuickPasteJob: (
-    rawText: string,
-    category: 'Quality & Safety' | 'R&D Lab' | 'Production'
-  ) => Promise<void>;
+  onQuickPasteJob: (rawText: string, category: string) => Promise<void>;
   onDeleteJob: (job: HubJob) => Promise<void>;
   onQuickPasteScholarship: (
     rawText: string,
@@ -128,13 +125,83 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const [expandedUserUid, setExpandedUserUid] = useState<string | null>(null);
   const [confirmDeleteUid, setConfirmDeleteUid] = useState<string | null>(null);
 
-  // 1-Box Job Paste State
+  // 1-Box Job Paste & Dynamic/Custom Tag State
   const [jobPasteText, setJobPasteText] = useState('');
-  const [jobCategory, setJobCategory] = useState<
-    'Quality & Safety' | 'R&D Lab' | 'Production'
-  >('Quality & Safety');
+  const [jobCategory, setJobCategory] = useState<string>('Quality & Safety');
+  const [customJobTagInput, setCustomJobTagInput] = useState<string>('');
+  const [customCreatedJobTags, setCustomCreatedJobTags] = useState<string[]>([
+    'QA/QC',
+    'Food Safety',
+    'Dairy',
+    'Bakery',
+    'Microbiology',
+    'Halal & Auditing',
+    'Nutrition'
+  ]);
+  const [useAutoTitleTag, setUseAutoTitleTag] = useState<boolean>(true);
   const [jobFilterCat, setJobFilterCat] = useState<string>('All');
   const [isPostingJob, setIsPostingJob] = useState(false);
+
+  // Auto-calculate 25% OFF on Yearly Fee when Admin changes Monthly Fee
+  const [autoApply25PctYearly, setAutoApply25PctYearly] =
+    useState<boolean>(true);
+
+  // Live Membership Fee & Auto-Calculated Discount Percentage
+  const liveMonthlyFee =
+    Number(storageConfig.paymentGateway?.monthlyFeeRs) || 100;
+  const liveYearlyFee =
+    Number(storageConfig.paymentGateway?.yearlyFeeRs) || 900;
+  const fullYearBaseFee = liveMonthlyFee * 12;
+  const liveYearlySavingsRs = Math.max(0, fullYearBaseFee - liveYearlyFee);
+  const liveYearlyDiscountPct =
+    fullYearBaseFee > 0
+      ? Math.max(
+          0,
+          Math.round(((fullYearBaseFee - liveYearlyFee) / fullYearBaseFee) * 100)
+        )
+      : 25;
+
+  // Smart helper: Extract a clean tag automatically from the Job Title (1st line of pasted job)
+  const extractAutoTagFromJobText = (rawText: string): string => {
+    const firstNonEmpty = rawText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .find(Boolean);
+    if (!firstNonEmpty) return '';
+    const cleaned = firstNonEmpty
+      .replace(/^[•*#\-–—\s]+/, '')
+      .replace(/^(?:job\s*title|position|role|vacancy|hiring)\s*[:\-]\s*/i, '')
+      .trim();
+    // Split before company/location separators like "—", " - ", " | ", " @ ", " at ", " ("
+    const titlePart = cleaned
+      .split(/\s+(?:—|-|\||@|at)\s+|\s*\(/i)[0]
+      ?.trim();
+    if (!titlePart) return '';
+    return titlePart.slice(0, 42);
+  };
+
+  const autoDetectedJobTitleTag = useMemo(
+    () => extractAutoTagFromJobText(jobPasteText),
+    [jobPasteText]
+  );
+
+  // All available job tags (Preset + Auto-Detected from Job Title + Custom Created + Existing Job Categories)
+  const allAvailableJobTags = useMemo(() => {
+    const base = [
+      'Quality & Safety',
+      'R&D Lab',
+      'Production',
+      ...customCreatedJobTags
+    ];
+    if (autoDetectedJobTitleTag) {
+      base.unshift(autoDetectedJobTitleTag);
+    }
+    jobs.forEach((j) => {
+      if (j.category?.trim()) base.push(j.category.trim());
+      if (j.specialization?.trim()) base.push(j.specialization.trim());
+    });
+    return Array.from(new Set(base.filter(Boolean)));
+  }, [customCreatedJobTags, autoDetectedJobTitleTag, jobs]);
 
   // 1-Box Scholarship Paste State
   const [schPasteText, setSchPasteText] = useState('');
@@ -314,10 +381,23 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const handleSubmitQuickJob = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!jobPasteText.trim()) return;
+    const finalTag =
+      customJobTagInput.trim() ||
+      (useAutoTitleTag && autoDetectedJobTitleTag
+        ? autoDetectedJobTitleTag
+        : jobCategory) ||
+      'Quality & Safety';
     setIsPostingJob(true);
     try {
-      await onQuickPasteJob(jobPasteText, jobCategory);
+      if (
+        customJobTagInput.trim() &&
+        !customCreatedJobTags.includes(customJobTagInput.trim())
+      ) {
+        setCustomCreatedJobTags((prev) => [customJobTagInput.trim(), ...prev]);
+      }
+      await onQuickPasteJob(jobPasteText, finalTag);
       setJobPasteText('');
+      setCustomJobTagInput('');
     } finally {
       setIsPostingJob(false);
     }
@@ -632,7 +712,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   {stats.premiumUsers}
                 </div>
                 <div className="text-[11px] font-bold text-[#D97706] mt-0.5">
-                  Rs. 200/Mo • Rs. 1,800/Yr
+                  Rs. {liveMonthlyFee.toLocaleString()}/Mo • Rs.{' '}
+                  {liveYearlyFee.toLocaleString()}/Yr ({liveYearlyDiscountPct}% OFF)
                 </div>
               </div>
 
@@ -789,7 +870,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 <div className="space-y-3 pt-1">
                   {[
                     {
-                      label: 'Paid Premium Members (Rs. 100/Mo)',
+                      label: `Paid Premium Members (Rs. ${liveMonthlyFee}/Mo • ${liveYearlyDiscountPct}% OFF Yr)`,
                       count: stats.premiumUsers,
                       total: Math.max(1, stats.totalUsers),
                       barClass: 'bg-[#0E9F6E]'
@@ -1054,6 +1135,201 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
             </div>
 
+            {/* QUICK PREMIUM MEMBERSHIP PACKAGE PRICE & AUTO-DISCOUNT CALCULATOR (OVERVIEW TAB) */}
+            <form
+              onSubmit={onSaveStorageConfig}
+              className="bg-white border-2 border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D97706] to-[#B45309] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <Crown className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+                      Premium Membership Package Price &amp; Auto-Discount Control
+                    </h3>
+                    <p className="text-[11.5px] text-[#5C7267] font-medium">
+                      Change the Monthly or Yearly package price here — the discount percentage calculates automatically and updates everywhere across the app when saved.
+                    </p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] text-xs font-extrabold">
+                  Auto-Discount: {liveYearlyDiscountPct}% OFF Yearly
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                <div>
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Monthly Fee (Rs.)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={storageConfig.paymentGateway?.monthlyFeeRs ?? 100}
+                    onChange={(e) => {
+                      const rawVal = Number(e.target.value);
+                      const nextMonthly = rawVal >= 0 ? rawVal : 100;
+                      const nextYearly = autoApply25PctYearly
+                        ? Math.round(nextMonthly * 12 * 0.75)
+                        : storageConfig.paymentGateway?.yearlyFeeRs ?? 900;
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        paymentGateway: {
+                          jazzCashTitle:
+                            storageConfig.paymentGateway?.jazzCashTitle ||
+                            'Muneeb Khan',
+                          jazzCashNumber:
+                            storageConfig.paymentGateway?.jazzCashNumber ||
+                            '0324-0906384',
+                          easyPaisaTitle:
+                            storageConfig.paymentGateway?.easyPaisaTitle ||
+                            'Muneeb Khan',
+                          easyPaisaNumber:
+                            storageConfig.paymentGateway?.easyPaisaNumber ||
+                            '0324-0906384',
+                          bankTitle:
+                            storageConfig.paymentGateway?.bankTitle ||
+                            'Muneeb Khan',
+                          bankName:
+                            storageConfig.paymentGateway?.bankName ||
+                            'Bank Transfer',
+                          bankAccountOrIban:
+                            storageConfig.paymentGateway?.bankAccountOrIban ||
+                            'Contact on WhatsApp for IBAN',
+                          bankWhatsapp:
+                            storageConfig.paymentGateway?.bankWhatsapp ||
+                            '+92 324 0906384',
+                          monthlyFeeRs: nextMonthly,
+                          yearlyFeeRs: nextYearly,
+                          customPriceUpdated: true
+                        }
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Yearly Fee (Rs.) — ({liveYearlyDiscountPct}% OFF)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={storageConfig.paymentGateway?.yearlyFeeRs ?? 900}
+                    onChange={(e) => {
+                      setAutoApply25PctYearly(false);
+                      const rawVal = Number(e.target.value);
+                      const nextYearly = rawVal >= 0 ? rawVal : 900;
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        paymentGateway: {
+                          jazzCashTitle:
+                            storageConfig.paymentGateway?.jazzCashTitle ||
+                            'Muneeb Khan',
+                          jazzCashNumber:
+                            storageConfig.paymentGateway?.jazzCashNumber ||
+                            '0324-0906384',
+                          easyPaisaTitle:
+                            storageConfig.paymentGateway?.easyPaisaTitle ||
+                            'Muneeb Khan',
+                          easyPaisaNumber:
+                            storageConfig.paymentGateway?.easyPaisaNumber ||
+                            '0324-0906384',
+                          bankTitle:
+                            storageConfig.paymentGateway?.bankTitle ||
+                            'Muneeb Khan',
+                          bankName:
+                            storageConfig.paymentGateway?.bankName ||
+                            'Bank Transfer',
+                          bankAccountOrIban:
+                            storageConfig.paymentGateway?.bankAccountOrIban ||
+                            'Contact on WhatsApp for IBAN',
+                          bankWhatsapp:
+                            storageConfig.paymentGateway?.bankWhatsapp ||
+                            '+92 324 0906384',
+                          monthlyFeeRs:
+                            storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
+                          yearlyFeeRs: nextYearly,
+                          customPriceUpdated: true
+                        }
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-colors h-[38px]"
+                >
+                  <Check className="w-4 h-4 stroke-[2.5]" />
+                  <span>Save Package Price Live</span>
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs">
+                <div className="font-bold text-[#0F291E]">
+                  Live Calculation: 12 Months ={' '}
+                  <strong>Rs. {fullYearBaseFee.toLocaleString()}</strong> → Yearly Package ={' '}
+                  <strong className="text-[#0E9F6E]">
+                    Rs. {liveYearlyFee.toLocaleString()} ({liveYearlyDiscountPct}% OFF • Saves Rs. {liveYearlySavingsRs.toLocaleString()})
+                  </strong>
+                </div>
+                <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#0D6845] cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={autoApply25PctYearly}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setAutoApply25PctYearly(checked);
+                      if (checked) {
+                        const currentMo =
+                          Number(storageConfig.paymentGateway?.monthlyFeeRs) || 100;
+                        const autoYr = Math.round(currentMo * 12 * 0.75);
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          paymentGateway: {
+                            jazzCashTitle:
+                              storageConfig.paymentGateway?.jazzCashTitle ||
+                              'Muneeb Khan',
+                            jazzCashNumber:
+                              storageConfig.paymentGateway?.jazzCashNumber ||
+                              '0324-0906384',
+                            easyPaisaTitle:
+                              storageConfig.paymentGateway?.easyPaisaTitle ||
+                              'Muneeb Khan',
+                            easyPaisaNumber:
+                              storageConfig.paymentGateway?.easyPaisaNumber ||
+                              '0324-0906384',
+                            bankTitle:
+                              storageConfig.paymentGateway?.bankTitle ||
+                              'Muneeb Khan',
+                            bankName:
+                              storageConfig.paymentGateway?.bankName ||
+                              'Bank Transfer',
+                            bankAccountOrIban:
+                              storageConfig.paymentGateway?.bankAccountOrIban ||
+                              'Contact on WhatsApp for IBAN',
+                            bankWhatsapp:
+                              storageConfig.paymentGateway?.bankWhatsapp ||
+                              '+92 324 0906384',
+                            monthlyFeeRs: currentMo,
+                            yearlyFeeRs: autoYr,
+                            customPriceUpdated: true
+                          }
+                        });
+                      }
+                    }}
+                    className="w-3.5 h-3.5 accent-[#0E9F6E] rounded cursor-pointer"
+                  />
+                  <span>Auto 25% OFF on Yearly</span>
+                </label>
+              </div>
+            </form>
+
             {/* OFFICIAL WHATSAPP CHANNEL BUTTON & LINK CONTROL (HOME SCREEN) */}
             <form
               onSubmit={onSaveStorageConfig}
@@ -1177,8 +1453,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     </span>
                   </h2>
                   <p className="text-xs text-[#5C7267] font-medium">
-                    When a user submits a Rs. 200 (1 Month) or Rs. 1,800 (1 Year
-                    — 25% OFF) payment screenshot, accept it here to unlock
+                    When a user submits a Rs. {liveMonthlyFee.toLocaleString()} (1 Month) or Rs. {liveYearlyFee.toLocaleString()} (1 Year
+                    — {liveYearlyDiscountPct}% OFF) payment screenshot, accept it here to unlock
                     their Premium Membership immediately.
                   </p>
                 </div>
@@ -1284,6 +1560,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                             {req.subscriptionPlan
                               ?.toLowerCase()
                               .includes('year') ||
+                            req.amount?.includes(String(liveYearlyFee)) ||
+                            req.amount?.includes('900') ||
                             req.amount?.includes('1800') ||
                             req.amount?.includes('1,800')
                               ? '1 Year'
@@ -1641,28 +1919,129 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
               </div>
 
-              {/* STEP 1: CHOOSE JOB CATEGORY */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-extrabold text-[#0F291E]">
-                  1. Select Job Category:
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(
-                    ['Quality & Safety', 'R&D Lab', 'Production'] as const
-                  ).map((cat) => (
+              {/* STEP 1: DYNAMIC JOB TAGS (Auto-Create from Job Title OR Create Custom Tag OR Pick Tag) */}
+              <div className="space-y-3 p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6]">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="block text-xs font-extrabold text-[#0F291E]">
+                    1. Job Tag / Category (Auto-Created from Job Title or Create Custom Tag):
+                  </label>
+                  <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#0D6845] cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={useAutoTitleTag}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setUseAutoTitleTag(checked);
+                        if (checked && autoDetectedJobTitleTag) {
+                          setJobCategory(autoDetectedJobTitleTag);
+                        }
+                      }}
+                      className="w-3.5 h-3.5 accent-[#0E9F6E] rounded cursor-pointer"
+                    />
+                    <span>Auto-Create Tag from Job Title</span>
+                  </label>
+                </div>
+
+                {/* Live Auto-Detected Job Title Tag Preview */}
+                {autoDetectedJobTitleTag && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#D7EFE2] border border-[#0E9F6E]/40 text-xs">
+                    <div className="font-bold text-[#0F291E]">
+                      Auto-Detected Tag from Job Title:{' '}
+                      <span className="px-2 py-0.5 rounded-lg bg-[#0E9F6E] text-white font-extrabold">
+                        {autoDetectedJobTitleTag}
+                      </span>
+                    </div>
                     <button
-                      key={cat}
                       type="button"
-                      onClick={() => setJobCategory(cat)}
-                      className={`py-2.5 px-3 rounded-xl text-xs font-extrabold border cursor-pointer transition-all ${
-                        jobCategory === cat
-                          ? 'bg-[#0E9F6E] text-white border-[#0E9F6E] shadow-xs'
-                          : 'bg-[#F4FAF7] text-[#0F291E] border-[#CBE4D6] hover:bg-[#E3F3EA]'
-                      }`}
+                      onClick={() => {
+                        setUseAutoTitleTag(true);
+                        setCustomJobTagInput('');
+                        setJobCategory(autoDetectedJobTitleTag);
+                      }}
+                      className="text-[11px] font-extrabold text-[#0D6845] underline cursor-pointer"
                     >
-                      {cat}
+                      {useAutoTitleTag && !customJobTagInput.trim()
+                        ? 'Active ✓'
+                        : 'Use This Tag'}
                     </button>
-                  ))}
+                  </div>
+                )}
+
+                {/* Create Custom Tag Input + Button */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="text"
+                    value={customJobTagInput}
+                    onChange={(e) => {
+                      setCustomJobTagInput(e.target.value);
+                      if (e.target.value.trim()) {
+                        setUseAutoTitleTag(false);
+                        setJobCategory(e.target.value.trim());
+                      }
+                    }}
+                    placeholder="Or type / create any new custom tag (e.g. Dairy QA, Regulatory Affairs, Supply Chain)..."
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const clean = customJobTagInput.trim();
+                      if (!clean) return;
+                      if (!customCreatedJobTags.includes(clean)) {
+                        setCustomCreatedJobTags((prev) => [clean, ...prev]);
+                      }
+                      setUseAutoTitleTag(false);
+                      setJobCategory(clean);
+                      setCustomJobTagInput('');
+                      onSetBanner(`Custom Tag "${clean}" created and selected!`);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-xs font-extrabold shrink-0 cursor-pointer transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Create Tag</span>
+                  </button>
+                </div>
+
+                {/* Selectable Tag Pills (Existing + Custom + Auto-Detected) */}
+                <div className="space-y-1">
+                  <span className="block text-[10.5px] font-bold text-[#5C7267]">
+                    Or click any tag below (Selected:{' '}
+                    <strong className="text-[#0E9F6E]">
+                      {customJobTagInput.trim() ||
+                        (useAutoTitleTag && autoDetectedJobTitleTag
+                          ? autoDetectedJobTitleTag
+                          : jobCategory)}
+                    </strong>
+                    ):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {allAvailableJobTags.map((cat) => {
+                      const activeTag =
+                        customJobTagInput.trim() ||
+                        (useAutoTitleTag && autoDetectedJobTitleTag
+                          ? autoDetectedJobTitleTag
+                          : jobCategory);
+                      const isSelected = activeTag === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            setUseAutoTitleTag(false);
+                            setCustomJobTagInput('');
+                            setJobCategory(cat);
+                          }}
+                          className={`py-1.5 px-3 rounded-xl text-xs font-extrabold border cursor-pointer transition-all ${
+                            isSelected
+                              ? 'bg-[#0E9F6E] text-white border-[#0E9F6E] shadow-xs'
+                              : 'bg-white text-[#0F291E] border-[#CBE4D6] hover:bg-[#E3F3EA]'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -1671,7 +2050,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-extrabold text-[#0F291E]">
                     2. Paste Complete Job Announcement Here (1st line becomes
-                    Headline):
+                    Headline &amp; Auto-Creates Tag):
                   </label>
                   <span className="text-[11px] font-bold text-[#0E9F6E]">
                     Auto-Date: {todayFormatted}
@@ -1681,7 +2060,16 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   rows={7}
                   required
                   value={jobPasteText}
-                  onChange={(e) => setJobPasteText(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setJobPasteText(val);
+                    if (useAutoTitleTag && !customJobTagInput.trim()) {
+                      const autoTag = extractAutoTagFromJobText(val);
+                      if (autoTag) {
+                        setJobCategory(autoTag);
+                      }
+                    }
+                  }}
                   placeholder={`Paste the full job post here...\nExample:\nQA / Food Safety Officer — Engro Foods (Lahore, Pakistan)\nRequirement: BS Food Science & Technology, 2+ Years HACCP / ISO 22000 experience.\nSend CV to: careers@company.com or WhatsApp +92 300 1234567`}
                   className="w-full p-4 rounded-2xl bg-[#F4FAF7] border-[1.5px] border-[#9BCAB0] focus:border-[#0E9F6E] focus:bg-white text-xs sm:text-sm font-medium text-[#0F291E] leading-relaxed focus:outline-none"
                 />
@@ -1696,7 +2084,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 <span>
                   {isPostingJob
                     ? 'Sharing Job to Live App...'
-                    : `Share Job in "${jobCategory}" (${todayFormatted})`}
+                    : `Share Job with Tag "${
+                        customJobTagInput.trim() ||
+                        (useAutoTitleTag && autoDetectedJobTitleTag
+                          ? autoDetectedJobTitleTag
+                          : jobCategory)
+                      }" (${todayFormatted})`}
                 </span>
               </button>
             </form>
@@ -1715,22 +2108,28 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {['All', 'Quality & Safety', 'R&D Lab', 'Production'].map(
-                    (c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setJobFilterCat(c)}
-                        className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer ${
-                          jobFilterCat === c
-                            ? 'bg-[#0E9F6E] text-white'
-                            : 'bg-[#E3F3EA] text-[#0F291E]'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    )
-                  )}
+                  {Array.from(
+                    new Set([
+                      'All',
+                      'Quality & Safety',
+                      'R&D Lab',
+                      'Production',
+                      ...jobs.map((j) => j.category).filter(Boolean)
+                    ])
+                  ).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setJobFilterCat(c)}
+                      className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer ${
+                        jobFilterCat === c
+                          ? 'bg-[#0E9F6E] text-white'
+                          : 'bg-[#E3F3EA] text-[#0F291E]'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -2234,16 +2633,69 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </p>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] text-xs font-extrabold">
-                  25% OFF Yearly Active
+                  {liveYearlyDiscountPct}% OFF Yearly Active
                 </span>
               </div>
 
-              {/* SUBSCRIPTION PLAN FEES (Monthly Rs. 200 & Yearly Rs. 1800 with 25% Discount) */}
-              <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
-                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider flex items-center gap-1.5">
-                  <Crown className="w-4 h-4 text-[#D97706]" />
-                  <span>Subscription Plan Prices (PKR)</span>
+              {/* SUBSCRIPTION PLAN FEES (Monthly Rs. 100 & Yearly Rs. 900 with Auto-Calculated Discount %) */}
+              <div className="p-4 rounded-2xl bg-[#F4FAF7] border-2 border-[#0E9F6E] space-y-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider flex items-center gap-1.5">
+                    <Crown className="w-4 h-4 text-[#D97706]" />
+                    <span>Premium Package Prices &amp; Auto-Discount Calculator (PKR)</span>
+                  </div>
+                  <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#0D6845] cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={autoApply25PctYearly}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setAutoApply25PctYearly(checked);
+                        if (checked) {
+                          const currentMo =
+                            Number(storageConfig.paymentGateway?.monthlyFeeRs) ||
+                            100;
+                          const autoYr = Math.round(currentMo * 12 * 0.75);
+                          onChangeStorageConfig({
+                            ...storageConfig,
+                            paymentGateway: {
+                              jazzCashTitle:
+                                storageConfig.paymentGateway?.jazzCashTitle ||
+                                'Muneeb Khan',
+                              jazzCashNumber:
+                                storageConfig.paymentGateway?.jazzCashNumber ||
+                                '0324-0906384',
+                              easyPaisaTitle:
+                                storageConfig.paymentGateway?.easyPaisaTitle ||
+                                'Muneeb Khan',
+                              easyPaisaNumber:
+                                storageConfig.paymentGateway?.easyPaisaNumber ||
+                                '0324-0906384',
+                              bankTitle:
+                                storageConfig.paymentGateway?.bankTitle ||
+                                'Muneeb Khan',
+                              bankName:
+                                storageConfig.paymentGateway?.bankName ||
+                                'Bank Transfer',
+                              bankAccountOrIban:
+                                storageConfig.paymentGateway?.bankAccountOrIban ||
+                                'Contact on WhatsApp for IBAN',
+                              bankWhatsapp:
+                                storageConfig.paymentGateway?.bankWhatsapp ||
+                                '+92 324 0906384',
+                              monthlyFeeRs: currentMo,
+                              yearlyFeeRs: autoYr,
+                              customPriceUpdated: true
+                            }
+                          });
+                        }
+                      }}
+                      className="w-3.5 h-3.5 accent-[#0E9F6E] rounded cursor-pointer"
+                    />
+                    <span>Auto-Apply 25% OFF on Yearly When Monthly Changes</span>
+                  </label>
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
@@ -2251,8 +2703,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     </label>
                     <input
                       type="number"
-                      value={storageConfig.paymentGateway?.monthlyFeeRs ?? 200}
-                      onChange={(e) =>
+                      min={1}
+                      value={storageConfig.paymentGateway?.monthlyFeeRs ?? 100}
+                      onChange={(e) => {
+                        const rawVal = Number(e.target.value);
+                        const nextMonthly = rawVal >= 0 ? rawVal : 100;
+                        const nextYearly = autoApply25PctYearly
+                          ? Math.round(nextMonthly * 12 * 0.75)
+                          : storageConfig.paymentGateway?.yearlyFeeRs ?? 900;
                         onChangeStorageConfig({
                           ...storageConfig,
                           paymentGateway: {
@@ -2280,24 +2738,28 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                             bankWhatsapp:
                               storageConfig.paymentGateway?.bankWhatsapp ||
                               '+92 324 0906384',
-                            monthlyFeeRs: Number(e.target.value) || 200,
-                            yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                            monthlyFeeRs: nextMonthly,
+                            yearlyFeeRs: nextYearly,
+                            customPriceUpdated: true
                           }
-                        })
-                      }
+                        });
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E]"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
-                      Full Year (12 Months) Fee — 25% Discount (Rs.)
+                      Full Year (12 Months) Fee — ({liveYearlyDiscountPct}% Discount) (Rs.)
                     </label>
                     <input
                       type="number"
-                      value={storageConfig.paymentGateway?.yearlyFeeRs ?? 1800}
-                      onChange={(e) =>
+                      min={1}
+                      value={storageConfig.paymentGateway?.yearlyFeeRs ?? 900}
+                      onChange={(e) => {
+                        setAutoApply25PctYearly(false);
+                        const rawVal = Number(e.target.value);
+                        const nextYearly = rawVal >= 0 ? rawVal : 900;
                         onChangeStorageConfig({
                           ...storageConfig,
                           paymentGateway: {
@@ -2326,14 +2788,77 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               storageConfig.paymentGateway?.bankWhatsapp ||
                               '+92 324 0906384',
                             monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
-                            yearlyFeeRs: Number(e.target.value) || 1800
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
+                            yearlyFeeRs: nextYearly,
+                            customPriceUpdated: true
                           }
-                        })
-                      }
+                        });
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E]"
                     />
                   </div>
+                </div>
+
+                {/* Live Auto-Calculated Discount Percentage & App Sync Preview */}
+                <div className="p-3.5 rounded-xl bg-white border border-[#9BCAB0] flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-extrabold text-[#0F291E] flex items-center gap-2 flex-wrap">
+                      <span>Auto-Calculated Yearly Discount:</span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#0E9F6E] text-white text-xs font-extrabold">
+                        {liveYearlyDiscountPct}% OFF
+                      </span>
+                      <span className="text-[#0D6845]">
+                        (User Saves Rs. {liveYearlySavingsRs.toLocaleString()} / Year)
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-semibold text-[#5C7267]">
+                      Regular 12-Month Cost: Rs. {fullYearBaseFee.toLocaleString()} • Discounted Yearly Price: Rs. {liveYearlyFee.toLocaleString()} • Updates everywhere in the app automatically when saved!
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentMo =
+                        Number(storageConfig.paymentGateway?.monthlyFeeRs) || 100;
+                      const autoYr = Math.round(currentMo * 12 * 0.75);
+                      setAutoApply25PctYearly(true);
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        paymentGateway: {
+                          jazzCashTitle:
+                            storageConfig.paymentGateway?.jazzCashTitle ||
+                            'Muneeb Khan',
+                          jazzCashNumber:
+                            storageConfig.paymentGateway?.jazzCashNumber ||
+                            '0324-0906384',
+                          easyPaisaTitle:
+                            storageConfig.paymentGateway?.easyPaisaTitle ||
+                            'Muneeb Khan',
+                          easyPaisaNumber:
+                            storageConfig.paymentGateway?.easyPaisaNumber ||
+                            '0324-0906384',
+                          bankTitle:
+                            storageConfig.paymentGateway?.bankTitle ||
+                            'Muneeb Khan',
+                          bankName:
+                            storageConfig.paymentGateway?.bankName ||
+                            'Bank Transfer',
+                          bankAccountOrIban:
+                            storageConfig.paymentGateway?.bankAccountOrIban ||
+                            'Contact on WhatsApp for IBAN',
+                          bankWhatsapp:
+                            storageConfig.paymentGateway?.bankWhatsapp ||
+                            '+92 324 0906384',
+                          monthlyFeeRs: currentMo,
+                          yearlyFeeRs: autoYr,
+                          customPriceUpdated: true
+                        }
+                      });
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] text-[11px] font-extrabold cursor-pointer transition-colors shrink-0"
+                  >
+                    Set Exact 25% OFF (Rs. {Math.round(liveMonthlyFee * 12 * 0.75)})
+                  </button>
                 </div>
               </div>
 
@@ -2380,9 +2905,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               storageConfig.paymentGateway?.bankWhatsapp ??
                               '+92 324 0906384',
                             monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
                             yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
                           }
                         })
                       }
@@ -2427,9 +2952,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               storageConfig.paymentGateway?.bankWhatsapp ??
                               '+92 324 0906384',
                             monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
                             yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
                           }
                         })
                       }
@@ -2483,9 +3008,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               storageConfig.paymentGateway?.bankWhatsapp ??
                               '+92 324 0906384',
                             monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
                             yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
                           }
                         })
                       }
@@ -2530,9 +3055,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               storageConfig.paymentGateway?.bankWhatsapp ??
                               '+92 324 0906384',
                             monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
                             yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
                           }
                         })
                       }
@@ -2585,9 +3110,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               storageConfig.paymentGateway?.bankWhatsapp ??
                               '+92 324 0906384',
                             monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
                             yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
                           }
                         })
                       }
@@ -2632,9 +3157,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               storageConfig.paymentGateway?.bankWhatsapp ??
                               '+92 324 0906384',
                             monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
                             yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
                           }
                         })
                       }
@@ -2679,9 +3204,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               storageConfig.paymentGateway?.bankWhatsapp ??
                               '+92 324 0906384',
                             monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
                             yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
                           }
                         })
                       }
@@ -2726,9 +3251,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               'Contact on WhatsApp for IBAN',
                             bankWhatsapp: e.target.value,
                             monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 200,
+                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
                             yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 1800
+                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
                           }
                         })
                       }

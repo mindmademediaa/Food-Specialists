@@ -273,6 +273,7 @@ export interface PaymentGatewayConfig {
   bankWhatsapp: string;
   monthlyFeeRs: number;
   yearlyFeeRs: number;
+  customPriceUpdated?: boolean;
 }
 
 export interface CloudStorageConfig {

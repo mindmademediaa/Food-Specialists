@@ -17,13 +17,19 @@ interface LegalComplianceModalProps {
   initialTab?: LegalTabType;
   onClose: () => void;
   onGoToDeleteAccount?: () => void;
+  monthlyFeeRs?: number;
+  yearlyFeeRs?: number;
+  yearlyDiscountPct?: number;
 }
 
 export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
   isOpen,
   initialTab = 'privacy',
   onClose,
-  onGoToDeleteAccount
+  onGoToDeleteAccount,
+  monthlyFeeRs = 100,
+  yearlyFeeRs = 900,
+  yearlyDiscountPct = 25
 }) => {
   const [activeTab, setActiveTab] = useState<LegalTabType>(initialTab);
 
@@ -196,7 +202,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                   3. Free vs. Paid Premium Community Membership
                 </h3>
                 <p>
-                  Browsing Jobs, Scholarships, Trainings, and downloading your own PDF CV are completely free. Upgrading to <strong>Paid Premium Membership</strong> (Rs. 200 for 1 Month or Rs. 1,800 for 1 Full Year with 25% discount) unlocks visibility in the Premium Community Directory, viewing other paid specialists&apos; visible profile details, and downloading shared CVs.
+                  Browsing Jobs, Scholarships, Trainings, and downloading your own PDF CV are completely free. Upgrading to <strong>Paid Premium Membership</strong> (Rs. {monthlyFeeRs.toLocaleString()} for 1 Month or Rs. {yearlyFeeRs.toLocaleString()} for 1 Full Year with {yearlyDiscountPct}% discount) unlocks visibility in the Premium Community Directory, viewing other paid specialists&apos; visible profile details, and downloading shared CVs.
                 </p>
               </section>
             </div>

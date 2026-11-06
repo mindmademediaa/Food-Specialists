@@ -204,6 +204,9 @@ interface EditProfileViewProps {
   onOpenToolsSection?: (
     section?: 'hub' | 'nutrition' | 'exam' | 'interview'
   ) => void;
+  monthlyFeeRs?: number;
+  yearlyFeeRs?: number;
+  yearlyDiscountPct?: number;
 }
 
 export const EditProfileView: React.FC<EditProfileViewProps> = ({
@@ -225,8 +228,22 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
   onOpenApplicationStatusModal,
   onOpenLegalModal,
   onDeleteOwnAccount,
-  onOpenToolsSection
+  onOpenToolsSection,
+  monthlyFeeRs = 100,
+  yearlyFeeRs = 900,
+  yearlyDiscountPct
 }) => {
+  const effectiveDiscountPct =
+    typeof yearlyDiscountPct === 'number'
+      ? yearlyDiscountPct
+      : monthlyFeeRs * 12 > 0
+      ? Math.max(
+          0,
+          Math.round(
+            ((monthlyFeeRs * 12 - yearlyFeeRs) / (monthlyFeeRs * 12)) * 100
+          )
+        )
+      : 25;
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const cvInputRef = useRef<HTMLInputElement | null>(null);
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] =
@@ -1812,11 +1829,11 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             {/* Pricing Summary Strip inside Notification */}
             <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#E3F3EA] border border-[#9BCAB0] text-xs">
               <div className="font-bold text-[#0F291E]">
-                Plans: <strong>Rs. 200 / 1 Month</strong> or{' '}
-                <strong>Rs. 1,800 / Full Year</strong>
+                Plans: <strong>Rs. {monthlyFeeRs.toLocaleString()} / 1 Month</strong> or{' '}
+                <strong>Rs. {yearlyFeeRs.toLocaleString()} / Full Year</strong>
               </div>
               <span className="px-2.5 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[10.5px] font-extrabold">
-                Save 25% on Yearly Plan
+                Save {effectiveDiscountPct}% on Yearly Plan
               </span>
             </div>
 
@@ -1827,7 +1844,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             >
               <Crown className="w-5 h-5 text-amber-300 shrink-0" />
               <span>
-                Purchase / Buy Premium Membership (Rs. 200/Mo • Rs. 1,800/Yr)
+                Purchase / Buy Premium Membership (Rs. {monthlyFeeRs.toLocaleString()}/Mo • Rs. {yearlyFeeRs.toLocaleString()}/Yr)
               </span>
             </button>
           </div>
