@@ -859,15 +859,13 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                     )}
                   </div>
                   <h2 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-1">
-                    Complete Nutrition Dashboard, AI Meal Planner, 44+ Recipes
-                    &amp; Health Condition Guide
+                    Complete Nutrition &amp; BMI Calculator, Health Condition Guide &amp; AI Dietitian Agent
                   </h2>
                   <p className="text-xs text-[#5C7267] leading-relaxed mt-0.5">
-                    BMI Gauge &amp; Health Score (0–100), BMR, TDEE, Ideal
-                    Weight, Body Fat %, Visceral Fat, Water Tracker, 7-Day AI
-                    Meal Plan (with Grams &amp; Grocery List), 44+ Desi /
-                    Pakistani / Chinese / Italian / Healthy Recipes, Health
-                    Condition Food Guide &amp; AI Dietitian Chat.
+                    1-Page BMI Gauge &amp; Weight Goal Graph, BMR, TDEE, Ideal
+                    Weight, Daily Calorie &amp; Macro Targets, Water Tracker,
+                    Health Condition Food Guide (Recommended vs. Avoid) &amp;
+                    AI Dietitian Chat Agent for resolving any nutrition issue.
                   </p>
                 </div>
               </div>
@@ -890,13 +888,13 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </div>
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
                 <div className="text-[10px] font-bold text-[#5C7267]">
-                  Recipes &amp; Plans
+                  Weight &amp; Calories
                 </div>
                 <div className="text-xs font-extrabold text-[#0E9F6E] mt-0.5">
-                  44+ Recipes • 7-Day Plan
+                  BMI &amp; Weight Graph
                 </div>
                 <div className="text-[10px] text-[#5C7267] font-semibold">
-                  Desi, Chinese, Italian
+                  Gain / Reduce Guide
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
@@ -904,7 +902,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   Health Conditions
                 </div>
                 <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  AI Dietitian
+                  AI Dietitian Agent
                 </div>
                 <div className="text-[10px] text-[#0E9F6E] font-bold">
                   Diabetes, BP, PCOS +
@@ -914,7 +912,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
 
             <div className="flex items-center justify-between pt-1 border-t border-[#ECF4EF]">
               <span className="text-[11px] font-bold text-[#13422B]">
-                Easy 1-Page BMI, Calorie &amp; Weight Tracker + Meal Plan + Recipes
+                Easy 1-Page BMI &amp; Weight Tracker + Health Guide + AI Dietitian Chat
               </span>
               <span className="px-3.5 py-1.5 rounded-xl bg-[#0E9F6E] text-white text-xs font-extrabold inline-flex items-center gap-1">
                 <span>Open Nutrition Tool</span>

@@ -2,26 +2,22 @@ import React, { useState, useMemo } from 'react';
 import {
   Activity,
   AlertTriangle,
+  Bot,
   Check,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Clock,
   Download,
   Droplets,
-  Flame,
   Heart,
-  LayoutGrid,
+  Info,
   Leaf,
-  List,
-  Plus,
+  MessageSquare,
   Scale,
   Search,
-  SlidersHorizontal,
+  Send,
   Sparkles,
   TrendingDown,
   TrendingUp,
-  Utensils,
+  User,
   X
 } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
@@ -32,9 +28,12 @@ import {
   calculateSuiteNutritionIndexes,
   DEFAULT_SUITE_ONBOARDING,
   DOCTOR_DISCLAIMER_BANNER,
+  DOCTOR_DISCLAIMER_CHAT,
+  DOCTOR_DISCLAIMER_SHORT,
   GenderOption,
   getHealthConditionRecommendations,
   GoalOption,
+  SuiteComputedIndexes,
   SuiteOnboardingProfile
 } from '../data/nutritionSuiteData';
 import { jsPDF } from 'jspdf';
@@ -48,674 +47,359 @@ interface NutritionSuiteToolProps {
   onOpenPremiumModal: () => void;
 }
 
-export type NutritionMacroCategory =
-  | 'High-Protein'
-  | 'Low-Carb & Fat Loss'
-  | 'High-Carb & Energy'
-  | 'Low-Protein & Light'
-  | 'Diabetic & Low-GI'
-  | 'Heart, BP & Gut Health';
-
-export interface ClinicalNutritionRecipe {
+interface DietitianChatMessage {
   id: string;
-  title: string;
-  subtitle: string;
-  macroCategory: NutritionMacroCategory;
-  mealTiming: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack / Shake';
-  dietTag: string;
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  fiberG: number;
-  cookTimeMin: number;
-  servings: number;
-  isVeg: boolean;
-  isCustomCreated?: boolean;
-  ingredients: { item: string; amount: string; grams: number }[];
-  instructions: string[];
-  clinicalBenefit: string;
+  sender: 'user' | 'dietitian';
+  issueTitle?: string;
+  text: string;
+  recommendedSteps?: string[];
+  foodsToEat?: string[];
+  foodsToAvoid?: string[];
+  time: string;
 }
 
-// ============================================================================
-// DIETITIAN-FORMULATED CLINICAL & FUNCTIONAL NUTRITION RECIPES (30+ RECIPES)
-// ============================================================================
-export const CLINICAL_NUTRITION_RECIPES: ClinicalNutritionRecipe[] = [
-  // --- 1. HIGH-PROTEIN (MUSCLE BUILDING, RECOVERY & SATIETY) ---
-  {
-    id: 'hp-1',
-    title: 'High-Protein Egg White, Spinach & OatsSavory Chilla',
-    subtitle: '42g Protein • Zero Refined Flour • Iron & Amino Acid Rich Breakfast',
-    macroCategory: 'High-Protein',
-    mealTiming: 'Breakfast',
-    dietTag: 'High Protein • Muscle & Recovery',
-    calories: 350,
-    proteinG: 36,
-    carbsG: 28,
-    fatG: 9,
-    fiberG: 6,
-    cookTimeMin: 12,
-    servings: 1,
-    isVeg: false,
-    ingredients: [
-      { item: 'Liquid Egg Whites (4 whites) + 1 Whole Egg', amount: '5 eggs total', grams: 180 },
-      { item: 'Powdered Rolled Oats (ground in blender)', amount: '1/3 cup', grams: 35 },
-      { item: 'Finely Chopped Fresh Spinach (Palak)', amount: '1 cup packed', grams: 60 },
-      { item: 'Low-Fat Cottage Cheese (Grated Paneer)', amount: '3 tbsp', grams: 45 },
-      { item: 'Chopped Onion, Tomato, Green Chili & Coriander', amount: '1/3 cup', grams: 50 },
-      { item: 'Roasted Cumin, Black Pepper & Turmeric', amount: '1 tsp', grams: 5 },
-      { item: 'Olive Oil (for non-stick pan brushing)', amount: '1 tsp', grams: 5 }
-    ],
-    instructions: [
-      'Step 1 (Prepare High-Protein Batter): In a bowl, whisk 4 egg whites, 1 whole egg, powdered oats, cumin, black pepper, turmeric, and a splash of water into a smooth batter.',
-      'Step 2 (Fold Greens): Mix in finely chopped spinach, onions, tomatoes, and fresh coriander leaves.',
-      'Step 3 (Cook Savory Chilla): Heat a non-stick skillet over medium flame and brush with 1 tsp olive oil. Pour the batter and spread into a medium-thick crepe.',
-      'Step 4 (Top with Paneer & Fold): Cook for 2.5 minutes per side, sprinkle grated low-fat paneer inside, fold in half, and serve hot with mint-yogurt dip.'
-    ],
-    clinicalBenefit: 'Provides 36g complete bioavailable protein (leucine-rich) plus beta-glucan fiber from oats to keep blood glucose stable for 5 hours.'
-  },
-  {
-    id: 'hp-2',
-    title: 'Grilled Lemon-Herb Chicken Breast & Quinoa Power Bowl',
-    subtitle: 'Lean Poultry Protein + Complete Amino Acid Quinoa & Steamed Broccoli',
-    macroCategory: 'High-Protein',
-    mealTiming: 'Lunch',
-    dietTag: 'High Protein • Lean Mass',
-    calories: 410,
-    proteinG: 44,
-    carbsG: 34,
-    fatG: 10,
-    fiberG: 7,
-    cookTimeMin: 20,
-    servings: 1,
-    isVeg: false,
-    ingredients: [
-      { item: 'Skinless Chicken Breast Fillet', amount: '6.5 oz raw', grams: 185 },
-      { item: 'Cooked Quinoa (or Brown Rice)', amount: '3/4 cup cooked', grams: 120 },
-      { item: 'Broccoli Florets & Bell Peppers', amount: '1 cup', grams: 110 },
-      { item: 'Fresh Lemon Juice, Minced Garlic & Oregano', amount: '1.5 tbsp', grams: 20 },
-      { item: 'Extra-Virgin Olive Oil', amount: '1.5 tsp', grams: 7 }
-    ],
-    instructions: [
-      'Step 1 (Marinate Chicken): Rub chicken breast with lemon juice, minced garlic, oregano, black pepper, and salt for 10 minutes.',
-      'Step 2 (Pan-Grill): Sear on a medium-high grill pan with 1.5 tsp olive oil for 5–6 minutes per side until internal temperature reaches 75°C (165°F).',
-      'Step 3 (Steam Veggies): Steam broccoli florets and bell peppers for 4 minutes so they retain Vitamin C and crunch.',
-      'Step 4 (Assemble Bowl): Slice the grilled chicken breast over warm quinoa and steamed vegetables, and drizzle with lemon juice.'
-    ],
-    clinicalBenefit: 'Delivers 44g lean protein with high potassium and magnesium to support muscle synthesis and metabolic rate.'
-  },
-  {
-    id: 'hp-3',
-    title: 'Sprouted Moong Daal, Boiled Chana & Paneer Protein Bowl',
-    subtitle: '100% Vegetarian High-Protein Bowl with Digestive Enzymes & Folate',
-    macroCategory: 'High-Protein',
-    mealTiming: 'Lunch',
-    dietTag: 'Vegetarian High Protein',
-    calories: 345,
-    proteinG: 26,
-    carbsG: 36,
-    fatG: 10,
-    fiberG: 9,
-    cookTimeMin: 10,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Steamed Green Moong Daal Sprouts', amount: '1 cup', grams: 110 },
-      { item: 'Boiled White or Black Chickpeas (Chana)', amount: '1/2 cup', grams: 80 },
-      { item: 'Seared Low-Fat Paneer / Tofu Cubes', amount: '3.5 oz', grams: 100 },
-      { item: 'Diced Cucumber, Tomato & Red Onion', amount: '1 cup', grams: 100 },
-      { item: 'Lemon Juice, Roasted Cumin (Zeera) & Chaat Masala', amount: '1.5 tbsp', grams: 15 }
-    ],
-    instructions: [
-      'Step 1 (Lightly Steam Sprouts): Steam sprouted green moong daal for 3 minutes to make it easy on digestion while keeping enzymes intact.',
-      'Step 2 (Pan-Sear Paneer): Lightly toast paneer cubes on a dry non-stick skillet for 2 minutes until golden.',
-      'Step 3 (Toss Protein Salad): Combine warm sprouts, boiled chickpeas, seared paneer, cucumber, tomato, and onion in a bowl.',
-      'Step 4 (Dress & Serve): Add fresh lemon juice, roasted cumin powder, and coriander leaves. Toss and enjoy immediately.'
-    ],
-    clinicalBenefit: 'Sprouting increases vitamin bioavailability by 300% and reduces phytic acid, delivering 26g vegetarian protein and 9g prebiotic fiber.'
-  },
-  {
-    id: 'hp-4',
-    title: 'Air-Fried / Grilled Garlic Fish Tikka with Mint Yogurt',
-    subtitle: 'Omega-3 Rich Lean White Fish / Salmon with Probiotic Dahi Dip',
-    macroCategory: 'High-Protein',
-    mealTiming: 'Dinner',
-    dietTag: 'High Protein • Omega-3 Rich',
-    calories: 310,
-    proteinG: 38,
-    carbsG: 8,
-    fatG: 13,
-    fiberG: 2,
-    cookTimeMin: 18,
-    servings: 1,
-    isVeg: false,
-    ingredients: [
-      { item: 'Boneless Fish Fillet Cubes (Rohu / Cod / Salmon)', amount: '7 oz', grams: 200 },
-      { item: 'Thick Low-Fat Yogurt (Dahi)', amount: '3 tbsp', grams: 45 },
-      { item: 'Garlic-Ginger Paste & Lemon Juice', amount: '1.5 tbsp', grams: 22 },
-      { item: 'Ajwain (Carom Seeds), Cumin & Turmeric', amount: '1.5 tsp', grams: 6 },
-      { item: 'Olive Oil Spray / Brush', amount: '1 tsp', grams: 5 }
-    ],
-    instructions: [
-      'Step 1 (Coat Fish): Mix yogurt, garlic-ginger paste, lemon juice, ajwain, cumin, and turmeric. Coat fish cubes gently and marinate for 15 minutes.',
-      'Step 2 (Grill / Air-Fry): Place in an air-fryer at 190°C or on a non-stick grill pan brushed with 1 tsp olive oil.',
-      'Step 3 (Cook Until Flaky): Cook for 10–12 minutes, flipping halfway until golden and flaky.',
-      'Step 4 (Serve): Serve with fresh mint chutney and sliced radish/cucumber salad.'
-    ],
-    clinicalBenefit: 'High protein-to-calorie ratio (38g protein in 310 kcal) with anti-inflammatory Omega-3 fatty acids and thyroid-supporting iodine.'
-  },
-  {
-    id: 'hp-5',
-    title: 'Greek Yogurt (Hung Dahi), Chia, Pumpkin Seed & Berry Bowl',
-    subtitle: 'Probiotic Casein & Whey Protein Bowl for Post-Workout or Evening Satiety',
-    macroCategory: 'High-Protein',
-    mealTiming: 'Snack / Shake',
-    dietTag: 'High Protein • Probiotic',
-    calories: 275,
-    proteinG: 22,
-    carbsG: 21,
-    fatG: 11,
-    fiberG: 6,
-    cookTimeMin: 5,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Thick Strained Greek Yogurt / Hung Curd', amount: '1 cup', grams: 200 },
-      { item: 'Chia Seeds & Raw Pumpkin Seeds', amount: '1.5 tbsp', grams: 18 },
-      { item: 'Crushed Walnuts & Almonds', amount: '5 nuts', grams: 12 },
-      { item: 'Berries or Pomegranate (Anaar) Seeds', amount: '1/2 cup', grams: 65 },
-      { item: 'Cinnamon Powder', amount: '1/4 tsp', grams: 1 }
-    ],
-    instructions: [
-      'Step 1 (Whip Yogurt Base): Whisk thick Greek yogurt (or strained home dahi) with a pinch of cinnamon until creamy.',
-      'Step 2 (Layer Seeds & Fruit): Top with chia seeds, pumpkin seeds, crushed almonds, and antioxidant-rich pomegranate or berries.',
-      'Step 3 (Rest & Enjoy): Let sit for 5 minutes so chia seeds swell slightly, then enjoy chilled.'
-    ],
-    clinicalBenefit: 'Rich in slow-digesting casein protein, gut-healing probiotics, and zinc from pumpkin seeds.'
-  },
+/**
+ * Comprehensive AI Dietitian Issue Resolution Engine
+ * Responds to any health/nutrition issue (English or Roman Urdu) with:
+ * - Diagnosis / Nutrition Insight
+ * - Recommended Tareeqa (Step-by-Step Resolution Plan)
+ * - Recommended Foods to Eat
+ * - Foods to Avoid (Parhez)
+ */
+function generateComprehensiveDietitianResolution(
+  rawInput: string,
+  profile: SuiteOnboardingProfile,
+  indexes: SuiteComputedIndexes
+): Omit<DietitianChatMessage, 'id' | 'sender' | 'time'> {
+  const q = rawInput.trim().toLowerCase();
 
-  // --- 2. LOW-CARB & FAT LOSS (KETO, INSULIN SENSITIVITY & WEIGHT REDUCTION) ---
-  {
-    id: 'lc-1',
-    title: 'Low-Carb Cauliflower Rice (Gobi Rice) & Chicken Stir-Fry Bowl',
-    subtitle: 'Only 10g Net Carbs • Replaces White Rice with Vitamin-Rich Grated Cauliflower',
-    macroCategory: 'Low-Carb & Fat Loss',
-    mealTiming: 'Dinner',
-    dietTag: 'Low Carb • Fast Fat Loss',
-    calories: 295,
-    proteinG: 32,
-    carbsG: 12,
-    fatG: 13,
-    fiberG: 5,
-    cookTimeMin: 15,
-    servings: 1,
-    isVeg: false,
-    ingredients: [
-      { item: 'Grated Cauliflower Florets (Gobi Rice)', amount: '1.5 cups grated', grams: 170 },
-      { item: 'Diced Chicken Breast (or Paneer Cubes)', amount: '5.5 oz', grams: 160 },
-      { item: 'Minced Garlic, Ginger & Spring Onions', amount: '2 tbsp', grams: 25 },
-      { item: 'Diced Bell Peppers & Green Beans', amount: '1/2 cup', grams: 60 },
-      { item: 'Olive Oil, Cumin & Black Pepper', amount: '1.5 tsp oil + spices', grams: 10 }
-    ],
-    instructions: [
-      'Step 1 (Pulse Cauliflower): Grate fresh cauliflower florets on a box grater or pulse briefly in a food processor until rice-sized grains form.',
-      'Step 2 (Sear Protein): Heat 1.5 tsp olive oil in a wok. Sauté garlic, ginger, and chicken cubes (or paneer) for 5–6 minutes until cooked through.',
-      'Step 3 (Stir-Fry Veggies & Gobi Rice): Add bell peppers, green beans, and grated cauliflower rice. Stir-fry on high flame for 3–4 minutes (do not overcook so it stays fluffy like rice).',
-      'Step 4 (Season & Serve): Season with roasted cumin, black pepper, and chopped spring onions.'
-    ],
-    clinicalBenefit: 'Slashes carbohydrate load by 78% compared to white rice while providing sulforaphane and 32g protein for rapid visceral fat loss.'
-  },
-  {
-    id: 'lc-2',
-    title: 'Spinach, Mushroom & 3-Egg Keto Omelette / Frittata',
-    subtitle: 'Ultra Low-Carb (4g Carbs) • Choline, Vitamin D & Healthy Fats for Fat Burning',
-    macroCategory: 'Low-Carb & Fat Loss',
-    mealTiming: 'Breakfast',
-    dietTag: 'Keto • Low Carb (4g Carbs)',
-    calories: 280,
-    proteinG: 21,
-    carbsG: 5,
-    fatG: 19,
-    fiberG: 2,
-    cookTimeMin: 10,
-    servings: 1,
-    isVeg: false,
-    ingredients: [
-      { item: 'Whole Pasture-Raised Eggs', amount: '3 large eggs', grams: 150 },
-      { item: 'Baby Spinach & Sliced Mushrooms', amount: '1 cup', grams: 80 },
-      { item: 'Chopped Green Onion & Tomato', amount: '2 tbsp', grams: 25 },
-      { item: 'Crushed Black Pepper, Oregano & Pink Salt', amount: '1 tsp', grams: 4 },
-      { item: 'Olive Oil or Grass-Fed Ghee', amount: '1 tsp', grams: 5 }
-    ],
-    instructions: [
-      'Step 1 (Sauté Greens & Mushrooms): Heat 1 tsp olive oil in a skillet. Sauté sliced mushrooms and baby spinach with garlic/oregano for 2 minutes until tender.',
-      'Step 2 (Pour Whisked Eggs): Beat 3 eggs with black pepper and pink salt, and pour evenly over the sautéed vegetables.',
-      'Step 3 (Set & Fold): Cover on low heat for 3 minutes until set, fold gently, and serve warm.'
-    ],
-    clinicalBenefit: 'Keeps insulin levels at baseline in the morning, encouraging the body to oxidize stored body fat for energy.'
-  },
-  {
-    id: 'lc-3',
-    title: 'Zucchini (Tori), Palak & Grilled Paneer / Chicken Bowl',
-    subtitle: 'High-Volume, Low-Calorie Hydrating Green Bowl for Weight Reduction',
-    macroCategory: 'Low-Carb & Fat Loss',
-    mealTiming: 'Dinner',
-    dietTag: 'Low Calorie • Low Carb',
-    calories: 265,
-    proteinG: 23,
-    carbsG: 11,
-    fatG: 14,
-    fiberG: 5,
-    cookTimeMin: 15,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Sliced Zucchini / Ridge Gourd (Tori)', amount: '1.5 cups', grams: 180 },
-      { item: 'Fresh Spinach Leaves (Palak)', amount: '1 cup', grams: 60 },
-      { item: 'Paneer Cubes (or Grilled Chicken)', amount: '4 oz', grams: 115 },
-      { item: 'Garlic, Cumin Seeds & Turmeric', amount: '1 tbsp', grams: 12 },
-      { item: 'Olive Oil', amount: '1.5 tsp', grams: 7 }
-    ],
-    instructions: [
-      'Step 1 (Sauté Cumin & Garlic): Heat olive oil in a pan, crackle cumin seeds and minced garlic for 30 seconds.',
-      'Step 2 (Cook Tori & Spinach): Add sliced zucchini (tori), turmeric, and spinach. Cover and cook in its own natural water for 5–6 minutes.',
-      'Step 3 (Add Protein): Fold in lightly seared paneer cubes (or grilled chicken), simmer for 2 minutes, and finish with lemon juice.'
-    ],
-    clinicalBenefit: '92% water-rich gourd vegetables provide high stomach volume with minimal calories, eliminating evening hunger cravings.'
-  },
-  {
-    id: 'lc-4',
-    title: 'Avocado, Cucumber, Boiled Egg & Roasted Flaxseed Salad',
-    subtitle: 'Healthy Monounsaturated Fats + Fiber to Curb Appetite Naturally',
-    macroCategory: 'Low-Carb & Fat Loss',
-    mealTiming: 'Lunch',
-    dietTag: 'Keto • Healthy Fats & Fiber',
-    calories: 315,
-    proteinG: 16,
-    carbsG: 10,
-    fatG: 23,
-    fiberG: 6,
-    cookTimeMin: 8,
-    servings: 1,
-    isVeg: false,
-    ingredients: [
-      { item: 'Hard-Boiled Eggs (halved)', amount: '2 whole eggs', grams: 100 },
-      { item: 'Ripe Avocado (cubed)', amount: '1/2 medium', grams: 75 },
-      { item: 'Crunchy Cucumber, Lettuce & Cherry Tomatoes', amount: '1.5 cups', grams: 150 },
-      { item: 'Roasted Flaxseeds (Alsi) & Sesame Seeds', amount: '1 tbsp', grams: 10 },
-      { item: 'Lemon Juice & Olive Oil Dressing', amount: '1 tbsp', grams: 12 }
-    ],
-    instructions: [
-      'Step 1 (Chop Salad Base): Toss diced cucumber, crisp lettuce, and cherry tomatoes in a wide bowl.',
-      'Step 2 (Top with Avocado & Eggs): Arrange cubed avocado and halved boiled eggs on top.',
-      'Step 3 (Sprinkle Seeds & Dress): Drizzle lemon-olive oil dressing and sprinkle roasted flaxseeds and cracked black pepper.'
-    ],
-    clinicalBenefit: 'Oleic acid from avocado and Omega-3s from flaxseeds trigger GLP-1 satiety hormones for effortless calorie control.'
-  },
-
-  // --- 3. HIGH-CARB & ENERGY (HEALTHY WEIGHT GAIN, ATHLETES & PRE-WORKOUT) ---
-  {
-    id: 'hc-1',
-    title: 'Healthy Weight-Gain Banana, Khajoor (Dates), Oats & Peanut Butter Shake',
-    subtitle: '560 kcal Nutrient-Dense Mass & Energy Smoothie (Zero Refined Sugar)',
-    macroCategory: 'High-Carb & Energy',
-    mealTiming: 'Snack / Shake',
-    dietTag: 'High Carb • Healthy Weight Gain',
-    calories: 560,
-    proteinG: 22,
-    carbsG: 76,
-    fatG: 19,
-    fiberG: 9,
-    cookTimeMin: 5,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Whole Milk (or Soy Milk)', amount: '1.25 cups', grams: 300 },
-      { item: 'Ripe Banana', amount: '1 large banana', grams: 120 },
-      { item: 'Rolled Oats', amount: '1/2 cup', grams: 45 },
-      { item: 'Soft Dates (Khajoor, pitted)', amount: '3 dates', grams: 35 },
-      { item: 'Natural Unsweetened Peanut Butter', amount: '1.5 tbsp', grams: 24 },
-      { item: 'Almonds & Chia Seeds', amount: '1 tbsp', grams: 12 }
-    ],
-    instructions: [
-      'Step 1 (Blend Dry Oats): Pulse rolled oats and almonds in a blender for 10 seconds into a fine powder.',
-      'Step 2 (Add Liquid & Fruit): Add milk, ripe banana, pitted dates, peanut butter, and chia seeds.',
-      'Step 3 (Blend Smooth): Blend on high for 45 seconds until thick, creamy, and frothy. Drink post-workout or between meals for healthy weight gain.'
-    ],
-    clinicalBenefit: 'Provides 560 clean calories from complex oats, potassium-rich banana, iron-rich dates, and healthy nut fats for healthy weight/muscle gain.'
-  },
-  {
-    id: 'hc-2',
-    title: 'Sweet Potato (Shakarkandi), Chickpea & Boiled Egg Energy Bowl',
-    subtitle: 'Slow-Release Complex Carbohydrates + Protein for All-Day Stamina',
-    macroCategory: 'High-Carb & Energy',
-    mealTiming: 'Lunch',
-    dietTag: 'High Complex Carb • Stamina',
-    calories: 450,
-    proteinG: 21,
-    carbsG: 64,
-    fatG: 12,
-    fiberG: 10,
-    cookTimeMin: 20,
-    servings: 1,
-    isVeg: false,
-    ingredients: [
-      { item: 'Boiled or Baked Sweet Potato (Shakarkandi, cubed)', amount: '1.25 cups', grams: 180 },
-      { item: 'Boiled White Chickpeas (Kabuli Chana)', amount: '3/4 cup', grams: 110 },
-      { item: 'Boiled Eggs (or Grilled Paneer)', amount: '2 eggs', grams: 100 },
-      { item: 'Lemon Juice, Roasted Cumin & Chaat Spices', amount: '1 tbsp', grams: 12 },
-      { item: 'Extra-Virgin Olive Oil & Coriander', amount: '1.5 tsp', grams: 7 }
-    ],
-    instructions: [
-      'Step 1 (Roast/Boil Sweet Potato): Boil or pan-roast peeled sweet potato cubes for 12–15 minutes until tender and ligeramente caramelized.',
-      'Step 2 (Combine with Chickpeas): Toss warm sweet potato cubes with boiled chickpeas, olive oil, lemon juice, and roasted cumin.',
-      'Step 3 (Top with Protein): Place sliced boiled eggs (or paneer) on top and garnish with fresh coriander.'
-    ],
-    clinicalBenefit: 'Rich in beta-carotene (Vitamin A), glycogen-replenishing complex carbs (64g), and 10g fiber for athletes and active individuals.'
-  },
-  {
-    id: 'hc-3',
-    title: 'Brown Rice, Red Kidney Beans (Rajma) & Chicken / Paneer Burrito Bowl',
-    subtitle: 'High-Energy Complex Carbs + Complete Amino Acid Combination',
-    macroCategory: 'High-Carb & Energy',
-    mealTiming: 'Lunch',
-    dietTag: 'High Carb + High Protein',
-    calories: 490,
-    proteinG: 29,
-    carbsG: 68,
-    fatG: 11,
-    fiberG: 11,
-    cookTimeMin: 20,
-    servings: 1,
-    isVeg: false,
-    ingredients: [
-      { item: 'Cooked Brown or Basmati Rice', amount: '1 cup cooked', grams: 150 },
-      { item: 'Boiled Red Kidney Beans (Rajma) in Tomato Gravy', amount: '3/4 cup', grams: 130 },
-      { item: 'Grilled Chicken Strips (or Paneer)', amount: '3.5 oz', grams: 100 },
-      { item: 'Sweet Corn, Tomato & Onion Salsa', amount: '1/2 cup', grams: 75 },
-      { item: 'Yogurt-Lime Drizzle', amount: '2 tbsp', grams: 30 }
-    ],
-    instructions: [
-      'Step 1 (Simmer Rajma): Warm boiled kidney beans in a light tomato-garlic-cumin gravy for 5 minutes.',
-      'Step 2 (Layer Grain Base): Fluff hot brown/basmati rice in a serving bowl.',
-      'Step 3 (Top & Serve): Arrange spiced rajma, grilled chicken/paneer, corn-tomato salsa, and yogurt-lime drizzle over the rice.'
-    ],
-    clinicalBenefit: 'Delivers 68g sustained-release carbohydrates and 29g protein to fuel heavy workdays or muscle-gain goals.'
-  },
-
-  // --- 4. LOW-PROTEIN & LIGHT DIGESTION (RENAL-FRIENDLY, URIC ACID & LIGHT GUT RECOVERY) ---
-  {
-    id: 'lp-1',
-    title: 'Steamed Bottle Gourd (Lauki / Kaddu) & Rice Flour Light Khichdi',
-    subtitle: 'Gentle Low-Protein (7g Protein) • Easy on Kidneys, Uric Acid & Digestion',
-    macroCategory: 'Low-Protein & Light',
-    mealTiming: 'Dinner',
-    dietTag: 'Low Protein • Kidney & Uric Acid Safe',
-    calories: 270,
-    proteinG: 6,
-    carbsG: 48,
-    fatG: 6,
-    fiberG: 4,
-    cookTimeMin: 18,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Peeled & Diced Bottle Gourd (Lauki / Kaddu)', amount: '1.5 cups', grams: 180 },
-      { item: 'Washed White Rice (low potassium/phosphorus)', amount: '1/2 cup raw', grams: 80 },
-      { item: 'Cumin Seeds, Grated Ginger & Turmeric', amount: '1 tsp', grams: 5 },
-      { item: 'Fresh Coriander Leaves', amount: '1 tbsp', grams: 6 },
-      { item: 'Olive Oil or Cow Ghee', amount: '1.5 tsp', grams: 7 }
-    ],
-    instructions: [
-      'Step 1 (Sauté Aromatics): Heat 1.5 tsp olive oil/ghee in a pot. Add cumin seeds and grated ginger and sauté for 30 seconds.',
-      'Step 2 (Simmer Lauki & Rice): Add diced bottle gourd (lauki), washed rice, turmeric, and 2.5 cups water.',
-      'Step 3 (Cook Until Soft): Cover and simmer on low flame for 14–15 minutes until soft and porridge-like. Garnish with coriander.'
-    ],
-    clinicalBenefit: 'Specifically formulated with low purines and controlled protein (6g) for individuals managing high uric acid, gout, or light digestive recovery.'
-  },
-  {
-    id: 'lp-2',
-    title: 'Warm Cinnamon Apple, Sabudana (Tapioca Pearls) & Almond Milk Bowl',
-    subtitle: 'Low-Protein (5g), Alkaline, Gluten-Free Soothing Energy Bowl',
-    macroCategory: 'Low-Protein & Light',
-    mealTiming: 'Breakfast',
-    dietTag: 'Low Protein • Soothing & Alkaline',
-    calories: 290,
-    proteinG: 5,
-    carbsG: 56,
-    fatG: 5,
-    fiberG: 4,
-    cookTimeMin: 12,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Soaked Sabudana (Tapioca Pearls)', amount: '1/2 cup soaked', grams: 75 },
-      { item: 'Peeled & Diced Sweet Apple', amount: '1 medium apple', grams: 120 },
-      { item: 'Unsweetened Almond Milk (or Diluted Milk)', amount: '1 cup', grams: 240 },
-      { item: 'Cinnamon & Cardamom Powder (Elaichi)', amount: '1/2 tsp', grams: 2 },
-      { item: '1 tsp Honey or Stevia (optional)', amount: '1 tsp', grams: 5 }
-    ],
-    instructions: [
-      'Step 1 (Simmer Pearls): Simmer soaked sabudana in almond milk over medium-low heat for 6–7 minutes until pearls turn translucent.',
-      'Step 2 (Fold Stewed Apple): Add finely diced apple, cardamom, and cinnamon powder and cook for 3 minutes until apple softens.',
-      'Step 3 (Serve): Serve warm as a gentle, stomach-soothing breakfast.'
-    ],
-    clinicalBenefit: 'Provides clean, easily digestible energy with minimal nitrogen/urea load on the kidneys and stomach.'
-  },
-  {
-    id: 'lp-3',
-    title: 'Herb-Roasted Pumpkin (Halwa Kaddu), Carrot & Sweet Pepper Rice Bowl',
-    subtitle: 'Antioxidant-Rich, Low-Protein (7g), Low-Purine Vegetable Meal',
-    macroCategory: 'Low-Protein & Light',
-    mealTiming: 'Lunch',
-    dietTag: 'Low Protein • Low Purine',
-    calories: 285,
-    proteinG: 7,
-    carbsG: 50,
-    fatG: 7,
-    fiberG: 6,
-    cookTimeMin: 20,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Diced Yellow Pumpkin (Kaddu) & Carrots', amount: '1.5 cups', grams: 175 },
-      { item: 'Steamed Basmati Rice', amount: '3/4 cup cooked', grams: 120 },
-      { item: 'Sweet Bell Peppers & Garlic', amount: '1/2 cup', grams: 60 },
-      { item: 'Olive Oil, Rosemary/Oregano & Black Pepper', amount: '1.5 tsp', grams: 8 }
-    ],
-    instructions: [
-      'Step 1 (Pan-Roast Veggies): Sauté diced pumpkin, carrots, and bell peppers in 1.5 tsp olive oil with garlic and herbs for 12 minutes until tender.',
-      'Step 2 (Serve Over Rice): Spoon the caramelized herb vegetables over warm steamed rice.'
-    ],
-    clinicalBenefit: 'High in Vitamin A and lutein while keeping protein and purine intake low.'
-  },
-
-  // --- 5. DIABETIC & LOW-GI (BLOOD SUGAR CONTROL & INSULIN SENSITIVITY) ---
-  {
-    id: 'db-1',
-    title: 'Diabetic-Friendly Methi (Fenugreek) & Barley (Jau) Savory Daliya',
-    subtitle: 'Ultra Low Glycemic Index (GI 28) • Slows Glucose Absorption Naturally',
-    macroCategory: 'Diabetic & Low-GI',
-    mealTiming: 'Breakfast',
-    dietTag: 'Diabetic Safe • Low GI',
-    calories: 280,
-    proteinG: 12,
-    carbsG: 42,
-    fatG: 6,
-    fiberG: 10,
-    cookTimeMin: 20,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Cracked Barley (Jau ka Daliya, soaked 15 mins)', amount: '1/2 cup', grams: 65 },
-      { item: 'Fresh Fenugreek Leaves (Methi, chopped)', amount: '3/4 cup', grams: 45 },
-      { item: 'Split Green Moong Daal', amount: '2 tbsp', grams: 25 },
-      { item: 'Chopped Tomato, Ginger, Garlic & Cumin', amount: '1/3 cup', grams: 50 },
-      { item: 'Olive Oil', amount: '1 tsp', grams: 5 }
-    ],
-    instructions: [
-      'Step 1 (Sauté Methi & Cumin): Heat 1 tsp olive oil in a pot. Sauté cumin seeds, ginger, garlic, and chopped fresh methi leaves for 2 minutes.',
-      'Step 2 (Simmer Barley & Moong): Add soaked barley daliya, moong daal, tomato, turmeric, and 2.5 cups water.',
-      'Step 3 (Cook Until Tender): Cover and cook on low heat for 15–16 minutes until soft and savory. Serve hot.'
-    ],
-    clinicalBenefit: 'Barley beta-glucan and 4-hydroxyisoleucine in fenugreek (methi) clinically improve insulin sensitivity and blunt post-meal sugar spikes.'
-  },
-  {
-    id: 'db-2',
-    title: 'Karela (Bitter Gourd), Onion & Chana Daal Diabetic Stir-Fry',
-    subtitle: 'Contains Natural Polypeptide-p (Plant Insulin) + Low-GI Chana Lentils',
-    macroCategory: 'Diabetic & Low-GI',
-    mealTiming: 'Lunch',
-    dietTag: 'Diabetic Blood Sugar Control',
-    calories: 260,
-    proteinG: 13,
-    carbsG: 34,
-    fatG: 8,
-    fiberG: 9,
-    cookTimeMin: 22,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Sliced Bitter Gourd (Karela, deseeded)', amount: '1.25 cups', grams: 150 },
-      { item: 'Boiled Chana Daal (Split Bengal Gram)', amount: '1/2 cup boiled', grams: 85 },
-      { item: 'Sliced Onions & Ripe Tomatoes', amount: '1 medium each', grams: 100 },
-      { item: 'Fennel Seeds (Saunf), Coriander, Turmeric & Amchoor', amount: '1.5 tsp', grams: 8 },
-      { item: 'Mustard or Olive Oil', amount: '1.5 tsp', grams: 7 }
-    ],
-    instructions: [
-      'Step 1 (Prep Karela): Rub sliced karela with a pinch of salt for 10 minutes, then rinse thoroughly with water and squeeze dry to remove excess bitterness.',
-      'Step 2 (Sauté Karela & Onions): Heat 1.5 tsp oil in a pan, sauté karela slices and onions for 7–8 minutes until lightly golden.',
-      'Step 3 (Fold in Boiled Chana Daal): Add tomatoes, boiled chana daal, fennel seeds, turmeric, and amchoor (dry mango powder). Cover on low heat for 6 minutes and serve.'
-    ],
-    clinicalBenefit: 'Charantin and polypeptide-p in Karela paired with GI-29 Chana Daal help maintain steady HbA1c and fasting glucose.'
-  },
-  {
-    id: 'db-3',
-    title: 'Besan (Chickpea Flour) & Vegetable Cheela with Mint Dahi',
-    subtitle: '100% Wheat-Free, Low-GI Savory Pancake for Sugar & Weight Control',
-    macroCategory: 'Diabetic & Low-GI',
-    mealTiming: 'Breakfast',
-    dietTag: 'Diabetic & PCOS Friendly',
-    calories: 275,
-    proteinG: 15,
-    carbsG: 32,
-    fatG: 9,
-    fiberG: 7,
-    cookTimeMin: 12,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Pure Gram Flour (Besan)', amount: '1/2 cup', grams: 60 },
-      { item: 'Grated Zucchini, Carrot, Spinach & Onion', amount: '3/4 cup', grams: 80 },
-      { item: 'Low-Fat Mint Yogurt (Dahi)', amount: '1/3 cup', grams: 75 },
-      { item: 'Ajwain (Carom Seeds), Turmeric & Green Chili', amount: '1 tsp', grams: 5 },
-      { item: 'Olive Oil', amount: '1 tsp', grams: 5 }
-    ],
-    instructions: [
-      'Step 1 (Mix Batter): Whisk besan with water, ajwain, turmeric, and salt into a smooth pouring batter, then fold in grated vegetables.',
-      'Step 2 (Cook Cheela): Pour onto a preheated non-stick tawa brushed with 1 tsp olive oil and cook 2.5 minutes per side until golden and crisp.',
-      'Step 3 (Serve): Serve immediately with chilled mint-coriander yogurt.'
-    ],
-    clinicalBenefit: 'Chickpea flour has less than half the glycemic load of wheat roti, preventing mid-morning glucose spikes.'
-  },
-
-  // --- 6. HEART, BP & GUT HEALTH (DASH DIET, LOW-SODIUM, CHOLESTEROL & PCOS) ---
-  {
-    id: 'hb-1',
-    title: 'Heart-Healthy Garlic, Turmeric & Red Lentil (Masoor) Detox Soup',
-    subtitle: 'Low-Sodium, Allicin & Soluble Fiber Bowl for BP & Cholesterol Care',
-    macroCategory: 'Heart, BP & Gut Health',
-    mealTiming: 'Dinner',
-    dietTag: 'Heart & BP Safe • Low Sodium',
-    calories: 245,
-    proteinG: 15,
-    carbsG: 36,
-    fatG: 4,
-    fiberG: 8,
-    cookTimeMin: 20,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Red Split Lentils (Masoor Daal, washed)', amount: '1/2 cup', grams: 70 },
-      { item: 'Diced Carrots, Celery & Spinach', amount: '1 cup', grams: 110 },
-      { item: 'Fresh Crushed Garlic Cloves & Grated Ginger', amount: '4 cloves + 1 tsp', grams: 18 },
-      { item: 'Turmeric, Black Pepper, Cumin & Lemon Juice', amount: '1 tbsp total', grams: 15 },
-      { item: 'Extra-Virgin Olive Oil', amount: '1 tsp', grams: 5 }
-    ],
-    instructions: [
-      'Step 1 (Sauté Garlic & Ginger): Gently warm 1 tsp olive oil in a pot and sauté crushed garlic, ginger, cumin, and turmeric for 45 seconds.',
-      'Step 2 (Simmer Lentils & Veggies): Add washed red lentils, diced carrots, celery, and 3 cups water. Simmer covered for 15 minutes until creamy.',
-      'Step 3 (Wilt Spinach & Lemon): Stir in fresh spinach leaves for 1 minute, turn off heat, and add fresh lemon juice (replaces excess salt!).'
-    ],
-    clinicalBenefit: 'Garlic allicin and potassium-rich vegetables help relax blood vessels (lowering BP), while lentil soluble fiber binds dietary cholesterol.'
-  },
-  {
-    id: 'hb-2',
-    title: 'PCOS & Hormone-Balance Seed Cycling Oats & Cinnamon Bowl',
-    subtitle: 'Flaxseeds, Pumpkin Seeds, Chia & Ceylon Cinnamon for Hormone & Gut Care',
-    macroCategory: 'Heart, BP & Gut Health',
-    mealTiming: 'Breakfast',
-    dietTag: 'PCOS & Hormone Balance',
-    calories: 310,
-    proteinG: 13,
-    carbsG: 38,
-    fatG: 12,
-    fiberG: 9,
-    cookTimeMin: 10,
-    servings: 1,
-    isVeg: true,
-    ingredients: [
-      { item: 'Steel-Cut or Rolled Oats', amount: '1/2 cup', grams: 45 },
-      { item: 'Ground Flaxseeds (Alsi) & Raw Pumpkin Seeds', amount: '1 tbsp each', grams: 20 },
-      { item: 'Chia Seeds & Chopped Walnuts', amount: '1 tbsp', grams: 12 },
-      { item: 'Unsweetened Almond / Low-Fat Milk', amount: '1 cup', grams: 240 },
-      { item: 'Ceylon Cinnamon & Half Diced Apple/Pear', amount: '1/2 cup fruit + 1/2 tsp', grams: 65 }
-    ],
-    instructions: [
-      'Step 1 (Cook Oats): Simmer rolled oats with milk, diced apple/pear, and Ceylon cinnamon for 5–6 minutes.',
-      'Step 2 (Stir in Hormone-Balancing Seeds): Remove from heat and fold in ground flaxseeds, pumpkin seeds, chia seeds, and walnuts.',
-      'Step 3 (Serve): Enjoy warm.'
-    ],
-    clinicalBenefit: 'Lignans in flaxseeds help metabolize excess estrogen and androgens in PCOS, while magnesium and Omega-3s reduce inflammation.'
+  // 1. Diabetes / Blood Sugar / Insulin Resistance
+  if (
+    q.includes('diabet') ||
+    q.includes('sugar') ||
+    q.includes('insulin') ||
+    q.includes('hba1c') ||
+    q.includes('shugar')
+  ) {
+    return {
+      issueTitle: 'Diabetes & Blood Sugar Control Plan',
+      text: `Blood Sugar (Diabetes) ko control karne ke liye sab se ahem usool Low-Glycemic (Low-GI) aur High-Fiber ghiza ka istemal hai taake khane ke baad sugar spike na ho.`,
+      recommendedSteps: [
+        'Har khane (Lunch aur Dinner) se 10 minute pehle 1 bowl Khera (Cucumber), Salad ke pattay aur Mooli khayen.',
+        'Sufaid Aatay (Maida/White Bread) ki jagah Jau (Barley) ya 100% Whole-Wheat Chakki Roti + Methi (Fenugreek) dana istemal karen.',
+        'Subah nihaar munh 1 glass neem garam pani may 1/2 tsp Methi Dana (soaked overnight) ya Darcheeni (Cinnamon) qahwa piyen.',
+        'Khane ke baad 15–20 minute halki walk (chahal qadmi) lazmi karen — is se blood glucose foran muscles may absorb hota hai.'
+      ],
+      foodsToEat: [
+        'Leafy Greens (Palak, Methi, Sarso ka Saag) & Karela (Bitter Gourd)',
+        'Kala Chana, Moong Daal, Masoor Daal & Jau ka Daliya (Barley)',
+        'Grilled Fish, Boiled Eggs, Desi Chicken & Low-Fat Dahi',
+        'Jamun, Amrood (Guava), Seb (Apple) & 6–7 Soaked Almonds/Walnuts'
+      ],
+      foodsToAvoid: [
+        'Cheeni (White Sugar), Cold Drinks, Packaged Juices & Mithai',
+        'Sufaid Chawal (White Rice), Naan, Bakery Biscuits & White Bread',
+        'Deep-Fried Samosay, Pakoray, Chips & Meethay Cereals'
+      ]
+    };
   }
-];
 
-// ============================================================================
-// CUSTOM NUTRITION RECIPE & MEAL BUILDER INGREDIENT OPTIONS
-// ============================================================================
-const CUSTOM_PROTEIN_OPTIONS = [
-  { name: 'Egg Whites + Whole Egg', proteinPer100g: 13, carbsPer100g: 1, fatPer100g: 5, kcalPer100g: 105, isVeg: false },
-  { name: 'Skinless Chicken Breast', proteinPer100g: 31, carbsPer100g: 0, fatPer100g: 3.6, kcalPer100g: 165, isVeg: false },
-  { name: 'Fresh Fish / Salmon Fillet', proteinPer100g: 24, carbsPer100g: 0, fatPer100g: 8, kcalPer100g: 175, isVeg: false },
-  { name: 'Low-Fat Paneer (Cottage Cheese)', proteinPer100g: 18, carbsPer100g: 4, fatPer100g: 12, kcalPer100g: 195, isVeg: true },
-  { name: 'Boiled Chickpeas / Kala Chana', proteinPer100g: 9, carbsPer100g: 27, fatPer100g: 2.6, kcalPer100g: 164, isVeg: true },
-  { name: 'Green Moong Daal / Sprouts', proteinPer100g: 8.5, carbsPer100g: 19, fatPer100g: 1, kcalPer100g: 118, isVeg: true },
-  { name: 'Thick Greek Yogurt (Hung Dahi)', proteinPer100g: 10, carbsPer100g: 4, fatPer100g: 3, kcalPer100g: 85, isVeg: true }
-];
+  // 2. High Blood Pressure (Hypertension) & Heart Health
+  if (
+    q.includes('bp') ||
+    q.includes('blood pressure') ||
+    q.includes('hypertension') ||
+    q.includes('heart') ||
+    q.includes('dil')
+  ) {
+    return {
+      issueTitle: 'High Blood Pressure (BP) & Heart Care Resolution',
+      text: `High Blood Pressure (BP) ko normal rakhne ke liye DASH Diet (Low Sodium + High Potassium & Magnesium) sab se moassar tareeqa hai.`,
+      recommendedSteps: [
+        'Din bhar may Namak (Salt) ki miqdaar 1 chotay chamach (1 tsp / 1500mg sodium) se kam rakhen; khane ke upar kacha namak bilkul na chhirken.',
+        'Subah nashtay may Oats Daliya ya 1 Lehsan (Garlic) ki turi pani ke sath len — Lehsan may mojod Allicin khoon ki naliyon ko relax karta hai.',
+        'Potassium se bharpoor ghizayen (Palak, Chukandar/Beetroot, Kela, Nariyal Pani, Dahi) rozana shamil karen jo body se extra sodium kharij karti hain.',
+        'Rozana 30 minute brisk walk aur 8–10 glass pani ka istemal karen.'
+      ],
+      foodsToEat: [
+        'Chukandar (Beetroot), Palak (Spinach), Lehsan (Garlic) & Tomatoes',
+        'Oats Porridge, Flaxseeds (Alsi), Walnuts (Akhrot) & Grilled Fish',
+        'Low-Fat Dahi, Lassi (bina namak), Banana & Pomegranate (Anaar)'
+      ],
+      foodsToAvoid: [
+        'Achar (Pickles), Papad, Salted Nimko, Chips & Canned Foods',
+        'Vanaspati Ghee, Paratha, Deep-Fried Fast Food & Red Meat',
+        'Zyada Chai/Coffee aur Smoking/Stress'
+      ]
+    };
+  }
 
-const CUSTOM_CARB_OPTIONS = [
-  { name: 'Rolled Oats / Jau Daliya', proteinPer100g: 11, carbsPer100g: 66, fatPer100g: 6, kcalPer100g: 365 },
-  { name: 'Steamed Brown / Basmati Rice', proteinPer100g: 2.7, carbsPer100g: 28, fatPer100g: 0.4, kcalPer100g: 130 },
-  { name: 'Sweet Potato (Shakarkandi)', proteinPer100g: 1.6, carbsPer100g: 20, fatPer100g: 0.1, kcalPer100g: 86 },
-  { name: 'Cooked Quinoa', proteinPer100g: 4.4, carbsPer100g: 21, fatPer100g: 1.9, kcalPer100g: 120 },
-  { name: 'Cauliflower Rice (Gobi - Low Carb)', proteinPer100g: 1.9, carbsPer100g: 5, fatPer100g: 0.3, kcalPer100g: 25 },
-  { name: 'Banana & Soft Dates (High Energy)', proteinPer100g: 1.5, carbsPer100g: 32, fatPer100g: 0.3, kcalPer100g: 135 }
-];
+  // 3. Cholesterol & Fatty Liver / Triglycerides
+  if (
+    q.includes('cholesterol') ||
+    q.includes('fatty liver') ||
+    q.includes('jigar') ||
+    q.includes('triglyceride') ||
+    q.includes('lipid')
+  ) {
+    return {
+      issueTitle: 'Cholesterol & Fatty Liver Reversal Plan',
+      text: `High LDL Cholesterol aur Fatty Liver ko kam karne ke liye Soluble Fiber aur Omega-3 Fats barhayen aur Saturated/Trans Fats + Sugar band karen.`,
+      recommendedSteps: [
+        'Subah nashtay may Rolled Oats ya Jau ka Daliya + 1 chamach पिसी हुई Alsi (Flaxseeds) aur 5 Akhrot (Walnuts) len — Soluble fiber aant (gut) may cholesterol ko absorb hone se rokta hai.',
+        'Cooking ke liye Ghee/Banaspati ki jagah sirf 1–2 tsp Olive Oil, Mustard Oil ya Canola Oil istemal karen.',
+        'Fatty Liver ke liye Meetha (Sugar, Fructose, Cold Drinks) aur Maida mukammal band karen kyunke jigar extra sugar ko charbi (fat) may badalta hai.',
+        'Apne wazan (${profile.weightKg} kg) may se 5% se 7% kami karne se Fatty Liver aur Cholesterol tezi se normal hote hain.'
+      ],
+      foodsToEat: [
+        'Oats, Barley (Jau), Apple, Guava & Citrus Fruits (Pectin Fiber)',
+        'Fatty Fish (Salmon/Rohu), Walnuts, Almonds, Chia & Flaxseeds',
+        'Green Tea, Garlic, Turmeric (Haldi), Moong Daal & Green Veggies'
+      ],
+      foodsToAvoid: [
+        'Banaspati Ghee, Butter, Cream, Malai & Egg Yolk in excess',
+        'Deep-Fried Karahi, Nihari, Paye, Samosay & Fast Food',
+        'Bakery Pastries, Cold Drinks & Refined Sugar'
+      ]
+    };
+  }
 
-const CUSTOM_VEGGIE_OPTIONS = [
-  { name: 'Fresh Spinach (Palak) & Greens', kcalPer100g: 23, fiberG: 3 },
-  { name: 'Broccoli, Bell Peppers & Carrots', kcalPer100g: 35, fiberG: 4 },
-  { name: 'Bottle Gourd (Lauki) & Zucchini (Tori)', kcalPer100g: 17, fiberG: 2.5 },
-  { name: 'Cucumber, Tomato & Onion Kachumber', kcalPer100g: 20, fiberG: 2 },
-  { name: 'Karela (Bitter Gourd) & Methi Leaves', kcalPer100g: 28, fiberG: 4.5 }
-];
+  // 4. Acidity, GERD, Gas, Bloating, Stomach Ulcer / Maiday ki Jalan
+  if (
+    q.includes('acid') ||
+    q.includes('gas') ||
+    q.includes('bloat') ||
+    q.includes('stomach') ||
+    q.includes('maida') ||
+    q.includes('maiday') ||
+    q.includes('jalan') ||
+    q.includes('ulcer') ||
+    q.includes('heartburn') ||
+    q.includes('gerd')
+  ) {
+    return {
+      issueTitle: 'Acidity, Gas, Bloating & Stomach Relief Plan',
+      text: `Maiday ki jalan (Acidity), Gas aur Bloating ko khatam karne ke liye Alkaline, Probiotic aur halki hazam hone wali ghiza (Soothing Diet) apnayen.`,
+      recommendedSteps: [
+        'Aik waqt may pait bhar kar khane ke bajaye din may 4–5 chotay aur halkay meals len, aur har niwalay ko achi tarha chaba kar khayen.',
+        'Raat ka khana sone se kam az kam 2.5 se 3 ghantay pehle khayen, aur khane ke foran baad letnay se gurez karen.',
+        'Khane ke baad 1/2 tsp Saunf (Fennel Seeds) + 1 Sabz Elaichi chabayen ya Saunf-Pudina ka halka qahwa piyen.',
+        'Dopehar ke khane may 1 katori Thanda Dahi (Probiotic Curd) + 1 tsp Ispaghol (Psyllium Husk) shamil karen.'
+      ],
+      foodsToEat: [
+        'Thanda Dahi (Plain Yogurt), Kachi Lassi, Kela (Banana) & Melon',
+        'Moong Daal Khichdi, Lauki (Bottle Gourd), Tori & Boiled Rice',
+        'Saunf (Fennel), Podina (Mint), Oats Porridge & Coconut Water'
+      ],
+      foodsToAvoid: [
+        'Tez Laal Mirch, Garam Masala, Fried Karahi & Spicy Fast Food',
+        'Khali pait Doodh Patti Chai, Coffee aur Carbonated Cold Drinks',
+        'Achar, Khattay Citrus Phal (khali pait) aur Late-Night Dinner'
+      ]
+    };
+  }
 
-const CUSTOM_HEALTHY_FAT_OPTIONS = [
-  { name: 'Extra-Virgin Olive Oil (1.5 tsp)', grams: 7, fatG: 7, kcal: 60 },
-  { name: 'Chia Seeds, Flaxseeds & Pumpkin Seeds (1.5 tbsp)', grams: 18, fatG: 7, kcal: 95 },
-  { name: 'Soaked Almonds & Walnuts (7 nuts)', grams: 15, fatG: 9, kcal: 98 },
-  { name: 'Ripe Avocado / Natural Peanut Butter (1.5 tbsp)', grams: 30, fatG: 11, kcal: 115 }
-];
+  // 5. Uric Acid & Gout / Joint Pain
+  if (
+    q.includes('uric') ||
+    q.includes('gout') ||
+    q.includes('joint') ||
+    q.includes('joron') ||
+    q.includes('dard')
+  ) {
+    return {
+      issueTitle: 'High Uric Acid & Joint Pain Resolution Plan',
+      text: `Uric Acid barhne ki bari wajah High-Purine ghizayen aur pani ki kami hai. Low-Purine Alkaline Diet aur Vitamin C se Uric Acid kidneys ke zariye kharij hota hai.`,
+      recommendedSteps: [
+        'Rozana 10 se 12 glass pani piyen (sath 1 glass pani may fresh Lemon Juice nichor kar len — Vitamin C uric acid ko dissolve karta hai).',
+        'Bara Gosht (Beef/Mutton), Kaleji/Gurday (Organ Meats) aur Paye mukammal band kar den.',
+        'Protein ke liye Low-Fat Dahi, Doodh, Egg Whites aur Lauki/Tori/Kaddu jesi alkaline sabziyan istemal karen.',
+        'Subah 1 Seb (Apple) ya Cherries/Berries aur 5–6 bheegay Badam + Akhrot len.'
+      ],
+      foodsToEat: [
+        'Fresh Lemon Water, Cherries, Apples, Guava & Vitamin-C Fruits',
+        'Lauki (Bottle Gourd), Tori, Kaddu, Cucumber, Carrot & Potatoes',
+        'Low-Fat Milk, Yogurt (Dahi), Egg Whites, Rice & Whole Wheat'
+      ],
+      foodsToAvoid: [
+        'Beef, Mutton, Organ Meats (Kaleji, Maghaz) & Seafood/Sardines',
+        'Sugary Fructose Drinks, Cold Drinks & Packaged Fruit Juices',
+        'Excess Chana Daal, Masoor Daal, Rajma & Palak (during acute flare)'
+      ]
+    };
+  }
+
+  // 6. PCOS / Hormonal Imbalance / Irregular Periods
+  if (
+    q.includes('pcos') ||
+    q.includes('pcod') ||
+    q.includes('hormon') ||
+    q.includes('period')
+  ) {
+    return {
+      issueTitle: 'PCOS & Hormonal Balance Nutrition Plan',
+      text: `PCOS may asal masla Insulin Resistance aur Androgen hormones ka barhna hota hai. High-Protein, Anti-Inflammatory aur Seed-Cycling diet is ka behtareen hal hai.`,
+      recommendedSteps: [
+        'Har nashtay may 20–25g Protein (jese 2 Eggs ya Besan Cheela) lazmi len taake din bhar insulin aur cravings control may rahen.',
+        'Rozana Seed Cycling karen: 1 tbsp पिसी हुई Alsi (Flaxseeds) + 1 tbsp Pumpkin Seeds / Chia Seeds apne oats, dahi ya salad may dalen.',
+        'Din may 1–2 cup Spearmint Tea (Podina Qahwa) ya Cinnamon (Darcheeni) Tea piyen jo excess androgen hormones ko kam karti hai.',
+        'Maida, Cheeni aur Bakery items mukammal chhor kar rozana 30 minute strength/walk exercise karen.'
+      ],
+      foodsToEat: [
+        'Flaxseeds (Alsi), Pumpkin Seeds, Chia Seeds, Sesame & Walnuts',
+        'Eggs, Grilled Chicken/Fish, Moong/Chana Daal & Leafy Greens',
+        'Spearmint Tea, Cinnamon, Berries, Apple & Probiotic Yogurt'
+      ],
+      foodsToAvoid: [
+        'White Sugar, Chocolates, Cold Drinks, Ice Cream & Mithai',
+        'White Flour (Maida), Pizza, Burgers, Pasta & Fried Snacks',
+        'Excess Dairy Cream & Ultra-Processed Vegetable Oils'
+      ]
+    };
+  }
+
+  // 7. Anemia / Iron Deficiency / Hemoglobin / Weakness / Hair Fall
+  if (
+    q.includes('anemia') ||
+    q.includes('iron') ||
+    q.includes('khoon') ||
+    q.includes('hb') ||
+    q.includes('hemoglobin') ||
+    q.includes('weak') ||
+    q.includes('kamzor') ||
+    q.includes('hair') ||
+    q.includes('baal')
+  ) {
+    return {
+      issueTitle: 'Anemia (Khoon ki Kami), Weakness & Hair Fall Plan',
+      text: `Hemoglobin (HB) aur Iron barhane ke liye Iron-rich foods ko Vitamin C ke sath mila kar khana zaroori hai, aur khane ke sath Chai bilkul band karni chahiye.`,
+      recommendedSteps: [
+        'Khane ke sath ya khane ke 1 ghantay baad tak Chai ya Coffee HARGIZ na piyen (Chai ke tannins 60% iron ko absorb hone se rok dete hain!).',
+        'Har Iron wali ghiza (Palak, Kala Chana, Daal, Gosht) ke upar Taza Lemon (Vitamin C) nichor kar khayen — is se iron absorption 3 guna barh jati hai.',
+        'Rozana dopehar ko Chukandar (Beetroot) + Anaar (Pomegranate) + Guava salad ya fresh juice len.',
+        'Subah 3 Khajoor (Dates) + 7 Kishmish (soaked raisins) + 5 Badam nashtay may shamil karen.'
+      ],
+      foodsToEat: [
+        'Palak (Spinach), Chukandar (Beetroot), Anaar (Pomegranate) & Dates',
+        'Kala Chana (Black Chickpeas), Lentils, Pumpkin Seeds & Sesame',
+        'Lean Meat, Eggs, Fish + Vitamin C (Lemon, Orange, Amrood)'
+      ],
+      foodsToAvoid: [
+        'Chai & Coffee right before or after meals (Wait at least 90 mins)',
+        'Calcium supplements at the exact same hour as Iron-rich meals',
+        'Junk Food, Sodas & Refined Maida Snacks'
+      ]
+    };
+  }
+
+  // 8. Thyroid (Hypothyroid / Hyperthyroid)
+  if (q.includes('thyroid') || q.includes('tsh') || q.includes('t3') || q.includes('t4')) {
+    return {
+      issueTitle: 'Thyroid Metabolism & Hormone Support Plan',
+      text: `Thyroid hormone (T4 se active T3) banane ke liye Selenium, Zinc, Iodine aur Clean Protein ki zaroorat hoti hai.`,
+      recommendedSteps: [
+        'Agar aap subah Thyroid ki medicine lete hain, to goli khane ke baad 45–60 minute tak Chai, Doodh ya Nashta na karen.',
+        'Gobhi, Band Gobhi (Cabbage) aur Broccoli ko hamesha achi tarha paka kar (cooked) khayen, kacha salad may na khayen.',
+        'Selenium aur Zinc ke liye rozana 2 Eggs, Pumpkin Seeds, Fish ya Daal apni diet may shamil karen.'
+      ],
+      foodsToEat: [
+        'Eggs, Fish, Chicken, Yogurt (Dahi) & Cooked Spinach',
+        'Pumpkin Seeds, Sunflower Seeds, Walnuts & Lentils',
+        'Berries, Apples, Olive Oil & Gluten-Controlled Whole Grains'
+      ],
+      foodsToAvoid: [
+        'Raw Uncooked Cabbage, Cauliflower & Soy Products close to medicine',
+        'Refined Sugar, Deep-Fried Foods & Excess Caffeine',
+        'Highly Processed Packaged Foods'
+      ]
+    };
+  }
+
+  // 9. Weight Loss / Obesity / Belly Fat
+  if (
+    q.includes('weight loss') ||
+    q.includes('lose weight') ||
+    q.includes('wazan kam') ||
+    q.includes('motapa') ||
+    q.includes('belly') ||
+    q.includes('fat') ||
+    q.includes('charbi')
+  ) {
+    return {
+      issueTitle: `Personalized Weight & Belly Fat Reduction Plan (Target: ${indexes.dailyCaloriesNeeded} kcal/day)`,
+      text: `Aapke current BMI (${indexes.bmi} - ${indexes.bmiStatus}) ke mutabiq sehatmand tareeqay se wazan kam karne ke liye Calorie Deficit (${indexes.dailyCaloriesNeeded} kcal/day) aur High Protein (${indexes.targetProteinG}g/day) sab se behtareen hal hai.`,
+      recommendedSteps: [
+        `Rozana ${indexes.dailyCaloriesNeeded} kcal ke andar rahen aur har meal may Protein (Eggs, Chicken, Fish, Daal, Paneer) shamil karen taake muscle loss na ho aur bhook kam lage.`,
+        'Raat ke khane may Roti/Chawal kam kar ke Grilled Protein + Steamed Vegetables + Salad len.',
+        'Meethay mashroobat (Cold drinks, juices, cheeni wali chai) mukammal band karen — sirf is aik qadam se mahana 1.5–2 kg charbi kam hoti hai.',
+        `Rozana ${profile.dailyWaterGoalGlasses}+ glass pani piyen (har khane se 20 minute pehle 1 glass pani) aur 35 minute walk karen.`
+      ],
+      foodsToEat: [
+        'Boiled Eggs, Grilled Chicken Breast, Fish, Moong/Chana Daal & Paneer',
+        'Rolled Oats, Jau ki Roti, Cucumber, Spinach, Broccoli & Salad',
+        'Green Tea, Black Coffee (no sugar), Chia Seeds & Apple/Guava'
+      ],
+      foodsToAvoid: [
+        'Sugar, Mithai, Cold Drinks, Ice Cream & Sweetened Tea',
+        'Paratha, Naan, White Rice in excess, Samosay & Fast Food',
+        'Late-night snacking after 8:30 PM'
+      ]
+    };
+  }
+
+  // 10. Weight Gain / Underweight / Muscle Gain
+  if (
+    q.includes('weight gain') ||
+    q.includes('gain weight') ||
+    q.includes('wazan barh') ||
+    q.includes('muscle') ||
+    q.includes('dubla') ||
+    q.includes('skinny')
+  ) {
+    return {
+      issueTitle: 'Healthy Weight & Lean Muscle Gain Plan',
+      text: `Sehatmand tareeqay se wazan aur muscle barhane ke liye Junk Food ke bajaye Nutrient-Dense Calorie Surplus (+400 kcal/day) aur High-Protein ghiza len.`,
+      recommendedSteps: [
+        'Din may 3 baray meals ke sath 2 High-Calorie Healthy Shakes/Snacks lazmi len.',
+        'Rozana 1 Weight-Gain Shake piyen: 1 glass Milk + 1 Banana + 3 Khajoor (Dates) + 1.5 tbsp Peanut Butter + 1/2 cup Oats + 6 Almonds (approx. 550 kcal).',
+        'Har khane may Eggs, Chicken, Fish, Paneer, Chana ya Daal ke sath Healthy Fats (Olive oil, Desi Ghee 1 tsp, Nuts, Avocado) shamil karen.',
+        'Haftay may 3–4 din हल्की resistance/strength exercise karen taake barhne wala wazan charbi ke bajaye muscles may jaye.'
+      ],
+      foodsToEat: [
+        'Banana, Dates (Khajoor), Peanut Butter, Whole Milk & Oats Shake',
+        'Eggs, Chicken, Mutton, Fish, Paneer, Chickpeas (Chana) & Rajma',
+        'Sweet Potato (Shakarkandi), Brown Rice, Almonds, Walnuts & Desi Ghee'
+      ],
+      foodsToAvoid: [
+        'Khane se theek pehle bohot zyada pani peena (is se bhook mar jati hai)',
+        'Deep-Fried Chips, Sodas & Trans-Fat Junk Food',
+        'Meals skip karna'
+      ]
+    };
+  }
+
+  // 11. General / Custom Issue Fallback (Constipation, Immunity, Skin, Kidney, etc.)
+  return {
+    issueTitle: `Personalized Clinical Nutrition Advice for: "${rawInput}"`,
+    text: `Aapke maslay ("${rawInput}") aur aapke BMI (${indexes.bmi} kg/m² — ${indexes.bmiStatus}) ke mutabiq balanced, anti-inflammatory whole-food nutrition aur proper hydration sab se ahem kirdar ada karti hai.`,
+    recommendedSteps: [
+      `Apni rozana ki calorie zaroorat (${indexes.dailyCaloriesNeeded} kcal/day) ko 3 balanced meals aur 1 healthy snack may taqseem karen, jis may ${indexes.targetProteinG}g clean protein shamil ho.`,
+      `Rozana ${profile.dailyWaterGoalGlasses} se 10 glass pani piyen aur subah ka aghaz 1 glass neem garam pani + 5–7 bheegay Badam/Akhrot se karen.`,
+      'Har dopehar aur raat ke khane may taza sabziyan (Leafy Greens, Cucumber, Salad) aur Probiotic Dahi shamil karen jo gut aur immunity ko theek rakhte hain.',
+      'Refined Sugar (Cheeni), Maida aur Deep-Fried Banaspati oils ko mukammal band kar ke 7–8 ghantay ki behtar neend len.'
+    ],
+    foodsToEat: [
+      'Fresh Leafy Greens (Palak), Cucumber, Carrots & Seasonal Fruits',
+      'Lean Proteins: Boiled Eggs, Grilled Fish/Chicken, Moong Daal & Yogurt',
+      'Whole Grains (Oats, Jau, Chakki Roti), Chia Seeds, Flaxseeds & Almonds'
+    ],
+    foodsToAvoid: [
+      'Refined White Sugar, Carbonated Cold Drinks & Packaged Juices',
+      'White Flour (Maida), Bakery Items & Deep-Fried Fast Foods',
+      'Excess Salt, Artificial Preservatives & Late-Night Heavy Meals'
+    ]
+  };
+}
 
 export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
   user,
@@ -765,45 +449,40 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
         ]
   );
 
-  // Health Condition Food Guide Filter
-  const [selectedCondition, setSelectedCondition] = useState<string>('Diabetes');
-
-  // ==========================================================================
-  // NUTRITION RECIPES & CUSTOM MEAL BUILDER STATE
-  // ==========================================================================
-  const [userCustomRecipes, setUserCustomRecipes] = useState<
-    ClinicalNutritionRecipe[]
-  >([]);
-  const [recipeViewMode, setRecipeViewMode] = useState<'grid' | 'list'>('grid');
-  const [recipeMacroFilter, setRecipeMacroFilter] = useState<string>('All');
-  const [recipeSearchQuery, setRecipeSearchQuery] = useState<string>('');
-  const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(
-    'hp-1'
-  );
-  const [modalRecipe, setModalRecipe] =
-    useState<ClinicalNutritionRecipe | null>(null);
-
-  // Custom Nutrition Meal / Recipe Generator State
-  const [showCustomBuilder, setShowCustomBuilder] = useState<boolean>(true);
-  const [builderMacroType, setBuilderMacroType] =
-    useState<NutritionMacroCategory>('High-Protein');
-  const [builderMealTiming, setBuilderMealTiming] = useState<
-    'Breakfast' | 'Lunch' | 'Dinner' | 'Snack / Shake'
-  >('Lunch');
-  const [builderProteinIdx, setBuilderProteinIdx] = useState<number>(1); // Chicken Breast default
-  const [builderCarbIdx, setBuilderCarbIdx] = useState<number>(0); // Oats/Jau default
-  const [builderVeggieIdx, setBuilderVeggieIdx] = useState<number>(0); // Spinach default
-  const [builderFatIdx, setBuilderFatIdx] = useState<number>(0); // Olive oil default
-  const [builderCustomTitle, setBuilderCustomTitle] = useState<string>('');
+  // Nutrition Condition Recommendation Search State
+  const [conditionQuery, setConditionQuery] = useState<string>('Diabetes');
+  const [activeCondition, setActiveCondition] = useState<string>('Diabetes');
 
   // Save notification banner
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
-  // Live Calculated BMI, BMR, TDEE, Ideal Weight, Macros & Weight Recommendation
+  // Live Calculated BMI, BMR, TDEE, Ideal Weight & Macros
   const indexes = useMemo(
     () => calculateSuiteNutritionIndexes(profile, waterGlasses),
     [profile, waterGlasses]
   );
+
+  // AI Dietitian Chat Agent Messages State
+  const [chatMessages, setChatMessages] = useState<DietitianChatMessage[]>(() => {
+    const initialRes = generateComprehensiveDietitianResolution(
+      'Diabetes',
+      DEFAULT_SUITE_ONBOARDING,
+      calculateSuiteNutritionIndexes(DEFAULT_SUITE_ONBOARDING, 6)
+    );
+    return [
+      {
+        id: 'welcome-agent',
+        sender: 'dietitian',
+        issueTitle: 'Assalam-o-Alaikum! I am Your AI Nutrition & Dietitian Agent',
+        text: `Apna koi bhi Nutrition Issue ya Health Condition (jese Diabetes/Sugar, High BP, Cholesterol, Fatty Liver, Uric Acid, Maiday ki Jalan/Acidity, Gas, PCOS, Thyroid, Khoon ki Kami/Anemia, Weight Loss ya Weight Gain) neechay likhen ya button select karen — main aapko us maslay ko hal karne ka mukammal Recommended Tareeqa aur Diet Plan bataunga!`,
+        recommendedSteps: initialRes.recommendedSteps,
+        foodsToEat: initialRes.foodsToEat,
+        foodsToAvoid: initialRes.foodsToAvoid,
+        time: 'Just now'
+      }
+    ];
+  });
+  const [chatInput, setChatInput] = useState<string>('');
 
   // Weight Advice Logic
   const weightGuidance = useMemo(() => {
@@ -850,168 +529,51 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     indexes
   ]);
 
-  // Health Condition Food Guide Data
+  // Health Condition Food Recommendation Data
   const conditionRecommendation = useMemo(
-    () => getHealthConditionRecommendations(selectedCondition),
-    [selectedCondition]
+    () => getHealthConditionRecommendations(activeCondition),
+    [activeCondition]
   );
 
-  // All Recipes (User Custom Created + Preloaded Clinical Nutrition Recipes)
-  const allNutritionRecipes = useMemo(
-    () => [...userCustomRecipes, ...CLINICAL_NUTRITION_RECIPES],
-    [userCustomRecipes]
-  );
+  // Send Issue to AI Dietitian Agent
+  const handleAskDietitianIssue = (customQuestion?: string) => {
+    const queryText = (customQuestion ?? chatInput).trim();
+    if (!queryText) return;
 
-  // Filtered Recipes
-  const filteredRecipes = useMemo(() => {
-    return allNutritionRecipes.filter((r) => {
-      if (
-        recipeMacroFilter !== 'All' &&
-        r.macroCategory !== recipeMacroFilter
-      ) {
-        return false;
-      }
-      if (recipeSearchQuery.trim()) {
-        const q = recipeSearchQuery.toLowerCase();
-        const matchTitle = r.title.toLowerCase().includes(q);
-        const matchTag = r.dietTag.toLowerCase().includes(q);
-        const matchIng = r.ingredients.some((i) =>
-          i.item.toLowerCase().includes(q)
-        );
-        if (!matchTitle && !matchTag && !matchIng) return false;
-      }
-      return true;
-    });
-  }, [allNutritionRecipes, recipeMacroFilter, recipeSearchQuery]);
-
-  // ==========================================================================
-  // GENERATE CUSTOM NUTRITION RECIPE / MEAL BASED ON MACRO GOAL
-  // ==========================================================================
-  const handleCreateCustomNutritionRecipe = () => {
-    const prot = CUSTOM_PROTEIN_OPTIONS[builderProteinIdx] || CUSTOM_PROTEIN_OPTIONS[0];
-    const carb = CUSTOM_CARB_OPTIONS[builderCarbIdx] || CUSTOM_CARB_OPTIONS[0];
-    const veg = CUSTOM_VEGGIE_OPTIONS[builderVeggieIdx] || CUSTOM_VEGGIE_OPTIONS[0];
-    const fat = CUSTOM_HEALTHY_FAT_OPTIONS[builderFatIdx] || CUSTOM_HEALTHY_FAT_OPTIONS[0];
-
-    // Automatically scale gram portions based on selected Macro Goal!
-    let proteinGrams = 150;
-    let carbGrams = 100;
-    let vegGrams = 130;
-
-    if (builderMacroType === 'High-Protein') {
-      proteinGrams = 200; // Extra protein portion
-      carbGrams = 90;
-      vegGrams = 130;
-    } else if (builderMacroType === 'Low-Carb & Fat Loss') {
-      proteinGrams = 170;
-      carbGrams = 45; // Minimal carbs
-      vegGrams = 180; // High volume greens
-    } else if (builderMacroType === 'High-Carb & Energy') {
-      proteinGrams = 140;
-      carbGrams = 180; // High energy complex carbs
-      vegGrams = 100;
-    } else if (builderMacroType === 'Low-Protein & Light') {
-      proteinGrams = 55; // Controlled gentle protein
-      carbGrams = 130;
-      vegGrams = 160;
-    } else if (builderMacroType === 'Diabetic & Low-GI') {
-      proteinGrams = 150;
-      carbGrams = 80;
-      vegGrams = 170;
-    } else {
-      // Heart, BP & Gut Health
-      proteinGrams = 140;
-      carbGrams = 100;
-      vegGrams = 160;
-    }
-
-    const totalProtein = Math.round(
-      (prot.proteinPer100g * proteinGrams) / 100 +
-        (carb.proteinPer100g * carbGrams) / 100 +
-        2
-    );
-    const totalCarbs = Math.round(
-      (prot.carbsPer100g * proteinGrams) / 100 +
-        (carb.carbsPer100g * carbGrams) / 100 +
-        6
-    );
-    const totalFat = Math.round(
-      (prot.fatPer100g * proteinGrams) / 100 +
-        (carb.fatPer100g * carbGrams) / 100 +
-        fat.fatG
-    );
-    const totalCalories = Math.round(
-      (prot.kcalPer100g * proteinGrams) / 100 +
-        (carb.kcalPer100g * carbGrams) / 100 +
-        (veg.kcalPer100g * vegGrams) / 100 +
-        fat.kcal
-    );
-    const totalFiber = Math.round(veg.fiberG + (carbGrams >= 90 ? 5 : 3));
-
-    const autoTitle =
-      builderCustomTitle.trim() ||
-      `Custom ${builderMacroType}: ${prot.name.split(' ')[0]} & ${carb.name.split(' ')[0]} ${builderMealTiming}`;
-
-    const newRecipe: ClinicalNutritionRecipe = {
-      id: `custom-${Date.now()}`,
-      title: autoTitle,
-      subtitle: `Custom ${builderMacroType} ${builderMealTiming} • ${totalProtein}g Protein • ${totalCarbs}g Carbs • ${totalCalories} kcal`,
-      macroCategory: builderMacroType,
-      mealTiming: builderMealTiming,
-      dietTag: `Custom ${builderMacroType}`,
-      calories: totalCalories,
-      proteinG: totalProtein,
-      carbsG: totalCarbs,
-      fatG: totalFat,
-      fiberG: totalFiber,
-      cookTimeMin: 15,
-      servings: 1,
-      isVeg: prot.isVeg,
-      isCustomCreated: true,
-      ingredients: [
-        {
-          item: `${prot.name} (Primary Protein Source)`,
-          amount: `${Math.round(proteinGrams / 28)} oz portion`,
-          grams: proteinGrams
-        },
-        {
-          item: `${carb.name} (Controlled Carbohydrate Source)`,
-          amount: `${carbGrams}g portion`,
-          grams: carbGrams
-        },
-        {
-          item: `${veg.name} (Fiber & Micronutrients)`,
-          amount: '1.25 cups',
-          grams: vegGrams
-        },
-        {
-          item: fat.name,
-          amount: 'Measured portion',
-          grams: fat.grams
-        },
-        {
-          item: 'Fresh Lemon Juice, Garlic, Ginger, Cumin & Black Pepper',
-          amount: '1 tbsp total',
-          grams: 12
-        }
-      ],
-      instructions: [
-        `Step 1 (Weigh Exact Macro Portions): Measure ${proteinGrams}g of ${prot.name}, ${carbGrams}g of ${carb.name}, and ${vegGrams}g of ${veg.name} to hit your exact ${builderMacroType} macro target.`,
-        `Step 2 (Cook Protein & Aromatics): Warm a non-stick skillet with ${fat.name}. Sauté garlic, ginger, cumin, and ${prot.name} for 5–6 minutes until tender and flavorful.`,
-        `Step 3 (Prepare Fiber & Carbs): Add ${veg.name} and steam-sauté for 3–4 minutes so the vegetables retain their vitamins and fiber, then combine with ${carb.name}.`,
-        `Step 4 (Finish & Serve): Season with fresh lemon juice, black pepper, and coriander. Enjoy your custom ${totalCalories} kcal (${totalProtein}g Protein | ${totalCarbs}g Carbs | ${totalFat}g Fat) nutrition meal!`
-      ],
-      clinicalBenefit: `Custom-engineered for ${builderMacroType}: provides ${totalProtein}g protein, ${totalCarbs}g carbohydrates, ${totalFat}g healthy fats, and ${totalFiber}g dietary fiber.`
+    const userMsg: DietitianChatMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text: queryText,
+      time: new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     };
 
-    setUserCustomRecipes((prev) => [newRecipe, ...prev]);
-    setRecipeMacroFilter('All');
-    setExpandedRecipeId(newRecipe.id);
-    setBuilderCustomTitle('');
-    setSaveSuccessMsg(
-      `Custom "${newRecipe.title}" created with exact macros (${totalCalories} kcal, ${totalProtein}g Protein, ${totalCarbs}g Carbs)!`
+    const resolution = generateComprehensiveDietitianResolution(
+      queryText,
+      profile,
+      indexes
     );
-    setTimeout(() => setSaveSuccessMsg(null), 4000);
+
+    const aiMsg: DietitianChatMessage = {
+      id: `ai-${Date.now() + 1}`,
+      sender: 'dietitian',
+      issueTitle: resolution.issueTitle,
+      text: resolution.text,
+      recommendedSteps: resolution.recommendedSteps,
+      foodsToEat: resolution.foodsToEat,
+      foodsToAvoid: resolution.foodsToAvoid,
+      time: new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    };
+
+    setChatMessages((prev) => [...prev, userMsg, aiMsg]);
+    if (!customQuestion) {
+      setChatInput('');
+    }
   };
 
   // Save Health & Nutrition Data to Firestore & UserToolsData
@@ -1063,14 +625,14 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
         );
       }
     } catch {
-      // Local state still updates seamlessly
+      // Local state updates seamlessly
     }
 
     setSaveSuccessMsg('Your Health & Nutrition Tracker data has been saved!');
     setTimeout(() => setSaveSuccessMsg(null), 3500);
   };
 
-  // Download Complete Personal Nutrition & Health PDF Report
+  // Download Complete Personal Nutrition, BMI & AI Dietitian Report (PDF)
   const handleDownloadNutritionPdfReport = () => {
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
@@ -1080,7 +642,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(16);
-    pdf.text('PERSONAL NUTRITION, BMI & HEALTH TRACKER REPORT', 14, 15);
+    pdf.text('PERSONAL NUTRITION, BMI & AI DIETITIAN REPORT', 14, 15);
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
     pdf.text(
@@ -1126,73 +688,62 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     y += 46;
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(12);
-    pdf.text('2. RECOMMENDED DAILY MEAL PLAN (WITH GRAMS & CALORIES)', 14, y);
-    y += 6;
-
-    const mealPlanRows = [
-      `Breakfast (8:00 AM): Egg White & Spinach Oats Chilla or Barley Daliya (240g) — 340 kcal | 28g Protein`,
-      `Mid-Morning Snack (11:00 AM): Greek Yogurt Berry & Seed Bowl (150g) — 165 kcal | 14g Protein`,
-      `Lunch (1:30 PM): Grilled Lemon Chicken / Sprouted Moong & Paneer Bowl (320g) — 410 kcal | 36g Protein`,
-      `Evening Snack (5:00 PM): Green Tea + Roasted Chana & Almonds (120g) — 140 kcal | 7g Protein`,
-      `Dinner (8:00 PM): Garlic Fish Tikka or Cauliflower Rice & Greens Bowl (260g) — 310 kcal | 32g Protein`
-    ];
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9.5);
-    mealPlanRows.forEach((row) => {
-      pdf.text(`• ${row}`, 16, y);
-      y += 6.5;
-    });
-
-    y += 5;
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
     pdf.text(
-      `3. NUTRITION GUIDE FOR: ${selectedCondition.toUpperCase()}`,
+      `2. NUTRITION RECOMMENDATION FOR: ${activeCondition.toUpperCase()}`,
       14,
       y
     );
     y += 6;
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9.5);
-    pdf.text(
-      `Recommended Foods: ${conditionRecommendation.recommendedFoods
-        .map((f) => f.name)
-        .join(', ')}`,
-      16,
-      y
+    const summaryLines = pdf.splitTextToSize(
+      conditionRecommendation.summaryAdvice,
+      pageW - 32
     );
-    y += 6;
-    pdf.text(
-      `Foods to Avoid: ${conditionRecommendation.foodsToAvoid
-        .map((f) => f.name)
-        .join(', ')}`,
-      16,
-      y
-    );
+    pdf.text(summaryLines, 16, y);
+    y += summaryLines.length * 5 + 3;
 
-    y += 10;
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.text('4. CLINICAL NUTRITION RECIPES INCLUDED', 14, y);
-    y += 6;
+    pdf.text('Recommended Foods:', 16, y);
+    y += 5;
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    allNutritionRecipes.slice(0, 5).forEach((rec) => {
+    conditionRecommendation.recommendedFoods.forEach((f) => {
+      pdf.text(`• ${f.name} — ${f.shortNote}`, 18, y);
+      y += 5;
+    });
+
+    y += 3;
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Foods to Avoid:', 16, y);
+    y += 5;
+    pdf.setFont('helvetica', 'normal');
+    conditionRecommendation.foodsToAvoid.forEach((f) => {
+      pdf.text(`• ${f.name} — ${f.shortNote}`, 18, y);
+      y += 5;
+    });
+
+    // Latest AI Dietitian Resolution
+    const lastAiMsg = [...chatMessages]
+      .reverse()
+      .find((m) => m.sender === 'dietitian');
+    if (lastAiMsg && y < 220) {
+      y += 6;
       pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
       pdf.text(
-        `• [${rec.macroCategory}] ${rec.title} (${rec.calories} kcal | P: ${rec.proteinG}g | C: ${rec.carbsG}g | F: ${rec.fatG}g)`,
-        16,
+        `3. AI DIETITIAN RESOLUTION: ${(lastAiMsg.issueTitle || 'Health Guidance').toUpperCase()}`,
+        14,
         y
       );
-      y += 4.5;
+      y += 6;
       pdf.setFont('helvetica', 'normal');
-      const ingLine = rec.ingredients
-        .slice(0, 4)
-        .map((i) => `${i.item} (${i.grams}g)`)
-        .join(', ');
-      pdf.text(`  Ingredients: ${ingLine}`, 16, y);
-      y += 5.5;
-    });
+      pdf.setFontSize(9.5);
+      (lastAiMsg.recommendedSteps || []).forEach((step, idx) => {
+        const lines = pdf.splitTextToSize(`${idx + 1}. ${step}`, pageW - 32);
+        pdf.text(lines, 16, y);
+        y += lines.length * 5 + 1.5;
+      });
+    }
 
     pdf.setFontSize(8);
     pdf.setTextColor(100, 116, 139);
@@ -1203,109 +754,29 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     );
   };
 
-  // Download Single Recipe PDF
-  const handleDownloadSingleRecipePdf = (recipe: ClinicalNutritionRecipe) => {
-    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
-    const pageW = pdf.internal.pageSize.getWidth();
-
-    pdf.setFillColor(19, 66, 43);
-    pdf.rect(0, 0, pageW, 32, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(14);
-    pdf.text(recipe.title.toUpperCase(), 14, 14);
-    pdf.setFontSize(9.5);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(
-      `${recipe.macroCategory} (${recipe.mealTiming}) | ${recipe.calories} kcal | Protein: ${recipe.proteinG}g | Carbs: ${recipe.carbsG}g | Fat: ${recipe.fatG}g | Fiber: ${recipe.fiberG}g`,
-      14,
-      23
-    );
-
-    let y = 42;
-    pdf.setTextColor(15, 41, 30);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.text('INGREDIENTS REQUIRED (WITH EXACT GRAMS & PORTIONS):', 14, y);
-    y += 7;
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    recipe.ingredients.forEach((ing, i) => {
-      pdf.text(
-        `${i + 1}. ${ing.item} — ${ing.amount} (${ing.grams}g)`,
-        16,
-        y
-      );
-      y += 6;
-    });
-
-    y += 6;
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.text('STEP-BY-STEP PREPARATION INSTRUCTIONS:', 14, y);
-    y += 7;
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    recipe.instructions.forEach((step) => {
-      const lines = pdf.splitTextToSize(step, pageW - 32);
-      pdf.text(lines, 16, y);
-      y += lines.length * 5.5 + 3;
-    });
-
-    y += 4;
-    pdf.setFont('helvetica', 'bold');
-    const benLines = pdf.splitTextToSize(
-      `Clinical Benefit: ${recipe.clinicalBenefit}`,
-      pageW - 28
-    );
-    pdf.text(benLines, 14, y);
-
-    pdf.save(`${recipe.title.replace(/\s+/g, '_')}_Nutrition_Recipe.pdf`);
-  };
-
   // BMI Pointer position (0 to 100%)
   const bmiPointerPct = useMemo(() => {
     const clamped = Math.max(14, Math.min(38, indexes.bmi));
     return Math.round(((clamped - 14) / (38 - 14)) * 100);
   }, [indexes.bmi]);
 
-  // Badge styling helper for Macro Categories (matches app's Green/Emerald/Teal palette)
-  const getMacroBadgeStyle = (cat: NutritionMacroCategory) => {
-    switch (cat) {
-      case 'High-Protein':
-        return 'bg-[#DCFCE7] text-[#14532D] border-[#86EFAC]';
-      case 'Low-Carb & Fat Loss':
-        return 'bg-[#CCFBF1] text-[#115E59] border-[#5EEAD4]';
-      case 'High-Carb & Energy':
-        return 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]';
-      case 'Low-Protein & Light':
-        return 'bg-[#E0F2FE] text-[#075985] border-[#BAE6FD]';
-      case 'Diabetic & Low-GI':
-        return 'bg-[#E2F2E9] text-[#0D6845] border-[#A7F3D0]';
-      case 'Heart, BP & Gut Health':
-        return 'bg-[#FCE7F3] text-[#9D174D] border-[#FBCFE8]';
-      default:
-        return 'bg-[#E2F2E9] text-[#0D6845] border-[#A7F3D0]';
-    }
-  };
-
   return (
     <div className="space-y-5 pb-8">
       {/* =====================================================================
-          TOP HEADER BANNER — SIMPLE 1-PAGE PERSONAL HEALTH & NUTRITION TRACKER
+          TOP HEADER BANNER — 1-PAGE BMI, HEALTH TRACKER & AI DIETITIAN AGENT
          ===================================================================== */}
       <div className="bg-gradient-to-r from-[#13422B] via-[#155E3A] to-[#0E9F6E] rounded-[24px] p-4 sm:p-5 text-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-100 text-[10.5px] font-extrabold uppercase tracking-wider">
               <Activity className="w-3.5 h-3.5" />
-              1-Page Clinical Nutrition • BMI, Weight Graph, Custom Meal Creator &amp; Dietitian Recipes
+              1-Page Personal Health Tracker • BMI, Weight Graph &amp; AI Dietitian Agent
             </span>
             <h2 className="text-lg sm:text-xl font-extrabold mt-1">
-              Personal Health, BMI &amp; Clinical Nutrition Calculator
+              Personal Health, BMI Calculator &amp; AI Nutrition Issue Resolver
             </h2>
             <p className="text-xs text-emerald-100 mt-0.5">
-              Track your BMI &amp; weight goal, view your daily meal plan, or create &amp; explore High-Protein, Low-Carb, High-Carb, Low-Protein &amp; Diabetic recipes in Grid or List view.
+              Calculate your BMI &amp; weight target, check Recommended vs. Avoided foods for any condition, and ask the AI Dietitian Agent to resolve any nutrition or health issue.
             </p>
           </div>
 
@@ -1783,735 +1254,349 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       </div>
 
       {/* =====================================================================
-          STEP 3: RECOMMENDED DAILY MEAL PLAN & HEALTH CONDITION FOOD GUIDE
+          STEP 3: NUTRITION RECOMMENDATION & AI DIETITIAN ISSUE RESOLVER AGENT
          ===================================================================== */}
-      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-5">
         <div className="flex items-center gap-2.5 border-b border-[#ECF4EF] pb-3">
           <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
             3
           </div>
           <div>
             <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-              Step 3: Daily Clinical Meal Plan &amp; Health Condition Food Guide
+              Step 3: Nutrition Condition Recommendation &amp; AI Dietitian Issue Resolver
             </h3>
             <p className="text-[11px] text-[#5C7267]">
-              Tailored for {indexes.dailyCaloriesNeeded} kcal/day ({profile.goal}) + Disease-Specific Food Recommendations
+              Search any health condition or nutrition issue below to see Recommended Foods, Foods to Avoid, and ask the AI Dietitian Agent for a complete solution
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            {
-              meal: 'Breakfast (8:00 AM)',
-              items: 'Egg White & Spinach Oats Chilla OR Barley (Jau) & Methi Daliya',
-              grams: '240g Portion',
-              kcal: Math.round(indexes.dailyCaloriesNeeded * 0.25),
-              protein: `${Math.round(indexes.targetProteinG * 0.25)}g Protein`
-            },
-            {
-              meal: 'Lunch (1:30 PM)',
-              items: 'Grilled Lemon-Herb Chicken & Quinoa OR Sprouted Moong & Paneer Bowl',
-              grams: '320g Portion',
-              kcal: Math.round(indexes.dailyCaloriesNeeded * 0.35),
-              protein: `${Math.round(indexes.targetProteinG * 0.35)}g Protein`
-            },
-            {
-              meal: 'Evening Snack (5:00 PM)',
-              items: 'Greek Yogurt (Hung Dahi), Chia, Pumpkin Seeds & Pomegranate Bowl',
-              grams: '160g Portion',
-              kcal: Math.round(indexes.dailyCaloriesNeeded * 0.12),
-              protein: `${Math.round(indexes.targetProteinG * 0.15)}g Protein`
-            },
-            {
-              meal: 'Dinner (8:00 PM)',
-              items: 'Garlic Fish Tikka with Broccoli OR Low-Carb Cauliflower Rice & Greens',
-              grams: '260g Portion',
-              kcal: Math.round(indexes.dailyCaloriesNeeded * 0.28),
-              protein: `${Math.round(indexes.targetProteinG * 0.25)}g Protein`
-            }
-          ].map((slot) => (
-            <div
-              key={slot.meal}
-              className="p-3.5 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-1.5 flex flex-col justify-between"
+        {/* Search Input Bar matching the Nutrition Recommendation Reference Image */}
+        <div className="space-y-2.5">
+          <div className="relative flex items-center">
+            <Search className="w-4 h-4 text-[#5C7267] absolute left-3.5" />
+            <input
+              type="text"
+              value={conditionQuery}
+              onChange={(e) => {
+                setConditionQuery(e.target.value);
+                if (e.target.value.trim()) {
+                  setActiveCondition(e.target.value.trim());
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && conditionQuery.trim()) {
+                  setActiveCondition(conditionQuery.trim());
+                  handleAskDietitianIssue(conditionQuery.trim());
+                }
+              }}
+              placeholder="Type any nutrition issue or condition (e.g., Diabetes, High BP, Uric Acid, Acidity, PCOS)..."
+              className="w-full pl-10 pr-24 py-3 rounded-2xl border border-[#CBE3D6] bg-[#F4FAF7] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+            />
+            {conditionQuery && (
+              <button
+                type="button"
+                onClick={() => setConditionQuery('')}
+                className="absolute right-20 p-1 text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (conditionQuery.trim()) {
+                  setActiveCondition(conditionQuery.trim());
+                  handleAskDietitianIssue(conditionQuery.trim());
+                }
+              }}
+              className="absolute right-2 px-3.5 py-1.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold cursor-pointer"
             >
-              <div>
-                <div className="text-xs font-extrabold text-[#13422B]">
-                  {slot.meal}
-                </div>
-                <p className="text-xs text-[#0F291E] font-semibold mt-1 leading-snug">
-                  {slot.items}
-                </p>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-[#E2F2E9] text-[10.5px] font-extrabold">
-                <span className="text-[#5C7267]">{slot.grams}</span>
-                <span className="text-[#0E9F6E]">
-                  {slot.kcal} kcal • {slot.protein}
-                </span>
-              </div>
-            </div>
-          ))}
+              Search
+            </button>
+          </div>
+
+          {/* Quick Health Condition Pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              'Diabetes',
+              'High Blood Pressure',
+              'Cholesterol',
+              'Acidity',
+              'Uric Acid',
+              'Fatty Liver',
+              'PCOS',
+              'Anemia',
+              'Thyroid',
+              'Weight Loss',
+              'Weight Gain'
+            ].map((cond) => (
+              <button
+                key={cond}
+                type="button"
+                onClick={() => {
+                  setConditionQuery(cond);
+                  setActiveCondition(cond);
+                  handleAskDietitianIssue(cond);
+                }}
+                className={`px-3 py-1 rounded-full text-[11px] font-extrabold cursor-pointer transition-colors ${
+                  activeCondition.toLowerCase() === cond.toLowerCase()
+                    ? 'bg-[#13422B] text-white'
+                    : 'bg-[#F4FAF7] text-[#13422B] border border-[#CBE3D6] hover:border-[#0E9F6E]'
+                }`}
+              >
+                {cond}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="pt-2 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-extrabold text-[#0F291E]">
-              Select Health Condition for Foods to Eat &amp; Avoid:
+        {/* Personalized Recommendation Banner (Matching Reference Image 1) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+              <span>Personalized Recommendation</span>
+              <Sparkles className="w-4 h-4 text-blue-600" />
+            </h4>
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 text-[10.5px] font-extrabold">
+              Personalized for {conditionRecommendation.conditionName} ✨
+            </span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#DBEAFE]/70 border border-[#93C5FD] text-xs sm:text-sm font-semibold text-[#1E3A8A] leading-relaxed">
+            {conditionRecommendation.summaryAdvice}
+          </div>
+        </div>
+
+        {/* Recommended Foods (Green Cards) & Foods to Avoid (Red Cards) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Left: Recommended Foods */}
+          <div className="space-y-2.5">
+            <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+              <span>Recommended Foods</span>
+              <Leaf className="w-4 h-4 text-[#16A34A]" />
+            </h4>
+            <div className="space-y-2.5">
+              {conditionRecommendation.recommendedFoods.map((f) => (
+                <div
+                  key={f.name}
+                  className="p-3.5 rounded-2xl bg-[#DCFCE7]/85 border border-[#86EFAC] space-y-1"
+                >
+                  <div className="text-sm font-extrabold text-[#064E3B]">
+                    🌿 {f.name}
+                  </div>
+                  <div className="text-xs font-semibold text-[#14532D]">
+                    • {f.shortNote}
+                  </div>
+                  <div className="text-[10.5px] text-[#166534]/80 flex items-center gap-1 pt-0.5">
+                    <Info className="w-3 h-3 shrink-0" />
+                    <span>{DOCTOR_DISCLAIMER_SHORT}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Foods to Avoid */}
+          <div className="space-y-2.5">
+            <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+              <span>Foods to Avoid</span>
+              <AlertTriangle className="w-4 h-4 text-[#DC2626]" />
+            </h4>
+            <div className="space-y-2.5">
+              {conditionRecommendation.foodsToAvoid.map((f) => (
+                <div
+                  key={f.name}
+                  className="p-3.5 rounded-2xl bg-[#FEE2E2]/90 border border-[#FCA5A5] space-y-1"
+                >
+                  <div className="text-sm font-extrabold text-[#7F1D1D]">
+                    ⚠️ {f.name}
+                  </div>
+                  <div className="text-xs font-semibold text-[#991B1B]">
+                    • {f.shortNote}
+                  </div>
+                  <div className="text-[10.5px] text-[#991B1B]/80 flex items-center gap-1 pt-0.5">
+                    <Info className="w-3 h-3 shrink-0" />
+                    <span>{DOCTOR_DISCLAIMER_SHORT}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ===================================================================
+            INTERACTIVE AI DIETITIAN — CHAT & ISSUE RESOLVER AGENT
+           =================================================================== */}
+        <div className="pt-3 border-t border-[#ECF4EF] space-y-3.5">
+          {/* Header Banner like the Blue "✨ AI Dietitian — Chat" Bar in Reference Image */}
+          <div className="bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#0E9F6E] rounded-2xl p-4 text-white shadow-sm flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5 text-amber-200" />
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base font-extrabold flex items-center gap-1.5">
+                  <span>✨ AI Dietitian — Chat &amp; Nutrition Issue Resolver</span>
+                </h4>
+                <p className="text-[11px] text-blue-100">
+                  Enter any nutrition or health issue below — the AI Agent will reply with the complete recommended method (Tareeqa) to resolve your issue!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick 1-Click Nutrition Issue Prompts */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-extrabold text-[#13422B]">
+              Click any common issue below or type your own question:
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
               {[
-                'Diabetes',
-                'High Blood Pressure',
-                'Cholesterol',
-                'PCOS',
-                'Acidity',
-                'Anemia',
-                'Thyroid'
-              ].map((cond) => (
+                'Diabetes / Sugar control karne ka mukammal tareeqa?',
+                'Maiday ki jalan, Acidity aur Gas ka fori hal?',
+                'High Blood Pressure (BP) normal karne ki diet?',
+                'Cholesterol aur Fatty Liver kam karne ka tareeqa?',
+                'Uric Acid aur Joron ka dard khatam karne ka hal?',
+                'Wazan kam (Weight Loss) karne ka asaan tareeqa?',
+                'Wazan barhane (Weight Gain) ka sehatmand tareeqa?',
+                'Khoon ki kami (Anemia) aur kamzori door karne ka hal?',
+                'PCOS aur Hormone balance karne ki diet?'
+              ].map((promptText) => (
                 <button
-                  key={cond}
+                  key={promptText}
                   type="button"
-                  onClick={() => setSelectedCondition(cond)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-extrabold cursor-pointer transition-colors ${
-                    selectedCondition === cond
-                      ? 'bg-[#13422B] text-white'
-                      : 'bg-[#F4FAF7] text-[#13422B] border border-[#CBE3D6]'
-                  }`}
+                  onClick={() => handleAskDietitianIssue(promptText)}
+                  className="px-3 py-1.5 rounded-xl bg-[#F4FAF7] hover:bg-[#DCFCE7] border border-[#BCE3C8] text-[#13422B] text-[11px] font-extrabold cursor-pointer transition-colors text-left"
                 >
-                  {cond}
+                  💬 {promptText}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="p-3.5 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-2">
-              <div className="text-xs font-extrabold text-[#14532D] flex items-center gap-1.5">
-                <Leaf className="w-4 h-4 text-[#16A34A]" />
-                <span>Recommended Foods for {selectedCondition}</span>
-              </div>
-              <div className="space-y-1.5">
-                {conditionRecommendation.recommendedFoods.map((f) => (
-                  <div
-                    key={f.name}
-                    className="p-2.5 rounded-xl bg-white border border-[#DCFCE7] flex items-center justify-between gap-2"
-                  >
-                    <div>
-                      <div className="text-xs font-extrabold text-[#0F291E]">
-                        ✓ {f.name}
+          {/* Chat Conversation Feed */}
+          <div className="bg-[#F8FCFA] border border-[#CBE3D6] rounded-2xl p-3.5 sm:p-4 space-y-3 max-h-[520px] overflow-y-auto">
+            {chatMessages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${
+                  msg.sender === 'user' ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                <div
+                  className={`max-w-[92%] sm:max-w-[85%] rounded-2xl p-3.5 space-y-2.5 ${
+                    msg.sender === 'user'
+                      ? 'bg-[#13422B] text-white'
+                      : 'bg-white border-2 border-[#BCE3C8] text-[#0F291E] shadow-2xs'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 text-[10px] font-bold opacity-80">
+                    <span className="inline-flex items-center gap-1">
+                      {msg.sender === 'user' ? (
+                        <>
+                          <User className="w-3 h-3" />
+                          <span>You ({profile.fullName})</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="w-3.5 h-3.5 text-[#0E9F6E]" />
+                          <span className="text-[#0E9F6E] font-extrabold">
+                            AI Dietitian Agent
+                          </span>
+                        </>
+                      )}
+                    </span>
+                    <span>{msg.time}</span>
+                  </div>
+
+                  {msg.issueTitle && (
+                    <div className="text-xs sm:text-sm font-extrabold text-[#13422B] border-b border-[#ECF4EF] pb-1.5">
+                      🩺 {msg.issueTitle}
+                    </div>
+                  )}
+
+                  <p className="text-xs leading-relaxed font-medium">
+                    {msg.text}
+                  </p>
+
+                  {/* Recommended Steps to Resolve the Issue */}
+                  {msg.recommendedSteps && msg.recommendedSteps.length > 0 && (
+                    <div className="p-3 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-1.5">
+                      <div className="text-[11px] font-extrabold text-[#14532D] uppercase">
+                        ✓ Masla Hal Karnay Ka Recommended Tareeqa (Action Plan):
                       </div>
-                      <div className="text-[11px] text-[#166534]">
-                        {f.shortNote}
+                      <ul className="space-y-1 text-xs text-[#0F291E]">
+                        {msg.recommendedSteps.map((step, idx) => (
+                          <li key={idx} className="leading-snug">
+                            <strong>{idx + 1}.</strong> {step}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Foods to Eat & Avoid inside Agent Reply */}
+                  {msg.foodsToEat && msg.foodsToAvoid && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      <div className="p-2.5 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0]">
+                        <div className="text-[10.5px] font-extrabold text-[#065F46] mb-1">
+                          🌿 Kia Khana Chahiye (Eat):
+                        </div>
+                        <ul className="space-y-0.5 text-[11px] text-[#0F291E]">
+                          {msg.foodsToEat.map((f, i) => (
+                            <li key={i}>• {f}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-[#FEF2F2] border border-[#FECACA]">
+                        <div className="text-[10.5px] font-extrabold text-[#991B1B] mb-1">
+                          ⚠️ Parhez Karen (Avoid):
+                        </div>
+                        <ul className="space-y-0.5 text-[11px] text-[#7F1D1D]">
+                          {msg.foodsToAvoid.map((f, i) => (
+                            <li key={i}>• {f}</li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
-                    <span className="text-[10px] font-extrabold text-[#15803D] shrink-0">
-                      {f.caloriesPer100g} kcal/100g
-                    </span>
-                  </div>
-                ))}
+                  )}
+                </div>
               </div>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] space-y-2">
-              <div className="text-xs font-extrabold text-[#991B1B] flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-[#DC2626]" />
-                <span>Foods to Avoid / Limit in {selectedCondition}</span>
-              </div>
-              <div className="space-y-1.5">
-                {conditionRecommendation.foodsToAvoid.map((f) => (
-                  <div
-                    key={f.name}
-                    className="p-2.5 rounded-xl bg-white border border-[#FEE2E2] flex items-center justify-between gap-2"
-                  >
-                    <div>
-                      <div className="text-xs font-extrabold text-[#7F1D1D]">
-                        ✕ {f.name}
-                      </div>
-                      <div className="text-[11px] text-[#991B1B]">
-                        {f.shortNote}
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-extrabold text-[#DC2626] shrink-0">
-                      Limit / Avoid
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* =====================================================================
-          STEP 4: CLINICAL NUTRITION RECIPES (GRID / LIST VIEW) + SMART CUSTOM MACRO MEAL CREATOR
-         ===================================================================== */}
-      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
-        {/* Section Header + Grid/List View Toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#ECF4EF] pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
-              4
-            </div>
-            <div>
-              <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-                Step 4: Clinical Nutrition Recipes &amp; Custom Macro Meal Creator
-              </h3>
-              <p className="text-[11px] text-[#5C7267]">
-                Create your own High-Protein, Low-Protein, Low-Carb or High-Carb meal, or browse Dietitian-Formulated Nutrition Recipes in Grid or List view
-              </p>
-            </div>
-          </div>
-
-          {/* Grid vs List View Switcher + Toggle Custom Builder */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowCustomBuilder((v) => !v)}
-              className="px-3 py-1.5 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>
-                {showCustomBuilder ? 'Hide Meal Creator' : 'Create Custom Meal'}
-              </span>
-            </button>
-
-            <div className="inline-flex rounded-xl border border-[#CBE3D6] bg-[#F4FAF7] p-0.5">
-              <button
-                type="button"
-                onClick={() => setRecipeViewMode('grid')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors ${
-                  recipeViewMode === 'grid'
-                    ? 'bg-[#0E9F6E] text-white shadow-2xs'
-                    : 'text-[#13422B]'
-                }`}
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                <span>Grid</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRecipeViewMode('list')}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors ${
-                  recipeViewMode === 'list'
-                    ? 'bg-[#0E9F6E] text-white shadow-2xs'
-                    : 'text-[#13422B]'
-                }`}
-              >
-                <List className="w-3.5 h-3.5" />
-                <span>List</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ===================================================================
-            SMART CUSTOM NUTRITION RECIPE / MEAL BUILDER (HIGH PROTEIN, LOW PROTEIN, LOW CARB, HIGH CARB)
-           =================================================================== */}
-        {showCustomBuilder && (
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-[#F0FDF4] via-[#F8FCFA] to-[#ECFDF5] border-2 border-[#86EFAC] space-y-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#13422B] text-white text-[10px] font-extrabold uppercase tracking-wider">
-                  Smart Macro Meal Creator
-                </span>
-                <h4 className="text-xs sm:text-sm font-extrabold text-[#0F291E]">
-                  Build Your Own Custom Nutrition Meal (Auto-Calculates Exact Grams &amp; Macros)
-                </h4>
-              </div>
-              <span className="text-[11px] font-bold text-[#0E9F6E]">
-                Select your goal &amp; ingredients below →
-              </span>
-            </div>
-
-            {/* 1. Select Macro Type Pills */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-extrabold text-[#13422B]">
-                1. Choose Nutrition &amp; Macro Profile:
-              </label>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {(
-                  [
-                    'High-Protein',
-                    'Low-Carb & Fat Loss',
-                    'High-Carb & Energy',
-                    'Low-Protein & Light',
-                    'Diabetic & Low-GI',
-                    'Heart, BP & Gut Health'
-                  ] as NutritionMacroCategory[]
-                ).map((mType) => (
-                  <button
-                    key={mType}
-                    type="button"
-                    onClick={() => setBuilderMacroType(mType)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition-all ${
-                      builderMacroType === mType
-                        ? 'bg-[#0E9F6E] text-white shadow-2xs'
-                        : 'bg-white text-[#13422B] border border-[#CBE3D6] hover:border-[#0E9F6E]'
-                    }`}
-                  >
-                    {mType}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 2. Ingredient Selectors Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Meal Timing
-                </label>
-                <select
-                  value={builderMealTiming}
-                  onChange={(e) =>
-                    setBuilderMealTiming(
-                      e.target.value as
-                        | 'Breakfast'
-                        | 'Lunch'
-                        | 'Dinner'
-                        | 'Snack / Shake'
-                    )
-                  }
-                  className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-white text-xs font-bold text-[#0F291E]"
-                >
-                  <option value="Breakfast">Breakfast</option>
-                  <option value="Lunch">Lunch</option>
-                  <option value="Dinner">Dinner</option>
-                  <option value="Snack / Shake">Snack / Shake</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Primary Protein Source
-                </label>
-                <select
-                  value={builderProteinIdx}
-                  onChange={(e) => setBuilderProteinIdx(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-white text-xs font-bold text-[#0F291E]"
-                >
-                  {CUSTOM_PROTEIN_OPTIONS.map((p, idx) => (
-                    <option key={p.name} value={idx}>
-                      {p.name} ({p.proteinPer100g}g P/100g)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Carb / Grain Source
-                </label>
-                <select
-                  value={builderCarbIdx}
-                  onChange={(e) => setBuilderCarbIdx(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-white text-xs font-bold text-[#0F291E]"
-                >
-                  {CUSTOM_CARB_OPTIONS.map((c, idx) => (
-                    <option key={c.name} value={idx}>
-                      {c.name} ({c.carbsPer100g}g C/100g)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Vegetables &amp; Fiber
-                </label>
-                <select
-                  value={builderVeggieIdx}
-                  onChange={(e) => setBuilderVeggieIdx(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-white text-xs font-bold text-[#0F291E]"
-                >
-                  {CUSTOM_VEGGIE_OPTIONS.map((v, idx) => (
-                    <option key={v.name} value={idx}>
-                      {v.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Healthy Fats &amp; Seeds
-                </label>
-                <select
-                  value={builderFatIdx}
-                  onChange={(e) => setBuilderFatIdx(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-white text-xs font-bold text-[#0F291E]"
-                >
-                  {CUSTOM_HEALTHY_FAT_OPTIONS.map((f, idx) => (
-                    <option key={f.name} value={idx}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* 3. Optional Custom Name + Generate Button */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
-              <input
-                type="text"
-                value={builderCustomTitle}
-                onChange={(e) => setBuilderCustomTitle(e.target.value)}
-                placeholder="Optional: Give your custom meal a name (e.g., My Post-Workout High-Protein Bowl)"
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-[#CBE3D6] bg-white text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
-              />
-              <button
-                type="button"
-                onClick={handleCreateCustomNutritionRecipe}
-                className="px-5 py-2.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer shrink-0"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Generate My Custom Nutrition Recipe</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================================
-            FILTER BAR: MACRO CATEGORIES + SEARCH INPUT
-           =================================================================== */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            {[
-              'All',
-              'High-Protein',
-              'Low-Carb & Fat Loss',
-              'High-Carb & Energy',
-              'Low-Protein & Light',
-              'Diabetic & Low-GI',
-              'Heart, BP & Gut Health'
-            ].map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setRecipeMacroFilter(cat)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold whitespace-nowrap cursor-pointer transition-colors ${
-                  recipeMacroFilter === cat
-                    ? 'bg-[#13422B] text-white'
-                    : 'bg-[#F4FAF7] text-[#13422B] border border-[#CBE3D6] hover:border-[#0E9F6E]'
-                }`}
-              >
-                {cat}
-              </button>
             ))}
           </div>
 
-          <div className="relative w-full sm:w-64 shrink-0">
-            <Search className="w-4 h-4 text-[#5C7267] absolute left-3 top-1/2 -translate-y-1/2" />
+          {/* Chat Input Box */}
+          <div className="flex items-center gap-2">
             <input
               type="text"
-              value={recipeSearchQuery}
-              onChange={(e) => setRecipeSearchQuery(e.target.value)}
-              placeholder="Search nutrition recipes..."
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
-            />
-          </div>
-        </div>
-
-        {/* ===================================================================
-            RECIPES DISPLAY: COMPATIBLE GRID VIEW OR COMPACT LIST VIEW
-           =================================================================== */}
-        <div
-          className={
-            recipeViewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 gap-3.5'
-              : 'space-y-2.5'
-          }
-        >
-          {filteredRecipes.map((recipe) => {
-            const isExpanded = expandedRecipeId === recipe.id;
-            const macroBadgeClass = getMacroBadgeStyle(recipe.macroCategory);
-
-            return (
-              <div
-                key={recipe.id}
-                onClick={() =>
-                  setExpandedRecipeId(isExpanded ? null : recipe.id)
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAskDietitianIssue();
                 }
-                className={`rounded-[20px] border transition-all cursor-pointer bg-white ${
-                  isExpanded
-                    ? 'border-2 border-[#0E9F6E] shadow-md'
-                    : 'border-[#CBE3D6] hover:border-[#0E9F6E] shadow-2xs'
-                } p-4 space-y-3`}
-              >
-                {/* Top Row: Nutrition Category Badge + Meal Timing + Expand Button */}
-                <div className="flex items-start justify-between gap-2.5">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0 mt-0.5">
-                      <Utensils className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span
-                          className={`px-2 py-0.5 rounded-md border text-[10px] font-extrabold uppercase ${macroBadgeClass}`}
-                        >
-                          {recipe.macroCategory}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-[#F4FAF7] border border-[#D4E9DF] text-[#13422B] text-[10px] font-bold">
-                          {recipe.mealTiming} • {recipe.cookTimeMin}m
-                        </span>
-                        {recipe.isCustomCreated && (
-                          <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-extrabold">
-                            ★ Your Custom Meal
-                          </span>
-                        )}
-                      </div>
-
-                      <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] mt-1 leading-snug">
-                        {recipe.title}
-                      </h4>
-                      <p className="text-[11px] text-[#5C7267] font-medium mt-0.5">
-                        {recipe.subtitle}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="px-2.5 py-1 rounded-lg bg-[#F4FAF7] border border-[#CBE3D6] text-[#13422B] text-[11px] font-extrabold shrink-0 inline-flex items-center gap-1">
-                    {isExpanded ? (
-                      <>
-                        <span>Hide</span>
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      </>
-                    ) : (
-                      <>
-                        <span>Recipe</span>
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </>
-                    )}
-                  </span>
-                </div>
-
-                {/* Compact Nutrition Macro Strip (Compatible with App Cards) */}
-                <div className="grid grid-cols-5 gap-1.5 text-center">
-                  <div className="p-2 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                    <div className="text-[9.5px] font-bold text-[#5C7267]">
-                      Calories
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      {recipe.calories}
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0]">
-                    <div className="text-[9.5px] font-bold text-[#065F46]">
-                      Protein
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0E9F6E]">
-                      {recipe.proteinG}g
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                    <div className="text-[9.5px] font-bold text-[#5C7267]">
-                      Carbs
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      {recipe.carbsG}g
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                    <div className="text-[9.5px] font-bold text-[#5C7267]">
-                      Fats
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      {recipe.fatG}g
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                    <div className="text-[9.5px] font-bold text-[#5C7267]">
-                      Fiber
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0E9F6E]">
-                      {recipe.fiberG}g
-                    </div>
-                  </div>
-                </div>
-
-                {/* EXPANDED DETAILS: COMPLETE INGREDIENTS REQUIRED & STEP-BY-STEP INSTRUCTIONS */}
-                {isExpanded && (
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="pt-3 border-t border-[#ECF4EF] space-y-3 animate-fade-in cursor-default"
-                  >
-                    {/* 1. Complete Required Ingredients */}
-                    <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#BCE3C8] space-y-2">
-                      <h5 className="text-xs font-extrabold text-[#13422B] uppercase tracking-wide flex items-center gap-1.5">
-                        <Utensils className="w-3.5 h-3.5 text-[#0E9F6E]" />
-                        <span>
-                          Ingredients Required ({recipe.ingredients.length} Items — Exact Grams &amp; Portions)
-                        </span>
-                      </h5>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                        {recipe.ingredients.map((ing, idx) => (
-                          <div
-                            key={idx}
-                            className="p-2 rounded-xl bg-white border border-[#D4E9DF] flex items-center justify-between gap-2 text-xs"
-                          >
-                            <span className="font-bold text-[#0F291E]">
-                              • {ing.item}
-                            </span>
-                            <span className="px-2 py-0.5 rounded-md bg-[#E2F2E9] text-[#0D6845] text-[10.5px] font-extrabold shrink-0">
-                              {ing.amount} ({ing.grams}g)
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 2. Step-by-Step Preparation Instructions */}
-                    <div className="p-3.5 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-2">
-                      <h5 className="text-xs font-extrabold text-[#13422B] uppercase tracking-wide flex items-center gap-1.5">
-                        <Flame className="w-3.5 h-3.5 text-[#0E9F6E]" />
-                        <span>
-                          Step-by-Step Preparation Method (Banane ka Tareeqa)
-                        </span>
-                      </h5>
-
-                      <ol className="space-y-1.5">
-                        {recipe.instructions.map((stepText, sIdx) => (
-                          <li
-                            key={sIdx}
-                            className="p-2.5 rounded-xl bg-white border border-[#E2F2E9] text-xs text-[#0F291E] leading-relaxed font-medium"
-                          >
-                            {stepText}
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-
-                    {/* 3. Clinical Dietitian Benefit & PDF Button */}
-                    <div className="p-3 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] text-[11px] font-bold text-[#065F46]">
-                      🩺 <strong>Clinical Nutrition Benefit:</strong>{' '}
-                      {recipe.clinicalBenefit}
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setModalRecipe(recipe)}
-                        className="px-3.5 py-2 rounded-xl bg-[#13422B] hover:bg-[#0F291E] text-white text-xs font-extrabold cursor-pointer"
-                      >
-                        Open Full View
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadSingleRecipePdf(recipe)}
-                        className="px-3.5 py-2 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download Recipe PDF</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              }}
+              placeholder="Apna nutrition issue ya sawal yahan likhen (e.g., Acidity, Sugar, BP, Uric Acid, Weight Loss)..."
+              className="flex-1 px-4 py-3 rounded-2xl border-2 border-[#0E9F6E] bg-white text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => handleAskDietitianIssue()}
+              className="px-5 py-3 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs sm:text-sm font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+            >
+              <Send className="w-4 h-4" />
+              <span>Ask AI Agent</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* FULL-SCREEN RECIPE MODAL */}
-      {modalRecipe && (
-        <div
-          onClick={() => setModalRecipe(null)}
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-[26px] max-w-xl w-full overflow-hidden shadow-2xl border border-[#BCE3C8] my-8 max-h-[90vh] flex flex-col"
-          >
-            <div className="bg-gradient-to-r from-[#13422B] to-[#0E9F6E] p-5 text-white flex items-start justify-between gap-3">
-              <div>
-                <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-extrabold uppercase">
-                  {modalRecipe.macroCategory} • {modalRecipe.mealTiming}
-                </span>
-                <h3 className="text-lg font-extrabold mt-1">
-                  {modalRecipe.title}
-                </h3>
-                <p className="text-xs text-emerald-100 mt-0.5">
-                  {modalRecipe.subtitle}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalRecipe(null)}
-                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center cursor-pointer shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 overflow-y-auto space-y-4">
-              <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#BCE3C8] space-y-2">
-                <h4 className="text-xs font-extrabold text-[#13422B] uppercase">
-                  Ingredients Required ({modalRecipe.ingredients.length} Items)
-                </h4>
-                <div className="space-y-1.5">
-                  {modalRecipe.ingredients.map((ing, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-[#D4E9DF]"
-                    >
-                      <span className="font-bold text-[#0F291E]">
-                        {i + 1}. {ing.item}
-                      </span>
-                      <span className="font-extrabold text-[#0E9F6E]">
-                        {ing.amount} ({ing.grams}g)
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-2">
-                <h4 className="text-xs font-extrabold text-[#13422B] uppercase">
-                  Step-by-Step Preparation Method
-                </h4>
-                <div className="space-y-2">
-                  {modalRecipe.instructions.map((step, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2.5 rounded-xl bg-white border border-[#E2F2E9] text-xs text-[#0F291E] leading-relaxed"
-                    >
-                      {step}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] text-xs font-bold text-[#065F46]">
-                🩺 <strong>Clinical Benefit:</strong> {modalRecipe.clinicalBenefit}
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => handleDownloadSingleRecipePdf(modalRecipe)}
-                  className="px-4 py-2.5 rounded-xl bg-[#0E9F6E] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Recipe PDF</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalRecipe(null)}
-                  className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-xs font-extrabold cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* DOCTOR DISCLAIMER FOOTER */}
-      <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-blue-200 text-[11px] font-bold text-blue-950 flex items-center gap-2">
-        <Heart className="w-4 h-4 text-blue-600 shrink-0" />
+      <div className="p-3.5 rounded-2xl bg-[#DBEAFE]/70 border border-[#93C5FD] text-[11px] font-bold text-[#1E3A8A] flex items-center gap-2">
+        <Heart className="w-4 h-4 text-blue-700 shrink-0" />
         <span>{DOCTOR_DISCLAIMER_BANNER}</span>
       </div>
     </div>
