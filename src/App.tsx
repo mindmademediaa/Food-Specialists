@@ -108,6 +108,10 @@ import {
 } from './components/EditProfileView';
 import { PublicProfileView } from './components/PublicProfileView';
 import { AdminControlPanel } from './components/AdminControlPanel';
+import {
+  LegalComplianceModal,
+  LegalTabType
+} from './components/LegalComplianceModal';
 
 // Custom Duotone SVGs & Botanical Watermarks for the Home Screen Cards
 const DuotoneBriefcaseIcon = () => (
@@ -749,12 +753,43 @@ export default function App() {
     };
   }, []);
 
+  const [legalModalTab, setLegalModalTab] = useState<LegalTabType | null>(null);
+
   const handleSignOut = async () => {
     try {
       await signOut(auth);
       setRoute({ name: 'home' });
     } catch (err) {
       console.error('Sign out error:', err);
+    }
+  };
+
+  const handleDeleteOwnAccount = async () => {
+    const uid = authUser?.uid || myProfile.uid;
+    if (!uid) return;
+
+    try {
+      // 1. Delete user's own payment verification requests if any
+      for (const req of myPaymentApplications) {
+        if (req.id) {
+          await deleteDoc(doc(db, 'paymentRequests', req.id)).catch(() => {});
+        }
+      }
+      // 2. Delete user's private & profile subcollection docs and main public user document
+      await deleteDoc(doc(db, 'users', uid, 'private', 'profile')).catch(() => {});
+      await deleteDoc(doc(db, 'users', uid, 'profile', 'main')).catch(() => {});
+      await deleteDoc(doc(db, 'users', uid)).catch(() => {});
+
+      // 3. Delete Firebase Auth account if session is recent, then sign out cleanly
+      if (auth.currentUser) {
+        await auth.currentUser.delete().catch(() => {});
+      }
+      await signOut(auth).catch(() => {});
+      setRoute({ name: 'home' });
+    } catch (err) {
+      console.error('Account deletion error:', err);
+      await signOut(auth).catch(() => {});
+      setRoute({ name: 'home' });
     }
   };
 
@@ -4456,6 +4491,8 @@ export default function App() {
               onOpenApplicationStatusModal={() => {
                 setShowApplicationStatusModal(true);
               }}
+              onOpenLegalModal={(tab) => setLegalModalTab(tab)}
+              onDeleteOwnAccount={handleDeleteOwnAccount}
             />
           )}
 
@@ -5794,6 +5831,18 @@ export default function App() {
         <BottomNav
           activeTab={activeBottomTab}
           onSelectTab={handleSelectBottomTab}
+          onOpenLegal={(tab) => setLegalModalTab(tab)}
+        />
+
+        {/* LEGAL, PRIVACY POLICY, TERMS, ADSENSE/ADMOB & ACCOUNT DELETION MODAL */}
+        <LegalComplianceModal
+          isOpen={legalModalTab !== null}
+          initialTab={legalModalTab || 'privacy'}
+          onClose={() => setLegalModalTab(null)}
+          onGoToDeleteAccount={() => {
+            setRoute({ name: 'profile' });
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          }}
         />
       </div>
     </div>

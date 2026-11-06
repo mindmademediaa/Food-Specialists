@@ -1,15 +1,18 @@
 import React from 'react';
 import { Home, Users, BookOpen, User } from 'lucide-react';
 import { NavTab } from '../types/hub';
+import { LegalTabType } from './LegalComplianceModal';
 
 interface BottomNavProps {
   activeTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
+  onOpenLegal?: (tab: LegalTabType) => void;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
   activeTab,
-  onSelectTab
+  onSelectTab,
+  onOpenLegal
 }) => {
   const tabs: {
     id: NavTab;
@@ -23,7 +26,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   ];
 
   return (
-    <footer className="shrink-0 z-30 bg-white border-t border-[#CBE3D6] px-2 pb-2 shadow-[0_-6px_24px_rgba(19,66,43,0.08)]">
+    <footer className="shrink-0 z-30 bg-white border-t border-[#CBE3D6] px-2 pb-1.5 shadow-[0_-6px_24px_rgba(19,66,43,0.08)]">
       <nav
         aria-label="Bottom Navigation"
         className="grid grid-cols-4 items-center"
@@ -36,7 +39,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               key={tab.id}
               type="button"
               onClick={() => onSelectTab(tab.id)}
-              className={`relative flex flex-col items-center justify-center gap-1 pt-2.5 pb-1.5 transition-colors cursor-pointer ${
+              className={`relative flex flex-col items-center justify-center gap-1 pt-2 pb-1 transition-colors cursor-pointer ${
                 isActive
                   ? 'text-[#0E9F6E] font-extrabold'
                   : 'text-[#64748B] hover:text-[#13422B] font-medium'
@@ -56,17 +59,46 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     : 'text-[#64748B] stroke-[2]'
                 }`}
               />
-              <span className="text-[11.5px] leading-none">{tab.label}</span>
+              <span className="text-[11px] leading-none">{tab.label}</span>
             </button>
           );
         })}
       </nav>
-      <div className="mt-1 pt-1.5 border-t border-[#EDF5F0] text-center">
-        <p className="text-[10.5px] font-medium text-[#5C7267] leading-tight">
+      <div className="mt-1 pt-1 border-t border-[#EDF5F0] flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-center">
+        <span className="text-[10px] font-medium text-[#5C7267] leading-tight">
           Developed by{' '}
           <span className="font-bold text-[#13422B]">Food Specialist</span>
-        </p>
+        </span>
+        {onOpenLegal && (
+          <>
+            <span className="text-[10px] text-gray-300">•</span>
+            <button
+              type="button"
+              onClick={() => onOpenLegal('privacy')}
+              className="text-[10px] font-bold text-[#0E9F6E] hover:underline cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            <span className="text-[10px] text-gray-300">•</span>
+            <button
+              type="button"
+              onClick={() => onOpenLegal('terms')}
+              className="text-[10px] font-bold text-[#0E9F6E] hover:underline cursor-pointer"
+            >
+              Terms
+            </button>
+            <span className="text-[10px] text-gray-300">•</span>
+            <button
+              type="button"
+              onClick={() => onOpenLegal('deletion')}
+              className="text-[10px] font-bold text-[#5C7267] hover:text-red-600 hover:underline cursor-pointer"
+            >
+              Data Deletion
+            </button>
+          </>
+        )}
       </div>
     </footer>
   );
 };
+

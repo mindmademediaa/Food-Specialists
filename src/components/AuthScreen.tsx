@@ -22,6 +22,10 @@ import {
   updateProfile
 } from '../lib/firebase';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
+import {
+  LegalComplianceModal,
+  LegalTabType
+} from './LegalComplianceModal';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -125,6 +129,7 @@ export const AuthScreen: React.FC = () => {
   const [isUnauthorizedDomainError, setIsUnauthorizedDomainError] =
     useState(false);
   const [copiedDomain, setCopiedDomain] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTabType | null>(null);
 
   const currentDomain =
     typeof window !== 'undefined' && window.location.hostname
@@ -610,13 +615,52 @@ export const AuthScreen: React.FC = () => {
           </form>
         </div>
 
-        {/* Footer Branding */}
-        <div className="text-center">
+        {/* Footer Branding & Legal Links (Google Play, AdSense & AdMob Compliant) */}
+        <div className="text-center space-y-1.5">
+          <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] font-bold text-[#0E9F6E]">
+            <button
+              type="button"
+              onClick={() => setLegalModalTab('privacy')}
+              className="hover:underline cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            <span className="text-gray-300">•</span>
+            <button
+              type="button"
+              onClick={() => setLegalModalTab('terms')}
+              className="hover:underline cursor-pointer"
+            >
+              Terms of Use
+            </button>
+            <span className="text-gray-300">•</span>
+            <button
+              type="button"
+              onClick={() => setLegalModalTab('ads')}
+              className="hover:underline cursor-pointer"
+            >
+              AdSense &amp; AdMob Policy
+            </button>
+            <span className="text-gray-300">•</span>
+            <button
+              type="button"
+              onClick={() => setLegalModalTab('deletion')}
+              className="hover:underline cursor-pointer"
+            >
+              Account Deletion
+            </button>
+          </div>
           <p className="text-[11px] font-semibold text-[#14532D]">
             Developed by Food Specialist
           </p>
         </div>
       </div>
+
+      <LegalComplianceModal
+        isOpen={legalModalTab !== null}
+        initialTab={legalModalTab || 'privacy'}
+        onClose={() => setLegalModalTab(null)}
+      />
     </div>
   );
 };
