@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -11,10 +11,12 @@ import {
   Info,
   Leaf,
   MessageSquare,
+  RotateCcw,
   Scale,
   Search,
   Send,
   Sparkles,
+  Trash2,
   TrendingDown,
   TrendingUp,
   User,
@@ -26,11 +28,13 @@ import { HubUser, UserToolsData } from '../types/hub';
 import {
   ActivityLevelOption,
   calculateSuiteNutritionIndexes,
+  ConditionFoodCard,
   DEFAULT_SUITE_ONBOARDING,
   DOCTOR_DISCLAIMER_BANNER,
   DOCTOR_DISCLAIMER_CHAT,
   DOCTOR_DISCLAIMER_SHORT,
   GenderOption,
+  generateDietitianAnswer,
   getHealthConditionRecommendations,
   GoalOption,
   SuiteComputedIndexes,
@@ -47,218 +51,58 @@ interface NutritionSuiteToolProps {
   onOpenPremiumModal: () => void;
 }
 
-interface DietitianChatMessage {
+interface ChatMessageItem {
   id: string;
   sender: 'user' | 'dietitian';
-  issueTitle?: string;
   text: string;
-  recommendedSteps?: string[];
-  foodsToEat?: string[];
-  foodsToAvoid?: string[];
   time: string;
 }
 
 /**
- * Comprehensive AI Dietitian Issue Resolution Engine
- * Responds to any health/nutrition issue (English or Roman Urdu) with:
- * - Diagnosis / Nutrition Insight
- * - Recommended Tareeqa (Step-by-Step Resolution Plan)
- * - Recommended Foods to Eat
- * - Foods to Avoid (Parhez)
+ * Enhanced Conversational AI Dietitian Chatbot Answer Generator
+ * Replies like the original AI Dietitian Chatbot to any nutrition issue, symptom, or food query.
  */
-function generateComprehensiveDietitianResolution(
-  rawInput: string,
+function getDietitianChatbotReply(
+  rawQuestion: string,
   profile: SuiteOnboardingProfile,
   indexes: SuiteComputedIndexes
-): Omit<DietitianChatMessage, 'id' | 'sender' | 'time'> {
-  const q = rawInput.trim().toLowerCase();
+): string {
+  const q = rawQuestion.trim().toLowerCase();
 
-  // 1. Diabetes / Blood Sugar / Insulin Resistance
-  if (
-    q.includes('diabet') ||
-    q.includes('sugar') ||
-    q.includes('insulin') ||
-    q.includes('hba1c') ||
-    q.includes('shugar')
-  ) {
-    return {
-      issueTitle: 'Diabetes & Blood Sugar Control Plan',
-      text: `Blood Sugar (Diabetes) ko control karne ke liye sab se ahem usool Low-Glycemic (Low-GI) aur High-Fiber ghiza ka istemal hai taake khane ke baad sugar spike na ho.`,
-      recommendedSteps: [
-        'Har khane (Lunch aur Dinner) se 10 minute pehle 1 bowl Khera (Cucumber), Salad ke pattay aur Mooli khayen.',
-        'Sufaid Aatay (Maida/White Bread) ki jagah Jau (Barley) ya 100% Whole-Wheat Chakki Roti + Methi (Fenugreek) dana istemal karen.',
-        'Subah nihaar munh 1 glass neem garam pani may 1/2 tsp Methi Dana (soaked overnight) ya Darcheeni (Cinnamon) qahwa piyen.',
-        'Khane ke baad 15–20 minute halki walk (chahal qadmi) lazmi karen — is se blood glucose foran muscles may absorb hota hai.'
-      ],
-      foodsToEat: [
-        'Leafy Greens (Palak, Methi, Sarso ka Saag) & Karela (Bitter Gourd)',
-        'Kala Chana, Moong Daal, Masoor Daal & Jau ka Daliya (Barley)',
-        'Grilled Fish, Boiled Eggs, Desi Chicken & Low-Fat Dahi',
-        'Jamun, Amrood (Guava), Seb (Apple) & 6–7 Soaked Almonds/Walnuts'
-      ],
-      foodsToAvoid: [
-        'Cheeni (White Sugar), Cold Drinks, Packaged Juices & Mithai',
-        'Sufaid Chawal (White Rice), Naan, Bakery Biscuits & White Bread',
-        'Deep-Fried Samosay, Pakoray, Chips & Meethay Cereals'
-      ]
-    };
+  // Check specific conditions & issues first for rich, direct answers
+  if (q.includes('diabetes') || q.includes('sugar') || q.includes('shugar') || q.includes('insulin')) {
+    return `For Diabetes & Blood Sugar control:\n• Eat low-glycemic, high-fiber meals: pair 1 whole-wheat Chakki or Barley (Jau) Roti (80g) with Moong/Chana Daal, Palak (Spinach), Karela, or Grilled Chicken/Fish (120g).\n• Start lunch and dinner with a bowl of green cucumber & lettuce salad to slow glucose absorption.\n• Take 1/2 tsp soaked Methi seeds (fenugreek) or cinnamon water in the morning and walk 15–20 minutes after meals.\n• Avoid white bread, maida, white rice in excess, sugary chai, and cold drinks.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 2. High Blood Pressure (Hypertension) & Heart Health
-  if (
-    q.includes('bp') ||
-    q.includes('blood pressure') ||
-    q.includes('hypertension') ||
-    q.includes('heart') ||
-    q.includes('dil')
-  ) {
-    return {
-      issueTitle: 'High Blood Pressure (BP) & Heart Care Resolution',
-      text: `High Blood Pressure (BP) ko normal rakhne ke liye DASH Diet (Low Sodium + High Potassium & Magnesium) sab se moassar tareeqa hai.`,
-      recommendedSteps: [
-        'Din bhar may Namak (Salt) ki miqdaar 1 chotay chamach (1 tsp / 1500mg sodium) se kam rakhen; khane ke upar kacha namak bilkul na chhirken.',
-        'Subah nashtay may Oats Daliya ya 1 Lehsan (Garlic) ki turi pani ke sath len — Lehsan may mojod Allicin khoon ki naliyon ko relax karta hai.',
-        'Potassium se bharpoor ghizayen (Palak, Chukandar/Beetroot, Kela, Nariyal Pani, Dahi) rozana shamil karen jo body se extra sodium kharij karti hain.',
-        'Rozana 30 minute brisk walk aur 8–10 glass pani ka istemal karen.'
-      ],
-      foodsToEat: [
-        'Chukandar (Beetroot), Palak (Spinach), Lehsan (Garlic) & Tomatoes',
-        'Oats Porridge, Flaxseeds (Alsi), Walnuts (Akhrot) & Grilled Fish',
-        'Low-Fat Dahi, Lassi (bina namak), Banana & Pomegranate (Anaar)'
-      ],
-      foodsToAvoid: [
-        'Achar (Pickles), Papad, Salted Nimko, Chips & Canned Foods',
-        'Vanaspati Ghee, Paratha, Deep-Fried Fast Food & Red Meat',
-        'Zyada Chai/Coffee aur Smoking/Stress'
-      ]
-    };
+  if (q.includes('bp') || q.includes('blood pressure') || q.includes('hypertension')) {
+    return `For High Blood Pressure (Hypertension):\n• Follow the DASH plan: limit daily salt (sodium) to under 1 tsp (1,500mg) and never sprinkle raw salt on food.\n• Eat potassium & magnesium-rich foods daily: Spinach (Palak), Beetroot (Chukandar), Banana, Yogurt (Dahi), Coconut Water, and Oats.\n• Take 1 raw crushed garlic clove with water in the morning and include 5 walnuts + flaxseeds.\n• Avoid pickles (achar), papad, salted snacks, vanaspati ghee, and deep-fried foods.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 3. Cholesterol & Fatty Liver / Triglycerides
-  if (
-    q.includes('cholesterol') ||
-    q.includes('fatty liver') ||
-    q.includes('jigar') ||
-    q.includes('triglyceride') ||
-    q.includes('lipid')
-  ) {
-    return {
-      issueTitle: 'Cholesterol & Fatty Liver Reversal Plan',
-      text: `High LDL Cholesterol aur Fatty Liver ko kam karne ke liye Soluble Fiber aur Omega-3 Fats barhayen aur Saturated/Trans Fats + Sugar band karen.`,
-      recommendedSteps: [
-        'Subah nashtay may Rolled Oats ya Jau ka Daliya + 1 chamach पिसी हुई Alsi (Flaxseeds) aur 5 Akhrot (Walnuts) len — Soluble fiber aant (gut) may cholesterol ko absorb hone se rokta hai.',
-        'Cooking ke liye Ghee/Banaspati ki jagah sirf 1–2 tsp Olive Oil, Mustard Oil ya Canola Oil istemal karen.',
-        'Fatty Liver ke liye Meetha (Sugar, Fructose, Cold Drinks) aur Maida mukammal band karen kyunke jigar extra sugar ko charbi (fat) may badalta hai.',
-        'Apne wazan (${profile.weightKg} kg) may se 5% se 7% kami karne se Fatty Liver aur Cholesterol tezi se normal hote hain.'
-      ],
-      foodsToEat: [
-        'Oats, Barley (Jau), Apple, Guava & Citrus Fruits (Pectin Fiber)',
-        'Fatty Fish (Salmon/Rohu), Walnuts, Almonds, Chia & Flaxseeds',
-        'Green Tea, Garlic, Turmeric (Haldi), Moong Daal & Green Veggies'
-      ],
-      foodsToAvoid: [
-        'Banaspati Ghee, Butter, Cream, Malai & Egg Yolk in excess',
-        'Deep-Fried Karahi, Nihari, Paye, Samosay & Fast Food',
-        'Bakery Pastries, Cold Drinks & Refined Sugar'
-      ]
-    };
+  if (q.includes('cholesterol') || q.includes('fatty liver') || q.includes('jigar') || q.includes('triglyceride')) {
+    return `For High Cholesterol & Fatty Liver:\n• Start your morning with Rolled Oats or Barley (Jau) porridge topped with 1 tbsp ground Flaxseeds (Alsi) and 5 Walnuts — soluble fiber binds cholesterol in the gut.\n• Replace ghee/butter with 1–2 tsp Extra-Virgin Olive Oil or Canola/Mustard oil.\n• Include Grilled Fish (Omega-3), garlic, turmeric, green tea, and moong daal.\n• Completely stop sugary drinks, refined carbs (maida), and deep-fried foods. Reducing weight by 5–7% rapidly reverses fatty liver.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 4. Acidity, GERD, Gas, Bloating, Stomach Ulcer / Maiday ki Jalan
   if (
     q.includes('acid') ||
     q.includes('gas') ||
     q.includes('bloat') ||
-    q.includes('stomach') ||
     q.includes('maida') ||
-    q.includes('maiday') ||
     q.includes('jalan') ||
-    q.includes('ulcer') ||
     q.includes('heartburn') ||
-    q.includes('gerd')
+    q.includes('gerd') ||
+    q.includes('stomach')
   ) {
-    return {
-      issueTitle: 'Acidity, Gas, Bloating & Stomach Relief Plan',
-      text: `Maiday ki jalan (Acidity), Gas aur Bloating ko khatam karne ke liye Alkaline, Probiotic aur halki hazam hone wali ghiza (Soothing Diet) apnayen.`,
-      recommendedSteps: [
-        'Aik waqt may pait bhar kar khane ke bajaye din may 4–5 chotay aur halkay meals len, aur har niwalay ko achi tarha chaba kar khayen.',
-        'Raat ka khana sone se kam az kam 2.5 se 3 ghantay pehle khayen, aur khane ke foran baad letnay se gurez karen.',
-        'Khane ke baad 1/2 tsp Saunf (Fennel Seeds) + 1 Sabz Elaichi chabayen ya Saunf-Pudina ka halka qahwa piyen.',
-        'Dopehar ke khane may 1 katori Thanda Dahi (Probiotic Curd) + 1 tsp Ispaghol (Psyllium Husk) shamil karen.'
-      ],
-      foodsToEat: [
-        'Thanda Dahi (Plain Yogurt), Kachi Lassi, Kela (Banana) & Melon',
-        'Moong Daal Khichdi, Lauki (Bottle Gourd), Tori & Boiled Rice',
-        'Saunf (Fennel), Podina (Mint), Oats Porridge & Coconut Water'
-      ],
-      foodsToAvoid: [
-        'Tez Laal Mirch, Garam Masala, Fried Karahi & Spicy Fast Food',
-        'Khali pait Doodh Patti Chai, Coffee aur Carbonated Cold Drinks',
-        'Achar, Khattay Citrus Phal (khali pait) aur Late-Night Dinner'
-      ]
-    };
+    return `For Acidity, Gas, Bloating & Stomach Relief:\n• Eat 4–5 smaller, light meals instead of heavy meals, and finish dinner at least 2.5 hours before sleeping.\n• Include soothing alkaline & probiotic foods: Cold Plain Yogurt (Dahi), Kachi Lassi, Banana, Boiled Moong Daal Khichdi, Bottle Gourd (Lauki), and Oatmeal.\n• Chew 1/2 tsp Fennel seeds (Saunf) + 1 Green Cardamom after meals.\n• Avoid spicy red chili curries, fried karahi/paratha, strong tea/coffee on an empty stomach, and carbonated sodas.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 5. Uric Acid & Gout / Joint Pain
-  if (
-    q.includes('uric') ||
-    q.includes('gout') ||
-    q.includes('joint') ||
-    q.includes('joron') ||
-    q.includes('dard')
-  ) {
-    return {
-      issueTitle: 'High Uric Acid & Joint Pain Resolution Plan',
-      text: `Uric Acid barhne ki bari wajah High-Purine ghizayen aur pani ki kami hai. Low-Purine Alkaline Diet aur Vitamin C se Uric Acid kidneys ke zariye kharij hota hai.`,
-      recommendedSteps: [
-        'Rozana 10 se 12 glass pani piyen (sath 1 glass pani may fresh Lemon Juice nichor kar len — Vitamin C uric acid ko dissolve karta hai).',
-        'Bara Gosht (Beef/Mutton), Kaleji/Gurday (Organ Meats) aur Paye mukammal band kar den.',
-        'Protein ke liye Low-Fat Dahi, Doodh, Egg Whites aur Lauki/Tori/Kaddu jesi alkaline sabziyan istemal karen.',
-        'Subah 1 Seb (Apple) ya Cherries/Berries aur 5–6 bheegay Badam + Akhrot len.'
-      ],
-      foodsToEat: [
-        'Fresh Lemon Water, Cherries, Apples, Guava & Vitamin-C Fruits',
-        'Lauki (Bottle Gourd), Tori, Kaddu, Cucumber, Carrot & Potatoes',
-        'Low-Fat Milk, Yogurt (Dahi), Egg Whites, Rice & Whole Wheat'
-      ],
-      foodsToAvoid: [
-        'Beef, Mutton, Organ Meats (Kaleji, Maghaz) & Seafood/Sardines',
-        'Sugary Fructose Drinks, Cold Drinks & Packaged Fruit Juices',
-        'Excess Chana Daal, Masoor Daal, Rajma & Palak (during acute flare)'
-      ]
-    };
+  if (q.includes('uric') || q.includes('gout') || q.includes('joint') || q.includes('joron')) {
+    return `For High Uric Acid & Joint Pain:\n• Drink 10–12 glasses of water daily, including 1 glass of fresh Lemon water (Vitamin C helps flush uric acid through the kidneys).\n• Eat low-purine alkaline foods: Lauki (Bottle Gourd), Tori, Kaddu, Cucumber, Apple, Cherries, Guava, Low-Fat Yogurt, Milk, and Egg Whites.\n• Strictly avoid Red Meat (Beef/Mutton), Organ Meats (Kaleji), Paye, seafood, and fructose-sweetened cold drinks.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 6. PCOS / Hormonal Imbalance / Irregular Periods
-  if (
-    q.includes('pcos') ||
-    q.includes('pcod') ||
-    q.includes('hormon') ||
-    q.includes('period')
-  ) {
-    return {
-      issueTitle: 'PCOS & Hormonal Balance Nutrition Plan',
-      text: `PCOS may asal masla Insulin Resistance aur Androgen hormones ka barhna hota hai. High-Protein, Anti-Inflammatory aur Seed-Cycling diet is ka behtareen hal hai.`,
-      recommendedSteps: [
-        'Har nashtay may 20–25g Protein (jese 2 Eggs ya Besan Cheela) lazmi len taake din bhar insulin aur cravings control may rahen.',
-        'Rozana Seed Cycling karen: 1 tbsp पिसी हुई Alsi (Flaxseeds) + 1 tbsp Pumpkin Seeds / Chia Seeds apne oats, dahi ya salad may dalen.',
-        'Din may 1–2 cup Spearmint Tea (Podina Qahwa) ya Cinnamon (Darcheeni) Tea piyen jo excess androgen hormones ko kam karti hai.',
-        'Maida, Cheeni aur Bakery items mukammal chhor kar rozana 30 minute strength/walk exercise karen.'
-      ],
-      foodsToEat: [
-        'Flaxseeds (Alsi), Pumpkin Seeds, Chia Seeds, Sesame & Walnuts',
-        'Eggs, Grilled Chicken/Fish, Moong/Chana Daal & Leafy Greens',
-        'Spearmint Tea, Cinnamon, Berries, Apple & Probiotic Yogurt'
-      ],
-      foodsToAvoid: [
-        'White Sugar, Chocolates, Cold Drinks, Ice Cream & Mithai',
-        'White Flour (Maida), Pizza, Burgers, Pasta & Fried Snacks',
-        'Excess Dairy Cream & Ultra-Processed Vegetable Oils'
-      ]
-    };
+  if (q.includes('pcos') || q.includes('pcod') || q.includes('hormone') || q.includes('period')) {
+    return `For PCOS & Hormonal Balance:\n• Focus on insulin sensitivity: eat 25–30g protein at breakfast (2 eggs, besan cheela, or Greek yogurt) to prevent insulin spikes.\n• Practice daily Seed Cycling: take 1 tbsp ground Flaxseeds (Alsi) + 1 tbsp Pumpkin/Chia seeds daily.\n• Drink 1–2 cups of Spearmint tea or Cinnamon tea daily.\n• Avoid white sugar, bakery items (maida), and cold drinks, and do 30 mins of daily brisk walking or strength training.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 7. Anemia / Iron Deficiency / Hemoglobin / Weakness / Hair Fall
   if (
     q.includes('anemia') ||
     q.includes('iron') ||
@@ -267,164 +111,167 @@ function generateComprehensiveDietitianResolution(
     q.includes('hemoglobin') ||
     q.includes('weak') ||
     q.includes('kamzor') ||
-    q.includes('hair') ||
-    q.includes('baal')
+    q.includes('hair')
   ) {
-    return {
-      issueTitle: 'Anemia (Khoon ki Kami), Weakness & Hair Fall Plan',
-      text: `Hemoglobin (HB) aur Iron barhane ke liye Iron-rich foods ko Vitamin C ke sath mila kar khana zaroori hai, aur khane ke sath Chai bilkul band karni chahiye.`,
-      recommendedSteps: [
-        'Khane ke sath ya khane ke 1 ghantay baad tak Chai ya Coffee HARGIZ na piyen (Chai ke tannins 60% iron ko absorb hone se rok dete hain!).',
-        'Har Iron wali ghiza (Palak, Kala Chana, Daal, Gosht) ke upar Taza Lemon (Vitamin C) nichor kar khayen — is se iron absorption 3 guna barh jati hai.',
-        'Rozana dopehar ko Chukandar (Beetroot) + Anaar (Pomegranate) + Guava salad ya fresh juice len.',
-        'Subah 3 Khajoor (Dates) + 7 Kishmish (soaked raisins) + 5 Badam nashtay may shamil karen.'
-      ],
-      foodsToEat: [
-        'Palak (Spinach), Chukandar (Beetroot), Anaar (Pomegranate) & Dates',
-        'Kala Chana (Black Chickpeas), Lentils, Pumpkin Seeds & Sesame',
-        'Lean Meat, Eggs, Fish + Vitamin C (Lemon, Orange, Amrood)'
-      ],
-      foodsToAvoid: [
-        'Chai & Coffee right before or after meals (Wait at least 90 mins)',
-        'Calcium supplements at the exact same hour as Iron-rich meals',
-        'Junk Food, Sodas & Refined Maida Snacks'
-      ]
-    };
+    return `For Anemia (Iron Deficiency), Weakness & Hair Fall:\n• Pair iron-rich foods (Spinach/Palak, Beetroot, Pomegranate/Anaar, Kala Chana, Dates/Khajoor, Lean Meat, Eggs) with Vitamin C (squeeze fresh Lemon juice on meals or eat Guava/Orange) — this triples iron absorption.\n• IMPORTANT: Never drink Chai or Coffee with meals or within 60–90 minutes after eating, as tea tannins block 60% of iron absorption.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 8. Thyroid (Hypothyroid / Hyperthyroid)
-  if (q.includes('thyroid') || q.includes('tsh') || q.includes('t3') || q.includes('t4')) {
-    return {
-      issueTitle: 'Thyroid Metabolism & Hormone Support Plan',
-      text: `Thyroid hormone (T4 se active T3) banane ke liye Selenium, Zinc, Iodine aur Clean Protein ki zaroorat hoti hai.`,
-      recommendedSteps: [
-        'Agar aap subah Thyroid ki medicine lete hain, to goli khane ke baad 45–60 minute tak Chai, Doodh ya Nashta na karen.',
-        'Gobhi, Band Gobhi (Cabbage) aur Broccoli ko hamesha achi tarha paka kar (cooked) khayen, kacha salad may na khayen.',
-        'Selenium aur Zinc ke liye rozana 2 Eggs, Pumpkin Seeds, Fish ya Daal apni diet may shamil karen.'
-      ],
-      foodsToEat: [
-        'Eggs, Fish, Chicken, Yogurt (Dahi) & Cooked Spinach',
-        'Pumpkin Seeds, Sunflower Seeds, Walnuts & Lentils',
-        'Berries, Apples, Olive Oil & Gluten-Controlled Whole Grains'
-      ],
-      foodsToAvoid: [
-        'Raw Uncooked Cabbage, Cauliflower & Soy Products close to medicine',
-        'Refined Sugar, Deep-Fried Foods & Excess Caffeine',
-        'Highly Processed Packaged Foods'
-      ]
-    };
+  if (q.includes('thyroid') || q.includes('tsh')) {
+    return `For Thyroid Health:\n• Keep a 45–60 minute gap after your morning thyroid medication before taking tea, milk, or breakfast.\n• Include Selenium, Zinc & Iodine-supportive foods: Eggs, Fish, Pumpkin Seeds, Walnuts, Yogurt, and Lentils.\n• Always cook cruciferous vegetables (cabbage, cauliflower, broccoli) thoroughly instead of eating them raw.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 9. Weight Loss / Obesity / Belly Fat
   if (
     q.includes('weight loss') ||
     q.includes('lose weight') ||
     q.includes('wazan kam') ||
-    q.includes('motapa') ||
     q.includes('belly') ||
     q.includes('fat') ||
-    q.includes('charbi')
+    q.includes('motapa')
   ) {
-    return {
-      issueTitle: `Personalized Weight & Belly Fat Reduction Plan (Target: ${indexes.dailyCaloriesNeeded} kcal/day)`,
-      text: `Aapke current BMI (${indexes.bmi} - ${indexes.bmiStatus}) ke mutabiq sehatmand tareeqay se wazan kam karne ke liye Calorie Deficit (${indexes.dailyCaloriesNeeded} kcal/day) aur High Protein (${indexes.targetProteinG}g/day) sab se behtareen hal hai.`,
-      recommendedSteps: [
-        `Rozana ${indexes.dailyCaloriesNeeded} kcal ke andar rahen aur har meal may Protein (Eggs, Chicken, Fish, Daal, Paneer) shamil karen taake muscle loss na ho aur bhook kam lage.`,
-        'Raat ke khane may Roti/Chawal kam kar ke Grilled Protein + Steamed Vegetables + Salad len.',
-        'Meethay mashroobat (Cold drinks, juices, cheeni wali chai) mukammal band karen — sirf is aik qadam se mahana 1.5–2 kg charbi kam hoti hai.',
-        `Rozana ${profile.dailyWaterGoalGlasses}+ glass pani piyen (har khane se 20 minute pehle 1 glass pani) aur 35 minute walk karen.`
-      ],
-      foodsToEat: [
-        'Boiled Eggs, Grilled Chicken Breast, Fish, Moong/Chana Daal & Paneer',
-        'Rolled Oats, Jau ki Roti, Cucumber, Spinach, Broccoli & Salad',
-        'Green Tea, Black Coffee (no sugar), Chia Seeds & Apple/Guava'
-      ],
-      foodsToAvoid: [
-        'Sugar, Mithai, Cold Drinks, Ice Cream & Sweetened Tea',
-        'Paratha, Naan, White Rice in excess, Samosay & Fast Food',
-        'Late-night snacking after 8:30 PM'
-      ]
-    };
+    return `For Healthy Weight & Belly Fat Loss (Based on your BMI ${indexes.bmi} — ${indexes.bmiStatus}):\n• Your daily calorie target is ${indexes.dailyCaloriesNeeded} kcal/day with ${indexes.targetProteinG}g Protein.\n• Breakfast: 2 Boiled Eggs or Oats Bowl. Lunch: 1 Whole-Wheat Roti + Grilled Chicken/Daal + Big Green Salad. Snack: Green Tea + 7 Almonds/Roasted Chana. Dinner: Grilled Fish/Tikka or Paneer with Steamed Vegetables.\n• Drink ${profile.dailyWaterGoalGlasses}+ glasses of water (1 glass 20 mins before meals) and eliminate all liquid sugar.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 10. Weight Gain / Underweight / Muscle Gain
   if (
     q.includes('weight gain') ||
     q.includes('gain weight') ||
     q.includes('wazan barh') ||
     q.includes('muscle') ||
-    q.includes('dubla') ||
-    q.includes('skinny')
+    q.includes('underweight')
   ) {
-    return {
-      issueTitle: 'Healthy Weight & Lean Muscle Gain Plan',
-      text: `Sehatmand tareeqay se wazan aur muscle barhane ke liye Junk Food ke bajaye Nutrient-Dense Calorie Surplus (+400 kcal/day) aur High-Protein ghiza len.`,
-      recommendedSteps: [
-        'Din may 3 baray meals ke sath 2 High-Calorie Healthy Shakes/Snacks lazmi len.',
-        'Rozana 1 Weight-Gain Shake piyen: 1 glass Milk + 1 Banana + 3 Khajoor (Dates) + 1.5 tbsp Peanut Butter + 1/2 cup Oats + 6 Almonds (approx. 550 kcal).',
-        'Har khane may Eggs, Chicken, Fish, Paneer, Chana ya Daal ke sath Healthy Fats (Olive oil, Desi Ghee 1 tsp, Nuts, Avocado) shamil karen.',
-        'Haftay may 3–4 din हल्की resistance/strength exercise karen taake barhne wala wazan charbi ke bajaye muscles may jaye.'
-      ],
-      foodsToEat: [
-        'Banana, Dates (Khajoor), Peanut Butter, Whole Milk & Oats Shake',
-        'Eggs, Chicken, Mutton, Fish, Paneer, Chickpeas (Chana) & Rajma',
-        'Sweet Potato (Shakarkandi), Brown Rice, Almonds, Walnuts & Desi Ghee'
-      ],
-      foodsToAvoid: [
-        'Khane se theek pehle bohot zyada pani peena (is se bhook mar jati hai)',
-        'Deep-Fried Chips, Sodas & Trans-Fat Junk Food',
-        'Meals skip karna'
-      ]
-    };
+    return `For Healthy Weight & Muscle Gain:\n• Aim for a clean calorie surplus (${indexes.dailyCaloriesNeeded + 350} kcal/day) with ${indexes.targetProteinG}g protein.\n• Take 1 daily High-Calorie Smoothie: 1 cup Milk + 1 Banana + 3 Dates (Khajoor) + 1.5 tbsp Peanut Butter + 1/2 cup Oats + 6 Almonds (~550 kcal).\n• Include Eggs, Chicken, Fish, Paneer, Chickpeas, Sweet Potato, and Brown Rice in your daily meals.\n\n${DOCTOR_DISCLAIMER_CHAT}`;
   }
 
-  // 11. General / Custom Issue Fallback (Constipation, Immunity, Skin, Kidney, etc.)
-  return {
-    issueTitle: `Personalized Clinical Nutrition Advice for: "${rawInput}"`,
-    text: `Aapke maslay ("${rawInput}") aur aapke BMI (${indexes.bmi} kg/m² — ${indexes.bmiStatus}) ke mutabiq balanced, anti-inflammatory whole-food nutrition aur proper hydration sab se ahem kirdar ada karti hai.`,
-    recommendedSteps: [
-      `Apni rozana ki calorie zaroorat (${indexes.dailyCaloriesNeeded} kcal/day) ko 3 balanced meals aur 1 healthy snack may taqseem karen, jis may ${indexes.targetProteinG}g clean protein shamil ho.`,
-      `Rozana ${profile.dailyWaterGoalGlasses} se 10 glass pani piyen aur subah ka aghaz 1 glass neem garam pani + 5–7 bheegay Badam/Akhrot se karen.`,
-      'Har dopehar aur raat ke khane may taza sabziyan (Leafy Greens, Cucumber, Salad) aur Probiotic Dahi shamil karen jo gut aur immunity ko theek rakhte hain.',
-      'Refined Sugar (Cheeni), Maida aur Deep-Fried Banaspati oils ko mukammal band kar ke 7–8 ghantay ki behtar neend len.'
-    ],
-    foodsToEat: [
-      'Fresh Leafy Greens (Palak), Cucumber, Carrots & Seasonal Fruits',
-      'Lean Proteins: Boiled Eggs, Grilled Fish/Chicken, Moong Daal & Yogurt',
-      'Whole Grains (Oats, Jau, Chakki Roti), Chia Seeds, Flaxseeds & Almonds'
-    ],
-    foodsToAvoid: [
-      'Refined White Sugar, Carbonated Cold Drinks & Packaged Juices',
-      'White Flour (Maida), Bakery Items & Deep-Fried Fast Foods',
-      'Excess Salt, Artificial Preservatives & Late-Night Heavy Meals'
-    ]
-  };
+  // Fallback to the core dietitian answer generator + personalized advice for any custom issue
+  const baseAnswer = generateDietitianAnswer(rawQuestion, profile, indexes);
+  return `Regarding "${rawQuestion}":\n• Prioritize anti-inflammatory whole foods: fresh leafy greens, seasonal vegetables, lean proteins (${indexes.targetProteinG}g/day target), and complex high-fiber grains.\n• Stay well-hydrated with ${profile.dailyWaterGoalGlasses}–10 glasses of water daily and avoid ultra-processed foods, refined sugar, and deep-fried oils.\n• ${baseAnswer}`;
 }
+
+/**
+ * Helper icon for Recommended / Avoided food cards matching the Reference Image
+ */
+const ConditionFoodIcon: React.FC<{
+  iconType: ConditionFoodCard['iconType'];
+  isRecommended: boolean;
+}> = ({ iconType, isRecommended }) => {
+  const colorClass = isRecommended ? 'text-[#15803D]' : 'text-[#B91C1C]';
+  const bgClass = isRecommended ? 'bg-[#BBF7D0]/60' : 'bg-[#FECACA]/70';
+
+  return (
+    <div
+      className={`w-10 h-10 rounded-xl ${bgClass} ${colorClass} flex items-center justify-center shrink-0 text-lg`}
+    >
+      {iconType === 'leaf' && '🌿'}
+      {iconType === 'fish' && '🐟'}
+      {iconType === 'bowl' && '🥣'}
+      {iconType === 'grain' && '🌾'}
+      {iconType === 'cereal' && '🥣'}
+      {iconType === 'bread' && '🍞'}
+      {iconType === 'fried' && '🍟'}
+      {iconType === 'meat' && '🥩'}
+    </div>
+  );
+};
 
 export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
   user,
   toolsData,
   onSaveToolsData
 }) => {
-  // 1. Unified Single-Page Profile State
-  const [profile, setProfile] = useState<SuiteOnboardingProfile>(() => {
-    const savedNut = toolsData?.nutrition;
+  const savedNut = toolsData?.nutrition;
+
+  // ==========================================================================
+  // 1. DEDICATED RAW STRING STATES FOR ALL NUMERIC INPUTS
+  // Fixes digit entry, backspacing, clearing, and decimal typing 100%!
+  // ==========================================================================
+  const [fullNameInput, setFullNameInput] = useState<string>(
+    () => user.name || 'Food Specialist'
+  );
+  const [ageInput, setAgeInput] = useState<string>(() =>
+    String(savedNut?.age ?? 28)
+  );
+  const [genderInput, setGenderInput] = useState<GenderOption>(() =>
+    savedNut?.gender === 'female' ? 'Female' : 'Male'
+  );
+  const [heightUnit, setHeightUnit] = useState<'cm' | 'feet'>('cm');
+  const [heightCmInput, setHeightCmInput] = useState<string>(() =>
+    String(savedNut?.heightCm ?? 172)
+  );
+  const [heightFeetInput, setHeightFeetInput] = useState<string>('5');
+  const [heightInchesInput, setHeightInchesInput] = useState<string>('8');
+  const [weightKgInput, setWeightKgInput] = useState<string>(() =>
+    String(savedNut?.weightKg ?? 74)
+  );
+  const [targetWeightKgInput, setTargetWeightKgInput] = useState<string>(() =>
+    String(savedNut?.targetWeightKg ?? 68)
+  );
+  const [activityLevel, setActivityLevel] =
+    useState<ActivityLevelOption>('Moderately Active');
+  const [goal, setGoal] = useState<GoalOption>('Lose Weight');
+  const [waterGoalInput, setWaterGoalInput] = useState<string>('8');
+
+  // Derived numeric profile for live formulas (never overwrites user's text inputs while typing!)
+  const profile: SuiteOnboardingProfile = useMemo(() => {
+    const parsedAge = Number(ageInput);
+    const parsedHeightCm = Number(heightCmInput);
+    const parsedFeet = Number(heightFeetInput);
+    const parsedInches = Number(heightInchesInput);
+    const parsedWeight = Number(weightKgInput);
+    const parsedTargetWeight = Number(targetWeightKgInput);
+    const parsedWaterGoal = Number(waterGoalInput);
+
+    const effectiveHeightCm =
+      heightUnit === 'feet'
+        ? Math.round(
+            ((!Number.isNaN(parsedFeet) && parsedFeet > 0 ? parsedFeet : 5) *
+              12 +
+              (!Number.isNaN(parsedInches) && parsedInches >= 0
+                ? parsedInches
+                : 8)) *
+              2.54
+          )
+        : !Number.isNaN(parsedHeightCm) && parsedHeightCm > 0
+        ? parsedHeightCm
+        : 172;
+
     return {
       ...DEFAULT_SUITE_ONBOARDING,
       uid: user.uid,
-      fullName: user.name || 'Food Specialist',
-      age: savedNut?.age || 28,
-      gender: savedNut?.gender === 'female' ? 'Female' : 'Male',
-      heightCm: savedNut?.heightCm || 172,
-      weightKg: savedNut?.weightKg || 74,
-      targetWeightKg: savedNut?.targetWeightKg || 68,
-      activityLevel: 'Moderately Active',
-      goal: 'Lose Weight',
-      dietPreference: 'Desi',
-      healthConditions: ['None'],
+      fullName: fullNameInput || 'Food Specialist',
+      age: !Number.isNaN(parsedAge) && parsedAge > 0 ? parsedAge : 28,
+      gender: genderInput,
+      heightUnit,
+      heightCm: effectiveHeightCm,
+      heightFeet: !Number.isNaN(parsedFeet) ? parsedFeet : 5,
+      heightInches: !Number.isNaN(parsedInches) ? parsedInches : 8,
+      weightKg:
+        !Number.isNaN(parsedWeight) && parsedWeight > 0 ? parsedWeight : 74,
+      targetWeightKg:
+        !Number.isNaN(parsedTargetWeight) && parsedTargetWeight > 0
+          ? parsedTargetWeight
+          : 68,
+      activityLevel,
+      goal,
+      dailyWaterGoalGlasses:
+        !Number.isNaN(parsedWaterGoal) && parsedWaterGoal > 0
+          ? parsedWaterGoal
+          : 8,
       setupCompleted: true
     };
-  });
+  }, [
+    user.uid,
+    fullNameInput,
+    ageInput,
+    genderInput,
+    heightUnit,
+    heightCmInput,
+    heightFeetInput,
+    heightInchesInput,
+    weightKgInput,
+    targetWeightKgInput,
+    activityLevel,
+    goal,
+    waterGoalInput
+  ]);
 
   // Water glasses tracker
   const [waterGlasses, setWaterGlasses] = useState<number>(
@@ -449,9 +296,30 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
         ]
   );
 
-  // Nutrition Condition Recommendation Search State
+  // Nutrition Recommendation Condition Search State (Matches Image 3)
   const [conditionQuery, setConditionQuery] = useState<string>('Diabetes');
   const [activeCondition, setActiveCondition] = useState<string>('Diabetes');
+
+  // ==========================================================================
+  // 2. REVERTED ORIGINAL AI DIETITIAN CHATBOT WITH CLEAR CHAT OPTION
+  // ==========================================================================
+  const initialWelcomeMessage = useMemo<ChatMessageItem>(
+    () => ({
+      id: 'welcome-msg',
+      sender: 'dietitian',
+      text: `Assalam-o-Alaikum ${
+        user.name || 'Specialist'
+      }! I am your AI Nutrition & Dietitian Assistant. Enter any health or nutrition issue below (e.g., Diabetes, High BP, Cholesterol, Acidity, Uric Acid, PCOS, Anemia, Weight Loss, or Weight Gain) and I will give you the recommended dietary solution. ${DOCTOR_DISCLAIMER_CHAT}`,
+      time: 'Just now'
+    }),
+    [user.name]
+  );
+
+  const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>(() => [
+    initialWelcomeMessage
+  ]);
+  const [chatInput, setChatInput] = useState<string>('');
+  const chatSectionRef = useRef<HTMLDivElement | null>(null);
 
   // Save notification banner
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
@@ -461,28 +329,6 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     () => calculateSuiteNutritionIndexes(profile, waterGlasses),
     [profile, waterGlasses]
   );
-
-  // AI Dietitian Chat Agent Messages State
-  const [chatMessages, setChatMessages] = useState<DietitianChatMessage[]>(() => {
-    const initialRes = generateComprehensiveDietitianResolution(
-      'Diabetes',
-      DEFAULT_SUITE_ONBOARDING,
-      calculateSuiteNutritionIndexes(DEFAULT_SUITE_ONBOARDING, 6)
-    );
-    return [
-      {
-        id: 'welcome-agent',
-        sender: 'dietitian',
-        issueTitle: 'Assalam-o-Alaikum! I am Your AI Nutrition & Dietitian Agent',
-        text: `Apna koi bhi Nutrition Issue ya Health Condition (jese Diabetes/Sugar, High BP, Cholesterol, Fatty Liver, Uric Acid, Maiday ki Jalan/Acidity, Gas, PCOS, Thyroid, Khoon ki Kami/Anemia, Weight Loss ya Weight Gain) neechay likhen ya button select karen — main aapko us maslay ko hal karne ka mukammal Recommended Tareeqa aur Diet Plan bataunga!`,
-        recommendedSteps: initialRes.recommendedSteps,
-        foodsToEat: initialRes.foodsToEat,
-        foodsToAvoid: initialRes.foodsToAvoid,
-        time: 'Just now'
-      }
-    ];
-  });
-  const [chatInput, setChatInput] = useState<string>('');
 
   // Weight Advice Logic
   const weightGuidance = useMemo(() => {
@@ -509,7 +355,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
         actionType: 'REDUCE WEIGHT',
         badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
         headline: `You should REDUCE approx. ${kgToLose} kg to reach your Healthy Ideal Weight (${indexes.idealWeightKg} kg).`,
-        detail: `Your current BMI is ${indexes.bmi} (${indexes.bmiStatus}). Follow a daily target of ${indexes.dailyCaloriesNeeded} kcal/day, ${indexes.targetProteinG}g protein, and 8 glasses of water to steadily reach ${profile.targetWeightKg} kg.`
+        detail: `Your current BMI is ${indexes.bmi} (${indexes.bmiStatus}). Follow a daily target of ${indexes.dailyCaloriesNeeded} kcal/day, ${indexes.targetProteinG}g protein, and ${profile.dailyWaterGoalGlasses} glasses of water to steadily reach ${profile.targetWeightKg} kg.`
       };
     }
 
@@ -535,45 +381,48 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     [activeCondition]
   );
 
-  // Send Issue to AI Dietitian Agent
-  const handleAskDietitianIssue = (customQuestion?: string) => {
-    const queryText = (customQuestion ?? chatInput).trim();
-    if (!queryText) return;
+  // Send message to AI Dietitian Chatbot
+  const handleSendChatMessage = (customText?: string) => {
+    const questionText = (customText ?? chatInput).trim();
+    if (!questionText) return;
 
-    const userMsg: DietitianChatMessage = {
-      id: `user-${Date.now()}`,
+    const nowTime = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const userMsg: ChatMessageItem = {
+      id: `u-${Date.now()}`,
       sender: 'user',
-      text: queryText,
-      time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      text: questionText,
+      time: nowTime
     };
 
-    const resolution = generateComprehensiveDietitianResolution(
-      queryText,
-      profile,
-      indexes
-    );
+    const replyText = getDietitianChatbotReply(questionText, profile, indexes);
 
-    const aiMsg: DietitianChatMessage = {
-      id: `ai-${Date.now() + 1}`,
+    const botMsg: ChatMessageItem = {
+      id: `b-${Date.now() + 1}`,
       sender: 'dietitian',
-      issueTitle: resolution.issueTitle,
-      text: resolution.text,
-      recommendedSteps: resolution.recommendedSteps,
-      foodsToEat: resolution.foodsToEat,
-      foodsToAvoid: resolution.foodsToAvoid,
-      time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      text: replyText,
+      time: nowTime
     };
 
-    setChatMessages((prev) => [...prev, userMsg, aiMsg]);
-    if (!customQuestion) {
+    setChatMessages((prev) => [...prev, userMsg, botMsg]);
+    if (!customText) {
       setChatInput('');
     }
+  };
+
+  // Clear AI Dietitian Chat History
+  const handleClearChat = () => {
+    setChatMessages([
+      {
+        ...initialWelcomeMessage,
+        id: `welcome-${Date.now()}`,
+        time: 'Chat Cleared'
+      }
+    ]);
+    setChatInput('');
   };
 
   // Save Health & Nutrition Data to Firestore & UserToolsData
@@ -722,29 +571,6 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       y += 5;
     });
 
-    // Latest AI Dietitian Resolution
-    const lastAiMsg = [...chatMessages]
-      .reverse()
-      .find((m) => m.sender === 'dietitian');
-    if (lastAiMsg && y < 220) {
-      y += 6;
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      pdf.text(
-        `3. AI DIETITIAN RESOLUTION: ${(lastAiMsg.issueTitle || 'Health Guidance').toUpperCase()}`,
-        14,
-        y
-      );
-      y += 6;
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9.5);
-      (lastAiMsg.recommendedSteps || []).forEach((step, idx) => {
-        const lines = pdf.splitTextToSize(`${idx + 1}. ${step}`, pageW - 32);
-        pdf.text(lines, 16, y);
-        y += lines.length * 5 + 1.5;
-      });
-    }
-
     pdf.setFontSize(8);
     pdf.setTextColor(100, 116, 139);
     pdf.text(DOCTOR_DISCLAIMER_BANNER, 14, 285);
@@ -763,20 +589,20 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
   return (
     <div className="space-y-5 pb-8">
       {/* =====================================================================
-          TOP HEADER BANNER — 1-PAGE BMI, HEALTH TRACKER & AI DIETITIAN AGENT
+          TOP HEADER BANNER — 1-PAGE BMI, HEALTH TRACKER & AI DIETITIAN CHAT
          ===================================================================== */}
       <div className="bg-gradient-to-r from-[#13422B] via-[#155E3A] to-[#0E9F6E] rounded-[24px] p-4 sm:p-5 text-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-100 text-[10.5px] font-extrabold uppercase tracking-wider">
               <Activity className="w-3.5 h-3.5" />
-              1-Page Personal Health Tracker • BMI, Weight Graph &amp; AI Dietitian Agent
+              1-Page Personal Health Tracker • BMI, Weight Graph &amp; AI Dietitian Chat
             </span>
             <h2 className="text-lg sm:text-xl font-extrabold mt-1">
-              Personal Health, BMI Calculator &amp; AI Nutrition Issue Resolver
+              Personal Health, BMI Calculator &amp; AI Dietitian Chatbot
             </h2>
             <p className="text-xs text-emerald-100 mt-0.5">
-              Calculate your BMI &amp; weight target, check Recommended vs. Avoided foods for any condition, and ask the AI Dietitian Agent to resolve any nutrition or health issue.
+              Enter your details below to calculate your BMI &amp; weight target, check Nutrition Recommendations, and chat with the AI Dietitian.
             </p>
           </div>
 
@@ -809,7 +635,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       )}
 
       {/* =====================================================================
-          STEP 1: EASY 1-PAGE CALCULATOR INPUTS (HEIGHT, WEIGHT, TARGET, GOAL, WATER)
+          STEP 1: SMOOTH, RELIABLE BODY DETAILS & HEALTH CALCULATOR INPUTS
          ===================================================================== */}
       <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
@@ -822,7 +648,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                 Step 1: Enter Your Body Details &amp; Health Goal
               </h3>
               <p className="text-[11px] text-[#5C7267]">
-                Results update live as you change your weight, height, or goal
+                Type any number freely — BMI, Ideal Weight &amp; Calories calculate automatically
               </p>
             </div>
           </div>
@@ -833,57 +659,52 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
             className="px-4 py-2 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <Check className="w-4 h-4" />
-            <span>Save My Health Data</span>
+            <span>Calculate &amp; Save My Nutrition</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
+          {/* Full Name */}
           <div>
             <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-              Your Name
+              Full Name
             </label>
             <input
               type="text"
-              value={profile.fullName}
-              onChange={(e) =>
-                setProfile((p) => ({ ...p, fullName: e.target.value }))
-              }
-              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              value={fullNameInput}
+              onChange={(e) => setFullNameInput(e.target.value)}
+              placeholder="Enter your name"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
             />
           </div>
 
+          {/* Age (Years) — Smooth string input */}
           <div>
             <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
               Age (Years)
             </label>
             <input
-              type="number"
-              min={14}
-              max={95}
-              value={profile.age}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  age: Math.max(14, Number(e.target.value) || 25)
-                }))
-              }
-              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              type="text"
+              inputMode="numeric"
+              value={ageInput}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                setAgeInput(cleaned);
+              }}
+              placeholder="e.g. 28"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
             />
           </div>
 
+          {/* Gender */}
           <div>
             <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
               Gender
             </label>
             <select
-              value={profile.gender}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  gender: e.target.value as GenderOption
-                }))
-              }
-              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              value={genderInput}
+              onChange={(e) => setGenderInput(e.target.value as GenderOption)}
+              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
             >
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -891,79 +712,108 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
             </select>
           </div>
 
+          {/* Height (cm or feet/inches) — Smooth string input */}
           <div>
-            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-              Height (cm)
-            </label>
-            <input
-              type="number"
-              min={120}
-              max={225}
-              value={profile.heightCm}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  heightUnit: 'cm',
-                  heightCm: Number(e.target.value) || 170
-                }))
-              }
-              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] font-extrabold text-[#13422B]">
+                Height ({heightUnit === 'cm' ? 'cm' : 'ft / in'})
+              </label>
+              <button
+                type="button"
+                onClick={() =>
+                  setHeightUnit((u) => (u === 'cm' ? 'feet' : 'cm'))
+                }
+                className="text-[10px] font-extrabold text-[#0E9F6E] underline cursor-pointer"
+              >
+                Switch to {heightUnit === 'cm' ? 'Feet/Inches' : 'cm'}
+              </button>
+            </div>
+
+            {heightUnit === 'cm' ? (
+              <input
+                type="text"
+                inputMode="decimal"
+                value={heightCmInput}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/[^0-9.]/g, '');
+                  setHeightCmInput(cleaned);
+                }}
+                placeholder="e.g. 172"
+                className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              />
+            ) : (
+              <div className="grid grid-cols-2 gap-1.5">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={heightFeetInput}
+                  onChange={(e) =>
+                    setHeightFeetInput(e.target.value.replace(/[^0-9]/g, ''))
+                  }
+                  placeholder="Feet (e.g. 5)"
+                  className="w-full px-2.5 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={heightInchesInput}
+                  onChange={(e) =>
+                    setHeightInchesInput(e.target.value.replace(/[^0-9]/g, ''))
+                  }
+                  placeholder="Inches (e.g. 8)"
+                  className="w-full px-2.5 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                />
+              </div>
+            )}
           </div>
 
+          {/* Current Weight (kg) — Smooth string input */}
           <div>
             <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
               Current Weight (kg)
             </label>
             <input
-              type="number"
-              step="0.5"
-              min={30}
-              max={220}
-              value={profile.weightKg}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  weightKg: Number(e.target.value) || 70
-                }))
-              }
-              className="w-full px-3 py-2 rounded-xl border-2 border-[#0E9F6E] bg-[#F4FAF7] text-xs font-extrabold text-[#0F291E] focus:outline-none"
+              type="text"
+              inputMode="decimal"
+              value={weightKgInput}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/[^0-9.]/g, '');
+                setWeightKgInput(cleaned);
+              }}
+              placeholder="e.g. 74"
+              className="w-full px-3 py-2.5 rounded-xl border-2 border-[#0E9F6E] bg-[#F4FAF7] text-xs sm:text-sm font-extrabold text-[#0F291E] focus:outline-none"
             />
           </div>
 
+          {/* Target Weight (kg) — Smooth string input */}
           <div>
             <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
               Target Weight (kg)
             </label>
             <input
-              type="number"
-              step="0.5"
-              min={30}
-              max={200}
-              value={profile.targetWeightKg}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  targetWeightKg: Number(e.target.value) || 65
-                }))
-              }
-              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              type="text"
+              inputMode="decimal"
+              value={targetWeightKgInput}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/[^0-9.]/g, '');
+                setTargetWeightKgInput(cleaned);
+              }}
+              placeholder="e.g. 68"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
             />
           </div>
 
+          {/* Activity Level */}
           <div>
             <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
               Activity Level
             </label>
             <select
-              value={profile.activityLevel}
+              value={activityLevel}
               onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  activityLevel: e.target.value as ActivityLevelOption
-                }))
+                setActivityLevel(e.target.value as ActivityLevelOption)
               }
-              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
             >
               <option value="Sedentary">Sedentary (Desk Job)</option>
               <option value="Lightly Active">Lightly Active (1–2 days/wk)</option>
@@ -973,19 +823,15 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
             </select>
           </div>
 
+          {/* Primary Goal */}
           <div>
             <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
               Your Primary Goal
             </label>
             <select
-              value={profile.goal}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  goal: e.target.value as GoalOption
-                }))
-              }
-              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value as GoalOption)}
+              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
             >
               <option value="Lose Weight">Lose Weight (Fat Loss)</option>
               <option value="Maintain Weight">Maintain Healthy Weight</option>
@@ -1254,27 +1100,29 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       </div>
 
       {/* =====================================================================
-          STEP 3: NUTRITION RECOMMENDATION & AI DIETITIAN ISSUE RESOLVER AGENT
+          STEP 3: NUTRITION RECOMMENDATION (EXACT REFERENCE IMAGE DESIGN)
          ===================================================================== */}
-      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-5">
-        <div className="flex items-center gap-2.5 border-b border-[#ECF4EF] pb-3">
-          <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
-            3
-          </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-              Step 3: Nutrition Condition Recommendation &amp; AI Dietitian Issue Resolver
-            </h3>
-            <p className="text-[11px] text-[#5C7267]">
-              Search any health condition or nutrition issue below to see Recommended Foods, Foods to Avoid, and ask the AI Dietitian Agent for a complete solution
-            </p>
+      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-[#ECF4EF] pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
+              3
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-extrabold text-[#0F291E]">
+                Nutrition Recommendation
+              </h3>
+              <p className="text-[11px] text-[#5C7267]">
+                Search any condition below for Personalized Recommendations, Recommended Foods &amp; Foods to Avoid
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Search Input Bar matching the Nutrition Recommendation Reference Image */}
+        {/* Search Bar + Quick Condition Pills */}
         <div className="space-y-2.5">
           <div className="relative flex items-center">
-            <Search className="w-4 h-4 text-[#5C7267] absolute left-3.5" />
+            <Search className="w-4 h-4 text-gray-500 absolute left-3.5" />
             <input
               type="text"
               value={conditionQuery}
@@ -1287,49 +1135,42 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && conditionQuery.trim()) {
                   setActiveCondition(conditionQuery.trim());
-                  handleAskDietitianIssue(conditionQuery.trim());
                 }
               }}
-              placeholder="Type any nutrition issue or condition (e.g., Diabetes, High BP, Uric Acid, Acidity, PCOS)..."
-              className="w-full pl-10 pr-24 py-3 rounded-2xl border border-[#CBE3D6] bg-[#F4FAF7] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              placeholder="Search health condition (e.g. Diabetes, High BP, Cholesterol, PCOS, Acidity)..."
+              className="w-full pl-10 pr-10 py-3 rounded-2xl border border-gray-200 bg-[#F3F4F6] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
             />
             {conditionQuery && (
               <button
                 type="button"
                 onClick={() => setConditionQuery('')}
-                className="absolute right-20 p-1 text-gray-400 hover:text-gray-600 cursor-pointer"
+                className="absolute right-3.5 text-gray-500 hover:text-gray-800 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                if (conditionQuery.trim()) {
-                  setActiveCondition(conditionQuery.trim());
-                  handleAskDietitianIssue(conditionQuery.trim());
-                }
-              }}
-              className="absolute right-2 px-3.5 py-1.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold cursor-pointer"
-            >
-              Search
-            </button>
           </div>
 
-          {/* Quick Health Condition Pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <span className="px-3 py-1 rounded-full bg-[#E0F2FE] text-[#1E3A8A] text-[11px] font-extrabold inline-flex items-center gap-1">
+              <span>Personalized for {conditionRecommendation.conditionName}</span>
+              <Sparkles className="w-3 h-3 text-blue-600" />
+            </span>
+            <span className="text-[11px] font-semibold text-gray-500">
+              {conditionRecommendation.updatedLabel}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
             {[
               'Diabetes',
               'High Blood Pressure',
               'Cholesterol',
-              'Acidity',
-              'Uric Acid',
-              'Fatty Liver',
               'PCOS',
-              'Anemia',
               'Thyroid',
-              'Weight Loss',
-              'Weight Gain'
+              'Heart Disease',
+              'Acidity',
+              'Anemia'
             ].map((cond) => (
               <button
                 key={cond}
@@ -1337,7 +1178,6 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                 onClick={() => {
                   setConditionQuery(cond);
                   setActiveCondition(cond);
-                  handleAskDietitianIssue(cond);
                 }}
                 className={`px-3 py-1 rounded-full text-[11px] font-extrabold cursor-pointer transition-colors ${
                   activeCondition.toLowerCase() === cond.toLowerCase()
@@ -1351,253 +1191,237 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
           </div>
         </div>
 
-        {/* Personalized Recommendation Banner (Matching Reference Image 1) */}
+        {/* Personalized Recommendation Box */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
-              <span>Personalized Recommendation</span>
-              <Sparkles className="w-4 h-4 text-blue-600" />
-            </h4>
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 text-[10.5px] font-extrabold">
-              Personalized for {conditionRecommendation.conditionName} ✨
-            </span>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-[#DBEAFE]/70 border border-[#93C5FD] text-xs sm:text-sm font-semibold text-[#1E3A8A] leading-relaxed">
+          <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+            <span>Personalized Recommendation</span>
+            <Sparkles className="w-4 h-4 text-blue-600" />
+          </h4>
+          <div className="p-4 rounded-2xl bg-[#DBEAFE]/75 border border-[#93C5FD] text-xs sm:text-sm font-semibold text-[#1E3A8A] leading-relaxed">
             {conditionRecommendation.summaryAdvice}
           </div>
         </div>
 
-        {/* Recommended Foods (Green Cards) & Foods to Avoid (Red Cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Left: Recommended Foods */}
+        {/* Recommended Foods Section (Green Cards) */}
+        <div className="space-y-2.5">
+          <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+            <span>Recommended Foods</span>
+            <Leaf className="w-4 h-4 text-[#16A34A]" />
+          </h4>
           <div className="space-y-2.5">
-            <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
-              <span>Recommended Foods</span>
-              <Leaf className="w-4 h-4 text-[#16A34A]" />
-            </h4>
-            <div className="space-y-2.5">
-              {conditionRecommendation.recommendedFoods.map((f) => (
-                <div
-                  key={f.name}
-                  className="p-3.5 rounded-2xl bg-[#DCFCE7]/85 border border-[#86EFAC] space-y-1"
-                >
-                  <div className="text-sm font-extrabold text-[#064E3B]">
-                    🌿 {f.name}
-                  </div>
-                  <div className="text-xs font-semibold text-[#14532D]">
-                    • {f.shortNote}
-                  </div>
-                  <div className="text-[10.5px] text-[#166534]/80 flex items-center gap-1 pt-0.5">
-                    <Info className="w-3 h-3 shrink-0" />
-                    <span>{DOCTOR_DISCLAIMER_SHORT}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: Foods to Avoid */}
-          <div className="space-y-2.5">
-            <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
-              <span>Foods to Avoid</span>
-              <AlertTriangle className="w-4 h-4 text-[#DC2626]" />
-            </h4>
-            <div className="space-y-2.5">
-              {conditionRecommendation.foodsToAvoid.map((f) => (
-                <div
-                  key={f.name}
-                  className="p-3.5 rounded-2xl bg-[#FEE2E2]/90 border border-[#FCA5A5] space-y-1"
-                >
-                  <div className="text-sm font-extrabold text-[#7F1D1D]">
-                    ⚠️ {f.name}
-                  </div>
-                  <div className="text-xs font-semibold text-[#991B1B]">
-                    • {f.shortNote}
-                  </div>
-                  <div className="text-[10.5px] text-[#991B1B]/80 flex items-center gap-1 pt-0.5">
-                    <Info className="w-3 h-3 shrink-0" />
-                    <span>{DOCTOR_DISCLAIMER_SHORT}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ===================================================================
-            INTERACTIVE AI DIETITIAN — CHAT & ISSUE RESOLVER AGENT
-           =================================================================== */}
-        <div className="pt-3 border-t border-[#ECF4EF] space-y-3.5">
-          {/* Header Banner like the Blue "✨ AI Dietitian — Chat" Bar in Reference Image */}
-          <div className="bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#0E9F6E] rounded-2xl p-4 text-white shadow-sm flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5 text-amber-200" />
-              </div>
-              <div>
-                <h4 className="text-sm sm:text-base font-extrabold flex items-center gap-1.5">
-                  <span>✨ AI Dietitian — Chat &amp; Nutrition Issue Resolver</span>
-                </h4>
-                <p className="text-[11px] text-blue-100">
-                  Enter any nutrition or health issue below — the AI Agent will reply with the complete recommended method (Tareeqa) to resolve your issue!
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick 1-Click Nutrition Issue Prompts */}
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-extrabold text-[#13422B]">
-              Click any common issue below or type your own question:
-            </span>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {[
-                'Diabetes / Sugar control karne ka mukammal tareeqa?',
-                'Maiday ki jalan, Acidity aur Gas ka fori hal?',
-                'High Blood Pressure (BP) normal karne ki diet?',
-                'Cholesterol aur Fatty Liver kam karne ka tareeqa?',
-                'Uric Acid aur Joron ka dard khatam karne ka hal?',
-                'Wazan kam (Weight Loss) karne ka asaan tareeqa?',
-                'Wazan barhane (Weight Gain) ka sehatmand tareeqa?',
-                'Khoon ki kami (Anemia) aur kamzori door karne ka hal?',
-                'PCOS aur Hormone balance karne ki diet?'
-              ].map((promptText) => (
-                <button
-                  key={promptText}
-                  type="button"
-                  onClick={() => handleAskDietitianIssue(promptText)}
-                  className="px-3 py-1.5 rounded-xl bg-[#F4FAF7] hover:bg-[#DCFCE7] border border-[#BCE3C8] text-[#13422B] text-[11px] font-extrabold cursor-pointer transition-colors text-left"
-                >
-                  💬 {promptText}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Chat Conversation Feed */}
-          <div className="bg-[#F8FCFA] border border-[#CBE3D6] rounded-2xl p-3.5 sm:p-4 space-y-3 max-h-[520px] overflow-y-auto">
-            {chatMessages.map((msg) => (
+            {conditionRecommendation.recommendedFoods.map((f) => (
               <div
-                key={msg.id}
-                className={`flex ${
-                  msg.sender === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                key={f.name}
+                className="p-3.5 rounded-2xl bg-[#DCFCE7] border border-[#86EFAC] flex items-start gap-3"
               >
-                <div
-                  className={`max-w-[92%] sm:max-w-[85%] rounded-2xl p-3.5 space-y-2.5 ${
-                    msg.sender === 'user'
-                      ? 'bg-[#13422B] text-white'
-                      : 'bg-white border-2 border-[#BCE3C8] text-[#0F291E] shadow-2xs'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2 text-[10px] font-bold opacity-80">
-                    <span className="inline-flex items-center gap-1">
-                      {msg.sender === 'user' ? (
-                        <>
-                          <User className="w-3 h-3" />
-                          <span>You ({profile.fullName})</span>
-                        </>
-                      ) : (
-                        <>
-                          <Bot className="w-3.5 h-3.5 text-[#0E9F6E]" />
-                          <span className="text-[#0E9F6E] font-extrabold">
-                            AI Dietitian Agent
-                          </span>
-                        </>
-                      )}
-                    </span>
-                    <span>{msg.time}</span>
+                <ConditionFoodIcon iconType={f.iconType} isRecommended={true} />
+                <div className="space-y-0.5">
+                  <div className="text-sm sm:text-base font-extrabold text-[#064E3B]">
+                    {f.name}
                   </div>
-
-                  {msg.issueTitle && (
-                    <div className="text-xs sm:text-sm font-extrabold text-[#13422B] border-b border-[#ECF4EF] pb-1.5">
-                      🩺 {msg.issueTitle}
-                    </div>
-                  )}
-
-                  <p className="text-xs leading-relaxed font-medium">
-                    {msg.text}
-                  </p>
-
-                  {/* Recommended Steps to Resolve the Issue */}
-                  {msg.recommendedSteps && msg.recommendedSteps.length > 0 && (
-                    <div className="p-3 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-1.5">
-                      <div className="text-[11px] font-extrabold text-[#14532D] uppercase">
-                        ✓ Masla Hal Karnay Ka Recommended Tareeqa (Action Plan):
-                      </div>
-                      <ul className="space-y-1 text-xs text-[#0F291E]">
-                        {msg.recommendedSteps.map((step, idx) => (
-                          <li key={idx} className="leading-snug">
-                            <strong>{idx + 1}.</strong> {step}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Foods to Eat & Avoid inside Agent Reply */}
-                  {msg.foodsToEat && msg.foodsToAvoid && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                      <div className="p-2.5 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0]">
-                        <div className="text-[10.5px] font-extrabold text-[#065F46] mb-1">
-                          🌿 Kia Khana Chahiye (Eat):
-                        </div>
-                        <ul className="space-y-0.5 text-[11px] text-[#0F291E]">
-                          {msg.foodsToEat.map((f, i) => (
-                            <li key={i}>• {f}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-[#FEF2F2] border border-[#FECACA]">
-                        <div className="text-[10.5px] font-extrabold text-[#991B1B] mb-1">
-                          ⚠️ Parhez Karen (Avoid):
-                        </div>
-                        <ul className="space-y-0.5 text-[11px] text-[#7F1D1D]">
-                          {msg.foodsToAvoid.map((f, i) => (
-                            <li key={i}>• {f}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  )}
+                  <div className="text-xs font-bold text-[#14532D]">
+                    • {f.shortNote}
+                  </div>
+                  <div className="text-[11px] text-[#166534]/90 flex items-center gap-1 pt-0.5">
+                    <Info className="w-3.5 h-3.5 shrink-0" />
+                    <span>{DOCTOR_DISCLAIMER_SHORT}</span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Chat Input Box */}
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAskDietitianIssue();
-                }
-              }}
-              placeholder="Apna nutrition issue ya sawal yahan likhen (e.g., Acidity, Sugar, BP, Uric Acid, Weight Loss)..."
-              className="flex-1 px-4 py-3 rounded-2xl border-2 border-[#0E9F6E] bg-white text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => handleAskDietitianIssue()}
-              className="px-5 py-3 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs sm:text-sm font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
-            >
-              <Send className="w-4 h-4" />
-              <span>Ask AI Agent</span>
-            </button>
+        {/* Foods to Avoid Section (Red/Coral Cards) */}
+        <div className="space-y-2.5">
+          <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+            <span>Foods to Avoid</span>
+            <AlertTriangle className="w-4 h-4 text-[#DC2626]" />
+          </h4>
+          <div className="space-y-2.5">
+            {conditionRecommendation.foodsToAvoid.map((f) => (
+              <div
+                key={f.name}
+                className="p-3.5 rounded-2xl bg-[#FECACA]/85 border border-[#F87171] flex items-start gap-3"
+              >
+                <ConditionFoodIcon
+                  iconType={f.iconType}
+                  isRecommended={false}
+                />
+                <div className="space-y-0.5">
+                  <div className="text-sm sm:text-base font-extrabold text-[#7F1D1D]">
+                    {f.name}
+                  </div>
+                  <div className="text-xs font-bold text-[#991B1B]">
+                    • {f.shortNote}
+                  </div>
+                  <div className="text-[11px] text-[#991B1B]/90 flex items-center gap-1 pt-0.5">
+                    <Info className="w-3.5 h-3.5 shrink-0" />
+                    <span>{DOCTOR_DISCLAIMER_SHORT}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+
+        {/* Doctor Disclaimer Box */}
+        <div className="p-3.5 rounded-2xl bg-[#DBEAFE]/65 border border-[#93C5FD] text-xs font-bold text-[#1E3A8A] flex items-center gap-2.5">
+          <span className="text-base font-extrabold text-blue-700">➕</span>
+          <span>{DOCTOR_DISCLAIMER_BANNER}</span>
+        </div>
+
+        {/* Big Blue "✨ AI Dietitian — Chat" Button (Matches Reference Image 3) */}
+        <button
+          type="button"
+          onClick={() =>
+            chatSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+          }
+          className="w-full py-3.5 px-5 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-extrabold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
+        >
+          <Sparkles className="w-5 h-5 text-blue-100" />
+          <span>AI Dietitian — Chat</span>
+        </button>
       </div>
 
-      {/* DOCTOR DISCLAIMER FOOTER */}
-      <div className="p-3.5 rounded-2xl bg-[#DBEAFE]/70 border border-[#93C5FD] text-[11px] font-bold text-[#1E3A8A] flex items-center gap-2">
-        <Heart className="w-4 h-4 text-blue-700 shrink-0" />
-        <span>{DOCTOR_DISCLAIMER_BANNER}</span>
+      {/* =====================================================================
+          STEP 4: REVERTED ORIGINAL AI DIETITIAN CHATBOT WITH "CLEAR CHAT" OPTION
+         ===================================================================== */}
+      <div
+        ref={chatSectionRef}
+        className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4"
+      >
+        {/* Chatbot Header with Prominent CLEAR CHAT Button */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shrink-0">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+                <span>AI Dietitian — Chat</span>
+                <Sparkles className="w-4 h-4 text-[#2563EB]" />
+              </h3>
+              <p className="text-[11px] text-[#5C7267]">
+                Enter any nutrition issue or question below to get an instant answer
+              </p>
+            </div>
+          </div>
+
+          {/* CLEAR CHAT BUTTON */}
+          <button
+            type="button"
+            onClick={handleClearChat}
+            className="px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Clear Chat</span>
+          </button>
+        </div>
+
+        {/* Quick Issue Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {[
+            'Diabetes diet plan',
+            'High Blood Pressure (BP)',
+            'Cholesterol & Fatty Liver',
+            'Acidity, Gas & Stomach',
+            'Weight Loss Plan',
+            'Weight Gain Plan',
+            'PCOS Diet',
+            'Uric Acid Issue',
+            'Anemia / Iron Deficiency',
+            'Can I eat Biryani?'
+          ].map((chip) => (
+            <button
+              key={chip}
+              type="button"
+              onClick={() => handleSendChatMessage(chip)}
+              className="px-3 py-1.5 rounded-full bg-[#F4FAF7] hover:bg-[#DCFCE7] border border-[#CBE3D6] text-[#13422B] text-[11px] font-extrabold whitespace-nowrap cursor-pointer transition-colors"
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+
+        {/* Chat Messages Container */}
+        <div className="bg-[#F8FCFA] border border-[#CBE3D6] rounded-2xl p-3.5 sm:p-4 space-y-3 max-h-96 overflow-y-auto">
+          {chatMessages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${
+                msg.sender === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              <div
+                className={`max-w-[88%] sm:max-w-[80%] rounded-2xl p-3.5 space-y-1.5 ${
+                  msg.sender === 'user'
+                    ? 'bg-[#0E9F6E] text-white'
+                    : 'bg-white border border-[#CBE3D6] text-[#0F291E] shadow-2xs'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3 text-[10px] font-bold opacity-80">
+                  <span className="inline-flex items-center gap-1">
+                    {msg.sender === 'user' ? (
+                      <>
+                        <User className="w-3 h-3" />
+                        <span>{profile.fullName}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Bot className="w-3.5 h-3.5 text-[#2563EB]" />
+                        <span className="text-[#2563EB] font-extrabold">
+                          AI Dietitian
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <span>{msg.time}</span>
+                </div>
+
+                <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-line font-medium">
+                  {msg.text}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Chat Input Bar + Send & Clear Buttons */}
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSendChatMessage();
+              }
+            }}
+            placeholder="Type your nutrition issue or question here (e.g. Diabetes, Acidity, Weight Loss, BP)..."
+            className="flex-1 px-4 py-3 rounded-2xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#2563EB]"
+          />
+          <button
+            type="button"
+            onClick={() => handleSendChatMessage()}
+            className="px-4 sm:px-5 py-3 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs sm:text-sm font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+          >
+            <Send className="w-4 h-4" />
+            <span>Send</span>
+          </button>
+          {chatMessages.length > 1 && (
+            <button
+              type="button"
+              onClick={handleClearChat}
+              title="Clear Chat"
+              className="px-3 py-3 rounded-2xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span className="hidden sm:inline">Clear</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
