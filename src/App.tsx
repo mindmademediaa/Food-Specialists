@@ -2590,12 +2590,15 @@ export default function App() {
 
           {/* ==================== 1. HOME SCREEN (/) ==================== */}
           {route.name === 'home' && (
-            <div className="space-y-4 px-0.5">
-              {/* Greeting Row */}
-              <div className="flex items-center justify-between pt-0.5">
-                <h1 className="text-[17px] sm:text-[20px] font-extrabold text-[#0F291E] tracking-tight leading-snug break-words">
-                  Good morning, {firstName}
+            <div className="space-y-4 px-1 pt-1">
+              {/* Greeting Row matching Reference Front Design */}
+              <div className="space-y-0.5 pt-0.5">
+                <h1 className="text-[24px] sm:text-[27px] font-extrabold text-[#0B2614] tracking-tight leading-tight break-words">
+                  Good morning {firstName}
                 </h1>
+                <p className="text-[14.5px] sm:text-[15.5px] font-normal text-[#4B5563]">
+                  Find your next opportunity today
+                </p>
               </div>
 
               {/* ADMIN QUICK BANNER FOR PENDING PAYMENT APPROVALS */}
@@ -2626,116 +2629,93 @@ export default function App() {
                 </div>
               )}
 
-              {/* CARD 1 - JOBS (Styled in Theme 1: Emerald Trust — Tags strictly unclickable) */}
-              <div className="bg-white border border-[#D4E9DF] rounded-[20px] p-4 sm:p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] transition-all space-y-3">
-                {/* Top Row: Mint Icon Box + Title & Subtitle */}
-                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-[14px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
-                      <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+              {/* CARD 1 - JOBS (Reference Front Theme Design — Tags Strictly Unclickable) */}
+              <div className="bg-white border-[1.5px] border-[#2E8B57] rounded-[26px] p-5 sm:p-6 shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-all space-y-4">
+                <div className="flex items-start gap-4">
+                  {/* Left Mint Rounded Icon Box */}
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-[16px] bg-[#B8DEC2] text-[#0A2E16] flex items-center justify-center shrink-0">
+                    <Briefcase className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2]" />
+                  </div>
+
+                  {/* Right Content: Title + Unclickable Tags + Verified Roles Count */}
+                  <div className="space-y-2.5 min-w-0 flex-1">
+                    <h2 className="text-[25px] sm:text-[28px] font-extrabold text-[#0B2413] leading-none tracking-tight">
+                      Jobs
+                    </h2>
+
+                    {/* 3 Strictly Unclickable Tags */}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none"
+                    >
+                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                        Production
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                        R&amp;D Lab
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                        Quality &amp; Safety
+                      </span>
                     </div>
-                    <div className="pt-0.5 min-w-0">
-                      <h2 className="text-[17px] sm:text-[20px] font-extrabold text-[#0F291E] leading-snug break-words">
-                        Jobs
-                      </h2>
-                      <p className="text-[12px] sm:text-[13px] font-medium text-[#5C7267] mt-0.5 leading-snug break-words">
-                        Find roles in food R&amp;D, QA, production &amp; more
-                      </p>
+
+                    <div className="text-[14px] sm:text-[15px] font-normal text-[#222222] pt-0.5">
+                      {activeJobs.length} Verified Roles Available
                     </div>
                   </div>
                 </div>
 
-                {/* Middle Row: 3 Unclickable Mint Pill Badges (Production, R&D Lab, Quality & Safety) */}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex flex-wrap items-center gap-1.5 border-b border-[#ECF4EF] pb-3 select-none cursor-default pointer-events-none"
+                {/* Full-Width Solid Green Button */}
+                <button
+                  type="button"
+                  onClick={() => navigateToJobs('All')}
+                  className="w-full py-3.5 px-4 rounded-[12px] bg-[#0F8A3E] hover:bg-[#0C7232] text-white text-[16px] sm:text-[17px] font-bold text-center shadow-xs transition-colors cursor-pointer"
                 >
-                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                    <Wheat className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>Production</span>
-                  </span>
-
-                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                    <FlaskConical className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>R&amp;D Lab</span>
-                  </span>
-
-                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                    <ShieldCheck className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>Quality &amp; Safety</span>
-                  </span>
-                </div>
-
-                {/* Bottom Row: Active Count + Emerald Green Button */}
-                <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
-                  <span className="text-[11.5px] sm:text-[12.5px] font-semibold text-[#4B6356]">
-                    {activeJobs.length} Verified Roles Available
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => navigateToJobs('All')}
-                    className="px-3.5 py-1.5 rounded-[10px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[11.5px] sm:text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <span>Browse Jobs</span>
-                    <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                  </button>
-                </div>
+                  Browse Jobs
+                </button>
               </div>
 
-              {/* CARD 2 - SCHOLARSHIPS (Styled in Theme 1: Emerald Trust — Tags strictly unclickable) */}
-              <div className="bg-white border border-[#D4E9DF] rounded-[20px] p-4 sm:p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] transition-all space-y-3">
-                {/* Top Row: Mint Icon Box + Title & Subtitle */}
-                <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-[14px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
-                      <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+              {/* CARD 2 - SCHOLARSHIPS (Reference Front Theme Design — Tags Strictly Unclickable) */}
+              <div className="bg-white border-[1.5px] border-[#D0D7D2] rounded-[26px] p-5 sm:p-6 shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-all space-y-4">
+                <div className="flex items-start gap-4">
+                  {/* Left Mint Rounded Icon Box */}
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-[16px] bg-[#B8DEC2] text-[#0A2E16] flex items-center justify-center shrink-0">
+                    <GraduationCap className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2]" />
+                  </div>
+
+                  {/* Right Content: Title + Unclickable Tags + Global Programs Count */}
+                  <div className="space-y-2.5 min-w-0 flex-1">
+                    <h2 className="text-[25px] sm:text-[28px] font-extrabold text-[#0B2413] leading-none tracking-tight">
+                      Scholarships
+                    </h2>
+
+                    {/* Strictly Unclickable Tags */}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none"
+                    >
+                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                        Fellowships
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                        International Grants
+                      </span>
                     </div>
-                    <div className="pt-0.5 min-w-0">
-                      <h2 className="text-[17px] sm:text-[20px] font-extrabold text-[#0F291E] leading-snug break-words">
-                        Scholarships
-                      </h2>
-                      <p className="text-[12px] sm:text-[13px] font-medium text-[#5C7267] mt-0.5 leading-snug break-words">
-                        Grants, fellowships &amp; programs for food tech
-                      </p>
+
+                    <div className="text-[14px] sm:text-[15px] font-normal text-[#222222] pt-0.5">
+                      {activeScholarships.length} Global Programs Open
                     </div>
                   </div>
                 </div>
 
-                {/* Middle Row: 3 Unclickable Mint Pill Badges (Fellowships, International, Grants) */}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex flex-wrap items-center gap-1.5 border-b border-[#ECF4EF] pb-3 select-none cursor-default pointer-events-none"
+                {/* Full-Width Outlined Green Button */}
+                <button
+                  type="button"
+                  onClick={() => navigateToScholarships('All')}
+                  className="w-full py-3.5 px-4 rounded-[12px] bg-white hover:bg-[#F0FDF4] border-2 border-[#0F8A3E] text-[#0F8A3E] text-[16px] sm:text-[17px] font-bold text-center transition-colors cursor-pointer"
                 >
-                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                    <BookOpen className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>Fellowships</span>
-                  </span>
-
-                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                    <Globe className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>International</span>
-                  </span>
-
-                  <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                    <Trophy className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>Grants</span>
-                  </span>
-                </div>
-
-                {/* Bottom Row: Active Count + Emerald Green Button */}
-                <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
-                  <span className="text-[11.5px] sm:text-[12.5px] font-semibold text-[#4B6356]">
-                    {activeScholarships.length} Global Programs Open
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => navigateToScholarships('All')}
-                    className="px-3.5 py-1.5 rounded-[10px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[11.5px] sm:text-[12.5px] font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <span>Explore Grants</span>
-                    <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                  </button>
-                </div>
+                  Explore Grants
+                </button>
               </div>
 
               {/* OFFICIAL WHATSAPP CHANNEL CARD ON HOME FRONT PAGE (Controlled via Admin Control Panel) */}
