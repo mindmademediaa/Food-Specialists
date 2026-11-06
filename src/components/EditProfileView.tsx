@@ -1809,8 +1809,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0 mt-0.5" />
                     <span>
                       <strong>Full Specialist Tools Access:</strong> Daily
-                      Nutrition &amp; BMI Tracker, 5 Exam Prep Sets (250 MCQs)
-                      &amp; 5 Interview Sets (100 Q&amp;As) with PDF Reports
+                      Nutrition &amp; BMI Tracker, 2,000 Exam MCQs (30 MCQs per
+                      Test) &amp; 2,000 Interview Q&amp;As (30 Qs per Session)
+                      with Personalized Graph &amp; PDF Reports
                     </span>
                   </li>
                 </ul>
@@ -1868,7 +1869,8 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
         const metrics = computeNutritionMetrics(nut);
         const examAttempts = userTools.examAttempts || [];
         const completedInterviews = userTools.masteredInterviewIds || [];
-        const bookmarkedInterviews = userTools.bookmarkedInterviewIds || [];
+        const seenInterviewCount = (userTools.seenInterviewQuestionIds || [])
+          .length;
         const todayIso = new Date().toISOString().slice(0, 10);
         const todayMeals = (nut.mealLogs || []).filter(
           (m) => m.date === todayIso
@@ -1920,7 +1922,8 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   </div>
                   <p className="text-[11px] text-[#5C7267] font-medium">
                     Saved personal health metrics, BMI &amp; weight goal, exam
-                    attempts (250 MCQs) &amp; interview prep (100 Q&amp;As)
+                    attempts (2,000 MCQs Bank) &amp; interview prep (2,000
+                    Q&amp;As Bank)
                   </p>
                 </div>
               </div>
@@ -2019,11 +2022,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                         onOpenPremiumModal();
                         return;
                       }
-                      downloadNutritionReportPdf(
-                        profile.name || 'Food Specialist',
-                        nut,
-                        metrics
-                      );
+                      downloadNutritionReportPdf(profile, nut, metrics);
                     }}
                     title="Download Full Nutrition Report PDF"
                     className="p-2 rounded-xl bg-white hover:bg-[#E2F2E9] border border-[#9BCAB0] text-[#13422B] cursor-pointer"
@@ -2033,35 +2032,38 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                 </div>
               </div>
 
-              {/* 2. Saved Exam Prep Attempts (5 Sets x 50 MCQs) */}
+              {/* 2. Saved Exam Prep Attempts (2,000 MCQs Bank — 30 MCQs per Test) */}
               <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE3D6] flex flex-col justify-between space-y-2.5">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#1D4ED8]">
                       <GraduationCap className="w-3.5 h-3.5" />
-                      <span>2. Exam Prep (250 MCQs)</span>
+                      <span>2. Exam Prep (2,000 MCQs)</span>
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-extrabold">
                       {examAttempts.length} Attempts
                     </span>
                   </div>
                   <div className="text-xs font-extrabold text-[#0F291E]">
-                    5 Exam Sets × 50 MCQs
+                    30 Unique MCQs per Attempt
                   </div>
                   {examAttempts.length > 0 ? (
                     <div className="text-[11px] font-bold text-[#13422B] bg-white px-2.5 py-1.5 rounded-xl border border-[#D4E9DF]">
                       Latest: <strong>{examAttempts[0].percentage}%</strong> (
-                      {examAttempts[0].scoreMarks}/{examAttempts[0].totalMarks} •
-                      Grade {examAttempts[0].grade})
+                      {examAttempts[0].correctCount} Pass /{' '}
+                      {examAttempts[0].failedCount ??
+                        examAttempts[0].totalQuestions -
+                          examAttempts[0].correctCount}{' '}
+                      Fail)
                     </div>
                   ) : (
                     <div className="text-[11px] font-medium text-[#5C7267] bg-white px-2.5 py-1.5 rounded-xl border border-[#D4E9DF]">
-                      No exam sets submitted yet. Start Set 1–5 to test your
-                      score!
+                      No exam attempts yet. Start a 30-MCQ test from the
+                      2,000-MCQ bank!
                     </div>
                   )}
                   <div className="text-[10.5px] text-[#5C7267] font-semibold">
-                    Food Safety, HACCP, ISO 22000 &amp; Food Tech
+                    Food Safety, HACCP, ISO 9001/22000 &amp; FSSC 22000
                   </div>
                 </div>
 
@@ -2070,31 +2072,31 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onClick={() => handleControlPanelToolClick('exam')}
                   className="w-full py-2 px-2.5 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-[11px] font-extrabold cursor-pointer transition-colors"
                 >
-                  Open 5 Exam Sets
+                  Start 30-MCQ Exam
                 </button>
               </div>
 
-              {/* 3. Saved Interview Prep Progress (5 Sets x 20 Questions) */}
+              {/* 3. Saved Interview Prep Progress (2,000 Q&As Bank — 30 Questions per Session) */}
               <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE3D6] flex flex-col justify-between space-y-2.5">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#B45309]">
                       <MessageSquare className="w-3.5 h-3.5" />
-                      <span>3. Interview Prep</span>
+                      <span>3. Interview Prep (2,000 Qs)</span>
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold">
-                      {completedInterviews.length} / 100 Prepared
+                      {completedInterviews.length} Prepared
                     </span>
                   </div>
                   <div className="text-xs font-extrabold text-[#0F291E]">
-                    5 Interview Sets × 20 Q&amp;As
+                    30 Unique Q&amp;As per Session
                   </div>
                   <div className="text-[11px] font-bold text-[#13422B] bg-white px-2.5 py-1.5 rounded-xl border border-[#D4E9DF]">
                     Prepared: <strong>{completedInterviews.length}</strong> Qs •
-                    Saved: <strong>{bookmarkedInterviews.length}</strong> Qs
+                    Seen: <strong>{seenInterviewCount}</strong> / 2,000
                   </div>
                   <div className="text-[10.5px] text-[#5C7267] font-semibold">
-                    HACCP, ISO 22000, FSSC 22000 v6 &amp; QA Audits
+                    Food Science, HACCP, ISO 9001, ISO 22000 &amp; FSSC 22000
                   </div>
                 </div>
 
@@ -2103,7 +2105,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onClick={() => handleControlPanelToolClick('interview')}
                   className="w-full py-2 px-2.5 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-[11px] font-extrabold cursor-pointer transition-colors"
                 >
-                  Open 5 Interview Sets
+                  Open 30-Q Interview Prep
                 </button>
               </div>
             </div>
@@ -2112,50 +2114,44 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             {examAttempts.length > 0 && (
               <div className="pt-2 border-t border-[#ECF4EF] space-y-2">
                 <div className="text-xs font-extrabold text-[#0F291E]">
-                  Saved Exam Result Reports ({examAttempts.length})
+                  Saved 30-MCQ Exam Result Reports ({examAttempts.length})
                 </div>
                 <div className="space-y-1.5">
-                  {examAttempts.slice(0, 5).map((att) => {
-                    const matchedSet =
-                      EXAM_PREP_SETS.find((s) => s.id === att.setId) ||
-                      EXAM_PREP_SETS[0];
-                    return (
-                      <div
-                        key={att.id}
-                        className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF] flex flex-wrap items-center justify-between gap-2"
-                      >
-                        <div>
-                          <div className="text-xs font-extrabold text-[#0F291E]">
-                            {att.setTitle}
-                          </div>
-                          <div className="text-[10.5px] text-[#5C7267] font-semibold">
-                            Marks: <strong>{att.scoreMarks}</strong> /{' '}
-                            {att.totalMarks} ({att.percentage}%) • Grade:{' '}
-                            <strong>{att.grade}</strong> •{' '}
-                            {new Date(att.completedAt).toLocaleDateString()}
-                          </div>
+                  {examAttempts.slice(0, 5).map((att) => (
+                    <div
+                      key={att.id}
+                      className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF] flex flex-wrap items-center justify-between gap-2"
+                    >
+                      <div>
+                        <div className="text-xs font-extrabold text-[#0F291E]">
+                          {att.setTitle}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!isPremium) {
-                              onOpenPremiumModal();
-                              return;
-                            }
-                            downloadExamReportPdf(
-                              profile.name || 'Food Specialist',
-                              att,
-                              matchedSet
-                            );
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#DCFCE7] border border-[#9BCAB0] text-[#13422B] text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <Download className="w-3 h-3 text-[#0E9F6E]" />
-                          <span>PDF Report</span>
-                        </button>
+                        <div className="text-[10.5px] text-[#5C7267] font-semibold">
+                          Score: <strong>{att.percentage}%</strong> (
+                          {att.correctCount} Passed /{' '}
+                          {att.failedCount ??
+                            att.totalQuestions - att.correctCount}{' '}
+                          Failed out of {att.totalQuestions}) • Grade:{' '}
+                          <strong>{att.grade}</strong> •{' '}
+                          {new Date(att.completedAt).toLocaleDateString()}
+                        </div>
                       </div>
-                    );
-                  })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isPremium) {
+                            onOpenPremiumModal();
+                            return;
+                          }
+                          downloadExamReportPdf(profile, att);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#DCFCE7] border border-[#9BCAB0] text-[#13422B] text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Download className="w-3 h-3 text-[#0E9F6E]" />
+                        <span>PDF Report</span>
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

@@ -180,16 +180,33 @@ export interface UserExamAttempt {
   scoreMarks: number;
   totalMarks: number;
   correctCount: number;
+  failedCount?: number;
+  unansweredCount?: number;
   totalQuestions: number;
   percentage: number;
   grade: string;
   passed: boolean;
+  questionIds?: string[];
+  selectedAnswers?: Record<string, number>;
+  completedAt: string;
+}
+
+export interface UserInterviewSession {
+  id: string;
+  sessionTitle: string;
+  totalQuestions: number;
+  preparedCount: number;
+  readinessPercentage: number;
+  questionIds: string[];
   completedAt: string;
 }
 
 export interface UserToolsData {
   nutrition: NutritionProfileData;
   examAttempts: UserExamAttempt[];
+  interviewSessions?: UserInterviewSession[];
+  seenExamQuestionIds?: string[];
+  seenInterviewQuestionIds?: string[];
   masteredInterviewIds: string[];
   bookmarkedInterviewIds: string[];
   lastActiveTool?: 'nutrition' | 'exam' | 'interview';

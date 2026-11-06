@@ -2738,7 +2738,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* CARD 3 - SPECIALIST TOOLS HUB (Nutrition Tracker & BMI Graph, 5 Exam Sets x 50 MCQs, 5 Interview Sets x 20 Q&As) */}
+              {/* CARD 3 - SPECIALIST TOOLS HUB (Nutrition Tracker & BMI Graph, 2,000 Exam MCQs, 2,000 Interview Q&As) */}
               <div className="bg-white border border-[#D4E9DF] rounded-[20px] p-4 sm:p-5 shadow-[0_6px_22px_rgba(19,66,43,0.06)] transition-all space-y-3">
                 <div className="flex items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3">
                   <div className="flex items-start gap-3 min-w-0">
@@ -2755,7 +2755,7 @@ export default function App() {
                         </span>
                       </div>
                       <p className="text-[12px] sm:text-[13px] font-medium text-[#5C7267] mt-0.5 leading-snug break-words">
-                        Daily Nutrition &amp; BMI Tracker, 5 Exam Sets (250 MCQs) &amp; 5 Interview Sets (100 Q&amp;As)
+                        Daily Nutrition &amp; BMI Tracker, 2,000 Exam MCQs (30/Test) &amp; 2,000 Interview Q&amp;As (30/Session)
                       </p>
                     </div>
                   </div>
@@ -2773,18 +2773,18 @@ export default function App() {
 
                   <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
                     <GraduationCap className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>5 Exam Sets (250 MCQs)</span>
+                    <span>2,000 Exam MCQs (30/Test)</span>
                   </span>
 
                   <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] sm:text-[12px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
                     <MessageSquare className="w-3 h-3 text-[#0E9F6E] stroke-[2.2] shrink-0" />
-                    <span>5 Interview Sets (100 Q&amp;As)</span>
+                    <span>2,000 Interview Q&amp;As (30/Set)</span>
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
                   <span className="text-[11.5px] sm:text-[12.5px] font-semibold text-[#4B6356]">
-                    3 Interactive Tools + PDF Report Downloads
+                    3 Interactive Tools + Personalized Graph &amp; PDF Reports
                   </span>
                   <button
                     type="button"
