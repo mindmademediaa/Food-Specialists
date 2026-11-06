@@ -251,6 +251,52 @@ service cloud.firestore {
         allow create, update: if (isOwner(uid) || isAdmin()) && isValidUser(request.resource.data, uid);
         allow delete: if isOwner(uid) || isAdmin();
       }
+
+      // Nutrition Tool Subcollections (/users/{uid}/nutritionProfile, mealPlans, foodLogs, waterLogs, healthRecommendations)
+      match /nutritionProfile/{docId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidId(docId) && request.resource.data is map;
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      match /mealPlans/{dateId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidId(dateId) && request.resource.data is map;
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      match /foodLogs/{dateId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidId(dateId) && request.resource.data is map;
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      match /waterLogs/{dateId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidId(dateId) && request.resource.data is map;
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+
+      match /healthRecommendations/{docId} {
+        allow get, list: if isOwner(uid) || isAdmin();
+        allow create, update: if (isOwner(uid) || isAdmin()) && isValidId(docId) && request.resource.data is map;
+        allow delete: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    // Community & Pre-loaded Recipes: Signed-in users can read and submit valid community recipes
+    match /recipes/{recipeId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(recipeId) && request.resource.data is map &&
+        request.resource.data.keys().hasAll(['id', 'title', 'category']) &&
+        request.resource.data.title is string && request.resource.data.title.size() >= 1 && request.resource.data.title.size() <= 200;
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.createdByUid == request.auth.uid);
+    }
+
+    // Health Condition Recommendations Directory
+    match /healthConditions/{condId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin() && isValidId(condId);
     }
 
     // Payment verification requests & receipts: Strictly isolated to the submitting user and Admin
@@ -310,4 +356,5 @@ service cloud.firestore {
     }
   }
 }
+
 

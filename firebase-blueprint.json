@@ -196,6 +196,30 @@
         "isActive": { "type": "boolean" }
       },
       "required": ["category", "title", "isActive"]
+    },
+    "NutritionSubDoc": {
+      "title": "NutritionSubDoc",
+      "description": "User nutrition subcollection document for nutritionProfile, mealPlans, foodLogs, waterLogs, and healthRecommendations",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid"]
+    },
+    "CommunityRecipe": {
+      "title": "CommunityRecipe",
+      "description": "Pre-loaded and user-submitted recipes with nutrition macros and doctor disclaimer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 80 },
+        "calories": { "type": "number" },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "category"]
     }
   },
   "firestore": {
@@ -210,6 +234,34 @@
     "/users/{uid}/profile/{docId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "User profile document subcollection"
+    },
+    "/users/{uid}/nutritionProfile/{docId}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Onboarding user nutrition profile details, BMI, BMR, TDEE, Health Score, allergies, and health conditions"
+    },
+    "/users/{uid}/mealPlans/{date}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Daily AI-generated and custom-edited meal plans with gram quantities and calories"
+    },
+    "/users/{uid}/foodLogs/{date}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Daily logged food items, calories, macros, and weight logs"
+    },
+    "/users/{uid}/waterLogs/{date}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Daily water glass intake tracking"
+    },
+    "/users/{uid}/healthRecommendations/{docId}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Saved health condition food recommendations and AI Dietitian chat history"
+    },
+    "/recipes/{recipeId}": {
+      "schema": { "$ref": "#/entities/CommunityRecipe" },
+      "description": "Community and pre-loaded recipes with gram ingredients, macros, and doctor disclaimer"
+    },
+    "/healthConditions/{condId}": {
+      "schema": { "$ref": "#/entities/NutritionSubDoc" },
+      "description": "Health condition recommended and avoided food records"
     },
     "/paymentRequests/{requestId}": {
       "schema": { "$ref": "#/entities/PaymentRequest" },
@@ -241,4 +293,5 @@
     }
   }
 }
+
 

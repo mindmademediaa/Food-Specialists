@@ -56,9 +56,9 @@ import {
 } from '../data/questionBank2000';
 import {
   downloadExamReportPdf,
-  downloadInterviewSessionReportPdf,
-  downloadNutritionReportPdf
+  downloadInterviewSessionReportPdf
 } from '../lib/toolsPdfGenerator';
+import { NutritionSuiteTool } from './NutritionSuiteTool';
 
 export type ActiveToolSection = 'hub' | 'nutrition' | 'exam' | 'interview';
 
@@ -113,9 +113,11 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     };
   }, [user.toolsData]);
 
-  // If user is NOT paid (Free user or Expired Premium user), force them onto 'hub' view
+  // Allow opening 'nutrition' (which has built-in Free vs Premium limits) or any tool if isUserPaid
   const [activeSection, setActiveSection] = useState<ActiveToolSection>(() =>
-    isUserPaid ? initialSection : 'hub'
+    isUserPaid || (initialSection === 'nutrition' && !hasExpiredPremium)
+      ? initialSection
+      : 'hub'
   );
   const [showPaywallPrompt, setShowPaywallPrompt] = useState<boolean>(false);
   const [paywallFeatureTitle, setPaywallFeatureTitle] = useState<string>(
@@ -125,12 +127,15 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
 
   // Sync activeSection when initialSection changes
   useEffect(() => {
-    if (isUserPaid && initialSection) {
+    if (
+      initialSection &&
+      (isUserPaid || (initialSection === 'nutrition' && !hasExpiredPremium))
+    ) {
       setActiveSection(initialSection);
-    } else if (!isUserPaid) {
+    } else if (!isUserPaid && initialSection !== 'nutrition') {
       setActiveSection('hub');
     }
-  }, [initialSection, isUserPaid]);
+  }, [initialSection, isUserPaid, hasExpiredPremium]);
 
   // Nutrition Local Editable State
   const [nutritionForm, setNutritionForm] = useState<NutritionProfileData>(
@@ -207,6 +212,13 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     featureName: string,
     afterUnlock?: () => void
   ) => {
+    // Nutrition tool allows Free non-expired users to enter and use the Free tier (1 BMI calc, 5 Recipes, 1-Day Meal Plan, 1 Health Condition Search)
+    if (targetSection === 'nutrition' && !hasExpiredPremium) {
+      setActiveSection('nutrition');
+      if (afterUnlock) afterUnlock();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (!isUserPaid) {
       setPaywallFeatureTitle(featureName);
       setShowPaywallPrompt(true);
@@ -933,12 +945,15 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                     )}
                   </div>
                   <h2 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-1">
-                    Daily Personal Health &amp; Nutrition Tracker
+                    Complete Nutrition Dashboard, AI Meal Planner, 44+ Recipes
+                    &amp; Health Condition Guide
                   </h2>
                   <p className="text-xs text-[#5C7267] leading-relaxed mt-0.5">
-                    Calorie counting, meal planning, live BMI calculator, visual
-                    Weight Trajectory Graph (shows whether to gain or reduce
-                    weight), and Full Nutrition Report PDF download.
+                    BMI Gauge &amp; Health Score (0–100), BMR, TDEE, Ideal
+                    Weight, Body Fat %, Visceral Fat, Water Tracker, 7-Day AI
+                    Meal Plan (with Grams &amp; Grocery List), 44+ Desi /
+                    Pakistani / Chinese / Italian / Healthy Recipes, Health
+                    Condition Food Guide &amp; AI Dietitian Chat.
                   </p>
                 </div>
               </div>
@@ -961,34 +976,35 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </div>
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
                 <div className="text-[10px] font-bold text-[#5C7267]">
-                  Weight Goal Action
+                  Recipes &amp; Plans
                 </div>
                 <div className="text-xs font-extrabold text-[#0E9F6E] mt-0.5">
-                  {metrics.weightAction}
+                  44+ Recipes • 7-Day Plan
                 </div>
                 <div className="text-[10px] text-[#5C7267] font-semibold">
-                  Target: {nutritionForm.targetWeightKg} kg
+                  Desi, Chinese, Italian
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
                 <div className="text-[10px] font-bold text-[#5C7267]">
-                  Daily Target
+                  Health Conditions
                 </div>
                 <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  {metrics.dailyTargetKcal} kcal
+                  AI Dietitian
                 </div>
                 <div className="text-[10px] text-[#0E9F6E] font-bold">
-                  Logged: {metrics.consumedKcal} kcal
+                  Diabetes, BP, PCOS +
                 </div>
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-1 border-t border-[#ECF4EF]">
               <span className="text-[11px] font-bold text-[#13422B]">
-                Includes BMI Graph + Calorie Log + PDF Report Download
+                Includes BMI Gauge + 7-Day AI Meal Plan + 44+ Recipes + Health
+                Guide
               </span>
               <span className="px-3.5 py-1.5 rounded-xl bg-[#0E9F6E] text-white text-xs font-extrabold inline-flex items-center gap-1">
-                <span>Open Nutrition App</span>
+                <span>Open Nutrition Tool</span>
                 <ChevronRight className="w-4 h-4" />
               </span>
             </div>
@@ -1200,795 +1216,17 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       )}
 
       {/* =====================================================================
-          VIEW 1: DAILY PERSONAL HEALTH & NUTRITION TRACKER
+          VIEW 1: NEW COMPLETE NUTRITION TOOL SUITE (REPLACING OLD NUTRITION APP)
          ===================================================================== */}
-      {activeSection === 'nutrition' && isUserPaid && (
-        <div className="space-y-4">
-          {/* Header Banner with PDF Download */}
-          <div className="bg-gradient-to-r from-[#13422B] via-[#155E3A] to-[#0E9F6E] rounded-[24px] p-4 sm:p-5 text-white shadow-sm space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-200 text-[10.5px] font-extrabold uppercase tracking-wider">
-                Tool 1 • Daily Personal Health &amp; Nutrition App
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  downloadNutritionReportPdf(user, nutritionForm, metrics)
-                }
-                className="px-3.5 py-1.5 rounded-full bg-white text-[#13422B] hover:bg-emerald-50 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5 text-[#0E9F6E]" />
-                <span>Download Full Nutrition Report (PDF)</span>
-              </button>
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-extrabold leading-tight">
-                {user.name || 'Specialist'}&apos;s BMI, Weight Trajectory &amp;
-                Calorie Tracker
-              </h2>
-              <p className="text-xs text-emerald-100 mt-0.5">
-                All changes automatically save to your User Profile Control
-                Panel.
-              </p>
-            </div>
-          </div>
-
-          {/* 1. BODY METRICS INPUT & LIVE BMI VERDICT CARD */}
-          <div className="bg-white border border-[#CBE3D6] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#ECF4EF] pb-3">
-              <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-                  1. Personal Body Metrics &amp; Live BMI Calculator
-                </h3>
-                <p className="text-[11px] text-[#5C7267]">
-                  Enter your height, current weight &amp; goal weight to see
-                  whether you need to gain or reduce weight
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleSaveNutritionProfile()}
-                className="px-3 py-1.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold cursor-pointer"
-              >
-                Save Metrics
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Height (cm)
-                </label>
-                <input
-                  type="number"
-                  min={120}
-                  max={230}
-                  value={nutritionForm.heightCm}
-                  onChange={(e) =>
-                    setNutritionForm({
-                      ...nutritionForm,
-                      heightCm: Number(e.target.value) || 170
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F4FAF7] border border-[#BCE3C8] text-xs font-extrabold text-[#0F291E]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Current Weight (kg)
-                </label>
-                <input
-                  type="number"
-                  min={30}
-                  max={220}
-                  step="0.5"
-                  value={nutritionForm.weightKg}
-                  onChange={(e) =>
-                    setNutritionForm({
-                      ...nutritionForm,
-                      weightKg: Number(e.target.value) || 70
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F4FAF7] border border-[#BCE3C8] text-xs font-extrabold text-[#0F291E]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Target Weight (kg)
-                </label>
-                <input
-                  type="number"
-                  min={35}
-                  max={180}
-                  step="0.5"
-                  value={nutritionForm.targetWeightKg}
-                  onChange={(e) =>
-                    setNutritionForm({
-                      ...nutritionForm,
-                      targetWeightKg: Number(e.target.value) || 68
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F4FAF7] border border-[#BCE3C8] text-xs font-extrabold text-[#0F291E]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Age (Years)
-                </label>
-                <input
-                  type="number"
-                  min={15}
-                  max={90}
-                  value={nutritionForm.age}
-                  onChange={(e) =>
-                    setNutritionForm({
-                      ...nutritionForm,
-                      age: Number(e.target.value) || 27
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F4FAF7] border border-[#BCE3C8] text-xs font-extrabold text-[#0F291E]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Gender
-                </label>
-                <select
-                  value={nutritionForm.gender}
-                  onChange={(e) =>
-                    setNutritionForm({
-                      ...nutritionForm,
-                      gender: e.target.value as 'male' | 'female'
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F4FAF7] border border-[#BCE3C8] text-xs font-extrabold text-[#0F291E]"
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
-                  Activity Level
-                </label>
-                <select
-                  value={nutritionForm.activityLevel}
-                  onChange={(e) =>
-                    setNutritionForm({
-                      ...nutritionForm,
-                      activityLevel: e.target
-                        .value as NutritionProfileData['activityLevel']
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F4FAF7] border border-[#BCE3C8] text-xs font-extrabold text-[#0F291E]"
-                >
-                  <option value="sedentary">Sedentary (Desk / Lab)</option>
-                  <option value="light">Lightly Active (1–3 days/wk)</option>
-                  <option value="moderate">
-                    Moderate (Plant Floor / 3–5 days)
-                  </option>
-                  <option value="active">Very Active (6–7 days/wk)</option>
-                  <option value="athlete">Intense Physical / Athlete</option>
-                </select>
-              </div>
-            </div>
-
-            {/* BMI Verdict & Recommendation Banner */}
-            <div className="p-4 rounded-2xl bg-[#F0FDF4] border-2 border-[#0E9F6E] space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="px-3 py-1 rounded-full text-white text-xs font-extrabold"
-                    style={{ backgroundColor: metrics.bmiColorHex }}
-                  >
-                    BMI: {metrics.bmi} kg/m² ({metrics.bmiCategory})
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-[#13422B] text-white text-xs font-extrabold flex items-center gap-1">
-                    {metrics.weightAction === 'REDUCE WEIGHT' ? (
-                      <TrendingDown className="w-3.5 h-3.5 text-amber-300" />
-                    ) : metrics.weightAction === 'GAIN WEIGHT' ? (
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-300" />
-                    ) : (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-                    )}
-                    <span>Verdict: {metrics.weightAction}</span>
-                  </span>
-                </div>
-                <span className="text-[11px] font-extrabold text-[#13422B]">
-                  WHO Healthy Weight: {metrics.healthyMinKg} –{' '}
-                  {metrics.healthyMaxKg} kg
-                </span>
-              </div>
-
-              <div className="text-xs sm:text-sm font-extrabold text-[#0F291E]">
-                {metrics.recommendationHeadline}
-              </div>
-              <p className="text-xs text-[#334155] leading-relaxed">
-                {metrics.recommendationDetail}
-              </p>
-
-              {/* Visual WHO BMI Spectrum Bar */}
-              <div className="pt-2 space-y-1">
-                <div className="flex justify-between text-[10px] font-bold text-gray-600">
-                  <span>Underweight (&lt;18.5)</span>
-                  <span className="text-[#0E9F6E]">Healthy (18.5–24.9)</span>
-                  <span className="text-amber-600">Overweight (25–29.9)</span>
-                  <span className="text-red-600">Obese (30+)</span>
-                </div>
-                <div className="relative h-3.5 rounded-full overflow-hidden flex">
-                  <div className="w-1/4 bg-amber-400" />
-                  <div className="w-1/4 bg-[#0E9F6E]" />
-                  <div className="w-1/4 bg-orange-500" />
-                  <div className="w-1/4 bg-red-600" />
-                  <div
-                    className="absolute top-0 bottom-0 w-2 bg-black border border-white rounded-full shadow-md"
-                    style={{
-                      left: `${Math.min(
-                        96,
-                        Math.max(4, ((metrics.bmi - 13) / 25) * 100)
-                      )}%`
-                    }}
-                    title={`Your BMI: ${metrics.bmi}`}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. VISUAL WEIGHT TRAJECTORY & GOAL GRAPH (GAIN VS REDUCE WEIGHT GRAPH) */}
-          <div className="bg-white border border-[#CBE3D6] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-                  2. Weight Trajectory &amp; Target Goal Graph (
-                  {metrics.weightAction})
-                </h3>
-                <p className="text-[11px] text-[#5C7267]">
-                  Visual graph comparing your weight check-ins against your
-                  WHO Ideal Healthy Weight ({metrics.idealMidKg} kg) and Target
-                  Goal ({nutritionForm.targetWeightKg} kg)
-                </p>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-[#E2F2E9] text-[#0D6845] text-[11px] font-extrabold">
-                Ideal BMI 22.0 = {metrics.idealMidKg} kg
-              </span>
-            </div>
-
-            {/* SVG Trajectory Graph */}
-            {(() => {
-              const history =
-                nutritionForm.weightHistory &&
-                nutritionForm.weightHistory.length > 0
-                  ? nutritionForm.weightHistory
-                  : [
-                      {
-                        date: 'Start',
-                        weightKg: nutritionForm.weightKg,
-                        bmi: metrics.bmi
-                      }
-                    ];
-              const pointsWithTarget = [
-                ...history,
-                {
-                  date: 'Goal Target',
-                  weightKg: nutritionForm.targetWeightKg,
-                  bmi: Number(
-                    (
-                      nutritionForm.targetWeightKg /
-                      Math.pow((nutritionForm.heightCm || 170) / 100, 2)
-                    ).toFixed(1)
-                  )
-                }
-              ];
-
-              const allWeights = [
-                ...pointsWithTarget.map((p) => p.weightKg),
-                metrics.healthyMinKg,
-                metrics.healthyMaxKg
-              ];
-              const minW = Math.floor(Math.min(...allWeights) - 4);
-              const maxW = Math.ceil(Math.max(...allWeights) + 4);
-              const rangeW = Math.max(10, maxW - minW);
-
-              const svgW = 420;
-              const svgH = 190;
-              const padL = 38;
-              const padR = 20;
-              const padT = 20;
-              const padB = 32;
-              const plotW = svgW - padL - padR;
-              const plotH = svgH - padT - padB;
-
-              const toY = (w: number) =>
-                padT + plotH - ((w - minW) / rangeW) * plotH;
-              const toX = (idx: number) =>
-                padL +
-                (idx / Math.max(1, pointsWithTarget.length - 1)) * plotW;
-
-              const healthyTopY = toY(metrics.healthyMaxKg);
-              const healthyBottomY = toY(metrics.healthyMinKg);
-              const bandY = Math.min(healthyTopY, healthyBottomY);
-              const bandH = Math.max(6, Math.abs(healthyBottomY - healthyTopY));
-
-              const polylinePoints = pointsWithTarget
-                .map((p, i) => `${toX(i)},${toY(p.weightKg)}`)
-                .join(' ');
-
-              return (
-                <div className="bg-[#F8FCFA] border border-[#D4E9DF] rounded-2xl p-3">
-                  <svg
-                    viewBox={`0 0 ${svgW} ${svgH}`}
-                    className="w-full h-44 sm:h-52 overflow-visible"
-                  >
-                    {/* WHO Healthy Weight Green Shaded Band */}
-                    <rect
-                      x={padL}
-                      y={bandY}
-                      width={plotW}
-                      height={bandH}
-                      fill="#DCFCE7"
-                      opacity={0.85}
-                      rx={4}
-                    />
-                    <text
-                      x={padL + 6}
-                      y={bandY + 11}
-                      fontSize="8.5"
-                      fontWeight="bold"
-                      fill="#15803D"
-                    >
-                      WHO Healthy Band ({metrics.healthyMinKg}–
-                      {metrics.healthyMaxKg} kg)
-                    </text>
-
-                    {/* Horizontal Grid Lines */}
-                    {[0, 0.5, 1].map((t, idx) => {
-                      const val = Math.round(minW + t * rangeW);
-                      const yPos = toY(val);
-                      return (
-                        <g key={idx}>
-                          <line
-                            x1={padL}
-                            y1={yPos}
-                            x2={svgW - padR}
-                            y2={yPos}
-                            stroke="#CBE3D6"
-                            strokeDasharray="3 3"
-                            strokeWidth="1"
-                          />
-                          <text
-                            x={4}
-                            y={yPos + 3}
-                            fontSize="9"
-                            fontWeight="bold"
-                            fill="#4B6356"
-                          >
-                            {val}kg
-                          </text>
-                        </g>
-                      );
-                    })}
-
-                    {/* Trajectory Line */}
-                    <polyline
-                      fill="none"
-                      stroke="#0E9F6E"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      points={polylinePoints}
-                    />
-
-                    {/* Data Points */}
-                    {pointsWithTarget.map((pt, i) => {
-                      const cx = toX(i);
-                      const cy = toY(pt.weightKg);
-                      const isGoal = i === pointsWithTarget.length - 1;
-                      return (
-                        <g key={`${pt.date}-${i}`}>
-                          <circle
-                            cx={cx}
-                            cy={cy}
-                            r={isGoal ? 6 : 4.5}
-                            fill={isGoal ? '#F59E0B' : '#13422B'}
-                            stroke="#FFFFFF"
-                            strokeWidth="2"
-                          />
-                          <text
-                            x={cx}
-                            y={cy - 8}
-                            textAnchor="middle"
-                            fontSize="8.5"
-                            fontWeight="bold"
-                            fill={isGoal ? '#B45309' : '#0F291E'}
-                          >
-                            {pt.weightKg}kg
-                          </text>
-                          <text
-                            x={cx}
-                            y={svgH - 10}
-                            textAnchor="middle"
-                            fontSize="8"
-                            fontWeight="bold"
-                            fill="#5C7267"
-                          >
-                            {pt.date.slice(0, 9)}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </svg>
-                </div>
-              );
-            })()}
-
-            {/* Add New Weight Check-in Form */}
-            <form
-              onSubmit={handleLogWeightCheckIn}
-              className="flex flex-wrap items-end gap-2 pt-1"
-            >
-              <div className="flex-1 min-w-[120px]">
-                <label className="block text-[10.5px] font-extrabold text-[#13422B] mb-1">
-                  Check-In Label (e.g. Week 5)
-                </label>
-                <input
-                  type="text"
-                  value={newWeightEntryDate}
-                  onChange={(e) => setNewWeightEntryDate(e.target.value)}
-                  placeholder="e.g. Week 5"
-                  className="w-full px-3 py-2 rounded-xl bg-[#F4FAF7] border border-[#BCE3C8] text-xs font-bold"
-                />
-              </div>
-              <div className="w-28">
-                <label className="block text-[10.5px] font-extrabold text-[#13422B] mb-1">
-                  Weight (kg)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={newWeightEntryKg}
-                  onChange={(e) => setNewWeightEntryKg(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#F4FAF7] border border-[#BCE3C8] text-xs font-bold"
-                />
-              </div>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-xs font-extrabold cursor-pointer"
-              >
-                + Log Weight on Graph
-              </button>
-            </form>
-          </div>
-
-          {/* 3. DAILY CALORIE COUNTER, HYDRATION & QUICK FOOD LOGGING */}
-          <div className="bg-white border border-[#CBE3D6] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
-              <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-                  3. Daily Calorie Counter &amp; Macronutrient Tracker
-                </h3>
-                <p className="text-[11px] text-[#5C7267]">
-                  BMR: {metrics.bmrKcal} kcal • Maintenance TDEE:{' '}
-                  {metrics.tdeeKcal} kcal • Target: {metrics.dailyTargetKcal}{' '}
-                  kcal
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-extrabold text-[#0E9F6E]">
-                  Water: {nutritionForm.waterGlassesToday}/8 Glasses
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleSaveNutritionProfile(
-                      {
-                        ...nutritionForm,
-                        waterGlassesToday: Math.min(
-                          16,
-                          (nutritionForm.waterGlassesToday || 0) + 1
-                        )
-                      },
-                      'Logged +1 glass of water!'
-                    )
-                  }
-                  className="px-2.5 py-1 rounded-lg bg-[#E2F2E9] hover:bg-[#0E9F6E] hover:text-white text-[#0D6845] text-xs font-extrabold cursor-pointer"
-                >
-                  +1 Water
-                </button>
-              </div>
-            </div>
-
-            {/* Calorie & Macro Progress Bars */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="p-3 rounded-2xl bg-[#F0FDF4] border border-[#9BCAB0]">
-                <div className="text-[10.5px] font-bold text-[#13422B]">
-                  Calories Consumed
-                </div>
-                <div className="text-base font-extrabold text-[#0F291E] mt-0.5">
-                  {metrics.consumedKcal} / {metrics.dailyTargetKcal} kcal
-                </div>
-                <div className="w-full h-2 rounded-full bg-emerald-200 mt-1.5 overflow-hidden">
-                  <div
-                    className="h-full bg-[#0E9F6E]"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.round(
-                          (metrics.consumedKcal / metrics.dailyTargetKcal) * 100
-                        )
-                      )}%`
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-gray-200">
-                <div className="text-[10.5px] font-bold text-gray-600">
-                  Protein (30%)
-                </div>
-                <div className="text-base font-extrabold text-[#0F291E] mt-0.5">
-                  {metrics.consumedProteinG}g / {metrics.targetProteinG}g
-                </div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-gray-200">
-                <div className="text-[10.5px] font-bold text-gray-600">
-                  Carbs (45%)
-                </div>
-                <div className="text-base font-extrabold text-[#0F291E] mt-0.5">
-                  {metrics.consumedCarbsG}g / {metrics.targetCarbsG}g
-                </div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-gray-200">
-                <div className="text-[10.5px] font-bold text-gray-600">
-                  Fats (25%)
-                </div>
-                <div className="text-base font-extrabold text-[#0F291E] mt-0.5">
-                  {metrics.consumedFatsG}g / {metrics.targetFatsG}g
-                </div>
-              </div>
-            </div>
-
-            {/* 1-Click Quick Pakistani & International Food Presets */}
-            <div>
-              <div className="text-xs font-extrabold text-[#13422B] mb-2">
-                Quick 1-Tap Food Logger (Tap any meal to add):
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {QUICK_FOOD_PRESETS.map((preset) => (
-                  <button
-                    key={preset.name}
-                    type="button"
-                    onClick={() => handleQuickAddPreset(preset)}
-                    className="px-2.5 py-1.5 rounded-xl bg-[#F4FAF7] hover:bg-[#DCFCE7] border border-[#BCE3C8] text-[11px] font-bold text-[#0F291E] cursor-pointer transition-colors"
-                  >
-                    + {preset.name} ({preset.calories} kcal)
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom Food Entry Form */}
-            <form
-              onSubmit={handleAddMealLog}
-              className="p-3.5 rounded-2xl bg-[#F6FBF8] border border-[#CBE3D6] space-y-2.5"
-            >
-              <div className="text-xs font-extrabold text-[#0F291E]">
-                Add Custom Meal / Food Item:
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <select
-                  value={newMealType}
-                  onChange={(e) =>
-                    setNewMealType(
-                      e.target.value as
-                        | 'Breakfast'
-                        | 'Lunch'
-                        | 'Dinner'
-                        | 'Snack'
-                    )
-                  }
-                  className="px-2.5 py-2 rounded-xl bg-white border border-[#BCE3C8] text-xs font-bold"
-                >
-                  <option value="Breakfast">Breakfast</option>
-                  <option value="Lunch">Lunch</option>
-                  <option value="Dinner">Dinner</option>
-                  <option value="Snack">Snack</option>
-                </select>
-                <input
-                  type="text"
-                  value={newFoodName}
-                  onChange={(e) => setNewFoodName(e.target.value)}
-                  placeholder="Food name (e.g. Grilled Fish)"
-                  className="col-span-1 sm:col-span-2 px-3 py-2 rounded-xl bg-white border border-[#BCE3C8] text-xs font-bold"
-                />
-                <input
-                  type="text"
-                  value={newPortion}
-                  onChange={(e) => setNewPortion(e.target.value)}
-                  placeholder="Portion (e.g. 200g)"
-                  className="px-3 py-2 rounded-xl bg-white border border-[#BCE3C8] text-xs font-bold"
-                />
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-600">
-                    Calories
-                  </label>
-                  <input
-                    type="number"
-                    value={newCalories}
-                    onChange={(e) => setNewCalories(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#BCE3C8] text-xs font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-600">
-                    Protein (g)
-                  </label>
-                  <input
-                    type="number"
-                    value={newProtein}
-                    onChange={(e) => setNewProtein(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#BCE3C8] text-xs font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-600">
-                    Carbs (g)
-                  </label>
-                  <input
-                    type="number"
-                    value={newCarbs}
-                    onChange={(e) => setNewCarbs(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#BCE3C8] text-xs font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-600">
-                    Fats (g)
-                  </label>
-                  <input
-                    type="number"
-                    value={newFats}
-                    onChange={(e) => setNewFats(e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#BCE3C8] text-xs font-bold"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="w-full py-2.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold cursor-pointer"
-              >
-                + Add Meal to Daily Calorie Log
-              </button>
-            </form>
-
-            {/* Logged Meals List */}
-            <div className="space-y-2">
-              <div className="text-xs font-extrabold text-[#0F291E]">
-                Logged Meals ({(nutritionForm.mealLogs || []).length}):
-              </div>
-              {(nutritionForm.mealLogs || []).map((meal) => (
-                <div
-                  key={meal.id}
-                  className="p-3 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF] flex items-center justify-between gap-2"
-                >
-                  <div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      [{meal.mealType}] {meal.foodName}{' '}
-                      <span className="text-gray-500 font-semibold">
-                        ({meal.portion})
-                      </span>
-                    </div>
-                    <div className="text-[11px] font-bold text-[#0E9F6E]">
-                      {meal.calories} kcal • Protein: {meal.proteinG}g • Carbs:{' '}
-                      {meal.carbsG}g • Fats: {meal.fatsG}g
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMealLog(meal.id)}
-                    className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 4. PERSONALIZED MEAL PLANNER & FULL PDF DOWNLOAD */}
-          <div className="bg-white border border-[#CBE3D6] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-                  4. Nutritionist Meal Planner (Fat Loss / Maintenance / Muscle
-                  Gain)
-                </h3>
-                <p className="text-[11px] text-[#5C7267]">
-                  Switch meal plans based on your BMI verdict (
-                  {metrics.weightAction})
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {(['lose', 'maintain', 'gain'] as const).map((planKey) => (
-                  <button
-                    key={planKey}
-                    type="button"
-                    onClick={() => handleApplySuggestedMealPlan(planKey)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold capitalize cursor-pointer ${
-                      nutritionForm.goalType === planKey
-                        ? 'bg-[#13422B] text-white'
-                        : 'bg-[#F4FAF7] text-[#13422B] border border-[#BCE3C8]'
-                    }`}
-                  >
-                    {planKey === 'lose'
-                      ? 'Reduce Weight'
-                      : planKey === 'gain'
-                      ? 'Gain Weight'
-                      : 'Maintain'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
-              {(nutritionForm.mealPlans || PRESET_MEAL_PLANS.lose).map(
-                (plan) => (
-                  <div
-                    key={plan.id}
-                    className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] space-y-1.5"
-                  >
-                    <div className="text-xs font-extrabold text-[#13422B]">
-                      {plan.day} — Total:{' '}
-                      {plan.breakfastKcal +
-                        plan.lunchKcal +
-                        plan.snackKcal +
-                        plan.dinnerKcal}{' '}
-                      kcal
-                    </div>
-                    <div className="text-[11.5px] text-[#334155]">
-                      <strong>Breakfast ({plan.breakfastKcal} kcal):</strong>{' '}
-                      {plan.breakfast}
-                    </div>
-                    <div className="text-[11.5px] text-[#334155]">
-                      <strong>Lunch ({plan.lunchKcal} kcal):</strong>{' '}
-                      {plan.lunch}
-                    </div>
-                    <div className="text-[11.5px] text-[#334155]">
-                      <strong>Snack ({plan.snackKcal} kcal):</strong>{' '}
-                      {plan.snack}
-                    </div>
-                    <div className="text-[11.5px] text-[#334155]">
-                      <strong>Dinner ({plan.dinnerKcal} kcal):</strong>{' '}
-                      {plan.dinner}
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                downloadNutritionReportPdf(user, nutritionForm, metrics)
-              }
-              className="w-full py-3.5 px-5 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              <span>
-                Download Complete Personal Nutrition &amp; BMI Report (PDF)
-              </span>
-            </button>
-          </div>
-        </div>
+      {activeSection === 'nutrition' && (
+        <NutritionSuiteTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          toolsData={toolsData}
+          onSaveToolsData={onSaveToolsData}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
       )}
 
       {/* =====================================================================
