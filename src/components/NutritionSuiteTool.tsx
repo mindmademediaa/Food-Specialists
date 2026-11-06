@@ -1,85 +1,45 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Activity,
   AlertTriangle,
-  ArrowLeft,
-  Bell,
-  Bookmark,
-  Calendar,
+  Award,
   Check,
   CheckCircle2,
-  ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Clock,
-  Crown,
   Download,
   Droplets,
-  Edit3,
-  Filter,
   Flame,
   Heart,
-  Home,
-  Info,
   Leaf,
-  Lock,
-  MessageSquare,
-  Pill,
   Plus,
-  QrCode,
   RefreshCw,
   Scale,
   Search,
-  Send,
-  Share2,
-  ShoppingCart,
-  SlidersHorizontal,
   Sparkles,
-  Sun,
-  Timer,
-  Trash2,
   TrendingDown,
   TrendingUp,
-  User,
   Utensils,
   X
 } from 'lucide-react';
-import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { HubUser, NutritionProfileData, UserToolsData } from '../types/hub';
+import { HubUser, UserToolsData } from '../types/hub';
 import {
-  ALLERGY_OPTIONS,
   ActivityLevelOption,
-   calculateSuiteNutritionIndexes,
-  DayMealPlanData,
+  calculateSuiteNutritionIndexes,
   DEFAULT_SUITE_ONBOARDING,
-  DESI_FOOD_LOG_DATABASE,
   DietPreferenceOption,
   DOCTOR_DISCLAIMER_BANNER,
-  DOCTOR_DISCLAIMER_CHAT,
   DOCTOR_DISCLAIMER_SHORT,
   GenderOption,
-  generate7DayMealPlan,
-  generateDietitianAnswer,
   getHealthConditionRecommendations,
   GoalOption,
-  GroceryItem,
   HEALTH_CONDITION_PRESETS,
-  MealFoodEntry,
-  PRELOADED_44_RECIPES,
-  SuiteOnboardingProfile,
-  SuiteRecipeItem,
-  SUPPLEMENTS_GUIDE_DATA,
-  SWAP_MEAL_ALTERNATIVES
+  SuiteOnboardingProfile
 } from '../data/nutritionSuiteData';
 import { jsPDF } from 'jspdf';
-
-export type NutritionSubRoute =
-  | 'setup'
-  | 'dashboard'
-  | 'meal-plan'
-  | 'recipes'
-  | 'health'
-  | 'stats-foodlog'
-  | 'dietitian-chat';
 
 interface NutritionSuiteToolProps {
   user: HubUser;
@@ -90,17 +50,740 @@ interface NutritionSuiteToolProps {
   onOpenPremiumModal: () => void;
 }
 
+export interface AccurateRecipeItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: 'Desi & Pakistani' | 'High-Protein' | 'Vegetarian' | 'Chinese & Italian' | 'Healthy Bowl';
+  dishVisualType:
+    | 'biryani'
+    | 'karahi'
+    | 'daal-chawal'
+    | 'palak-paneer'
+    | 'chana-masala'
+    | 'chicken-tikka'
+    | 'grilled-salmon'
+    | 'oats-bowl'
+    | 'haleem'
+    | 'veg-stirfry'
+    | 'pasta-alfredo'
+    | 'quinoa-salad';
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  fiberG: number;
+  cookTimeMin: number;
+  servings: number;
+  difficulty: 'Easy' | 'Medium';
+  isVeg: boolean;
+  ingredients: { item: string; amount: string; grams: number }[];
+  instructions: string[];
+  healthBenefit: string;
+}
+
+export const ACCURATE_RECIPES_LIST: AccurateRecipeItem[] = [
+  {
+    id: 'rec-chicken-biryani',
+    title: 'Healthy Less-Oil Chicken Biryani',
+    subtitle: 'Fragrant Basmati Rice layered with Spiced Yogurt Chicken & Mint',
+    category: 'Desi & Pakistani',
+    dishVisualType: 'biryani',
+    calories: 420,
+    proteinG: 28,
+    carbsG: 46,
+    fatG: 11,
+    fiberG: 4,
+    cookTimeMin: 35,
+    servings: 2,
+    difficulty: 'Medium',
+    isVeg: false,
+    ingredients: [
+      { item: 'Long-Grain Basmati Rice (washed & soaked 20 mins)', amount: '1 cup (raw)', grams: 120 },
+      { item: 'Skinless Chicken Breast / Thigh Cubes', amount: '6 oz (medium pieces)', grams: 160 },
+      { item: 'Low-Fat Plain Yogurt (Dahi)', amount: '4 tbsp (whisked)', grams: 60 },
+      { item: 'Sliced Onion, Ripe Tomato & Green Chilies', amount: '1 medium each', grams: 110 },
+      { item: 'Ginger-Garlic Paste', amount: '1 tbsp', grams: 15 },
+      { item: 'Fresh Mint (Podina) & Coriander Leaves', amount: '1/2 cup chopped', grams: 20 },
+      { item: 'Biryani Masala (Cardamom, Cloves, Cumin, Turmeric)', amount: '1.5 tbsp', grams: 12 },
+      { item: 'Olive Oil or Canola Oil', amount: '1 tbsp', grams: 12 }
+    ],
+    instructions: [
+      'Step 1 (Marinate Chicken): In a bowl, mix chicken pieces with low-fat yogurt, ginger-garlic paste, turmeric, red chili, roasted cumin, and half of the chopped mint leaves. Let it marinate for 20 minutes.',
+      'Step 2 (Cook Chicken Masala): Heat 1 tbsp olive oil in a non-stick pot. Sauté sliced onions until golden, add chopped tomatoes and marinated chicken, and cook covered on medium flame for 12 minutes until chicken is tender and thick masala forms.',
+      'Step 3 (Par-Boil Basmati Rice): In a separate pot, boil 4 cups of water with 2 green cardamoms, 1 bay leaf, and 1 tsp salt. Add soaked basmati rice and boil for 6–7 minutes until 75% cooked, then drain water.',
+      'Step 4 (Layer & Steam / Dum): Spread the par-boiled rice over the cooked chicken masala. Top with remaining fresh mint, coriander, ginger strips, and a splash of saffron/warm milk.',
+      'Step 5 (Serve): Cover tightly and cook on very low heat (Dum) for 10–12 minutes. Fluff gently with a fork and serve hot with cucumber raita.'
+    ],
+    healthBenefit: 'Uses probiotic yogurt marinade and only 1 tbsp oil to provide 28g lean protein with 50% less fat than restaurant biryani.'
+  },
+  {
+    id: 'rec-chicken-karahi',
+    title: 'Authentic Peshawari Chicken Karahi',
+    subtitle: 'Wok-Seared Chicken in Fresh Vine Tomato, Ginger & Black Pepper Gravy',
+    category: 'Desi & Pakistani',
+    dishVisualType: 'karahi',
+    calories: 365,
+    proteinG: 32,
+    carbsG: 11,
+    fatG: 17,
+    fiberG: 3,
+    cookTimeMin: 25,
+    servings: 2,
+    difficulty: 'Easy',
+    isVeg: false,
+    ingredients: [
+      { item: 'Boneless or Bone-in Skinless Chicken', amount: '7 oz (bite-sized)', grams: 200 },
+      { item: 'Fresh Red Vine Tomatoes (halved)', amount: '3 medium tomatoes', grams: 180 },
+      { item: 'Fresh Ginger Juliennes & Crushed Garlic', amount: '2 tbsp', grams: 25 },
+      { item: 'Green Chilies (slit lengthwise)', amount: '3 chilies', grams: 15 },
+      { item: 'Freshly Crushed Black Pepper & Roasted Cumin', amount: '1.5 tsp', grams: 8 },
+      { item: 'Crushed Dry Coriander Seeds (Sabut Dhania)', amount: '1 tsp', grams: 5 },
+      { item: 'Fresh Coriander Leaves for Garnish', amount: '2 tbsp', grams: 10 },
+      { item: 'Olive / Mustard / Canola Oil', amount: '1 tbsp', grams: 14 }
+    ],
+    instructions: [
+      'Step 1 (Sear Chicken): Heat 1 tbsp oil in a wok (karahi) over medium-high flame. Add chicken pieces, crushed garlic, and a pinch of salt. Stir-fry for 5 minutes until chicken turns golden-white.',
+      'Step 2 (Steam Tomatoes): Place halved fresh tomatoes cut-side down over the chicken. Cover the wok with a lid for 7–8 minutes on medium flame so the tomato skins soften.',
+      'Step 3 (Peel & Mash Gravy): Remove the lid, peel off the tomato skins using tongs, and mash the soft tomatoes into the chicken to create a rich natural gravy without onions.',
+      'Step 4 (Season with Spices): Add crushed coriander seeds, roasted cumin, and freshly ground black pepper. Stir-fry (bhuna) on high heat for 3–4 minutes until the tomato masala coats the chicken.',
+      'Step 5 (Garnish & Serve): Turn off the flame, top with fresh ginger juliennes, slit green chilies, and coriander leaves. Serve warm with 1 whole-wheat roti.'
+    ],
+    healthBenefit: 'Low-carb, high-protein Pakistani dish rich in antioxidant lycopene from fresh tomatoes and digestive ginger.'
+  },
+  {
+    id: 'rec-daal-chawal',
+    title: 'Golden Tarka Daal Chawal (Lentils & Rice)',
+    subtitle: 'Creamy Yellow Moong-Masoor Lentils with Garlic Cumin Tarka & Steamed Rice',
+    category: 'Desi & Pakistani',
+    dishVisualType: 'daal-chawal',
+    calories: 345,
+    proteinG: 15,
+    carbsG: 54,
+    fatG: 6,
+    fiberG: 8,
+    cookTimeMin: 25,
+    servings: 2,
+    difficulty: 'Easy',
+    isVeg: true,
+    ingredients: [
+      { item: 'Yellow Moong Daal & Red Masoor Daal (mixed)', amount: '3/4 cup (washed)', grams: 120 },
+      { item: 'Steamed Brown or Basmati Rice (cooked)', amount: '1 cup cooked', grams: 140 },
+      { item: 'Finely Chopped Tomato & Onion', amount: '1 small each', grams: 80 },
+      { item: 'Fresh Garlic Cloves (thinly sliced for Tarka)', amount: '4 cloves', grams: 12 },
+      { item: 'Cumin Seeds (Zeera), Turmeric & Red Chili Powder', amount: '1.5 tsp total', grams: 8 },
+      { item: 'Fresh Coriander & Green Chili', amount: '2 tbsp chopped', grams: 12 },
+      { item: 'Olive Oil or Desi Ghee (for Tarka)', amount: '1.5 tsp', grams: 7 }
+    ],
+    instructions: [
+      'Step 1 (Boil Lentils): Wash Moong and Masoor daal thoroughly. Add to a pot with 3 cups water, chopped tomato, onion, 1/2 tsp turmeric, and salt. Simmer covered on medium-low flame for 15–18 minutes until soft and creamy.',
+      'Step 2 (Whisk Daal): Gently whisk the cooked lentils so they blend into a smooth, velvety consistency. Add a splash of hot water if too thick.',
+      'Step 3 (Prepare Garlic-Cumin Tarka): In a small pan, heat 1.5 tsp olive oil or desi ghee. Add sliced garlic cloves and 1 tsp cumin seeds (zeera) and sauté for 45 seconds until golden and fragrant.',
+      'Step 4 (Combine): Pour the sizzling garlic-cumin tarka directly over the hot yellow daal and immediately cover for 1 minute to trap the aroma.',
+      'Step 5 (Serve): Garnish with fresh coriander leaves and serve alongside 1 cup of steamed rice and fresh cucumber-onion kachumber salad.'
+    ],
+    healthBenefit: 'Combining lentils (lysine-rich) with rice (methionine-rich) forms a 100% complete plant protein that is gentle on digestion.'
+  },
+  {
+    id: 'rec-palak-paneer',
+    title: 'High-Protein Palak Paneer (Spinach & Cottage Cheese)',
+    subtitle: 'Iron-Rich Blanched Spinach Curry with Soft Seared Paneer Cubes',
+    category: 'Vegetarian',
+    dishVisualType: 'palak-paneer',
+    calories: 310,
+    proteinG: 19,
+    carbsG: 14,
+    fatG: 18,
+    fiberG: 6,
+    cookTimeMin: 20,
+    servings: 2,
+    difficulty: 'Easy',
+    isVeg: true,
+    ingredients: [
+      { item: 'Fresh Spinach Leaves (Palak, stems trimmed)', amount: '3 cups packed', grams: 200 },
+      { item: 'Low-Fat Paneer (Cottage Cheese Cubes)', amount: '4 oz (cubed)', grams: 110 },
+      { item: 'Finely Chopped Onion & Ripe Tomato', amount: '1 small each', grams: 85 },
+      { item: 'Ginger, Garlic & 1 Green Chili', amount: '1 tbsp paste', grams: 15 },
+      { item: 'Low-Fat Yogurt or Milk', amount: '2 tbsp', grams: 30 },
+      { item: 'Cumin Seeds, Garam Masala & Kasuri Methi', amount: '1.5 tsp', grams: 6 },
+      { item: 'Olive Oil', amount: '1.5 tsp', grams: 7 }
+    ],
+    instructions: [
+      'Step 1 (Blanch Spinach): Boil water in a saucepan, immerse fresh spinach leaves for 2 minutes until bright green, then immediately transfer to cold water to keep its vibrant green color.',
+      'Step 2 (Blend Puree): Blend the blanched spinach with 1 green chili and a splash of water into a smooth emerald-green puree.',
+      'Step 3 (Sauté Masala): Heat 1.5 tsp olive oil in a pan. Lightly sear the paneer cubes for 1 minute and set aside. In the same pan, crackle cumin seeds, sauté onion, ginger-garlic paste, and tomato for 4 minutes.',
+      'Step 4 (Simmer Spinach & Paneer): Pour in the spinach puree, 2 tbsp low-fat yogurt, salt, and garam masala. Simmer on low heat for 5 minutes.',
+      'Step 5 (Finish & Serve): Fold in the soft paneer cubes and crushed kasuri methi (fenugreek leaves). Simmer for 2 minutes and serve hot with whole-wheat roti.'
+    ],
+    healthBenefit: 'Packed with iron, folate, Vitamin K, and calcium — ideal for blood sugar control, vegetarian protein, and bone strength.'
+  },
+  {
+    id: 'rec-chana-masala',
+    title: 'Lahori Chickpea Masala (Chana Masala Bowl)',
+    subtitle: 'Slow-Simmered White Chickpeas in Tangy Tomato, Cumin & Ginger Gravy',
+    category: 'Vegetarian',
+    dishVisualType: 'chana-masala',
+    calories: 295,
+    proteinG: 15,
+    carbsG: 43,
+    fatG: 6,
+    fiberG: 10,
+    cookTimeMin: 20,
+    servings: 2,
+    difficulty: 'Easy',
+    isVeg: true,
+    ingredients: [
+      { item: 'Boiled White Chickpeas (Kabuli Chana)', amount: '1.5 cups boiled', grams: 180 },
+      { item: 'Onion & Tomato Puree', amount: '3/4 cup', grams: 120 },
+      { item: 'Ginger-Garlic Paste & Green Chili', amount: '1 tbsp', grams: 15 },
+      { item: 'Roasted Cumin, Coriander Powder & Amchoor (Dry Mango)', amount: '2 tsp', grams: 10 },
+      { item: 'Fresh Lemon Juice & Chopped Coriander', amount: '1 tbsp each', grams: 15 },
+      { item: 'Olive Oil', amount: '1.5 tsp', grams: 7 }
+    ],
+    instructions: [
+      'Step 1 (Sauté Aromatics): Heat 1.5 tsp olive oil in a saucepan. Add cumin seeds and ginger-garlic paste and sauté for 30 seconds until fragrant.',
+      'Step 2 (Cook Tomato-Onion Base): Add the onion and tomato puree along with turmeric, coriander powder, roasted cumin, and amchoor powder. Cook for 5–6 minutes until oil lightly separates.',
+      'Step 3 (Simmer Chickpeas): Add the boiled white chickpeas and 3/4 cup warm water. Lightly mash 2 tbsp of chickpeas with the back of the spoon to naturally thicken the gravy.',
+      'Step 4 (Infuse Flavors): Cover and simmer on low flame for 8 minutes so the chickpeas absorb all the spices.',
+      'Step 5 (Garnish): Squeeze fresh lemon juice on top, garnish with chopped coriander and onion rings, and serve.'
+    ],
+    healthBenefit: 'Very high soluble fiber (10g) and low glycemic index help lower LDL cholesterol and keep blood glucose steady.'
+  },
+  {
+    id: 'rec-chicken-tikka',
+    title: 'Charcoal-Style Grilled Chicken Tikka & Salad',
+    subtitle: 'Tandoori Spiced Yogurt-Marinated Chicken Breast with Mint Chutney',
+    category: 'High-Protein',
+    dishVisualType: 'chicken-tikka',
+    calories: 285,
+    proteinG: 36,
+    carbsG: 8,
+    fatG: 11,
+    fiberG: 3,
+    cookTimeMin: 22,
+    servings: 1,
+    difficulty: 'Easy',
+    isVeg: false,
+    ingredients: [
+      { item: 'Boneless Chicken Breast Cubes', amount: '7 oz (cubed)', grams: 200 },
+      { item: 'Thick Greek / Low-Fat Yogurt', amount: '3 tbsp', grams: 45 },
+      { item: 'Fresh Lemon Juice & Ginger-Garlic Paste', amount: '1 tbsp each', grams: 20 },
+      { item: 'Bell Pepper & Onion Cubes (for skewers)', amount: '1/2 cup', grams: 60 },
+      { item: 'Tikka Spices (Paprika, Cumin, Coriander, Garam Masala)', amount: '1.5 tsp', grams: 8 },
+      { item: 'Olive Oil (for brushing)', amount: '1 tsp', grams: 5 }
+    ],
+    instructions: [
+      'Step 1 (Prepare Marinade): Whisk thick yogurt with lemon juice, ginger-garlic paste, paprika, roasted cumin, coriander powder, and salt in a mixing bowl.',
+      'Step 2 (Coat Chicken & Veggies): Toss chicken breast cubes, bell pepper squares, and onion petals in the yogurt marinade. Rest for at least 15–20 minutes.',
+      'Step 3 (Thread or Pan-Grill): Thread marinated chicken and vegetables onto skewers, or arrange them in a preheated grill pan / air-fryer at 200°C.',
+      'Step 4 (Grill Until Charred): Cook for 12–14 minutes, turning once halfway and brushing lightly with 1 tsp olive oil until tender and golden-charred on the edges.',
+      'Step 5 (Serve): Serve piping hot with fresh lemon wedges, cucumber salad, and mint-yogurt chutney.'
+    ],
+    healthBenefit: 'Delivers 36g of pure muscle-building protein with only 8g carbs — ideal for fat loss, keto, and diabetes management.'
+  },
+  {
+    id: 'rec-grilled-salmon',
+    title: 'Lemon Herb Grilled Fish / Salmon Fillet',
+    subtitle: 'Omega-3 Rich Fish Fillet with Steamed Broccoli & Garlic Lemon Glaze',
+    category: 'High-Protein',
+    dishVisualType: 'grilled-salmon',
+    calories: 340,
+    proteinG: 34,
+    carbsG: 10,
+    fatG: 16,
+    fiberG: 4,
+    cookTimeMin: 18,
+    servings: 1,
+    difficulty: 'Easy',
+    isVeg: false,
+    ingredients: [
+      { item: 'Fresh Fish / Salmon Fillet (skinless or skin-on)', amount: '6 oz fillet', grams: 175 },
+      { item: 'Broccoli Florets & Sliced Carrots', amount: '1 cup', grams: 120 },
+      { item: 'Minced Garlic & Fresh Lemon Juice', amount: '1 tbsp', grams: 15 },
+      { item: 'Dried Oregano, Thyme & Cracked Black Pepper', amount: '1 tsp', grams: 5 },
+      { item: 'Extra-Virgin Olive Oil', amount: '1.5 tsp', grams: 7 }
+    ],
+    instructions: [
+      'Step 1 (Season Fillet): Pat the fish/salmon fillet dry with a paper towel. Rub both sides with minced garlic, lemon juice, olive oil, oregano, salt, and black pepper.',
+      'Step 2 (Sear Fish): Heat a non-stick skillet over medium-high heat. Place the fillet in the pan and sear for 4 minutes per side until flaky and golden.',
+      'Step 3 (Steam Vegetables): Alongside in the pan (or steamer), toss broccoli florets and carrots with 2 tbsp water and cover for 4 minutes until crisp-tender.',
+      'Step 4 (Plate & Serve): Plate the flaky grilled fish alongside the steamed vegetables and drizzle with warm lemon-garlic pan juices.'
+    ],
+    healthBenefit: 'Rich in heart-protective Omega-3 fatty acids (EPA & DHA) and Vitamin D to reduce inflammation and triglycerides.'
+  },
+  {
+    id: 'rec-oats-bowl',
+    title: 'High-Fiber Protein Oats, Chia & Banana Bowl',
+    subtitle: 'Warm Cinnamon Rolled Oats topped with Banana, Chia Seeds & Almonds',
+    category: 'Healthy Bowl',
+    dishVisualType: 'oats-bowl',
+    calories: 320,
+    proteinG: 14,
+    carbsG: 46,
+    fatG: 9,
+    fiberG: 8,
+    cookTimeMin: 10,
+    servings: 1,
+    difficulty: 'Easy',
+    isVeg: true,
+    ingredients: [
+      { item: 'Whole Rolled Oats (Quick or Old-Fashioned)', amount: '1/2 cup dry', grams: 45 },
+      { item: 'Skim Milk or Unsweetened Almond Milk', amount: '1 cup', grams: 240 },
+      { item: 'Ripe Banana (sliced)', amount: '1/2 medium', grams: 60 },
+      { item: 'Chia Seeds & Flaxseeds', amount: '1 tbsp', grams: 10 },
+      { item: 'Sliced Almonds & Walnuts', amount: '6 nuts chopped', grams: 12 },
+      { item: 'Ceylon Cinnamon Powder', amount: '1/2 tsp', grams: 2 }
+    ],
+    instructions: [
+      'Step 1 (Simmer Oats): In a small saucepan, combine rolled oats, milk, chia seeds, and cinnamon powder over medium flame.',
+      'Step 2 (Cook Until Creamy): Stir continuously for 5–6 minutes until the oats thicken into a warm, creamy porridge.',
+      'Step 3 (Add Toppings): Transfer to a breakfast bowl and arrange sliced banana, chopped almonds, and walnuts on top.',
+      'Step 4 (Serve): Enjoy warm for sustained 4-hour morning energy without blood sugar spikes.'
+    ],
+    healthBenefit: 'Rich in beta-glucan soluble fiber that naturally lowers cholesterol and keeps hunger hormones satisfied.'
+  },
+  {
+    id: 'rec-shahi-haleem',
+    title: 'High-Protein Pakistani Chicken Haleem / Daleem',
+    subtitle: 'Slow-Cooked Four Lentils, Cracked Wheat & Shredded Lean Chicken',
+    category: 'Desi & Pakistani',
+    dishVisualType: 'haleem',
+    calories: 380,
+    proteinG: 27,
+    carbsG: 41,
+    fatG: 10,
+    fiberG: 8,
+    cookTimeMin: 40,
+    servings: 2,
+    difficulty: 'Medium',
+    isVeg: false,
+    ingredients: [
+      { item: 'Shredded Boneless Chicken Breast', amount: '5 oz', grams: 140 },
+      { item: 'Mixed Lentils (Chana, Moong, Masoor, Mash Daal)', amount: '1/2 cup soaked', grams: 80 },
+      { item: 'Cracked Wheat (Daliya) & Rolled Oats', amount: '1/4 cup', grams: 35 },
+      { item: 'Onion, Ginger-Garlic Paste & Haleem Spices', amount: '3 tbsp', grams: 45 },
+      { item: 'Lemon Wedges, Ginger Strips, Mint & Green Chilies', amount: '1/3 cup garnish', grams: 30 },
+      { item: 'Olive / Canola Oil', amount: '1 tbsp', grams: 12 }
+    ],
+    instructions: [
+      'Step 1 (Boil Grains & Lentils): Simmer soaked mixed lentils, cracked wheat, and oats in 3.5 cups water with turmeric and salt for 25 minutes until completely soft.',
+      'Step 2 (Cook Chicken Korma): In a separate pan, sauté ginger-garlic paste, boneless chicken, and haleem masala in 1 tbsp oil with 1/2 cup water until tender, then shred the chicken.',
+      'Step 3 (Blend & Mash): Blend the cooked lentils lightly with a hand blender, fold in the shredded chicken, and simmer together on low flame for 10 minutes while stirring.',
+      'Step 4 (Garnish & Serve): Top generously with fresh ginger juliennes, chopped mint, green chilies, and a squeeze of fresh lemon juice.'
+    ],
+    healthBenefit: 'Combines lean poultry protein with 4 lentils and whole wheat for slow-release energy and 8g dietary fiber.'
+  },
+  {
+    id: 'rec-veg-stirfry',
+    title: 'Chinese Garlic Chicken / Tofu & Broccoli Stir-Fry',
+    subtitle: 'Crisp Bell Peppers, Broccoli & Protein in Light Ginger-Soy Glaze',
+    category: 'Chinese & Italian',
+    dishVisualType: 'veg-stirfry',
+    calories: 290,
+    proteinG: 25,
+    carbsG: 22,
+    fatG: 9,
+    fiberG: 5,
+    cookTimeMin: 15,
+    servings: 1,
+    difficulty: 'Easy',
+    isVeg: false,
+    ingredients: [
+      { item: 'Chicken Breast Strips (or Firm Tofu Cubes)', amount: '5 oz', grams: 150 },
+      { item: 'Broccoli, Red/Yellow Bell Peppers & Carrots', amount: '1.5 cups', grams: 160 },
+      { item: 'Minced Garlic, Fresh Ginger & Spring Onion', amount: '2 tbsp', grams: 25 },
+      { item: 'Low-Sodium Soy Sauce & Rice Vinegar', amount: '1.5 tbsp', grams: 20 },
+      { item: 'Cornstarch (mixed in 3 tbsp water) & Sesame Oil', amount: '1 tsp each', grams: 10 }
+    ],
+    instructions: [
+      'Step 1 (Sear Protein): Heat a non-stick wok over high heat with 1 tsp oil. Stir-fry chicken strips (or tofu) with a pinch of black pepper for 4 minutes until golden.',
+      'Step 2 (Toss Crisp Veggies): Add minced garlic, ginger, broccoli florets, sliced carrots, and bell peppers. Stir-fry on high flame for 3–4 minutes so vegetables stay bright and crunchy.',
+      'Step 3 (Glaze): Pour in low-sodium soy sauce, vinegar, and the cornstarch-water slurry. Toss for 60 seconds until a glossy glaze coats everything.',
+      'Step 4 (Serve): Garnish with chopped spring onions and sesame seeds.'
+    ],
+    healthBenefit: 'High-volume, nutrient-dense meal under 300 calories loaded with Vitamin C, sulforaphane, and lean protein.'
+  },
+  {
+    id: 'rec-pasta-alfredo',
+    title: 'Light Mediterranean Whole-Wheat Pasta & Veggies',
+    subtitle: 'Al Dente Whole-Wheat Pasta in Creamy Greek Yogurt-Parmesan Garlic Sauce',
+    category: 'Chinese & Italian',
+    dishVisualType: 'pasta-alfredo',
+    calories: 375,
+    proteinG: 18,
+    carbsG: 48,
+    fatG: 11,
+    fiberG: 6,
+    cookTimeMin: 18,
+    servings: 1,
+    difficulty: 'Easy',
+    isVeg: true,
+    ingredients: [
+      { item: 'Whole-Wheat Penne or Fettuccine Pasta', amount: '1 cup dry', grams: 85 },
+      { item: 'Baby Spinach, Cherry Tomatoes & Mushrooms', amount: '1 cup', grams: 100 },
+      { item: 'Low-Fat Milk + Greek Yogurt Cream Base', amount: '1/2 cup', grams: 90 },
+      { item: 'Grated Parmesan Cheese', amount: '2 tbsp', grams: 20 },
+      { item: 'Minced Garlic, Italian Herbs & Olive Oil', amount: '1 tbsp total', grams: 12 }
+    ],
+    instructions: [
+      'Step 1 (Boil Pasta): Cook whole-wheat pasta in salted boiling water for 9–10 minutes until al dente. Reserve 1/4 cup pasta water before draining.',
+      'Step 2 (Sauté Veggies): In a skillet, heat 1 tsp olive oil and sauté minced garlic, sliced mushrooms, and cherry tomatoes for 3 minutes, then wilt in baby spinach.',
+      'Step 3 (Make Light Sauce): Lower the heat, whisk in the warm milk, Greek yogurt, Italian herbs, and grated parmesan cheese until smooth and creamy.',
+      'Step 4 (Toss & Serve): Toss the drained pasta with the sauce and veggies, adding a splash of pasta water to coat evenly. Serve warm with cracked black pepper.'
+    ],
+    healthBenefit: 'Replaces heavy cream with high-protein Greek yogurt and whole-wheat pasta to cut saturated fat by 65%.'
+  },
+  {
+    id: 'rec-quinoa-salad',
+    title: 'Mediterranean Chickpea, Quinoa & Avocado Power Bowl',
+    subtitle: 'Protein-Rich Quinoa, Boiled Chickpeas, Cucumber, Feta & Lemon Olive Dressing',
+    category: 'Healthy Bowl',
+    dishVisualType: 'quinoa-salad',
+    calories: 330,
+    proteinG: 14,
+    carbsG: 39,
+    fatG: 12,
+    fiberG: 9,
+    cookTimeMin: 15,
+    servings: 1,
+    difficulty: 'Easy',
+    isVeg: true,
+    ingredients: [
+      { item: 'Cooked Quinoa (or Brown Rice)', amount: '3/4 cup cooked', grams: 110 },
+      { item: 'Boiled Chickpeas (Chana)', amount: '1/2 cup', grams: 80 },
+      { item: 'Diced Cucumber, Cherry Tomatoes & Red Onion', amount: '1 cup', grams: 120 },
+      { item: 'Ripe Avocado Slices & Crumbled Feta / Paneer', amount: '1/4 cup', grams: 45 },
+      { item: 'Lemon Juice, Extra-Virgin Olive Oil & Mint', amount: '1.5 tbsp', grams: 18 }
+    ],
+    instructions: [
+      'Step 1 (Prepare Base): Place fluffy cooked quinoa and boiled chickpeas in a wide salad bowl.',
+      'Step 2 (Add Fresh Vegetables): Add diced cucumber, halved cherry tomatoes, finely chopped red onion, and fresh mint leaves.',
+      'Step 3 (Whisk Dressing): In a small cup, whisk extra-virgin olive oil, fresh lemon juice, a pinch of roasted cumin, salt, and black pepper.',
+      'Step 4 (Top & Serve): Pour the lemon-olive dressing over the bowl, toss gently, and top with avocado slices and crumbled feta/paneer.'
+    ],
+    healthBenefit: 'Heart-healthy monounsaturated fats, 9g prebiotic fiber, and complete plant amino acids for sustained fullness.'
+  }
+];
+
+/**
+ * Renders a 100% Dish-Matched Culinary Illustration Header for each recipe
+ * so that the visual NEVER mismatches the recipe title (no wrong stock photos!).
+ */
+const RecipeDishArtwork: React.FC<{ recipe: AccurateRecipeItem }> = ({ recipe }) => {
+  const paletteMap: Record<
+    AccurateRecipeItem['dishVisualType'],
+    { bgFrom: string; bgTo: string; plateFill: string; accent: string; badgeText: string }
+  > = {
+    biryani: {
+      bgFrom: '#7C2D12',
+      bgTo: '#B45309',
+      plateFill: '#FEF3C7',
+      accent: '#F59E0B',
+      badgeText: 'Saffron Basmati & Spiced Chicken Handi'
+    },
+    karahi: {
+      bgFrom: '#7F1D1D',
+      bgTo: '#B91C1C',
+      plateFill: '#FEE2E2',
+      accent: '#EF4444',
+      badgeText: 'Peshawari Wok Tomato & Ginger Karahi'
+    },
+    'daal-chawal': {
+      bgFrom: '#78350F',
+      bgTo: '#D97706',
+      plateFill: '#FEF9C3',
+      accent: '#EAB308',
+      badgeText: 'Golden Moong-Masoor Tarka & Steamed Rice'
+    },
+    'palak-paneer': {
+      bgFrom: '#064E3B',
+      bgTo: '#059669',
+      plateFill: '#D1FAE5',
+      accent: '#10B981',
+      badgeText: 'Emerald Spinach Puree & Soft Paneer Cubes'
+    },
+    'chana-masala': {
+      bgFrom: '#7C2D12',
+      bgTo: '#C2410C',
+      plateFill: '#FFEDD5',
+      accent: '#F97316',
+      badgeText: 'Lahori Chickpeas in Tangy Tomato Gravy'
+    },
+    'chicken-tikka': {
+      bgFrom: '#881337',
+      bgTo: '#E11D48',
+      plateFill: '#FFE4E6',
+      accent: '#F43F5E',
+      badgeText: 'Charcoal-Grilled Chicken Skewers & Mint'
+    },
+    'grilled-salmon': {
+      bgFrom: '#0C4A6E',
+      bgTo: '#0284C7',
+      plateFill: '#E0F2FE',
+      accent: '#38BDF8',
+      badgeText: 'Omega-3 Lemon Herb Fillet & Broccoli'
+    },
+    'oats-bowl': {
+      bgFrom: '#3B0764',
+      bgTo: '#7E22CE',
+      plateFill: '#F3E8FF',
+      accent: '#A855F7',
+      badgeText: 'Rolled Oats, Banana, Chia & Almonds'
+    },
+    haleem: {
+      bgFrom: '#713F12',
+      bgTo: '#A16207',
+      plateFill: '#FEF08A',
+      accent: '#CA8A04',
+      badgeText: 'Slow-Simmered 4 Lentils, Wheat & Chicken'
+    },
+    'veg-stirfry': {
+      bgFrom: '#14532D',
+      bgTo: '#16A34A',
+      plateFill: '#DCFCE7',
+      accent: '#22C55E',
+      badgeText: 'Wok-Tossed Broccoli, Peppers & Protein'
+    },
+    'pasta-alfredo': {
+      bgFrom: '#1E3A8A',
+      bgTo: '#2563EB',
+      plateFill: '#DBEAFE',
+      accent: '#60A5FA',
+      badgeText: 'Whole-Wheat Pasta in Yogurt-Parmesan Sauce'
+    },
+    'quinoa-salad': {
+      bgFrom: '#065F46',
+      bgTo: '#0D9488',
+      plateFill: '#CCFBF1',
+      accent: '#14B8A6',
+      badgeText: 'Quinoa, Chickpeas, Avocado & Lemon Olive'
+    }
+  };
+
+  const style = paletteMap[recipe.dishVisualType] || paletteMap.biryani;
+
+  return (
+    <div
+      className="relative w-full h-44 overflow-hidden flex items-center justify-between px-4 sm:px-5 py-3.5 text-white select-none"
+      style={{
+        background: `linear-gradient(135deg, ${style.bgFrom} 0%, ${style.bgTo} 100%)`
+      }}
+    >
+      {/* Left Text & Dish Identity */}
+      <div className="z-10 max-w-[64%] space-y-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[10px] font-extrabold uppercase tracking-wider">
+            {recipe.category}
+          </span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+              recipe.isVeg
+                ? 'bg-emerald-400/30 text-emerald-100 border border-emerald-300/40'
+                : 'bg-amber-400/30 text-amber-100 border border-amber-300/40'
+            }`}
+          >
+            {recipe.isVeg ? '100% Vegetarian' : 'High-Protein Lean Meat'}
+          </span>
+        </div>
+
+        <h4 className="text-base sm:text-lg font-extrabold leading-tight drop-shadow-xs">
+          {recipe.title}
+        </h4>
+
+        <p className="text-[11px] text-white/90 font-medium line-clamp-2 leading-snug">
+          {style.badgeText}
+        </p>
+
+        <div className="flex items-center gap-2 pt-1 text-[10.5px] font-extrabold">
+          <span className="px-2 py-0.5 rounded-md bg-black/25">
+            🔥 {recipe.calories} kcal
+          </span>
+          <span className="px-2 py-0.5 rounded-md bg-black/25">
+            💪 {recipe.proteinG}g Protein
+          </span>
+          <span className="px-2 py-0.5 rounded-md bg-black/25">
+            ⏱ {recipe.cookTimeMin}m
+          </span>
+        </div>
+      </div>
+
+      {/* Right Custom Dish Plate Illustration matching the exact recipe */}
+      <div className="z-10 shrink-0">
+        <svg
+           viewBox="0 0 120 120"
+          className="w-28 h-28 sm:w-32 sm:h-32 drop-shadow-md"
+          aria-label={recipe.title}
+        >
+          {/* Outer Rim of Serving Bowl / Handi / Plate */}
+          <circle
+            cx="60"
+            cy="60"
+            r="54"
+            fill="#FFFFFF"
+            fillOpacity="0.18"
+            stroke="#FFFFFF"
+            strokeOpacity="0.6"
+            strokeWidth="2.5"
+          />
+          <circle
+            cx="60"
+            cy="60"
+            r="44"
+            fill={style.plateFill}
+            stroke={style.accent}
+            strokeWidth="3"
+          />
+
+          {/* Dish-Specific Culinary Garnishes Inside the Plate */}
+          {recipe.dishVisualType === 'biryani' && (
+            <g>
+              {/* Saffron & White Basmati Rice Grains */}
+              <ellipse cx="48" cy="52" rx="18" ry="12" fill="#F59E0B" opacity="0.85" />
+              <ellipse cx="68" cy="64" rx="18" ry="13" fill="#D97706" opacity="0.9" />
+              {/* Spiced Chicken Pieces */}
+              <circle cx="52" cy="66" r="9" fill="#9A3412" />
+              <circle cx="68" cy="48" r="8" fill="#B45309" />
+              {/* Fresh Mint & Boiled Egg Garnish */}
+              <circle cx="44" cy="46" r="6" fill="#FFFFFF" stroke="#FBBF24" strokeWidth="3" />
+              <circle cx="60" cy="56" r="3.5" fill="#16A34A" />
+              <circle cx="74" cy="60" r="3" fill="#15803D" />
+            </g>
+          )}
+
+          {recipe.dishVisualType === 'karahi' && (
+            <g>
+              {/* Wok Handles */}
+              <path d="M12 60 Q6 60 6 52" stroke="#FFFFFF" strokeWidth="3.5" fill="none" />
+              <path d="M108 60 Q114 60 114 52" stroke="#FFFFFF" strokeWidth="3.5" fill="none" />
+              {/* Rich Red Tomato Karahi Gravy */}
+              <circle cx="60" cy="60" r="36" fill="#DC2626" />
+              {/* Seared Chicken Chunks */}
+              <rect x="42" y="44" width="14" height="12" rx="4" fill="#FDE68A" />
+              <rect x="62" y="48" width="15" height="12" rx="4" fill="#FCD34D" />
+              <rect x="48" y="62" width="16" height="13" rx="4" fill="#FDE68A" />
+              {/* Ginger Juliennes & Green Chilies */}
+              <line x1="45" y1="42" x2="72" y2="70" stroke="#FEF08A" strokeWidth="2.5" />
+              <line x1="70" y1="42" x2="46" y2="68" stroke="#22C55E" strokeWidth="3" />
+            </g>
+          )}
+
+          {recipe.dishVisualType === 'daal-chawal' && (
+            <g>
+              {/* Half Steamed White Rice, Half Golden Yellow Lentil Daal */}
+              <path d="M60 20 A40 40 0 0 0 60 100 Z" fill="#FACC15" />
+              <path d="M60 20 A40 40 0 0 1 60 100 Z" fill="#FFFFFF" />
+              {/* Garlic & Red Chili Tarka Swirl on Daal */}
+              <circle cx="44" cy="52" r="5" fill="#B91C1C" />
+              <circle cx="48" cy="68" r="4" fill="#92400E" />
+              <circle cx="40" cy="60" r="3" fill="#15803D" />
+              {/* Cumin flecks on Rice */}
+              <circle cx="72" cy="50" r="2" fill="#78350F" />
+              <circle cx="76" cy="64" r="2" fill="#78350F" />
+            </g>
+          )}
+
+          {recipe.dishVisualType === 'palak-paneer' && (
+            <g>
+              {/* Emerald Spinach Curry Base */}
+              <circle cx="60" cy="60" r="37" fill="#15803D" />
+              {/* White Soft Paneer Cubes */}
+              <rect x="40" y="42" width="12" height="12" rx="2.5" fill="#FFFFFF" />
+              <rect x="64" y="44" width="12" height="12" rx="2.5" fill="#F8FAFC" />
+              <rect x="52" y="60" width="13" height="13" rx="2.5" fill="#FFFFFF" />
+              <rect x="38" y="62" width="10" height="10" rx="2" fill="#F1F5F9" />
+              {/* Light Yogurt Swirl */}
+              <path
+                d="M44 36 Q62 32 72 56"
+                stroke="#DCFCE7"
+                strokeWidth="2.5"
+                fill="none"
+              />
+            </g>
+          )}
+
+          {recipe.dishVisualType === 'chana-masala' && (
+            <g>
+              {/* Spiced Masala Gravy */}
+              <circle cx="60" cy="60" r="36" fill="#C2410C" />
+              {/* Golden Boiled Chickpeas */}
+              <circle cx="46" cy="48" r="6.5" fill="#FDE047" />
+              <circle cx="62" cy="46" r="6.5" fill="#FACC15" />
+              <circle cx="72" cy="58" r="6.5" fill="#FDE047" />
+              <circle cx="54" cy="60" r="6.5" fill="#FACC15" />
+              <circle cx="44" cy="66" r="6.5" fill="#FDE047" />
+              <circle cx="64" cy="70" r="6.5" fill="#FACC15" />
+              {/* Fresh Coriander Leaves */}
+              <circle cx="58" cy="53" r="3.5" fill="#22C55E" />
+            </g>
+          )}
+
+          {recipe.dishVisualType === 'chicken-tikka' && (
+            <g>
+              {/* Skewer Stick */}
+              <line x1="28" y1="88" x2="92" y2="32" stroke="#78350F" strokeWidth="3.5" />
+              {/* Grilled Tikka Chunks & Bell Peppers */}
+              <rect x="38" y="64" width="14" height="14" rx="4" fill="#DC2626" />
+              <rect x="52" y="50" width="14" height="14" rx="4" fill="#EA580C" />
+              <rect x="66" y="38" width="14" height="14" rx="4" fill="#DC2626" />
+              {/* Mint Chutney Dip */}
+              <circle cx="76" cy="76" r="10" fill="#16A34A" stroke="#FFFFFF" strokeWidth="2" />
+            </g>
+          )}
+
+          {recipe.dishVisualType === 'grilled-salmon' && (
+            <g>
+              {/* Salmon Fillet with Grill Marks */}
+              <rect x="34" y="44" width="52" height="24" rx="8" fill="#FB7185" />
+              <line x1="44" y1="44" x2="38" y2="68" stroke="#9F1239" strokeWidth="2.5" />
+              <line x1="58" y1="44" x2="52" y2="68" stroke="#9F1239" strokeWidth="2.5" />
+              <line x1="72" y1="44" x2="66" y2="68" stroke="#9F1239" strokeWidth="2.5" />
+              {/* Steamed Broccoli & Lemon Slice */}
+              <circle cx="46" cy="78" r="7" fill="#16A34A" />
+              <circle cx="58" cy="80" r="6" fill="#15803D" />
+              <circle cx="76" cy="76" r="8" fill="#FDE047" stroke="#FEF9C3" strokeWidth="2" />
+            </g>
+          )}
+
+          {recipe.dishVisualType === 'oats-bowl' && (
+            <g>
+              {/* Creamy Oatmeal Base */}
+              <circle cx="60" cy="60" r="36" fill="#FDE68A" />
+              {/* Sliced Banana Coins */}
+              <circle cx="46" cy="48" r="7" fill="#FEF9C3" stroke="#CA8A04" strokeWidth="1.5" />
+              <circle cx="58" cy="44" r="7" fill="#FEF9C3" stroke="#CA8A04" strokeWidth="1.5" />
+              {/* Almonds & Chia Seeds */}
+              <ellipse cx="70" cy="58" rx="6" ry="3.5" fill="#92400E" />
+              <ellipse cx="52" cy="68" rx="6" ry="3.5" fill="#92400E" />
+              <circle cx="44" cy="62" r="2" fill="#1E293B" />
+              <circle cx="62" cy="60" r="2" fill="#1E293B" />
+              <circle cx="66" cy="70" r="2" fill="#1E293B" />
+            </g>
+          )}
+
+          {(recipe.dishVisualType === 'haleem' ||
+            recipe.dishVisualType === 'veg-stirfry' ||
+            recipe.dishVisualType === 'pasta-alfredo' ||
+            recipe.dishVisualType === 'quinoa-salad') && (
+            <g>
+              <circle cx="60" cy="60" r="35" fill={style.accent} opacity="0.85" />
+              <circle cx="48" cy="50" r="7" fill="#FFFFFF" opacity="0.9" />
+              <circle cx="68" cy="52" r="6" fill="#FEF08A" />
+              <circle cx="56" cy="68" r="8" fill="#DCFCE7" />
+              <circle cx="72" cy="68" r="5" fill="#FFFFFF" />
+            </g>
+          )}
+        </svg>
+      </div>
+    </div>
+  );
+};
+
 export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
   user,
-  isUserPaid,
-  hasExpiredPremium,
   toolsData,
-  onSaveToolsData,
-  onOpenPremiumModal
+  onSaveToolsData
 }) => {
-  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
-
-  // Initialize onboarding profile from existing user/toolsData
+  // 1. Unified Single-Page Profile State
   const [profile, setProfile] = useState<SuiteOnboardingProfile>(() => {
     const savedNut = toolsData?.nutrition;
     return {
@@ -110,3595 +793,1353 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       age: savedNut?.age || 28,
       gender: savedNut?.gender === 'female' ? 'Female' : 'Male',
       heightCm: savedNut?.heightCm || 172,
-      weightKg: savedNut?.weightKg || 71.6,
+      weightKg: savedNut?.weightKg || 74,
       targetWeightKg: savedNut?.targetWeightKg || 68,
-      setupCompleted: Boolean(savedNut?.updatedAt)
+      activityLevel: 'Moderately Active',
+      goal: 'Lose Weight',
+      dietPreference: 'Desi',
+      healthConditions: ['None'],
+      setupCompleted: true
     };
   });
 
-  // Sub-route state: if user hasn't set up profile yet, show 'setup' or 'dashboard' with toggle
-  const [subRoute, setSubRoute] = useState<NutritionSubRoute>(() =>
-    toolsData?.nutrition?.updatedAt ? 'dashboard' : 'setup'
-  );
-
-  // Water intake state (0–8+ glasses)
+  // Water glasses tracker
   const [waterGlasses, setWaterGlasses] = useState<number>(
     () => toolsData?.nutrition?.waterGlassesToday ?? 6
   );
 
-  // Weight 30-day history
+  // Weight History for simple visual graph
   const [weightLogs, setWeightLogs] = useState<
     { date: string; weightKg: number; bmi: number }[]
   >(() =>
     toolsData?.nutrition?.weightHistory?.length
       ? toolsData.nutrition.weightHistory
       : [
-          { date: 'Day 1', weightKg: 74.0, bmi: 25.0 },
-          { date: 'Day 7', weightKg: 73.4, bmi: 24.8 },
-          { date: 'Day 14', weightKg: 72.8, bmi: 24.6 },
-          { date: 'Day 21', weightKg: 72.1, bmi: 24.4 },
-          { date: 'Today', weightKg: 71.6, bmi: 24.2 }
+          { date: 'Week 1', weightKg: 76.0, bmi: 25.7 },
+          { date: 'Week 2', weightKg: 75.2, bmi: 25.4 },
+          { date: 'Week 3', weightKg: 74.5, bmi: 25.2 },
+          { date: 'Today', weightKg: Number(toolsData?.nutrition?.weightKg || 74.0), bmi: 25.0 }
         ]
   );
-  const [newWeightInput, setNewWeightInput] = useState<string>(
-    String(profile.weightKg)
+
+  // Health Condition Food Guide Filter
+  const [selectedCondition, setSelectedCondition] = useState<string>('Diabetes');
+
+  // Recipes Filter & Expanded Recipe ID (Open first recipe by default so user immediately sees full ingredients & instructions!)
+  const [recipeCategoryFilter, setRecipeCategoryFilter] = useState<string>('All');
+  const [recipeSearchQuery, setRecipeSearchQuery] = useState<string>('');
+  const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(
+    'rec-chicken-biryani'
   );
+  const [modalRecipe, setModalRecipe] = useState<AccurateRecipeItem | null>(null);
 
-  // 7-Day Meal Plan State
-  const [weekMealPlan, setWeekMealPlan] = useState<DayMealPlanData[]>(() =>
-    generate7DayMealPlan(profile)
-  );
-  const [selectedDayKey, setSelectedDayKey] =
-    useState<DayMealPlanData['dayKey']>('Mon');
-  const [showGroceryModal, setShowGroceryModal] = useState<boolean>(false);
-  const [groceryList, setGroceryList] = useState<GroceryItem[]>([]);
+  // Save notification banner
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
-  // Custom Food Add / Edit inside Meal Plan
-  const [addingToMealSection, setAddingToMealSection] = useState<
-    'breakfast' | 'lunch' | 'dinner' | 'snack' | null
-  >(null);
-  const [customMealFoodName, setCustomMealFoodName] = useState<string>('');
-  const [customMealGrams, setCustomMealGrams] = useState<string>('150');
-  const [customMealCalories, setCustomMealCalories] = useState<string>('220');
-  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
-  const [editingGramsVal, setEditingGramsVal] = useState<string>('100');
-
-  // Recipes Section State (44 Preloaded + Community Recipes)
-  const [communityRecipes, setCommunityRecipes] = useState<SuiteRecipeItem[]>(
-    []
-  );
-  const [recipeCategory, setRecipeCategory] = useState<
-    'All' | 'Desi' | 'Pakistani' | 'Chinese' | 'Italian' | 'Continental' | 'Healthy' | 'Saved'
-  >('Desi');
-  const [recipeSearch, setRecipeSearch] = useState<string>('');
-  const [showRecipeFilters, setShowRecipeFilters] = useState<boolean>(false);
-  const [calorieFilter, setCalorieFilter] = useState<
-    'all' | 'low' | 'medium' | 'high'
-  >('all');
-  const [vegFilter, setVegFilter] = useState<'all' | 'veg' | 'nonveg'>('all');
-  const [timeFilter, setTimeFilter] = useState<
-    'all' | 'under20' | '20to40' | 'over40'
-  >('all');
-  const [selectedRecipeModal, setSelectedRecipeModal] =
-    useState<SuiteRecipeItem | null>(null);
-  const [showSubmitRecipeModal, setShowSubmitRecipeModal] =
-    useState<boolean>(false);
-  const [newRecipeTitle, setNewRecipeTitle] = useState<string>('');
-  const [newRecipeCategory, setNewRecipeCategory] =
-    useState<SuiteRecipeItem['category']>('Desi');
-  const [newRecipeCalories, setNewRecipeCalories] = useState<string>('320');
-  const [newRecipeProtein, setNewRecipeProtein] = useState<string>('20');
-  const [newRecipeCarbs, setNewRecipeCarbs] = useState<string>('32');
-  const [newRecipeTime, setNewRecipeTime] = useState<string>('25');
-  const [newRecipeIngredientsText, setNewRecipeIngredientsText] =
-    useState<string>('Chicken Breast 150g, Yogurt 50g, Spices 10g');
-  const [newRecipeStepsText, setNewRecipeStepsText] = useState<string>(
-    'Marinate chicken for 20 mins. Grill until golden and serve hot.'
-  );
-
-  // Health Condition Recommended Food State (Image 3)
-  const [healthQueryInput, setHealthQueryInput] = useState<string>('Diabetes');
-  const [activeHealthCondition, setActiveHealthCondition] =
-    useState<string>('Diabetes');
-
-  // AI Dietitian Chat State
-  const [chatMessages, setChatMessages] = useState<
-    { id: string; sender: 'user' | 'dietitian'; text: string; time: string }[]
-  >([
-    {
-      id: 'welcome-msg',
-      sender: 'dietitian',
-      text: `Assalam-o-Alaikum ${
-        user.name || 'Specialist'
-      }! I am your AI Nutrition & Dietitian Assistant. Ask me anything about Diabetes, Weight Loss, PCOS, Blood Pressure, or Desi foods like Biryani & Roti. ${DOCTOR_DISCLAIMER_CHAT}`,
-      time: 'Just now'
-    }
-  ]);
-  const [chatInput, setChatInput] = useState<string>('');
-
-  // Food Log Calorie Tracker & Barcode Scanner + Intermittent Fasting 16:8 Timer
-  const [foodSearchQuery, setFoodSearchQuery] = useState<string>('');
-  const [todayLoggedFoods, setTodayLoggedFoods] = useState<MealFoodEntry[]>([
-    {
-      id: 'log-1',
-      name: 'Overnight Oats & Banana',
-      grams: 250,
-      calories: 360,
-      proteinG: 14,
-      carbsG: 58,
-      fatG: 7,
-      disclaimer: DOCTOR_DISCLAIMER_SHORT
-    },
-    {
-      id: 'log-2',
-      name: '1 Whole Wheat Roti + Tarka Daal',
-      grams: 230,
-      calories: 300,
-      proteinG: 16,
-      carbsG: 50,
-      fatG: 5,
-      disclaimer: DOCTOR_DISCLAIMER_SHORT
-    }
-  ]);
-  const [showBarcodeModal, setShowBarcodeModal] = useState<boolean>(false);
-  const [barcodeInput, setBarcodeInput] = useState<string>('89610003');
-  const [fastingActive, setFastingActive] = useState<boolean>(false);
-  const [fastingElapsedHours, setFastingElapsedHours] =
-    useState<number>(11.5);
-
-  // Toast / Status Banner + Free Limit Paywall Modal
-  const [toastBanner, setToastBanner] = useState<string | null>(null);
-  const [paywallReason, setPaywallReason] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastBanner(msg);
-    setTimeout(() => {
-      setToastBanner((prev) => (prev === msg ? null : prev));
-    }, 3800);
-  };
-
-  // Load saved Firestore `users/{uid}/nutritionProfile/main` and community recipes on mount
-  useEffect(() => {
-    let isMounted = true;
-    async function loadFirestoreNutrition() {
-      if (!user?.uid) return;
-      try {
-        const profSnap = await getDoc(
-          doc(db, 'users', user.uid, 'nutritionProfile', 'main')
-        );
-        if (profSnap.exists() && isMounted) {
-          const data = profSnap.data() as Partial<SuiteOnboardingProfile>;
-          setProfile((prev) => ({
-            ...prev,
-            ...data,
-            uid: user.uid,
-            setupCompleted: true
-          }));
-          if (data.setupCompleted) {
-            setSubRoute((curr) => (curr === 'setup' ? 'dashboard' : curr));
-          }
-        }
-      } catch {
-        // Fallback to local state silently
-      }
-
-      try {
-        const recSnap = await getDocs(collection(db, 'recipes'));
-        if (!recSnap.empty && isMounted) {
-          const loaded: SuiteRecipeItem[] = [];
-          recSnap.forEach((d) => {
-            const r = d.data() as SuiteRecipeItem;
-            if (r && r.id && r.title) loaded.push(r);
-          });
-          setCommunityRecipes(loaded);
-        }
-      } catch {
-        // Ignore if empty
-      }
-    }
-    loadFirestoreNutrition();
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.uid]);
-
-  // Calculate allPart 2 Dashboard indexes dynamically
+  // Live Calculated BMI, BMR, TDEE, Ideal Weight, Macros & Weight Recommendation
   const indexes = useMemo(
     () => calculateSuiteNutritionIndexes(profile, waterGlasses),
     [profile, waterGlasses]
   );
 
-  // Sync with parent `toolsData.nutrition` + Firestore `users/{uid}/nutritionProfile/main`
-  const persistNutritionEverywhere = async (
-    nextProfile: SuiteOnboardingProfile,
-    nextWater = waterGlasses,
-    nextWeights = weightLogs
-  ) => {
-    const comp = calculateSuiteNutritionIndexes(nextProfile, nextWater);
-    // 1. Save to Firestore `users/{uid}/nutritionProfile/main`
-    if (user?.uid) {
-      try {
-        await setDoc(
-          doc(db, 'users', user.uid, 'nutritionProfile', 'main'),
-          {
-            ...nextProfile,
-            uid: user.uid,
-            bmi: comp.bmi,
-            bmrKcal: comp.bmrKcal,
-            tdeeKcal: comp.tdeeKcal,
-            healthScore: comp.healthScore,
-            updatedAt: new Date().toISOString()
-          },
-          { merge: true }
-        );
-      } catch {
-        // Ignore transient write errors
-      }
+  // Weight Advice Logic (Clear explanation whether user should reduce or gain weight)
+  const weightGuidance = useMemo(() => {
+    const diffFromIdeal = Number((profile.weightKg - indexes.idealWeightKg).toFixed(1));
+    const diffFromTarget = Number((profile.weightKg - profile.targetWeightKg).toFixed(1));
+
+    if (indexes.bmi < 18.5 || diffFromIdeal < -2) {
+      const kgToGain = Math.abs(diffFromIdeal).toFixed(1);
+      return {
+        actionType: 'GAIN WEIGHT',
+        badgeBg: 'bg-blue-100 text-blue-900 border-blue-300',
+        headline: `You should GAIN approx. ${kgToGain} kg to reach your Healthy Ideal Weight (${indexes.idealWeightKg} kg).`,
+        detail: `Your current BMI is ${indexes.bmi} (${indexes.bmiStatus}). Aim for ${indexes.dailyCaloriesNeeded} kcal/day with ${indexes.targetProteinG}g protein and strength exercises to build healthy weight safely.`
+      };
     }
 
-    // 2. Sync with User Profile Control Panel (`toolsData.nutrition`)
-    const legacyNut: NutritionProfileData = {
-      ...(toolsData.nutrition || {}),
-      age: nextProfile.age,
-      gender: nextProfile.gender === 'Female' ? 'female' : 'male',
-      heightCm:
-        nextProfile.heightUnit === 'feet'
-          ? Math.round(
-              (nextProfile.heightFeet * 12 + nextProfile.heightInches) * 2.54
-            )
-          : nextProfile.heightCm,
-      weightKg: nextProfile.weightKg,
-      targetWeightKg: nextProfile.targetWeightKg,
-      activityLevel:
-        nextProfile.activityLevel === 'Sedentary'
-          ? 'sedentary'
-          : nextProfile.activityLevel === 'Lightly Active'
-          ? 'light'
-          : nextProfile.activityLevel === 'Moderately Active'
-          ? 'moderate'
-          : nextProfile.activityLevel === 'Very Active'
-          ? 'active'
-          : 'athlete',
-      goalType:
-        nextProfile.goal === 'Lose Weight'
-          ? 'lose'
-          : nextProfile.goal === 'Gain Weight' ||
-            nextProfile.goal === 'Gain Muscle'
-          ? 'gain'
-          : 'maintain',
-      waterGlassesToday: nextWater,
-      weightHistory: nextWeights,
-      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
-    };
+    if (indexes.bmi >= 25 || diffFromIdeal > 2) {
+      const kgToLose = Math.max(0.5, diffFromIdeal).toFixed(1);
+      return {
+        actionType: 'REDUCE WEIGHT',
+        badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
+        headline: `You should REDUCE approx. ${kgToLose} kg to reach your Healthy Ideal Weight (${indexes.idealWeightKg} kg).`,
+        detail: `Your current BMI is ${indexes.bmi} (${indexes.bmiStatus}). Follow a daily target of ${indexes.dailyCaloriesNeeded} kcal/day, ${indexes.targetProteinG}g protein, and 8 glasses of water to steadily reach ${profile.targetWeightKg} kg.`
+      };
+    }
 
-    await onSaveToolsData({
-      ...toolsData,
-      nutrition: legacyNut,
-      lastActiveTool: 'nutrition',
-      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    return {
+      actionType: 'HEALTHY WEIGHT — MAINTAIN',
+      badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+      headline: `Great job! Your weight (${profile.weightKg} kg) is in the Healthy Normal BMI range (${indexes.bmi}).`,
+      detail:
+        diffFromTarget !== 0
+          ? `You are only ${Math.abs(diffFromTarget).toFixed(1)} kg away from your personal target weight of ${profile.targetWeightKg} kg. Maintain ${indexes.dailyCaloriesNeeded} kcal/day.`
+          : `Maintain your balanced diet of ${indexes.dailyCaloriesNeeded} kcal/day and ${profile.dailyWaterGoalGlasses} glasses of water daily.`
+    };
+  }, [profile.weightKg, profile.targetWeightKg, profile.dailyWaterGoalGlasses, indexes]);
+
+  // Health Condition Food Guide Data
+  const conditionRecommendation = useMemo(
+    () => getHealthConditionRecommendations(selectedCondition),
+    [selectedCondition]
+  );
+
+  // Filtered Recipes
+  const filteredRecipes = useMemo(() => {
+    return ACCURATE_RECIPES_LIST.filter((r) => {
+      if (recipeCategoryFilter !== 'All' && r.category !== recipeCategoryFilter) {
+        return false;
+      }
+      if (recipeSearchQuery.trim()) {
+        const q = recipeSearchQuery.toLowerCase();
+        const matchTitle = r.title.toLowerCase().includes(q);
+        const matchIng = r.ingredients.some((i) =>
+          i.item.toLowerCase().includes(q)
+        );
+        if (!matchTitle && !matchIng) return false;
+      }
+      return true;
     });
-  };
+  }, [recipeCategoryFilter, recipeSearchQuery]);
 
-  // ============================================================================
-  // PART 7: FREE VS PREMIUM GATEKEEPER
-  // ============================================================================
-  const triggerPremiumLock = (featureDesc: string) => {
-    setPaywallReason(featureDesc);
-  };
-
-  // Save Onboarding Form (Part 1)
-  const handleSaveOnboardingSetup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isUserPaid && profile.freeBmiCalculatedCount >= 1) {
-      triggerPremiumLock(
-        'Free users can calculate BMI & Health Score 1 time. Upgrade to Paid Premium for unlimited recalculations & tracking!'
-      );
-      return;
-    }
-
-    const updatedProfile: SuiteOnboardingProfile = {
-      ...profile,
-      uid: user.uid,
-      setupCompleted: true,
-      freeBmiCalculatedCount: (profile.freeBmiCalculatedCount || 0) + 1,
-      updatedAt: new Date().toISOString()
-    };
-    setProfile(updatedProfile);
-    const freshPlan = generate7DayMealPlan(updatedProfile);
-    setWeekMealPlan(freshPlan);
-    if (
-      updatedProfile.healthConditions.length > 0 &&
-      updatedProfile.healthConditions[0] !== 'None'
-    ) {
-      setActiveHealthCondition(updatedProfile.healthConditions[0]);
-      setHealthQueryInput(updatedProfile.healthConditions[0]);
-    } else if (updatedProfile.customHealthCondition.trim()) {
-      setActiveHealthCondition(updatedProfile.customHealthCondition.trim());
-      setHealthQueryInput(updatedProfile.customHealthCondition.trim());
-    }
-
-    await persistNutritionEverywhere(updatedProfile);
-    setSubRoute('dashboard');
-    showToast(
-      'Nutrition Profile Calculated & Saved to Firestore (users/uid/nutritionProfile)!'
-    );
-  };
-
-  // Water Intake + Add Glass (Part 2)
-  const handleAddWaterGlass = async () => {
-    const nextWater = Math.min(16, waterGlasses + 1);
-    setWaterGlasses(nextWater);
-    if (user?.uid) {
-      try {
-        await setDoc(
-          doc(db, 'users', user.uid, 'waterLogs', todayIso),
-          {
-            uid: user.uid,
-            date: todayIso,
-            glasses: nextWater,
-            goalGlasses: profile.dailyWaterGoalGlasses || 8,
-            updatedAt: new Date().toISOString()
-          },
-          { merge: true }
-        );
-      } catch {
-        // Ignore
-      }
-    }
-    await persistNutritionEverywhere(profile, nextWater, weightLogs);
-    showToast(
-      `Water Intake Updated: ${nextWater} / ${
-        profile.dailyWaterGoalGlasses || 8
-      } glasses logged!`
-    );
-  };
-
-  // Log Daily Weight (Part 2)
-  const handleLogDailyWeight = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isUserPaid && weightLogs.length >= 6) {
-      triggerPremiumLock(
-        'Unlimited 30-Day Weight Progress Logging is a Paid Premium feature.'
-      );
-      return;
-    }
-    const w = Number(newWeightInput);
-    if (!w || w < 30 || w > 240) return;
-    const hCm =
-      profile.heightUnit === 'feet'
-        ? (profile.heightFeet * 12 + profile.heightInches) * 2.54
-        : profile.heightCm || 172;
-    const hM = hCm / 100;
-    const newBmi = Number((w / (hM * hM)).toFixed(1));
-    const label = new Date().toLocaleDateString('en-US', {
+  // Save Health & Nutrition Data to Firestore & UserToolsData
+  const handleSaveHealthTracker = async () => {
+    const todayLabel = new Date().toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'
     });
-    const nextLogs = [
-      ...weightLogs.slice(-29),
-      { date: label, weightKg: w, bmi: newBmi }
-    ];
-    const nextProf = {
-      ...profile,
-      weightKg: w,
-      streakDays: (profile.streakDays || 5) + 1
-    };
-    setWeightLogs(nextLogs);
-    setProfile(nextProf);
-    await persistNutritionEverywhere(nextProf, waterGlasses, nextLogs);
-    showToast(`Logged ${w} kg (BMI ${newBmi}) on 30-Day Weight Progress Chart!`);
-  };
 
-  // Current Selected Day Meal Plan (Part 3)
-  const currentDayPlan = useMemo(
-    () =>
-      weekMealPlan.find((d) => d.dayKey === selectedDayKey) || weekMealPlan[0],
-    [weekMealPlan, selectedDayKey]
-  );
-
-  const currentDayTotals = useMemo(() => {
-    const allItems = [
-      ...currentDayPlan.breakfast,
-      ...currentDayPlan.lunch,
-      ...currentDayPlan.dinner,
-      ...currentDayPlan.snack
-    ];
-    return allItems.reduce(
-      (acc, item) => ({
-        calories: acc.calories + item.calories,
-        proteinG: acc.proteinG + item.proteinG,
-        carbsG: acc.carbsG + item.carbsG,
-        fatG: acc.fatG + item.fatG
-      }),
-      { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }
-    );
-  }, [currentDayPlan]);
-
-  const saveMealPlanToFirestore = async (updatedWeek: DayMealPlanData[]) => {
-    if (!user?.uid) return;
-    try {
-      await setDoc(
-        doc(db, 'users', user.uid, 'mealPlans', todayIso),
-        {
-          uid: user.uid,
-          date: todayIso,
-          weekPlan: updatedWeek,
-          updatedAt: new Date().toISOString()
-        },
-        { merge: true }
-      );
-    } catch {
-      // Ignore
-    }
-  };
-
-  // Swap Meal Handler (Part 3)
-  const handleSwapMeal = async () => {
-    if (!isUserPaid) {
-      triggerPremiumLock(
-        'AI Meal Swapping & 7-Day Custom Meal Plans require Paid Premium Membership.'
-      );
-      return;
-    }
-    const randomIdx = Math.floor(Math.random() * 2);
-    const updatedWeek = weekMealPlan.map((d) => {
-      if (d.dayKey !== selectedDayKey) return d;
-      return {
-        ...d,
-        breakfast: SWAP_MEAL_ALTERNATIVES.breakfast[randomIdx],
-        lunch: SWAP_MEAL_ALTERNATIVES.lunch[randomIdx],
-        dinner: SWAP_MEAL_ALTERNATIVES.dinner[randomIdx],
-        snack: SWAP_MEAL_ALTERNATIVES.snack[randomIdx]
-      };
-    });
-    setWeekMealPlan(updatedWeek);
-    await saveMealPlanToFirestore(updatedWeek);
-    showToast(
-      `Swapped ${selectedDayKey}'s meals with similar-calorie healthy alternatives!`
-    );
-  };
-
-  // Generate New AI Plan (Part 3)
-  const handleRegenerateAiPlan = async () => {
-    if (!isUserPaid) {
-      triggerPremiumLock(
-        'Generating a full 7-Day AI Meal Plan is a Paid Premium feature.'
-      );
-      return;
-    }
-    const base = generate7DayMealPlan(profile);
-    // Rotate templates so user sees fresh combinations immediately
-    const rotated = base.map((d, i) => {
-      const donor = base[(i + 1) % base.length];
-      return {
-        ...d,
-        breakfast: donor.breakfast,
-        lunch: donor.lunch,
-        dinner: donor.dinner,
-        snack: donor.snack
-      };
-    });
-    setWeekMealPlan(rotated);
-    await saveMealPlanToFirestore(rotated);
-    showToast('Generated a brand-new 7-Day AI Meal Plan tailored to your Goal!');
-  };
-
-  // Build Grocery List from Week Plan (Part 3)
-  const handleOpenGroceryList = () => {
-    if (!isUserPaid) {
-      triggerPremiumLock(
-        'Auto-Generated Weekly Grocery List is a Paid Premium feature.'
-      );
-      return;
-    }
-    const map = new Map<string, number>();
-    weekMealPlan.forEach((day) => {
-      [...day.breakfast, ...day.lunch, ...day.dinner, ...day.snack].forEach(
-        (item) => {
-          map.set(item.name, (map.get(item.name) || 0) + item.grams);
-        }
-      );
-    });
-    const list: GroceryItem[] = Array.from(map.entries()).map(
-      ([name, totalGrams], idx) => ({
-        id: `groc-${idx}`,
-        name,
-        totalGrams,
-        category: 'Weekly Plan Ingredient',
-        checked: false
-      })
-    );
-    setGroceryList(list);
-    setShowGroceryModal(true);
-  };
-
-  // Add Custom Food to Meal Plan Section (Part 3)
-  const handleAddCustomFoodToMealPlan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!addingToMealSection || !customMealFoodName.trim()) return;
-    const g = Math.max(10, Number(customMealGrams) || 100);
-    const cal = Math.max(10, Number(customMealCalories) || 150);
-    const newEntry: MealFoodEntry = {
-      id: `custom-${Date.now()}`,
-      name: customMealFoodName.trim(),
-      grams: g,
-      calories: cal,
-      proteinG: Math.round((cal * 0.25) / 4),
-      carbsG: Math.round((cal * 0.45) / 4),
-      fatG: Math.round((cal * 0.3) / 9),
-      disclaimer: DOCTOR_DISCLAIMER_SHORT
-    };
-    const updatedWeek = weekMealPlan.map((d) => {
-      if (d.dayKey !== selectedDayKey) return d;
-      return {
-        ...d,
-        [addingToMealSection]: [...d[addingToMealSection], newEntry]
-      };
-    });
-    setWeekMealPlan(updatedWeek);
-    setCustomMealFoodName('');
-    setAddingToMealSection(null);
-    await saveMealPlanToFirestore(updatedWeek);
-    showToast(`Added "${newEntry.name} · ${newEntry.grams}g · ${newEntry.calories} kcal" to ${selectedDayKey}!`);
-  };
-
-  // Delete or Edit Grams of Meal Item (Part 3)
-  const handleDeleteMealPlanItem = async (
-    section: 'breakfast' | 'lunch' | 'dinner' | 'snack',
-    itemId: string
-  ) => {
-    const updatedWeek = weekMealPlan.map((d) => {
-      if (d.dayKey !== selectedDayKey) return d;
-      return {
-        ...d,
-        [section]: d[section].filter((x) => x.id !== itemId)
-      };
-    });
-    setWeekMealPlan(updatedWeek);
-    await saveMealPlanToFirestore(updatedWeek);
-  };
-
-  const handleSaveEditedGrams = async (
-    section: 'breakfast' | 'lunch' | 'dinner' | 'snack',
-    item: MealFoodEntry
-  ) => {
-    const newG = Math.max(10, Number(editingGramsVal) || item.grams);
-    const ratio = newG / Math.max(1, item.grams);
-    const updatedWeek = weekMealPlan.map((d) => {
-      if (d.dayKey !== selectedDayKey) return d;
-      return {
-        ...d,
-        [section]: d[section].map((x) =>
-          x.id === item.id
-            ? {
-                ...x,
-                grams: newG,
-                calories: Math.round(x.calories * ratio),
-                proteinG: Math.round(x.proteinG * ratio),
-                carbsG: Math.round(x.carbsG * ratio),
-                fatG: Math.round(x.fatG * ratio)
-              }
-            : x
-        )
-      };
-    });
-    setWeekMealPlan(updatedWeek);
-    setEditingEntryId(null);
-    await saveMealPlanToFirestore(updatedWeek);
-    showToast(`Updated portion to ${newG}g!`);
-  };
-
-  // Recipes Filtering & Actions (Part 4)
-  const allCombinedRecipes = useMemo(() => {
-    const map = new Map<string, SuiteRecipeItem>();
-    PRELOADED_44_RECIPES.forEach((r) => map.set(r.id, r));
-    communityRecipes.forEach((r) => map.set(r.id, r));
-    return Array.from(map.values());
-  }, [communityRecipes]);
-
-  const filteredRecipes = useMemo(() => {
-    return allCombinedRecipes.filter((r) => {
-      if (recipeCategory === 'Saved') {
-        if (!profile.savedRecipeIds.includes(r.id)) return false;
-      } else if (recipeCategory !== 'All' && r.category !== recipeCategory) {
-        return false;
+    const updatedHistory = [
+      ...weightLogs.slice(-5),
+      {
+        date: todayLabel,
+        weightKg: Number(profile.weightKg),
+        bmi: indexes.bmi
       }
-      if (recipeSearch.trim()) {
-        const q = recipeSearch.toLowerCase();
-        const inTitle = r.title.toLowerCase().includes(q);
-        const inIng = r.ingredients.some((i) =>
-          i.item.toLowerCase().includes(q)
-        );
-        if (!inTitle && !inIng) return false;
+    ];
+    setWeightLogs(updatedHistory);
+
+    const updatedToolsData: UserToolsData = {
+      ...toolsData,
+      nutrition: {
+        ...toolsData.nutrition,
+        age: Number(profile.age),
+        gender: profile.gender === 'Female' ? 'female' : 'male',
+        heightCm: Number(profile.heightCm),
+        weightKg: Number(profile.weightKg),
+        targetWeightKg: Number(profile.targetWeightKg),
+        waterGlassesToday: waterGlasses,
+        weightHistory: updatedHistory,
+        updatedAt: new Date().toISOString()
       }
-      if (calorieFilter === 'low' && r.calories >= 300) return false;
-      if (
-        calorieFilter === 'medium' &&
-        (r.calories < 300 || r.calories > 500)
-      )
-        return false;
-      if (calorieFilter === 'high' && r.calories <= 500) return false;
-
-      if (vegFilter === 'veg' && !r.isVeg) return false;
-      if (vegFilter === 'nonveg' && r.isVeg) return false;
-
-      if (timeFilter === 'under20' && r.cookTimeMin >= 20) return false;
-      if (
-        timeFilter === '20to40' &&
-        (r.cookTimeMin < 20 || r.cookTimeMin > 40)
-      )
-        return false;
-      if (timeFilter === 'over40' && r.cookTimeMin <= 40) return false;
-
-      return true;
-    });
-  }, [
-    allCombinedRecipes,
-    recipeCategory,
-    recipeSearch,
-    calorieFilter,
-    vegFilter,
-    timeFilter,
-    profile.savedRecipeIds
-  ]);
-
-  const handleToggleSaveRecipe = async (recipeId: string) => {
-    const exists = profile.savedRecipeIds.includes(recipeId);
-    const nextSaved = exists
-      ? profile.savedRecipeIds.filter((id) => id !== recipeId)
-      : [...profile.savedRecipeIds, recipeId];
-    const nextProf = { ...profile, savedRecipeIds: nextSaved };
-    setProfile(nextProf);
-    await persistNutritionEverywhere(nextProf);
-    showToast(
-      exists ? 'Removed recipe from Favorites.' : 'Recipe saved to Favorites!'
-    );
-  };
-
-  const handleAddRecipeToMealPlan = async (recipe: SuiteRecipeItem) => {
-    const totalGrams = recipe.ingredients.reduce((s, i) => s + i.grams, 0) || 220;
-    const entry: MealFoodEntry = {
-      id: `rec-meal-${Date.now()}`,
-      name: recipe.title,
-      grams: totalGrams,
-      calories: recipe.calories,
-      proteinG: recipe.proteinG,
-      carbsG: recipe.carbsG,
-      fatG: recipe.fatG,
-      disclaimer: DOCTOR_DISCLAIMER_SHORT
-    };
-    const updatedWeek = weekMealPlan.map((d) => {
-      if (d.dayKey !== selectedDayKey) return d;
-      return {
-        ...d,
-        lunch: [...d.lunch, entry]
-      };
-    });
-    setWeekMealPlan(updatedWeek);
-    await saveMealPlanToFirestore(updatedWeek);
-    showToast(
-      `Added "${recipe.title}" (${totalGrams}g • ${recipe.calories} kcal) to ${selectedDayKey}'s Lunch Plan!`
-    );
-  };
-
-  const handleSubmitCommunityRecipe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRecipeTitle.trim()) return;
-    const newRec: SuiteRecipeItem = {
-      id: `comm-${Date.now()}`,
-      title: newRecipeTitle.trim(),
-      category: newRecipeCategory,
-      imageUrl:
-        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80',
-      calories: Math.max(50, Number(newRecipeCalories) || 320),
-      proteinG: Math.max(2, Number(newRecipeProtein) || 18),
-      carbsG: Math.max(5, Number(newRecipeCarbs) || 30),
-      fatG: 12,
-      fiberG: 5,
-      cookTimeMin: Math.max(5, Number(newRecipeTime) || 25),
-      difficulty: 'Easy',
-      isVeg: false,
-      ingredients: newRecipeIngredientsText.split(',').map((seg) => ({
-        item: seg.trim() || 'Fresh Ingredient',
-        grams: 100
-      })),
-      instructions: newRecipeStepsText
-        .split('.')
-        .map((s) => s.trim())
-        .filter(Boolean),
-      healthBenefits: [
-        'Community verified balanced recipe with wholesome ingredients.'
-      ],
-      disclaimer: DOCTOR_DISCLAIMER_SHORT,
-      createdByUid: user.uid,
-      authorName: user.name || 'Food Specialist'
     };
 
     try {
-      await setDoc(doc(db, 'recipes', newRec.id), newRec);
-    } catch {
-      // Ignore
-    }
-    setCommunityRecipes((prev) => [newRec, ...prev]);
-    setShowSubmitRecipeModal(false);
-    setNewRecipeTitle('');
-    showToast(`Published "${newRec.title}" to Community Recipes!`);
-  };
-
-  // Health Condition Search Handler (Part 5)
-  const currentHealthData = useMemo(
-    () => getHealthConditionRecommendations(activeHealthCondition),
-    [activeHealthCondition]
-  );
-
-  const handleSearchHealthCondition = async (
-    e?: React.FormEvent,
-    presetCond?: string
-  ) => {
-    if (e) e.preventDefault();
-    const target = (presetCond ?? healthQueryInput).trim();
-    if (!target) return;
-
-    if (!isUserPaid && profile.freeHealthSearchCount >= 1) {
-      triggerPremiumLock(
-        'Free users can search 1 Health Condition. Upgrade to Paid Premium for unlimited Health Condition Food Recommendations!'
-      );
-      return;
-    }
-
-    setActiveHealthCondition(target);
-    setHealthQueryInput(target);
-    const nextProf = {
-      ...profile,
-      freeHealthSearchCount: (profile.freeHealthSearchCount || 0) + 1
-    };
-    setProfile(nextProf);
-
-    if (user?.uid) {
-      try {
+      await onSaveToolsData(updatedToolsData);
+      if (user?.uid) {
         await setDoc(
-          doc(db, 'users', user.uid, 'healthRecommendations', 'latest'),
+          doc(db, 'users', user.uid, 'nutritionProfile', 'main'),
           {
-            uid: user.uid,
-            conditionName: target,
+            ...profile,
+            waterGlasses,
+            bmi: indexes.bmi,
+            bmiStatus: indexes.bmiStatus,
+            dailyCaloriesNeeded: indexes.dailyCaloriesNeeded,
             updatedAt: new Date().toISOString()
           },
           { merge: true }
         );
-      } catch {
-        // Ignore
       }
+    } catch {
+      // Local state still updates seamlessly
     }
+
+    setSaveSuccessMsg('Your Health & Nutrition Tracker data has been saved!');
+    setTimeout(() => setSaveSuccessMsg(null), 3500);
   };
 
-  // AI Dietitian Chat Send Handler (Part 5 & 6)
-  const handleSendDietitianMessage = (
-    e?: React.FormEvent,
-    quickQuestion?: string
-  ) => {
-    if (e) e.preventDefault();
-    const questionText = (quickQuestion ?? chatInput).trim();
-    if (!questionText) return;
+  // Download Complete Personal Nutrition & Health PDF Report
+  const handleDownloadNutritionPdfReport = () => {
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
 
-    if (!isUserPaid && chatMessages.length >= 3) {
-      triggerPremiumLock(
-        'Unlimited AI Dietitian Chat is a Paid Premium feature. Upgrade to ask unlimited nutrition questions!'
-      );
-      return;
-    }
-
-    const userMsg = {
-      id: `u-${Date.now()}`,
-      sender: 'user' as const,
-      text: questionText,
-      time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    };
-    const replyText = generateDietitianAnswer(questionText, profile, indexes);
-    const botMsg = {
-      id: `b-${Date.now() + 1}`,
-      sender: 'dietitian' as const,
-      text: replyText,
-      time: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    };
-
-    setChatMessages((prev) => [...prev, userMsg, botMsg]);
-    if (!quickQuestion) setChatInput('');
-  };
-
-  // Weekly Report PDF Download (Part 6)
-  const handleDownloadWeeklyNutritionPdf = () => {
-    if (!isUserPaid) {
-      triggerPremiumLock(
-        'Downloading the Weekly Personalized Nutrition PDF Report requires Paid Premium Membership.'
-      );
-      return;
-    }
-    const pdf = new jsPDF();
+    // Header
     pdf.setFillColor(19, 66, 43);
-    pdf.rect(0, 0, 210, 36, 'F');
+    pdf.rect(0, 0, pageW, 36, 'F');
     pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(16);
-    pdf.text('WEEKLY NUTRITION & HEALTH REPORT', 14, 16);
+    pdf.text('PERSONAL NUTRITION, BMI & HEALTH TRACKER REPORT', 14, 15);
     pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
     pdf.text(
-      `Prepared For: ${profile.fullName || user.name} | Goal: ${
-        profile.goal
-      } | Diet: ${profile.dietPreference}`,
+      `Prepared For: ${profile.fullName || user.name || 'Food Specialist'} | Date: ${new Date().toLocaleDateString()}`,
       14,
-      25
+      23
     );
     pdf.text(
-      `Generated on: ${new Date().toLocaleDateString()} | Developed by Food Specialist`,
+      `Age: ${profile.age} yrs | Gender: ${profile.gender} | Height: ${profile.heightCm} cm | Current Weight: ${profile.weightKg} kg | Target: ${profile.targetWeightKg} kg`,
       14,
-      31
+      30
     );
 
+    // Section 1: BMI & Weight Recommendation
+    let y = 46;
     pdf.setTextColor(15, 41, 30);
+    pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(12);
-    pdf.text('1. Body Composition & Metabolic Indexes', 14, 48);
+    pdf.text('1. BMI, WEIGHT GOAL & DAILY CALORIE SUMMARY', 14, y);
+    y += 7;
+
+    pdf.setFillColor(240, 253, 244);
+    pdf.setDrawColor(187, 247, 208);
+    pdf.roundedRect(14, y, pageW - 28, 36, 3, 3, 'FD');
     pdf.setFontSize(10);
     pdf.text(
-      `• BMI: ${indexes.bmi} (${indexes.bmiStatus})   |   Health Score: ${indexes.healthScore}/100 (${indexes.healthScoreLabel})`,
-      16,
-      56
+      `BMI Score: ${indexes.bmi} kg/m2 (${indexes.bmiStatus})   |   Health Score: ${indexes.healthScore} / 100 (${indexes.healthScoreLabel})`,
+      18,
+      y + 8
     );
     pdf.text(
-      `• Current Weight: ${profile.weightKg} kg   |   Target Weight: ${profile.targetWeightKg} kg   |   Ideal Weight (Devine): ${indexes.idealWeightKg} kg`,
-      16,
-      63
+      `Healthy Ideal Weight: ${indexes.idealWeightKg} kg   |   BMR: ${indexes.bmrKcal} kcal/day   |   TDEE: ${indexes.tdeeKcal} kcal/day`,
+      18,
+      y + 16
     );
     pdf.text(
-      `• BMR (Mifflin-St Jeor): ${indexes.bmrKcal} kcal/day   |   TDEE: ${indexes.tdeeKcal} kcal/day`,
-      16,
-      70
+      `Daily Target: ${indexes.dailyCaloriesNeeded} kcal/day (Protein: ${indexes.targetProteinG}g | Carbs: ${indexes.targetCarbsG}g | Fat: ${indexes.targetFatG}g)`,
+      18,
+      y + 24
     );
-    pdf.text(
-      `• Body Fat Estimate: ${indexes.bodyFatPct}%   |   Visceral Fat Level: ${indexes.visceralFatLevel} (${indexes.visceralFatStatus})`,
-      16,
-      77
-    );
-    pdf.text(
-      `• Daily Calorie Target: ${indexes.dailyCaloriesNeeded} kcal   |   Water Intake: ${waterGlasses}/${profile.dailyWaterGoalGlasses} glasses`,
-      16,
-      84
-    );
-    pdf.text(
-      `• Daily Macros Target: Protein ${indexes.targetProteinG}g  •  Carbs ${indexes.targetCarbsG}g  •  Fat ${indexes.targetFatG}g`,
-      16,
-      91
-    );
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`Recommendation: ${weightGuidance.headline}`, 18, y + 32);
 
+    // Section 2: Daily Balanced Meal Plan
+    y += 46;
+    pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(12);
-    pdf.text(
-      `2. Today's Meal Plan (${currentDayPlan.fullDateLabel} — ${currentDayTotals.calories} kcal)`,
-      14,
-      105
-    );
+    pdf.text('2. RECOMMENDED DAILY MEAL PLAN (WITH GRAMS & CALORIES)', 14, y);
+    y += 6;
+
+    const mealPlanRows = [
+      `Breakfast (8:00 AM): 2 Boiled Eggs + 1 Whole-Wheat Toast or Oats Bowl (240g) — 340 kcal | 20g Protein`,
+      `Mid-Morning Snack (11:00 AM): 1 Medium Apple / Guava + 7 Almonds (150g) — 145 kcal | 4g Protein`,
+      `Lunch (1:30 PM): Chicken Karahi / Tarka Daal + 1 Whole-Wheat Roti + Fresh Salad (320g) — 460 kcal | 32g Protein`,
+      `Evening Snack (5:00 PM): Green Tea + Roasted Chickpeas / Makhana (180g) — 130 kcal | 6g Protein`,
+      `Dinner (8:00 PM): Grilled Chicken Tikka / Palak Paneer + Steamed Veggies (260g) — 360 kcal | 30g Protein`
+    ];
+    pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9.5);
-    let y = 113;
-    (
-      [
-        ['Breakfast (8:00 AM)', currentDayPlan.breakfast],
-        ['Lunch (12:30 PM)', currentDayPlan.lunch],
-        ['Dinner (7:30 PM)', currentDayPlan.dinner],
-        ['Snack (4:00 PM)', currentDayPlan.snack]
-      ] as const
-    ).forEach(([label, list]) => {
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(label, 16, y);
-      y += 5;
-      pdf.setFont('helvetica', 'normal');
-      list.forEach((item) => {
-        pdf.text(
-          `   - ${item.name} • ${item.grams}g • ${item.calories} kcal (${item.disclaimer})`,
-          18,
-          y
-        );
-        y += 5;
-      });
-      y += 2;
+    mealPlanRows.forEach((row) => {
+      pdf.text(`• ${row}`, 16, y);
+      y += 6.5;
     });
 
+    // Section 3: Health Condition Guidance
+    y += 5;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.text(
+      `3. NUTRITION GUIDE FOR: ${selectedCondition.toUpperCase()}`,
+      14,
+      y
+    );
+    y += 6;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.5);
+    pdf.text(
+      `Recommended Foods: ${conditionRecommendation.recommendedFoods
+        .map((f) => f.name)
+        .join(', ')}`,
+      16,
+      y
+    );
+    y += 6;
+    pdf.text(
+      `Foods to Avoid: ${conditionRecommendation.foodsToAvoid
+        .map((f) => f.name)
+        .join(', ')}`,
+      16,
+      y
+    );
+
+    // Section 4: Top Healthy Recipes Included
+    y += 10;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.text('4. HEALTHY RECIPES & INGREDIENTS SUMMARY', 14, y);
+    y += 6;
+    pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9);
-    pdf.setTextColor(180, 40, 40);
-    pdf.text(DOCTOR_DISCLAIMER_BANNER, 14, Math.min(282, y + 8));
+    ACCURATE_RECIPES_LIST.slice(0, 5).forEach((rec) => {
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(
+        `• ${rec.title} (${rec.calories} kcal | ${rec.proteinG}g Protein | ${rec.cookTimeMin} mins)`,
+        16,
+        y
+      );
+      y += 4.5;
+      pdf.setFont('helvetica', 'normal');
+      const ingLine = rec.ingredients
+        .slice(0, 4)
+        .map((i) => `${i.item} (${i.grams}g)`)
+        .join(', ');
+      pdf.text(`  Ingredients: ${ingLine}`, 16, y);
+      y += 5.5;
+    });
+
+    // Footer disclaimer
+    pdf.setFontSize(8);
+    pdf.setTextColor(100, 116, 139);
+    pdf.text(DOCTOR_DISCLAIMER_BANNER, 14, 285);
 
     pdf.save(
-      `${(profile.fullName || 'Specialist').replace(/\s+/g, '_')}_Weekly_Nutrition_Report.pdf`
+      `${(profile.fullName || 'Specialist').replace(/\s+/g, '_')}_Nutrition_Health_Report.pdf`
     );
-    showToast('Downloaded Weekly Nutrition Report PDF!');
   };
 
-  // Calculate BMI Gauge pointer angle (-90 deg to +90 deg across BMI 14 to 36)
-  const bmiGaugeAngle = useMemo(() => {
-    const clamped = Math.max(14, Math.min(36, indexes.bmi));
-    return ((clamped - 14) / 22) * 180 - 90;
+  // Download Single Recipe PDF with complete Ingredients & Instructions
+  const handleDownloadSingleRecipePdf = (recipe: AccurateRecipeItem) => {
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+
+    pdf.setFillColor(14, 159, 110);
+    pdf.rect(0, 0, pageW, 32, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(15);
+    pdf.text(recipe.title.toUpperCase(), 14, 14);
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(
+      `${recipe.category} | ${recipe.calories} kcal | Protein: ${recipe.proteinG}g | Carbs: ${recipe.carbsG}g | Fat: ${recipe.fatG}g | Time: ${recipe.cookTimeMin} mins`,
+      14,
+      23
+    );
+
+    let y = 42;
+    pdf.setTextColor(15, 41, 30);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.text('INGREDIENTS REQUIRED (WITH EXACT MEASUREMENTS):', 14, y);
+    y += 7;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    recipe.ingredients.forEach((ing, i) => {
+      pdf.text(
+        `${i + 1}. ${ing.item} — ${ing.amount} (${ing.grams}g)`,
+        16,
+        y
+      );
+      y += 6;
+    });
+
+    y += 6;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.text('STEP-BY-STEP COOKING INSTRUCTIONS:', 14, y);
+    y += 7;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    recipe.instructions.forEach((step) => {
+      const lines = pdf.splitTextToSize(step, pageW - 32);
+      pdf.text(lines, 16, y);
+      y += lines.length * 5.5 + 3;
+    });
+
+    y += 4;
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`Health Benefit: ${recipe.healthBenefit}`, 14, y);
+
+    pdf.save(`${recipe.title.replace(/\s+/g, '_')}_Recipe.pdf`);
+  };
+
+  // BMI Pointer position (0 to 100%)
+  const bmiPointerPct = useMemo(() => {
+    const clamped = Math.max(14, Math.min(38, indexes.bmi));
+    return Math.round(((clamped - 14) / (38 - 14)) * 100);
   }, [indexes.bmi]);
 
   return (
-    <div className="max-w-xl mx-auto space-y-4 pb-8">
-      {/* TOAST BANNER */}
-      {toastBanner && (
-        <div className="p-3.5 rounded-2xl bg-[#14532D] text-white text-xs font-extrabold flex items-center justify-between gap-2 shadow-md">
+    <div className="space-y-5 pb-8">
+      {/* =====================================================================
+          TOP HEADER BANNER — SIMPLE 1-PAGE PERSONAL HEALTH & NUTRITION TRACKER
+         ===================================================================== */}
+      <div className="bg-gradient-to-r from-[#13422B] via-[#155E3A] to-[#0E9F6E] rounded-[24px] p-4 sm:p-5 text-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-100 text-[10.5px] font-extrabold uppercase tracking-wider">
+              <Activity className="w-3.5 h-3.5" />
+              All-in-One Simple Page • BMI, Calories, Meal Plan &amp; Verified Recipes
+            </span>
+            <h2 className="text-lg sm:text-xl font-extrabold mt-1">
+              Personal Health, BMI &amp; Daily Nutrition Calculator
+            </h2>
+            <p className="text-xs text-emerald-100 mt-0.5">
+              Enter your height, weight &amp; goal below to immediately check your BMI, weight advice, daily calories, meal plan, and full recipes with ingredients &amp; cooking instructions.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDownloadNutritionPdfReport}
+            className="px-4 py-2.5 rounded-xl bg-white text-[#13422B] hover:bg-emerald-50 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+          >
+            <Download className="w-4 h-4 text-[#0E9F6E]" />
+            <span>Download Full Nutrition Report (PDF)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* SAVE CONFIRMATION BANNER */}
+      {saveSuccessMsg && (
+        <div className="p-3.5 rounded-2xl bg-[#DCFCE7] border border-[#86EFAC] text-[#14532D] text-xs font-extrabold flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />
-            <span>{toastBanner}</span>
+            <CheckCircle2 className="w-4 h-4 text-[#15803D] shrink-0" />
+            <span>{saveSuccessMsg}</span>
           </div>
           <button
             type="button"
-            onClick={() => setToastBanner(null)}
-            className="text-emerald-200 hover:text-white underline text-[11px] cursor-pointer"
+            onClick={() => setSaveSuccessMsg(null)}
+            className="text-xs font-bold underline cursor-pointer"
           >
-            Close
+            Dismiss
           </button>
         </div>
       )}
 
-      {/* PART 7: FREE VS PREMIUM LOCK MODAL */}
-      {paywallReason && (
-        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border-2 border-[#16A34A] rounded-[28px] max-w-md w-full p-5 shadow-2xl space-y-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-11 h-11 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0">
-                  <Crown className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold uppercase">
-                    {hasExpiredPremium
-                      ? 'Membership Expired'
-                      : 'Upgrade to Paid Premium'}
-                  </span>
-                  <h3 className="text-base font-extrabold text-[#0F291E] mt-0.5">
-                    Unlock Full Nutrition Suite
-                  </h3>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPaywallReason(null)}
-                className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-[#F0FDF4] border border-[#86EFAC] text-xs text-[#14532D] font-bold leading-relaxed">
-              🔒 {paywallReason}
-            </div>
-
-            <div className="text-xs text-gray-600 space-y-1">
-              <div className="font-extrabold text-[#0F291E]">
-                Paid Premium Includes:
-              </div>
-              <div>✓ Unlimited BMI, BMR, TDEE &amp; 30-Day Weight Tracking</div>
-              <div>✓ Full 7-Day AI Meal Plan + Meal Swaps + Grocery List</div>
-              <div>✓ All 44+ Desi, Pakistani, Chinese, Italian &amp; Healthy Recipes</div>
-              <div>✓ Unlimited Health Condition Search &amp; AI Dietitian Chat</div>
-              <div>✓ Weekly PDF Nutrition Report &amp; 16:8 Fasting Timer</div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setPaywallReason(null);
-                  onOpenPremiumModal();
-                }}
-                className="w-full py-3.5 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
-              >
-                <Crown className="w-4 h-4 text-amber-200" />
-                <span>Upgrade to Premium Now</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaywallReason(null)}
-                className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold cursor-pointer"
-              >
-                Continue Free Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TOP QUICK SUB-NAVIGATION PILLS FOR ALL 7 NUTRITION SCREENS */}
-      <div className="bg-white border border-[#D1FAE5] rounded-[22px] p-2.5 shadow-xs flex items-center gap-1.5 overflow-x-auto">
-        {[
-          { id: 'dashboard', label: 'Dashboard (BMI)', icon: Home },
-          { id: 'meal-plan', label: 'Meal Plan', icon: Calendar },
-          { id: 'recipes', label: 'Recipes (44+)', icon: Utensils },
-          { id: 'health', label: 'Health Conditions', icon: Heart },
-          { id: 'dietitian-chat', label: 'AI Dietitian', icon: Sparkles },
-          { id: 'stats-foodlog', label: 'Food Log & Fasting', icon: Activity },
-          { id: 'setup', label: 'Setup Profile', icon: User }
-        ].map((tab) => {
-          const IconComp = tab.icon;
-          const active = subRoute === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setSubRoute(tab.id as NutritionSubRoute)}
-              className={`px-3 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
-                active
-                  ? 'bg-[#15803D] text-white shadow-xs'
-                  : 'bg-[#F0FDF4] text-[#14532D] hover:bg-[#DCFCE7]'
-              }`}
-            >
-              <IconComp className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
       {/* =====================================================================
-          PART 1: ONBOARDING USER DETAILS FORM (/nutrition/setup)
+          STEP 1: EASY 1-PAGE CALCULATOR INPUTS (HEIGHT, WEIGHT, TARGET, GOAL, WATER)
          ===================================================================== */}
-      {subRoute === 'setup' && (
-        <form
-          onSubmit={handleSaveOnboardingSetup}
-          className="bg-white border border-[#BBF7D0] rounded-[28px] p-5 shadow-sm space-y-4"
-        >
-          <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
+      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
+              1
+            </div>
             <div>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] text-[10px] font-extrabold uppercase">
-                Part 1 • Onboarding Profile (/nutrition/setup)
-              </span>
-              <h2 className="text-lg font-extrabold text-[#0F291E] mt-1">
-                Personalize Your Nutrition &amp; Health Plan
-              </h2>
-              <p className="text-xs text-gray-500">
-                Complete your profile to calculate BMI, Health Score, BMR, TDEE,
-                Macros &amp; 7-Day Meal Plan
+              <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+                Step 1: Enter Your Body Details &amp; Health Goal
+              </h3>
+              <p className="text-[11px] text-[#5C7267]">
+                Results update live as you change your weight, height, or goal
               </p>
-            </div>
-            {profile.setupCompleted && (
-              <button
-                type="button"
-                onClick={() => setSubRoute('dashboard')}
-                className="px-3 py-1.5 rounded-xl bg-emerald-50 text-[#15803D] text-xs font-extrabold cursor-pointer"
-              >
-                Dashboard →
-              </button>
-            )}
-          </div>
-
-          {/* Basic Info: Full Name, Age, Gender */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-1">
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                required
-                value={profile.fullName}
-                onChange={(e) =>
-                  setProfile({ ...profile, fullName: e.target.value })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Age (Years)
-              </label>
-              <input
-                type="number"
-                min={14}
-                max={95}
-                required
-                value={profile.age}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    age: Number(e.target.value) || 28
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Gender
-              </label>
-              <select
-                value={profile.gender}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    gender: e.target.value as GenderOption
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Height (cm or feet), Weight (kg), Target Weight (kg), Waist (cm) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="col-span-2 sm:col-span-1">
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-extrabold text-[#14532D]">
-                  Height ({profile.heightUnit})
-                </label>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setProfile({
-                      ...profile,
-                      heightUnit: profile.heightUnit === 'cm' ? 'feet' : 'cm'
-                    })
-                  }
-                  className="text-[10px] font-extrabold text-[#16A34A] underline cursor-pointer"
-                >
-                  Use {profile.heightUnit === 'cm' ? 'feet' : 'cm'}
-                </button>
-              </div>
-              {profile.heightUnit === 'cm' ? (
-                <input
-                  type="number"
-                  min={120}
-                  max={230}
-                  value={profile.heightCm}
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      heightCm: Number(e.target.value) || 172
-                    })
-                  }
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-                />
-              ) : (
-                <div className="grid grid-cols-2 gap-1.5">
-                  <input
-                    type="number"
-                    min={4}
-                    max={7}
-                    value={profile.heightFeet}
-                    onChange={(e) =>
-                      setProfile({
-                        ...profile,
-                        heightFeet: Number(e.target.value) || 5
-                      })
-                    }
-                    placeholder="Ft"
-                    className="w-full px-2 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold"
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    max={11}
-                    value={profile.heightInches}
-                    onChange={(e) =>
-                      setProfile({
-                        ...profile,
-                        heightInches: Number(e.target.value) || 8
-                      })
-                    }
-                    placeholder="In"
-                    className="w-full px-2 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Weight (kg)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                min={30}
-                max={240}
-                value={profile.weightKg}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    weightKg: Number(e.target.value) || 71.6
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Target Weight (kg)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                min={35}
-                max={200}
-                value={profile.targetWeightKg}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    targetWeightKg: Number(e.target.value) || 68
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Waist (cm)
-              </label>
-              <input
-                type="number"
-                min={55}
-                max={160}
-                value={profile.waistCm}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    waistCm: Number(e.target.value) || 82
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              />
-            </div>
-          </div>
-
-          {/* Activity Level, Goal, Diet Preference */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Activity Level
-              </label>
-              <select
-                value={profile.activityLevel}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    activityLevel: e.target.value as ActivityLevelOption
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              >
-                <option value="Sedentary">Sedentary</option>
-                <option value="Lightly Active">Lightly Active</option>
-                <option value="Moderately Active">Moderately Active</option>
-                <option value="Very Active">Very Active</option>
-                <option value="Athlete">Athlete</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Primary Goal
-              </label>
-              <select
-                value={profile.goal}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    goal: e.target.value as GoalOption
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              >
-                <option value="Lose Weight">Lose Weight</option>
-                <option value="Maintain Weight">Maintain Weight</option>
-                <option value="Gain Weight">Gain Weight</option>
-                <option value="Gain Muscle">Gain Muscle</option>
-                <option value="Improve Health">Improve Health</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Diet Preference
-              </label>
-              <select
-                value={profile.dietPreference}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    dietPreference: e.target.value as DietPreferenceOption
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              >
-                <option value="Normal">Normal</option>
-                <option value="Desi">Desi</option>
-                <option value="Halal">Halal</option>
-                <option value="High Protein">High Protein</option>
-                <option value="Low Carb">Low Carb</option>
-                <option value="Keto">Keto</option>
-                <option value="Vegetarian">Vegetarian</option>
-                <option value="Vegan">Vegan</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Allergies Multi-Select Pills */}
-          <div>
-            <label className="block text-xs font-extrabold text-[#14532D] mb-1.5">
-              Allergies (Tap all that apply)
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {ALLERGY_OPTIONS.map((allergy) => {
-                const selected = profile.allergies.includes(allergy);
-                return (
-                  <button
-                    key={allergy}
-                    type="button"
-                    onClick={() => {
-                      if (allergy === 'None') {
-                        setProfile({ ...profile, allergies: ['None'] });
-                      } else {
-                        const withoutNone = profile.allergies.filter(
-                          (a) => a !== 'None'
-                        );
-                        const next = selected
-                          ? withoutNone.filter((a) => a !== allergy)
-                          : [...withoutNone, allergy];
-                        setProfile({
-                          ...profile,
-                          allergies: next.length ? next : ['None']
-                        });
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                      selected
-                        ? 'bg-[#15803D] text-white border-[#15803D]'
-                        : 'bg-[#F0FDF4] text-[#14532D] border-[#BBF7D0]'
-                    }`}
-                  >
-                    {allergy}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Health Conditions Multi-Select + Custom Condition Text Field */}
-          <div className="space-y-2">
-            <label className="block text-xs font-extrabold text-[#14532D]">
-              Health Conditions (Select or type your own condition below)
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {HEALTH_CONDITION_PRESETS.map((cond) => {
-                const selected = profile.healthConditions.includes(cond);
-                return (
-                  <button
-                    key={cond}
-                    type="button"
-                    onClick={() => {
-                      if (cond === 'None') {
-                        setProfile({ ...profile, healthConditions: ['None'] });
-                      } else {
-                        const withoutNone = profile.healthConditions.filter(
-                          (c) => c !== 'None'
-                        );
-                        const next = selected
-                          ? withoutNone.filter((c) => c !== cond)
-                          : [...withoutNone, cond];
-                        setProfile({
-                          ...profile,
-                          healthConditions: next.length ? next : ['None']
-                        });
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                      selected
-                        ? 'bg-[#15803D] text-white border-[#15803D]'
-                        : 'bg-[#F0FDF4] text-[#14532D] border-[#BBF7D0]'
-                    }`}
-                  >
-                    {cond}
-                  </button>
-                );
-              })}
-            </div>
-            <input
-              type="text"
-              value={profile.customHealthCondition}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  customHealthCondition: e.target.value
-                })
-              }
-              placeholder="Type your own condition (e.g. Uric Acid, Fatty Liver, IBS, Migraine...)"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-            />
-          </div>
-
-          {/* Daily Water Goal & Sleep Hours */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Daily Water Goal (Glasses)
-              </label>
-              <input
-                type="number"
-                min={4}
-                max={16}
-                value={profile.dailyWaterGoalGlasses}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    dailyWaterGoalGlasses: Number(e.target.value) || 8
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-extrabold text-[#14532D] mb-1">
-                Sleep Hours (Per Night)
-              </label>
-              <input
-                type="number"
-                step="0.5"
-                min={3}
-                max={12}
-                value={profile.sleepHours}
-                onChange={(e) =>
-                  setProfile({
-                    ...profile,
-                    sleepHours: Number(e.target.value) || 7.5
-                  })
-                }
-                className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
-              />
             </div>
           </div>
 
           <button
-            type="submit"
-            className="w-full py-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition-colors"
+            type="button"
+            onClick={handleSaveHealthTracker}
+            className="px-4 py-2 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Calculate My Nutrition</span>
+            <Check className="w-4 h-4" />
+            <span>Save My Health Data</span>
           </button>
-        </form>
-      )}
-
-      {/* =====================================================================
-          PART 2: NUTRITION DASHBOARD (/nutrition — EXACT DESIGN OF IMAGE 1)
-         ===================================================================== */}
-      {subRoute === 'dashboard' && (
-        <div className="bg-[#F9FBF9] border border-[#E2E8F0] rounded-[32px] p-4 sm:p-6 shadow-md space-y-5">
-          {/* Top Header: Nutrition Dashboard + Date + Bell + Avatar */}
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-2xl sm:text-[26px] font-extrabold text-[#0F291E] tracking-tight">
-                Nutrition Dashboard
-              </h2>
-              <p className="text-xs font-medium text-gray-500 mt-0.5">
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'short',
-                  day: 'numeric'
-                })}{' '}
-                • Updated 8:42 AM
-              </p>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  const next = !profile.waterReminderEvery2Hours;
-                  setProfile({ ...profile, waterReminderEvery2Hours: next });
-                  showToast(
-                    next
-                      ? '2-Hour Water Intake Reminder Enabled!'
-                      : 'Water Intake Reminder Paused.'
-                  );
-                }}
-                title="Toggle 2-Hour Water Reminder"
-                className={`w-10 h-10 rounded-full border flex items-center justify-center cursor-pointer transition-colors ${
-                  profile.waterReminderEvery2Hours
-                    ? 'bg-emerald-50 border-[#16A34A] text-[#16A34A]'
-                    : 'bg-white border-gray-200 text-gray-500'
-                }`}
-              >
-                <Bell className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setSubRoute('setup')}
-                title="Edit Nutrition Setup Profile"
-                className="w-10 h-10 rounded-full bg-[#BBF7D0] text-[#15803D] flex items-center justify-center font-extrabold cursor-pointer"
-              >
-                <User className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* BIG BMI GAUGE + CIRCULAR HEALTH SCORE RING (MATCHING IMAGE 1) */}
-          <div className="bg-white rounded-[28px] p-4 sm:p-5 shadow-xs border border-emerald-100/80">
-            <div className="grid grid-cols-1 sm:grid-cols-12 items-center gap-4">
-              {/* Big Semi-Circular BMI Gauge */}
-              <div className="sm:col-span-8 flex flex-col items-center justify-center relative pt-2">
-                <svg viewBox="0 0 240 135" className="w-64 sm:w-72 h-36">
-                  {/* Background Track Arc */}
-                  <path
-                    d="M 24 120 A 96 96 0 0 1 216 120"
-                    fill="none"
-                    stroke="#E5E7EB"
-                    strokeWidth="18"
-                    strokeLinecap="round"
-                  />
-                  {/* Active Green/Status Arc */}
-                  <path
-                    d="M 24 120 A 96 96 0 0 1 196 62"
-                    fill="none"
-                    stroke={indexes.bmiColorHex}
-                    strokeWidth="18"
-                    strokeLinecap="round"
-                  />
-                  {/* Gauge Pointer Needle */}
-                  <g transform={`translate(120, 118) rotate(${bmiGaugeAngle})`}>
-                    <line
-                      x1="0"
-                      y1="-32"
-                      x2="0"
-                      y2="-96"
-                      stroke="#4B5563"
-                      strokeWidth="3.5"
-                      strokeLinecap="round"
-                    />
-                  </g>
-                </svg>
-                <div className="-mt-12 text-center">
-                  <div className="text-4xl sm:text-5xl font-extrabold text-[#0F291E] tracking-tight">
-                    {indexes.bmi}
-                  </div>
-                  <span
-                    className="inline-block mt-1.5 px-5 py-1 rounded-full text-xs font-extrabold"
-                    style={{
-                      backgroundColor: indexes.bmiBadgeBg,
-                      color: indexes.bmiBadgeText
-                    }}
-                  >
-                    {indexes.bmiStatus}
-                  </span>
-                </div>
-
-                {/* BMI Scale Bar with Pointer */}
-                <div className="w-full max-w-xs mt-3 space-y-1">
-                  <div className="flex justify-between text-[9.5px] font-bold text-gray-500">
-                    <span className="text-blue-600">&lt;18.5 Blue</span>
-                    <span className="text-emerald-600">18.5–24.9 Green</span>
-                    <span className="text-orange-600">25–29.9 Orange</span>
-                    <span className="text-red-600">30+ Red</span>
-                  </div>
-                  <div className="relative h-2 rounded-full overflow-hidden flex">
-                    <div className="w-1/4 bg-blue-500" />
-                    <div className="w-1/4 bg-[#16A34A]" />
-                    <div className="w-1/4 bg-orange-500" />
-                    <div className="w-1/4 bg-red-500" />
-                    <div
-                      className="absolute -top-0.5 bottom-0 w-2 h-3 bg-[#0F291E] border border-white rounded-full"
-                      style={{
-                        left: `${Math.min(
-                          95,
-                          Math.max(4, ((indexes.bmi - 14) / 22) * 100)
-                        )}%`
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Circular Health Score Ring (0–100) */}
-              <div className="sm:col-span-4 flex flex-col items-center justify-center">
-                <div className="text-xs font-bold text-gray-700 mb-1.5">
-                  Health Score
-                </div>
-                <div className="relative w-28 h-28 flex items-center justify-center">
-                  <svg viewBox="0 0 110 110" className="w-28 h-28">
-                    <circle
-                      cx="55"
-                      cy="55"
-                      r="44"
-                      fill="none"
-                      stroke="#DCFCE7"
-                      strokeWidth="8"
-                    />
-                    <circle
-                      cx="55"
-                      cy="55"
-                      r="44"
-                      fill="none"
-                      stroke="#16A34A"
-                      strokeWidth="8"
-                      strokeDasharray={`${(indexes.healthScore / 100) * 276} 276`}
-                      strokeLinecap="round"
-                      transform="rotate(-90 55 55)"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-extrabold text-[#0F291E]">
-                      {indexes.healthScore}
-                    </span>
-                    <span className="text-xs font-bold text-[#16A34A]">
-                      {indexes.healthScoreLabel}
-                    </span>
-                  </div>
-                </div>
-                <span className="text-[10px] font-semibold text-gray-400 mt-1">
-                  🔥 {profile.streakDays || 5}-Day Logging Streak
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 6 INDEX CARDS IN 2x3 GRID (BMR, TDEE, IDEAL WEIGHT, BODY FAT %, VISCERAL FAT, DAILY CALORIES) */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* BMR */}
-            <div className="bg-white rounded-2xl p-3.5 shadow-xs border border-gray-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0F291E] flex items-center justify-center shrink-0">
-                <Flame className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-500">BMR</div>
-                <div className="text-base sm:text-lg font-extrabold text-[#0F291E]">
-                  {indexes.bmrKcal.toLocaleString()}{' '}
-                  <span className="text-xs font-semibold">kcal</span>
-                </div>
-              </div>
-            </div>
-
-            {/* TDEE */}
-            <div className="bg-white rounded-2xl p-3.5 shadow-xs border border-gray-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0F291E] flex items-center justify-center shrink-0">
-                <Activity className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-500">TDEE</div>
-                <div className="text-base sm:text-lg font-extrabold text-[#0F291E]">
-                  {indexes.tdeeKcal.toLocaleString()}{' '}
-                  <span className="text-xs font-semibold">kcal</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Ideal Weight (Devine) */}
-            <div className="bg-white rounded-2xl p-3.5 shadow-xs border border-gray-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0F291E] flex items-center justify-center shrink-0">
-                <Scale className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-500">
-                  Ideal Weight
-                </div>
-                <div className="text-base sm:text-lg font-extrabold text-[#0F291E]">
-                  {indexes.idealWeightKg}{' '}
-                  <span className="text-xs font-semibold">kg</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Body Fat % */}
-            <div className="bg-white rounded-2xl p-3.5 shadow-xs border border-gray-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0F291E] flex items-center justify-center font-extrabold text-lg shrink-0">
-                %
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-500">
-                  Body Fat
-                </div>
-                <div className="text-base sm:text-lg font-extrabold text-[#0F291E]">
-                  {indexes.bodyFatPct}%
-                </div>
-              </div>
-            </div>
-
-            {/* Visceral Fat */}
-            <div className="bg-white rounded-2xl p-3.5 shadow-xs border border-gray-100 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0F291E] flex items-center justify-center shrink-0">
-                <Leaf className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-500">
-                  Visceral Fat
-                </div>
-                <div className="text-base sm:text-lg font-extrabold text-[#0F291E]">
-                  {indexes.visceralFatLevel} •{' '}
-                  <span className="font-semibold text-sm">
-                    {indexes.visceralFatStatus}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Daily Calories Needed */}
-            <div className="bg-white rounded-2xl p-3.5 shadow-xs border border-gray-100 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#0F291E] flex items-center justify-center shrink-0">
-                  <Utensils className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-gray-500">
-                    Daily Target
-                  </div>
-                  <div className="text-base sm:text-lg font-extrabold text-[#0F291E]">
-                    {indexes.dailyCaloriesNeeded}{' '}
-                    <span className="text-xs font-semibold">kcal</span>
-                  </div>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-[#BBF7D0] text-[#14532D] text-[10px] font-extrabold">
-                Healthy
-              </span>
-            </div>
-          </div>
-
-          {/* WATER INTAKE TRACKER CARD (0–8 GLASSES WITH DROPLETS + ADD GLASS) */}
-          <div className="bg-white rounded-[24px] p-4 sm:p-5 shadow-xs border border-gray-100 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Droplets className="w-5 h-5 text-[#16A34A]" />
-                <h3 className="text-base font-extrabold text-[#0F291E]">
-                  Water Intake
-                </h3>
-              </div>
-              <span className="text-sm font-bold text-[#16A34A]">
-                {waterGlasses} / {profile.dailyWaterGoalGlasses || 8} glasses
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-              <div className="grid grid-cols-6 sm:grid-cols-8 gap-2.5">
-                {Array.from({
-                  length: Math.max(8, profile.dailyWaterGoalGlasses || 8)
-                }).map((_, idx) => {
-                  const filled = idx < waterGlasses;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setWaterGlasses(idx + 1)}
-                      className="cursor-pointer transition-transform hover:scale-110"
-                      title={`Set water to ${idx + 1} glasses`}
-                    >
-                      <svg viewBox="0 0 28 36" className="w-7 h-9">
-                        <path
-                          d="M14 2 C14 2 3 16 3 24 C3 30.2 7.9 34 14 34 C20.1 34 25 30.2 25 24 C25 16 14 2 14 2 Z"
-                          fill={filled ? '#16A34A' : 'none'}
-                          stroke={filled ? '#16A34A' : '#6B7280'}
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddWaterGlass}
-                className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-[#DCFCE7] text-[#15803D] text-xs font-extrabold cursor-pointer transition-colors"
-              >
-                + Add Glass
-              </button>
-            </div>
-          </div>
-
-          {/* MACROS BREAKDOWN (PROTEIN, CARBS, FAT + VIEW DETAILED PLAN BUTTON) */}
-          <div className="space-y-3.5">
-            <div>
-              <h3 className="text-lg font-extrabold text-[#0F291E]">Macros</h3>
-              <p className="text-xs font-medium text-gray-500">
-                Daily Calories {indexes.dailyCaloriesNeeded.toLocaleString()} •{' '}
-                {profile.goal} Goal
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {/* Protein */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs font-extrabold text-[#0F291E]">
-                  <span>🥩 Protein</span>
-                  <span>
-                    {currentDayTotals.proteinG}g / {indexes.targetProteinG}g
-                  </span>
-                </div>
-                <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-orange-400"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.round(
-                          (currentDayTotals.proteinG /
-                            Math.max(1, indexes.targetProteinG)) *
-                            100
-                        )
-                      )}%`
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Carbs */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs font-extrabold text-[#0F291E]">
-                  <span>🌾 Carbs</span>
-                  <span>
-                    {currentDayTotals.carbsG}g / {indexes.targetCarbsG}g
-                  </span>
-                </div>
-                <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-amber-400"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.round(
-                          (currentDayTotals.carbsG /
-                            Math.max(1, indexes.targetCarbsG)) *
-                            100
-                        )
-                      )}%`
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Fat */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs font-extrabold text-[#0F291E]">
-                  <span>🥑 Fat</span>
-                  <span>
-                    {currentDayTotals.fatG}g / {indexes.targetFatG}g
-                  </span>
-                </div>
-                <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[#16A34A]"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.round(
-                          (currentDayTotals.fatG /
-                            Math.max(1, indexes.targetFatG)) *
-                            100
-                        )
-                      )}%`
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setSubRoute('meal-plan')}
-              className="w-full py-4 rounded-full bg-[#16A34A] hover:bg-[#15803D] text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition-colors"
-            >
-              <span>View Detailed Plan</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* 30-DAY WEIGHT PROGRESS LINE CHART + DAILY WEIGHT LOGGER */}
-          <div className="bg-white rounded-[24px] p-4 shadow-xs border border-gray-100 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-extrabold text-[#0F291E]">
-                  Weight Progress Chart (Last 30 Days)
-                </h4>
-                <p className="text-[11px] text-gray-500">
-                  Current: {profile.weightKg} kg • Target:{' '}
-                  {profile.targetWeightKg} kg
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleDownloadWeeklyNutritionPdf}
-                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#15803D] text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Weekly PDF</span>
-              </button>
-            </div>
-
-            {(() => {
-              const allW = [
-                ...weightLogs.map((w) => w.weightKg),
-                profile.targetWeightKg
-              ];
-              const minW = Math.floor(Math.min(...allW) - 2);
-              const maxW = Math.ceil(Math.max(...allW) + 2);
-              const range = Math.max(4, maxW - minW);
-              const svgW = 360;
-              const svgH = 110;
-              const pts = weightLogs
-                .map((item, idx) => {
-                  const x =
-                    24 +
-                    (idx / Math.max(1, weightLogs.length - 1)) * (svgW - 48);
-                  const y =
-                    16 + (1 - (item.weightKg - minW) / range) * (svgH - 36);
-                  return `${x},${y}`;
-                })
-                .join(' ');
-
-              return (
-                <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-28">
-                  <polyline
-                    fill="none"
-                    stroke="#16A34A"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points={pts}
-                  />
-                  {weightLogs.map((item, idx) => {
-                    const x =
-                      24 +
-                      (idx / Math.max(1, weightLogs.length - 1)) * (svgW - 48);
-                    const y =
-                      16 + (1 - (item.weightKg - minW) / range) * (svgH - 36);
-                    return (
-                      <g key={`${item.date}-${idx}`}>
-                        <circle
-                          cx={x}
-                          cy={y}
-                          r="4"
-                          fill="#15803D"
-                          stroke="#fff"
-                          strokeWidth="1.5"
-                        />
-                        <text
-                          x={x}
-                          y={y - 6}
-                          textAnchor="middle"
-                          fontSize="8"
-                          fontWeight="bold"
-                          fill="#0F291E"
-                        >
-                          {item.weightKg}kg
-                        </text>
-                        <text
-                          x={x}
-                          y={svgH - 4}
-                          textAnchor="middle"
-                          fontSize="7.5"
-                          fill="#6B7280"
-                        >
-                          {item.date}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
-              );
-            })()}
-
-            <form
-              onSubmit={handleLogDailyWeight}
-              className="flex items-center gap-2 pt-1"
-            >
-              <input
-                type="number"
-                step="0.1"
-                value={newWeightInput}
-                onChange={(e) => setNewWeightInput(e.target.value)}
-                placeholder="Today's weight (kg)"
-                className="flex-1 px-3 py-2 rounded-xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-[#15803D] text-white text-xs font-extrabold cursor-pointer"
-              >
-                + Log Weight
-              </button>
-            </form>
-          </div>
-
-          {/* BOTTOM NAV BAR INSIDE NUTRITION SUITE (HOME, STATS, FOOD, PROFILE — MATCHING IMAGE 1) */}
-          <div className="bg-white rounded-2xl p-2.5 border border-gray-100 flex items-center justify-around">
-            <button
-              type="button"
-              onClick={() => setSubRoute('dashboard')}
-              className="flex flex-col items-center gap-0.5 text-[#16A34A] font-extrabold text-[11px] cursor-pointer"
-            >
-              <Home className="w-5 h-5" />
-              <span>Home</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSubRoute('stats-foodlog')}
-              className="flex flex-col items-center gap-0.5 text-gray-500 hover:text-[#16A34A] font-bold text-[11px] cursor-pointer"
-            >
-              <Activity className="w-5 h-5" />
-              <span>Stats</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSubRoute('recipes')}
-              className="flex flex-col items-center gap-0.5 text-gray-500 hover:text-[#16A34A] font-bold text-[11px] cursor-pointer"
-            >
-              <Utensils className="w-5 h-5" />
-              <span>Food</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSubRoute('setup')}
-              className="flex flex-col items-center gap-0.5 text-gray-500 hover:text-[#16A34A] font-bold text-[11px] cursor-pointer"
-            >
-              <User className="w-5 h-5" />
-              <span>Profile</span>
-            </button>
-          </div>
         </div>
-      )}
 
-      {/* =====================================================================
-          PART 3: MEAL PLANNING (/nutrition/meal-plan — EXACT DESIGN OF IMAGE 4)
-         ===================================================================== */}
-      {subRoute === 'meal-plan' && (
-        <div className="bg-[#F9FBF9] border border-[#E2E8F0] rounded-[32px] p-4 sm:p-6 shadow-md space-y-4">
-          {/* Top Header: Back + Meal Plan + AI Sparkle Button */}
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setSubRoute('dashboard')}
-              className="w-10 h-10 rounded-full bg-[#16A34A] text-white flex items-center justify-center shadow-xs cursor-pointer"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h2 className="text-2xl font-extrabold text-[#0F291E]">
-              Meal Plan
-            </h2>
-            <button
-              type="button"
-              onClick={handleRegenerateAiPlan}
-              title="Generate New AI Meal Plan"
-              className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] bg-white flex items-center justify-center cursor-pointer"
-            >
-              <Sparkles className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* AI Badge */}
-          <div className="flex justify-center">
-            <span className="px-3.5 py-1 rounded-full bg-[#E6F4EA] border border-[#A7F3D0] text-[#14532D] text-xs font-bold inline-flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#16A34A]" />
-              <span>AI Generated Meal Plan • Oct 14–20, 2024</span>
-            </span>
-          </div>
-
-          {/* Week Calendar Mon–Sun (Free user gets Mon unlocked; Tue–Sun show Lock for Free user) */}
-          <div className="grid grid-cols-7 gap-1.5">
-            {weekMealPlan.map((d, idx) => {
-              const isSelected = d.dayKey === selectedDayKey;
-              const isLockedForFree = !isUserPaid && idx > 0;
-              return (
-                <button
-                  key={d.dayKey}
-                  type="button"
-                  onClick={() => {
-                    if (isLockedForFree) {
-                      triggerPremiumLock(
-                        'Free users can view 1 Day Meal Plan (Mon). Upgrade to Paid Premium for the Full 7-Day AI Meal Plan!'
-                      );
-                      return;
-                    }
-                    setSelectedDayKey(d.dayKey);
-                  }}
-                  className={`py-2.5 px-1 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                    isSelected
-                      ? 'bg-[#16A34A] text-white border-[#16A34A] shadow-sm'
-                      : 'bg-white text-[#0F291E] border-[#BBF7D0] hover:bg-emerald-50'
-                  }`}
-                >
-                  <span className="text-[11px] font-bold">{d.dayKey}</span>
-                  <span className="text-base font-extrabold leading-tight mt-0.5">
-                    {d.dateNumber}
-                  </span>
-                  {isLockedForFree ? (
-                    <Lock className="w-3 h-3 text-amber-600 mt-0.5" />
-                  ) : (
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full mt-1 ${
-                        isSelected ? 'bg-white' : 'bg-[#16A34A]'
-                      }`}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Daily Summary Header + Green Progress Bar */}
-          <div className="space-y-2 pt-1">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-extrabold text-[#0F291E]">
-                Today • {currentDayPlan.fullDateLabel}
-              </h3>
-              <span className="px-3 py-1 rounded-full bg-[#BBF7D0] text-[#14532D] text-xs font-extrabold">
-                {currentDayTotals.calories.toLocaleString()} /{' '}
-                {indexes.dailyCaloriesNeeded.toLocaleString()} kcal
-              </span>
-            </div>
-            <div className="w-full h-3 rounded-full bg-[#D1FAE5] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#15803D] to-[#22C55E]"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    Math.round(
-                      (currentDayTotals.calories /
-                        Math.max(1, indexes.dailyCaloriesNeeded)) *
-                        100
-                    )
-                  )}%`
-                }}
-              />
-            </div>
-          </div>
-
-          {/* 3 Macro Cards: Protein, Carbs, Fat (Matching Image 4) */}
-          <div className="grid grid-cols-3 gap-2.5">
-            <div className="p-3 rounded-2xl bg-[#E6F4EA] border border-[#BBF7D0] text-center space-y-0.5">
-              <div className="text-xs font-bold text-[#14532D]">🥩 Protein</div>
-              <div className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-                {currentDayTotals.proteinG}g / {indexes.targetProteinG}g
-              </div>
-              <div className="text-[11px] font-semibold text-gray-600">
-                {Math.min(
-                  100,
-                  Math.round(
-                    (currentDayTotals.proteinG /
-                      Math.max(1, indexes.targetProteinG)) *
-                      100
-                  )
-                )}
-                %
-              </div>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-[#E6F4EA] border border-[#BBF7D0] text-center space-y-0.5">
-              <div className="text-xs font-bold text-[#14532D]">🥦 Carbs</div>
-              <div className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-                {currentDayTotals.carbsG}g / {indexes.targetCarbsG}g
-              </div>
-              <div className="text-[11px] font-semibold text-gray-600">
-                {Math.min(
-                  100,
-                  Math.round(
-                    (currentDayTotals.carbsG /
-                      Math.max(1, indexes.targetCarbsG)) *
-                      100
-                  )
-                )}
-                %
-              </div>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-[#E6F4EA] border border-[#BBF7D0] text-center space-y-0.5">
-              <div className="text-xs font-bold text-[#14532D]">🥑 Fat</div>
-              <div className="text-sm sm:text-base font-extrabold text-[#0F291E]">
-                {currentDayTotals.fatG}g / {indexes.targetFatG}g
-              </div>
-              <div className="text-[11px] font-semibold text-gray-600">
-                {Math.min(
-                  100,
-                  Math.round(
-                    (currentDayTotals.fatG / Math.max(1, indexes.targetFatG)) *
-                      100
-                  )
-                )}
-                %
-              </div>
-            </div>
-          </div>
-
-          {/* Meals for Today (4 Sections: Breakfast 8:00 AM, Lunch 12:30 PM, Dinner 7:30 PM, Snack 4:00 PM) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-extrabold text-[#0F291E]">
-                Meals for Today
-              </h3>
-              <button
-                type="button"
-                onClick={handleRegenerateAiPlan}
-                className="text-xs font-extrabold text-[#16A34A] hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Generate New AI Plan</span>
-              </button>
-            </div>
-
-            {(
-              [
-                {
-                  key: 'breakfast',
-                  title: 'Breakfast',
-                  time: '8:00 AM',
-                  items: currentDayPlan.breakfast
-                },
-                {
-                  key: 'lunch',
-                  title: 'Lunch',
-                  time: '12:30 PM',
-                  items: currentDayPlan.lunch
-                },
-                {
-                  key: 'dinner',
-                  title: 'Dinner',
-                  time: '7:30 PM',
-                  items: currentDayPlan.dinner
-                },
-                {
-                  key: 'snack',
-                  title: 'Snack',
-                  time: '4:00 PM',
-                  items: currentDayPlan.snack
-                }
-              ] as const
-            ).map((sec) => {
-              const secKcal = sec.items.reduce((s, i) => s + i.calories, 0);
-              return (
-                <div
-                  key={sec.key}
-                  className="bg-white rounded-[22px] p-4 shadow-xs border border-gray-100 space-y-2.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-full bg-[#E6F4EA] border border-[#86EFAC] text-[#15803D] flex items-center justify-center shrink-0">
-                        <Sun className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="text-base font-extrabold text-[#0F291E]">
-                          {sec.title} •{' '}
-                          <span className="font-bold">{secKcal} kcal</span>
-                        </div>
-                        <div className="text-[11px] font-semibold text-gray-500">
-                          • {sec.time}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setAddingToMealSection(sec.key)}
-                      className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#15803D] text-[11px] font-extrabold cursor-pointer"
-                    >
-                      + Add Food
-                    </button>
-                  </div>
-
-                  {/* Food Items with Name, Quantity in Grams, Calories & Doctor Disclaimer */}
-                  <div className="space-y-2 pl-1">
-                    {sec.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-2.5 rounded-xl bg-[#F9FBF9] border border-emerald-100/90 flex items-start justify-between gap-2"
-                      >
-                        <div className="space-y-0.5">
-                          <div className="text-xs sm:text-sm font-bold text-[#0F291E]">
-                            • {item.name} •{' '}
-                            <span className="text-[#15803D] font-extrabold">
-                              {item.grams}g
-                            </span>{' '}
-                            •{' '}
-                            <span className="font-extrabold">
-                              {item.calories} kcal
-                            </span>
-                          </div>
-                          <div className="text-[10.5px] font-semibold text-emerald-800/80 flex items-center gap-1">
-                            <Info className="w-3 h-3 shrink-0" />
-                            <span>{item.disclaimer}</span>
-                          </div>
-
-                          {editingEntryId === item.id && (
-                            <div className="flex items-center gap-1.5 pt-1">
-                              <input
-                                type="number"
-                                min={10}
-                                max={1000}
-                                value={editingGramsVal}
-                                onChange={(e) =>
-                                  setEditingGramsVal(e.target.value)
-                                }
-                                className="w-20 px-2 py-1 rounded-lg bg-white border border-emerald-400 text-xs font-bold"
-                              />
-                              <span className="text-[11px] font-bold">g</span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleSaveEditedGrams(sec.key, item)
-                                }
-                                className="px-2.5 py-1 rounded-lg bg-[#16A34A] text-white text-[10.5px] font-extrabold cursor-pointer"
-                              >
-                                Save
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingEntryId(
-                                editingEntryId === item.id ? null : item.id
-                              );
-                              setEditingGramsVal(String(item.grams));
-                            }}
-                            title="Edit Quantity (Grams)"
-                            className="p-1.5 rounded-lg text-gray-500 hover:bg-emerald-50 hover:text-[#15803D] cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleDeleteMealPlanItem(sec.key, item.id)
-                            }
-                            title="Delete Item"
-                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Inline Custom Food Form for this Meal Section */}
-                  {addingToMealSection === sec.key && (
-                    <form
-                      onSubmit={handleAddCustomFoodToMealPlan}
-                      className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2"
-                    >
-                      <div className="text-xs font-extrabold text-[#14532D]">
-                        Add Custom Food to {sec.title}:
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <input
-                          type="text"
-                          required
-                          value={customMealFoodName}
-                          onChange={(e) =>
-                            setCustomMealFoodName(e.target.value)
-                          }
-                          placeholder="Food Name"
-                          className="col-span-3 sm:col-span-1 px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-xs font-bold"
-                        />
-                        <input
-                          type="number"
-                          required
-                          value={customMealGrams}
-                          onChange={(e) => setCustomMealGrams(e.target.value)}
-                          placeholder="Grams (g)"
-                          className="px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-xs font-bold"
-                        />
-                        <input
-                          type="number"
-                          required
-                          value={customMealCalories}
-                          onChange={(e) =>
-                            setCustomMealCalories(e.target.value)
-                          }
-                          placeholder="Calories (kcal)"
-                          className="px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-xs font-bold"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="submit"
-                          className="px-3 py-1.5 rounded-lg bg-[#16A34A] text-white text-xs font-extrabold cursor-pointer"
-                        >
-                          Add Item
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAddingToMealSection(null)}
-                          className="px-3 py-1.5 rounded-lg bg-white text-gray-600 text-xs font-bold cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Bottom Action Buttons: Grocery List & Swap Meal (Matching Image 4) */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleOpenGroceryList}
-              className="py-3.5 px-4 rounded-2xl bg-white border-2 border-[#16A34A] text-[#15803D] font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-emerald-50"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Grocery List</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleSwapMeal}
-              className="py-3.5 px-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>Swap Meal</span>
-            </button>
-          </div>
-
-          {/* GROCERY LIST MODAL */}
-          {showGroceryModal && (
-            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-              <div className="bg-white rounded-[28px] max-w-md w-full p-5 max-h-[82vh] overflow-y-auto space-y-3 shadow-2xl">
-                <div className="flex items-center justify-between border-b pb-2.5">
-                  <div>
-                    <h4 className="text-base font-extrabold text-[#0F291E]">
-                      🛒 Weekly Auto-Generated Grocery List
-                    </h4>
-                    <p className="text-[11px] text-gray-500">
-                      Tap items to check/uncheck as you shop
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowGroceryModal(false)}
-                    className="p-1.5 rounded-full bg-gray-100 text-gray-600 cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {groceryList.map((g) => (
-                    <label
-                      key={g.id}
-                      className="p-2.5 rounded-xl bg-[#F0FDF4] border border-emerald-200 flex items-center justify-between gap-2 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <input
-                          type="checkbox"
-                          checked={g.checked}
-                          onChange={() =>
-                            setGroceryList((prev) =>
-                              prev.map((x) =>
-                                x.id === g.id
-                                  ? { ...x, checked: !x.checked }
-                                  : x
-                              )
-                            )
-                          }
-                          className="w-4 h-4 accent-[#16A34A]"
-                        />
-                        <span
-                          className={`text-xs font-bold ${
-                            g.checked
-                              ? 'line-through text-gray-400'
-                              : 'text-[#0F291E]'
-                          }`}
-                        >
-                          {g.name}
-                        </span>
-                      </div>
-                      <span className="text-xs font-extrabold text-[#15803D]">
-                        {g.totalGrams}g
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* =====================================================================
-          PART 4: RECIPES SECTION (/nutrition/recipes — EXACT DESIGN OF IMAGE 2)
-         ===================================================================== */}
-      {subRoute === 'recipes' && (
-        <div className="bg-[#F9FBF9] border border-[#E2E8F0] rounded-[32px] p-4 sm:p-6 shadow-md space-y-4">
-          {/* Top Header: Recipes + Avatar + Filter Icon */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-extrabold text-[#0F291E]">Recipes</h2>
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setShowSubmitRecipeModal(true)}
-                className="px-3 py-1.5 rounded-full bg-[#E6F4EA] border border-[#86EFAC] text-[#15803D] text-xs font-extrabold cursor-pointer"
-              >
-                + Add Recipe
-              </button>
-              <button
-                type="button"
-                onClick={() => setSubRoute('setup')}
-                className="w-10 h-10 rounded-full border-2 border-[#16A34A] text-[#16A34A] flex items-center justify-center cursor-pointer"
-              >
-                <User className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowRecipeFilters((v) => !v)}
-                className="p-2 rounded-xl bg-white border border-gray-200 text-[#15803D] cursor-pointer"
-              >
-                <SlidersHorizontal className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Category Tabs: Desi, Pakistani, Chinese, Italian, Continental, Healthy, All, Saved */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            {(
-              [
-                'Desi',
-                'Pakistani',
-                'Chinese',
-                'Italian',
-                'Continental',
-                'Healthy',
-                'All',
-                'Saved'
-              ] as const
-            ).map((cat) => {
-              const active = recipeCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setRecipeCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap cursor-pointer transition-all ${
-                    active
-                      ? 'bg-[#15803D] text-white shadow-xs'
-                      : 'bg-gray-200/80 text-gray-800 hover:bg-gray-300'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-[#16A34A] absolute left-3.5 top-1/2 -translate-y-1/2" />
+        {/* Simple Grid of Inputs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+              Your Name
+            </label>
             <input
               type="text"
-              value={recipeSearch}
-              onChange={(e) => setRecipeSearch(e.target.value)}
-              placeholder="Search recipes, ingredients..."
-              className="w-full pl-10 pr-4 py-3 rounded-2xl bg-[#EFEFEF] text-xs font-bold text-[#0F291E] placeholder:text-gray-500 focus:outline-hidden"
+              value={profile.fullName}
+              onChange={(e) =>
+                setProfile((p) => ({ ...p, fullName: e.target.value }))
+              }
+              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
             />
           </div>
 
-          {/* Collapsible Filters (Calories, Veg/Non-Veg, Time) */}
-          {showRecipeFilters && (
-            <div className="p-3.5 rounded-2xl bg-white border border-emerald-200 grid grid-cols-3 gap-2 text-xs">
-              <div>
-                <label className="block text-[10px] font-extrabold text-gray-500 mb-1">
-                  By Calories
-                </label>
-                <select
-                  value={calorieFilter}
-                  onChange={(e) =>
-                    setCalorieFilter(
-                      e.target.value as 'all' | 'low' | 'medium' | 'high'
-                    )
-                  }
-                  className="w-full p-1.5 rounded-lg bg-[#F0FDF4] border border-emerald-200 font-bold"
-                >
-                  <option value="all">All Calories</option>
-                  <option value="low">Low (&lt;300)</option>
-                  <option value="medium">Medium (300–500)</option>
-                  <option value="high">High (&gt;500)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-extrabold text-gray-500 mb-1">
-                  Diet Type
-                </label>
-                <select
-                  value={vegFilter}
-                  onChange={(e) =>
-                    setVegFilter(e.target.value as 'all' | 'veg' | 'nonveg')
-                  }
-                  className="w-full p-1.5 rounded-lg bg-[#F0FDF4] border border-emerald-200 font-bold"
-                >
-                  <option value="all">Veg &amp; Non-Veg</option>
-                  <option value="veg">Veg Only</option>
-                  <option value="nonveg">Non-Veg Only</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-extrabold text-gray-500 mb-1">
-                  Cook Time
-                </label>
-                <select
-                  value={timeFilter}
-                  onChange={(e) =>
-                    setTimeFilter(
-                      e.target.value as 'all' | 'under20' | '20to40' | 'over40'
-                    )
-                  }
-                  className="w-full p-1.5 rounded-lg bg-[#F0FDF4] border border-emerald-200 font-bold"
-                >
-                  <option value="all">Any Time</option>
-                  <option value="under20">&lt; 20 min</option>
-                  <option value="20to40">20–40 min</option>
-                  <option value="over40">40+ min</option>
-                </select>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-extrabold text-[#0F291E]">
-              Popular Picks ({filteredRecipes.length} Recipes)
-            </h3>
-            {!isUserPaid && (
-              <span className="text-[11px] font-extrabold text-amber-700">
-                Free Preview: First 5 Unlocked
-              </span>
-            )}
+          <div>
+            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+              Age (Years)
+            </label>
+            <input
+              type="number"
+              min={14}
+              max={95}
+              value={profile.age}
+              onChange={(e) =>
+                setProfile((p) => ({
+                  ...p,
+                  age: Math.max(14, Number(e.target.value) || 25)
+                }))
+              }
+              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+            />
           </div>
 
-          {/* Recipe Cards List (Matching Image 2 Layout) */}
-          <div className="space-y-3.5">
-            {filteredRecipes.map((rec, index) => {
-              const isSaved = profile.savedRecipeIds.includes(rec.id);
-              const isLockedForFree = !isUserPaid && index >= 5;
-
-              return (
-                <div
-                  key={rec.id}
-                  className="bg-white rounded-[24px] p-3.5 shadow-xs border border-gray-100 space-y-3"
-                >
-                  <div
-                    onClick={() => {
-                      if (isLockedForFree) {
-                        triggerPremiumLock(
-                          'Free users can access 5 Recipes. Upgrade to Paid Premium to unlock all 44+ Desi, Pakistani, Chinese, Italian & Healthy Recipes!'
-                        );
-                        return;
-                      }
-                      setSelectedRecipeModal(rec);
-                    }}
-                    className="flex items-center gap-3.5 cursor-pointer"
-                  >
-                    <img
-                      src={rec.imageUrl}
-                      alt={rec.title}
-                      loading="lazy"
-                      className="w-28 h-24 sm:w-32 sm:h-28 rounded-2xl object-cover shrink-0 bg-gray-100"
-                    />
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="flex items-center justify-between gap-1">
-                        <h4 className="text-base sm:text-lg font-extrabold text-[#0F291E] truncate">
-                          {rec.title}
-                        </h4>
-                        {isLockedForFree && (
-                          <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-[#0F291E]">
-                          🔥 {rec.calories} kcal
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-[#0F291E]">
-                          💪 Protein {rec.proteinG}g
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-[#0F291E]">
-                          🌾 Carbs {rec.carbsG}g
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3 text-[11px] font-semibold text-gray-500">
-                        <span>🕒 {rec.cookTimeMin} min</span>
-                        <span>📶 {rec.difficulty}</span>
-                        <span
-                          className={
-                            rec.isVeg ? 'text-emerald-700' : 'text-amber-700'
-                          }
-                        >
-                          • {rec.isVeg ? 'Veg' : 'Non-Veg'}
-                        </span>
-                      </div>
-
-                      <div className="text-[10px] font-semibold text-emerald-800 flex items-center gap-1">
-                        <Info className="w-3 h-3 shrink-0" />
-                        <span>{rec.disclaimer}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Save + Add to Meal Plan Buttons (Matching Image 2) */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleSaveRecipe(rec.id)}
-                      className={`py-2.5 px-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer ${
-                        isSaved
-                          ? 'bg-emerald-50 border-[#16A34A] text-[#15803D]'
-                          : 'bg-white border-[#15803D] text-[#15803D]'
-                      }`}
-                    >
-                      <Bookmark className="w-3.5 h-3.5" />
-                      <span>{isSaved ? 'Saved' : 'Save'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isLockedForFree) {
-                          triggerPremiumLock(
-                            'Upgrade to Paid Premium to unlock all 44+ Recipes & 1-Tap Meal Plan additions!'
-                          );
-                          return;
-                        }
-                        handleAddRecipeToMealPlan(rec);
-                      }}
-                      className="py-2.5 px-3 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add to Meal Plan</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+          <div>
+            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+              Gender
+            </label>
+            <select
+              value={profile.gender}
+              onChange={(e) =>
+                setProfile((p) => ({
+                  ...p,
+                  gender: e.target.value as GenderOption
+                }))
+              }
+              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+            >
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
 
-          {/* RECIPE DETAIL MODAL */}
-          {selectedRecipeModal && (
-            <div className="fixed inset-0 z-50 bg-black/65 flex items-center justify-center p-4">
-              <div className="bg-white rounded-[28px] max-w-lg w-full max-h-[86vh] overflow-y-auto p-5 space-y-4 shadow-2xl">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#15803D] text-[10px] font-extrabold uppercase">
-                      {selectedRecipeModal.category} •{' '}
-                      {selectedRecipeModal.isVeg ? 'Vegetarian' : 'Non-Veg'}
-                    </span>
-                    <h3 className="text-xl font-extrabold text-[#0F291E] mt-1">
-                      {selectedRecipeModal.title}
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRecipeModal(null)}
-                    className="p-1.5 rounded-full bg-gray-100 text-gray-600 cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+          <div>
+            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+              Height (cm)
+            </label>
+            <input
+              type="number"
+              min={120}
+              max={225}
+              value={profile.heightCm}
+              onChange={(e) =>
+                setProfile((p) => ({
+                  ...p,
+                  heightUnit: 'cm',
+                  heightCm: Number(e.target.value) || 170
+                }))
+              }
+              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+            />
+          </div>
 
-                <img
-                  src={selectedRecipeModal.imageUrl}
-                  alt={selectedRecipeModal.title}
-                  className="w-full h-48 rounded-2xl object-cover"
-                />
+          <div>
+            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+              Current Weight (kg)
+            </label>
+            <input
+              type="number"
+              step="0.5"
+              min={30}
+              max={220}
+              value={profile.weightKg}
+              onChange={(e) =>
+                setProfile((p) => ({
+                  ...p,
+                  weightKg: Number(e.target.value) || 70
+                }))
+              }
+              className="w-full px-3 py-2 rounded-xl border-2 border-[#0E9F6E] bg-[#F4FAF7] text-xs font-extrabold text-[#0F291E] focus:outline-none"
+            />
+          </div>
 
-                {/* Nutrition Per Serving */}
-                <div className="grid grid-cols-5 gap-1.5 text-center">
-                  <div className="p-2 rounded-xl bg-[#F0FDF4] border border-emerald-200">
-                    <div className="text-[10px] font-bold text-gray-500">
-                      Calories
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      {selectedRecipeModal.calories}
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#F0FDF4] border border-emerald-200">
-                    <div className="text-[10px] font-bold text-gray-500">
-                      Protein
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      {selectedRecipeModal.proteinG}g
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#F0FDF4] border border-emerald-200">
-                    <div className="text-[10px] font-bold text-gray-500">
-                      Carbs
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      {selectedRecipeModal.carbsG}g
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#F0FDF4] border border-emerald-200">
-                    <div className="text-[10px] font-bold text-gray-500">
-                      Fat
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      {selectedRecipeModal.fatG}g
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-[#F0FDF4] border border-emerald-200">
-                    <div className="text-[10px] font-bold text-gray-500">
-                      Fiber
-                    </div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      {selectedRecipeModal.fiberG}g
-                    </div>
-                  </div>
-                </div>
+          <div>
+            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+              Target Weight (kg)
+            </label>
+            <input
+              type="number"
+              step="0.5"
+              min={30}
+              max={200}
+              value={profile.targetWeightKg}
+              onChange={(e) =>
+                setProfile((p) => ({
+                  ...p,
+                  targetWeightKg: Number(e.target.value) || 65
+                }))
+              }
+              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+            />
+          </div>
 
-                {/* Ingredients with Grams */}
-                <div>
-                  <h4 className="text-xs font-extrabold text-[#14532D] uppercase mb-1.5">
-                    Full Ingredients List (with Grams)
-                  </h4>
-                  <div className="space-y-1">
-                    {selectedRecipeModal.ingredients.map((ing, i) => (
-                      <div
-                        key={i}
-                        className="flex justify-between text-xs py-1 border-b border-gray-100"
-                      >
-                        <span className="font-semibold text-[#0F291E]">
-                          • {ing.item}
-                        </span>
-                        <span className="font-extrabold text-[#15803D]">
-                          {ing.grams}g
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          <div>
+            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+              Activity Level
+            </label>
+            <select
+              value={profile.activityLevel}
+              onChange={(e) =>
+                setProfile((p) => ({
+                  ...p,
+                  activityLevel: e.target.value as ActivityLevelOption
+                }))
+              }
+              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+            >
+              <option value="Sedentary">Sedentary (Desk Job)</option>
+              <option value="Lightly Active">Lightly Active (1–2 days/wk)</option>
+              <option value="Moderately Active">Moderately Active (3–5 days/wk)</option>
+              <option value="Very Active">Very Active (Daily Exercise)</option>
+              <option value="Athlete">Athlete (Intense Training)</option>
+            </select>
+          </div>
 
-                {/* Step-by-Step Instructions */}
-                <div>
-                  <h4 className="text-xs font-extrabold text-[#14532D] uppercase mb-1.5">
-                    Step-by-Step Instructions
-                  </h4>
-                  <ol className="space-y-1.5 text-xs text-gray-700 list-decimal pl-4">
-                    {selectedRecipeModal.instructions.map((st, i) => (
-                      <li key={i} className="leading-relaxed">
-                        {st}
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-
-                {/* Health Benefits & Doctor Disclaimer */}
-                <div className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200 space-y-1">
-                  <div className="text-xs font-extrabold text-[#14532D]">
-                    Health Benefits:
-                  </div>
-                  {selectedRecipeModal.healthBenefits.map((hb, i) => (
-                    <div key={i} className="text-xs text-[#0F291E]">
-                      ✓ {hb}
-                    </div>
-                  ))}
-                  <div className="text-[11px] font-extrabold text-amber-800 pt-1">
-                    ⓘ {selectedRecipeModal.disclaimer}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleAddRecipeToMealPlan(selectedRecipeModal);
-                    setSelectedRecipeModal(null);
-                  }}
-                  className="w-full py-3.5 rounded-2xl bg-[#15803D] text-white font-extrabold text-sm cursor-pointer"
-                >
-                  + Add to Today&apos;s Meal Plan
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* SUBMIT COMMUNITY RECIPE MODAL */}
-          {showSubmitRecipeModal && (
-            <div className="fixed inset-0 z-50 bg-black/65 flex items-center justify-center p-4">
-              <form
-                onSubmit={handleSubmitCommunityRecipe}
-                className="bg-white rounded-[28px] max-w-md w-full p-5 space-y-3 shadow-2xl"
-              >
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-extrabold text-[#0F291E]">
-                    Submit Community Recipe
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setShowSubmitRecipeModal(false)}
-                    className="p-1 rounded-full bg-gray-100"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={newRecipeTitle}
-                  onChange={(e) => setNewRecipeTitle(e.target.value)}
-                  placeholder="Recipe Title (e.g. Multani Sohan Dish / Healthy Tikka)"
-                  className="w-full px-3 py-2 rounded-xl bg-[#F0FDF4] border border-emerald-300 text-xs font-bold"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={newRecipeCategory}
-                    onChange={(e) =>
-                      setNewRecipeCategory(
-                        e.target.value as SuiteRecipeItem['category']
-                      )
-                    }
-                    className="px-3 py-2 rounded-xl bg-[#F0FDF4] border border-emerald-300 text-xs font-bold"
-                  >
-                    <option value="Desi">Desi</option>
-                    <option value="Pakistani">Pakistani</option>
-                    <option value="Chinese">Chinese</option>
-                    <option value="Italian">Italian</option>
-                    <option value="Continental">Continental</option>
-                    <option value="Healthy">Healthy</option>
-                  </select>
-                  <input
-                    type="number"
-                    value={newRecipeCalories}
-                    onChange={(e) => setNewRecipeCalories(e.target.value)}
-                    placeholder="Calories (kcal)"
-                    className="px-3 py-2 rounded-xl bg-[#F0FDF4] border border-emerald-300 text-xs font-bold"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <input
-                    type="number"
-                    value={newRecipeProtein}
-                    onChange={(e) => setNewRecipeProtein(e.target.value)}
-                    placeholder="Protein (g)"
-                    className="px-2.5 py-2 rounded-xl bg-[#F0FDF4] border border-emerald-300 text-xs font-bold"
-                  />
-                  <input
-                    type="number"
-                    value={newRecipeCarbs}
-                    onChange={(e) => setNewRecipeCarbs(e.target.value)}
-                    placeholder="Carbs (g)"
-                    className="px-2.5 py-2 rounded-xl bg-[#F0FDF4] border border-emerald-300 text-xs font-bold"
-                  />
-                  <input
-                    type="number"
-                    value={newRecipeTime}
-                    onChange={(e) => setNewRecipeTime(e.target.value)}
-                    placeholder="Time (min)"
-                    className="px-2.5 py-2 rounded-xl bg-[#F0FDF4] border border-emerald-300 text-xs font-bold"
-                  />
-                </div>
-                <textarea
-                  rows={2}
-                  value={newRecipeIngredientsText}
-                  onChange={(e) => setNewRecipeIngredientsText(e.target.value)}
-                  placeholder="Ingredients with grams (comma separated)"
-                  className="w-full px-3 py-2 rounded-xl bg-[#F0FDF4] border border-emerald-300 text-xs font-bold"
-                />
-                <textarea
-                  rows={2}
-                  value={newRecipeStepsText}
-                  onChange={(e) => setNewRecipeStepsText(e.target.value)}
-                  placeholder="Cooking instructions"
-                  className="w-full px-3 py-2 rounded-xl bg-[#F0FDF4] border border-emerald-300 text-xs font-bold"
-                />
-                <button
-                  type="submit"
-                  className="w-full py-3 rounded-xl bg-[#15803D] text-white text-xs font-extrabold cursor-pointer"
-                >
-                  Publish Recipe
-                </button>
-              </form>
-            </div>
-          )}
+          <div>
+            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+              Your Primary Goal
+            </label>
+            <select
+              value={profile.goal}
+              onChange={(e) =>
+                setProfile((p) => ({
+                  ...p,
+                  goal: e.target.value as GoalOption
+                }))
+              }
+              className="w-full px-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+            >
+              <option value="Lose Weight">Lose Weight (Fat Loss)</option>
+              <option value="Maintain Weight">Maintain Healthy Weight</option>
+              <option value="Gain Weight">Gain Weight</option>
+              <option value="Gain Muscle">Build Muscle &amp; Strength</option>
+              <option value="Improve Health">General Health &amp; Energy</option>
+            </select>
+          </div>
         </div>
-      )}
+
+        {/* Daily Water Tracker Row inside Step 1 */}
+        <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+              <Droplets className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-extrabold text-[#0F291E]">
+                Daily Water Intake Tracker: {waterGlasses} / {profile.dailyWaterGoalGlasses} Glasses ({waterGlasses * 250} ml)
+              </div>
+              <div className="text-[11px] text-[#5C7267]">
+                Click +1 Glass whenever you drink water today
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setWaterGlasses((w) => Math.max(0, w - 1))}
+              className="px-3 py-1.5 rounded-xl bg-white border border-[#CBE3D6] text-[#0F291E] text-xs font-extrabold cursor-pointer hover:bg-gray-50"
+            >
+              - 1 Glass
+            </button>
+            <button
+              type="button"
+              onClick={() => setWaterGlasses((w) => Math.min(16, w + 1))}
+              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold cursor-pointer"
+            >
+              + 1 Glass Water
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* =====================================================================
-          PART 5: HEALTH CONDITION RECOMMENDED FOOD (/nutrition/health — EXACT DESIGN OF IMAGE 3)
+          STEP 2: INSTANT BMI RESULT, WEIGHT GOAL ADVICE & VISUAL GRAPH
          ===================================================================== */}
-      {subRoute === 'health' && (
-        <div className="bg-[#FAF8F5] border border-[#E2E8F0] rounded-[32px] p-4 sm:p-6 shadow-md space-y-4">
-          {/* Top Bar: Back + Nutrition Recommendation + Share */}
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setSubRoute('dashboard')}
-              className="p-2 rounded-full hover:bg-gray-200/60 text-[#0F291E] cursor-pointer"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h2 className="text-lg sm:text-xl font-extrabold text-[#0F291E]">
-              Nutrition Recommendation
-            </h2>
-            <button
-              type="button"
-              onClick={() =>
-                showToast(
-                  `Saved ${currentHealthData.conditionName} recommendations to your profile!`
-                )
-              }
-              className="p-2 rounded-full hover:bg-gray-200/60 text-[#0F291E] cursor-pointer"
-            >
-              <Share2 className="w-5 h-5" />
-            </button>
+      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex items-center gap-2.5 border-b border-[#ECF4EF] pb-3">
+          <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
+            2
           </div>
+          <div>
+            <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+              Step 2: Your BMI Score, Weight Advice &amp; Daily Calorie Target
+            </h3>
+            <p className="text-[11px] text-[#5C7267]">
+              Shows your exact BMI category, whether to gain or reduce weight, and your daily macros
+            </p>
+          </div>
+        </div>
 
-          {/* Search Input: Type ANY Health Condition (Matching Image 3) */}
-          <form onSubmit={(e) => handleSearchHealthCondition(e)} className="space-y-2">
-            <div className="relative">
-              <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={healthQueryInput}
-                onChange={(e) => setHealthQueryInput(e.target.value)}
-                placeholder="Type your health issue e.g. Diabetes, Blood Pressure, PCOS, Acidity..."
-                className="w-full pl-10 pr-20 py-3 rounded-2xl bg-[#EFECE6] text-sm font-bold text-[#0F291E] focus:outline-hidden"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-[#15803D] text-white text-xs font-extrabold cursor-pointer"
+        {/* BMI Scale + Weight Action Recommendation */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Left: BMI Gauge & Scale Bar */}
+          <div className="p-4 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-[#5C7267] uppercase">
+                  Your Body Mass Index (BMI)
+                </span>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-3xl font-extrabold text-[#0F291E]">
+                    {indexes.bmi}
+                  </span>
+                  <span className="text-xs font-bold text-[#5C7267]">kg/m²</span>
+                </div>
+              </div>
+              <span
+                className="px-3 py-1 rounded-full text-xs font-extrabold"
+                style={{
+                  backgroundColor: indexes.bmiBadgeBg,
+                  color: indexes.bmiBadgeText
+                }}
               >
-                Search
-              </button>
+                {indexes.bmiStatus}
+              </span>
             </div>
 
-            {/* Quick Condition Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {/* 4-Zone BMI Color Scale Bar */}
+            <div className="space-y-1.5 pt-1">
+              <div className="relative h-3.5 w-full rounded-full overflow-hidden flex">
+                <div className="w-1/4 bg-blue-500" title="Underweight <18.5" />
+                <div className="w-1/4 bg-emerald-500" title="Normal 18.5–24.9" />
+                <div className="w-1/4 bg-amber-500" title="Overweight 25–29.9" />
+                <div className="w-1/4 bg-red-500" title="Obese 30+" />
+                {/* Pointer */}
+                <div
+                  className="absolute top-0 bottom-0 w-1.5 bg-[#0F291E] border border-white rounded-full shadow-md"
+                  style={{ left: `calc(${bmiPointerPct}% - 3px)` }}
+                />
+              </div>
+              <div className="grid grid-cols-4 text-[10px] font-bold text-[#5C7267] text-center">
+                <span>Under (&lt;18.5)</span>
+                <span className="text-[#0E9F6E] font-extrabold">Normal (18.5–24.9)</span>
+                <span>Over (25–29.9)</span>
+                <span>Obese (30+)</span>
+              </div>
+            </div>
+
+            {/* Clear Weight Gain / Reduce Advice Box */}
+            <div
+              className={`p-3 rounded-xl border text-xs space-y-1 ${weightGuidance.badgeBg}`}
+            >
+              <div className="font-extrabold flex items-center gap-1.5">
+                {weightGuidance.actionType === 'REDUCE WEIGHT' ? (
+                  <TrendingDown className="w-4 h-4 shrink-0" />
+                ) : (
+                  <TrendingUp className="w-4 h-4 shrink-0" />
+                )}
+                <span>{weightGuidance.headline}</span>
+              </div>
+              <p className="text-[11px] leading-relaxed opacity-90">
+                {weightGuidance.detail}
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Visual Weight Progress & Goal Comparison Graph */}
+          <div className="p-4 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs sm:text-sm font-extrabold text-[#0F291E]">
+                  Weight Progress &amp; Ideal Weight Graph
+                </h4>
+                <p className="text-[11px] text-[#5C7267]">
+                  Current: <strong>{profile.weightKg} kg</strong> • Ideal Weight:{' '}
+                  <strong>{indexes.idealWeightKg} kg</strong> • Target:{' '}
+                  <strong>{profile.targetWeightKg} kg</strong>
+                </p>
+              </div>
+              <Scale className="w-5 h-5 text-[#0E9F6E]" />
+            </div>
+
+            {/* Horizontal Comparison Bars for Current vs Ideal vs Target Weight */}
+            <div className="space-y-2.5 my-auto py-1">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] font-bold">
+                  <span className="text-[#0F291E]">Current Weight</span>
+                  <span className="text-[#0F291E] font-extrabold">
+                    {profile.weightKg} kg (BMI {indexes.bmi})
+                  </span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-[#13422B]"
+                    style={{
+                      width: `${Math.min(100, Math.round((profile.weightKg / 120) * 100))}%`
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] font-bold">
+                  <span className="text-[#0E9F6E]">
+                    Healthy Ideal Weight (For {profile.heightCm} cm)
+                  </span>
+                  <span className="text-[#0E9F6E] font-extrabold">
+                    {indexes.idealWeightKg} kg (BMI 22.0)
+                  </span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-[#0E9F6E]"
+                    style={{
+                      width: `${Math.min(100, Math.round((indexes.idealWeightKg / 120) * 100))}%`
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] font-bold">
+                  <span className="text-amber-700">Your Personal Target Weight</span>
+                  <span className="text-amber-800 font-extrabold">
+                    {profile.targetWeightKg} kg
+                  </span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-amber-500"
+                    style={{
+                      width: `${Math.min(100, Math.round((profile.targetWeightKg / 120) * 100))}%`
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-[#5C7267] font-semibold pt-1 border-t border-[#E2F2E9] flex items-center justify-between">
+              <span>Health Score: {indexes.healthScore}/100 ({indexes.healthScoreLabel})</span>
+              <span>Body Fat Est.: {indexes.bodyFatPct}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Daily Calorie & Macro Targets Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          <div className="p-3 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0]">
+            <div className="text-[10px] font-bold text-[#065F46] uppercase">
+              Daily Calorie Target
+            </div>
+            <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+              {indexes.dailyCaloriesNeeded} kcal
+            </div>
+            <div className="text-[10px] font-bold text-[#0E9F6E]">
+              For: {profile.goal}
+            </div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF]">
+            <div className="text-[10px] font-bold text-[#5C7267] uppercase">
+              Daily Protein
+            </div>
+            <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+              {indexes.targetProteinG} g
+            </div>
+            <div className="text-[10px] text-[#0E9F6E] font-bold">
+              Muscle &amp; Repair
+            </div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF]">
+            <div className="text-[10px] font-bold text-[#5C7267] uppercase">
+              Daily Carbs
+            </div>
+            <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+              {indexes.targetCarbsG} g
+            </div>
+            <div className="text-[10px] text-[#5C7267] font-semibold">
+              Daily Energy
+            </div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF]">
+            <div className="text-[10px] font-bold text-[#5C7267] uppercase">
+              Healthy Fats
+            </div>
+            <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+              {indexes.targetFatG} g
+            </div>
+            <div className="text-[10px] text-[#5C7267] font-semibold">
+              Hormone Balance
+            </div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] col-span-2 sm:col-span-1">
+            <div className="text-[10px] font-bold text-[#5C7267] uppercase">
+              BMR / TDEE
+            </div>
+            <div className="text-sm font-extrabold text-[#0F291E] mt-1">
+              {indexes.bmrKcal} / {indexes.tdeeKcal} kcal
+            </div>
+            <div className="text-[10px] text-[#0E9F6E] font-bold">
+              Rest / Active Burn
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* =====================================================================
+          STEP 3: RECOMMENDED DAILY MEAL PLAN & HEALTH CONDITION FOOD GUIDE
+         ===================================================================== */}
+      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex items-center gap-2.5 border-b border-[#ECF4EF] pb-3">
+          <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
+            3
+          </div>
+          <div>
+            <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+              Step 3: Daily Balanced Meal Plan &amp; Health Condition Food Guide
+            </h3>
+            <p className="text-[11px] text-[#5C7267]">
+              Tailored for {indexes.dailyCaloriesNeeded} kcal/day ({profile.goal}) + Disease-Specific Food Recommendations
+            </p>
+          </div>
+        </div>
+
+        {/* 4-Meal Daily Plan Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            {
+              meal: 'Breakfast (8:00 AM)',
+              items: '2 Boiled Eggs / Omelette + 1 Whole-Wheat Roti or Oats & Banana Bowl',
+              grams: '240g Portion',
+              kcal: Math.round(indexes.dailyCaloriesNeeded * 0.25),
+              protein: `${Math.round(indexes.targetProteinG * 0.25)}g Protein`
+            },
+            {
+              meal: 'Lunch (1:30 PM)',
+              items: 'Chicken Karahi or Tarka Daal + 1 Whole-Wheat Roti / Brown Rice + Fresh Salad',
+              grams: '320g Portion',
+              kcal: Math.round(indexes.dailyCaloriesNeeded * 0.35),
+              protein: `${Math.round(indexes.targetProteinG * 0.35)}g Protein`
+            },
+            {
+              meal: 'Evening Snack (5:00 PM)',
+              items: 'Green Tea + 1 Apple/Guava + 7 Almonds or Roasted Chana',
+              grams: '150g Portion',
+              kcal: Math.round(indexes.dailyCaloriesNeeded * 0.12),
+              protein: `${Math.round(indexes.targetProteinG * 0.12)}g Protein`
+            },
+            {
+              meal: 'Dinner (8:00 PM)',
+              items: 'Grilled Chicken Tikka / Fish or Palak Paneer + Steamed Vegetables',
+              grams: '260g Portion',
+              kcal: Math.round(indexes.dailyCaloriesNeeded * 0.28),
+              protein: `${Math.round(indexes.targetProteinG * 0.28)}g Protein`
+            }
+          ].map((slot) => (
+            <div
+              key={slot.meal}
+              className="p-3.5 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-1.5 flex flex-col justify-between"
+            >
+              <div>
+                <div className="text-xs font-extrabold text-[#13422B]">
+                  {slot.meal}
+                </div>
+                <p className="text-xs text-[#0F291E] font-semibold mt-1 leading-snug">
+                  {slot.items}
+                </p>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-[#E2F2E9] text-[10.5px] font-extrabold">
+                <span className="text-[#5C7267]">{slot.grams}</span>
+                <span className="text-[#0E9F6E]">
+                  {slot.kcal} kcal • {slot.protein}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Health Condition Food Selector (Diabetes, BP, Cholesterol, PCOS, etc.) */}
+        <div className="pt-2 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-extrabold text-[#0F291E]">
+              Select Health Condition for Foods to Eat &amp; Avoid:
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
               {[
                 'Diabetes',
                 'High Blood Pressure',
                 'Cholesterol',
                 'PCOS',
-                'Thyroid',
-                'Heart Disease',
                 'Acidity',
-                'Anemia'
+                'Anemia',
+                'Thyroid'
               ].map((cond) => (
                 <button
                   key={cond}
                   type="button"
-                  onClick={() => handleSearchHealthCondition(undefined, cond)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap cursor-pointer ${
-                    activeHealthCondition.toLowerCase() === cond.toLowerCase()
-                      ? 'bg-[#1D4ED8] text-white'
-                      : 'bg-white border border-gray-200 text-gray-700'
+                  onClick={() => setSelectedCondition(cond)}
+                  className={`px-3 py-1 rounded-full text-[11px] font-extrabold cursor-pointer transition-colors ${
+                    selectedCondition === cond
+                      ? 'bg-[#13422B] text-white'
+                      : 'bg-[#F4FAF7] text-[#13422B] border border-[#CBE3D6]'
                   }`}
                 >
                   {cond}
                 </button>
               ))}
             </div>
-          </form>
-
-          {/* Personalized Badge */}
-          <div className="flex items-center gap-2 text-xs">
-            <span className="px-3 py-1 rounded-full bg-[#E0E7FF] text-[#1E3A8A] font-bold inline-flex items-center gap-1">
-              <span>Personalized for {currentHealthData.conditionName}</span>
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            </span>
-            <span className="text-gray-500 font-medium">
-              {currentHealthData.updatedLabel}
-            </span>
           </div>
 
-          {/* Personalized Recommendation Blue Info Box (Matching Image 3) */}
-          <div className="space-y-2">
-            <h3 className="text-base sm:text-lg font-extrabold text-[#0F291E] flex items-center gap-1.5">
-              <span>Personalized Recommendation</span>
-              <Sparkles className="w-4 h-4 text-blue-600" />
-            </h3>
-            <div className="p-4 rounded-2xl bg-[#D8E2F8] border border-[#93C5FD] text-xs sm:text-sm font-medium text-[#0F172A] leading-relaxed">
-              {currentHealthData.summaryAdvice}
-            </div>
-          </div>
-
-          {/* SECTION A: RECOMMENDED FOODS (GREEN CARDS WITH DOCTOR DISCLAIMER ON EVERY CARD) */}
-          <div className="space-y-2.5">
-            <h3 className="text-base sm:text-lg font-extrabold text-[#0F291E] flex items-center gap-1.5">
-              <span>Recommended Foods</span>
-              <Leaf className="w-4 h-4 text-[#16A34A]" />
-            </h3>
-
-            {currentHealthData.recommendedFoods.map((food, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-2xl bg-[#CBE4C3] border border-[#86EFAC] flex items-start gap-3.5 shadow-2xs"
-              >
-                <div className="w-10 h-10 rounded-xl bg-white/60 text-[#14532D] flex items-center justify-center shrink-0 font-extrabold text-lg">
-                  {food.iconType === 'fish'
-                    ? '🐟'
-                    : food.iconType === 'bowl'
-                    ? '🍲'
-                    : '🌿'}
-                </div>
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="text-base font-extrabold text-[#0F291E]">
-                      {food.name}
-                    </h4>
-                    <span className="text-[11px] font-bold text-[#14532D]">
-                      ({food.caloriesPer100g} kcal/100g)
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Recommended Foods */}
+            <div className="p-3.5 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-2">
+              <div className="text-xs font-extrabold text-[#14532D] flex items-center gap-1.5">
+                <Leaf className="w-4 h-4 text-[#16A34A]" />
+                <span>Recommended Foods for {selectedCondition}</span>
+              </div>
+              <div className="space-y-1.5">
+                {conditionRecommendation.recommendedFoods.map((f) => (
+                  <div
+                    key={f.name}
+                    className="p-2.5 rounded-xl bg-white border border-[#DCFCE7] flex items-center justify-between gap-2"
+                  >
+                    <div>
+                      <div className="text-xs font-extrabold text-[#0F291E]">
+                        ✓ {f.name}
+                      </div>
+                      <div className="text-[11px] text-[#166534]">
+                        {f.shortNote}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-extrabold text-[#15803D] shrink-0">
+                      {f.caloriesPer100g} kcal/100g
                     </span>
                   </div>
-                  <p className="text-xs font-bold text-[#14532D]">
-                    • {food.shortNote}
-                  </p>
-                  <p className="text-[11px] font-medium text-[#1E3A2F] flex items-center gap-1 pt-0.5">
-                    <span>ⓘ {food.disclaimer}</span>
-                  </p>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-
-          {/* SECTION B: FOODS TO AVOID (RED CARDS WITH DOCTOR DISCLAIMER ON EVERY CARD) */}
-          <div className="space-y-2.5">
-            <h3 className="text-base sm:text-lg font-extrabold text-[#0F291E] flex items-center gap-1.5">
-              <span>Foods to Avoid</span>
-              <AlertTriangle className="w-4 h-4 text-red-600" />
-            </h3>
-
-            {currentHealthData.foodsToAvoid.map((food, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-2xl bg-[#F28B82] border border-[#EF4444] flex items-start gap-3.5 shadow-2xs"
-              >
-                <div className="w-10 h-10 rounded-xl bg-white/50 text-[#7F1D1D] flex items-center justify-center shrink-0 font-extrabold text-lg">
-                  {food.iconType === 'bread'
-                    ? '🍞'
-                    : food.iconType === 'fried'
-                    ? '🍟'
-                    : '🧁'}
-                </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-base font-extrabold text-[#450A0A]">
-                    {food.name}
-                  </h4>
-                  <p className="text-xs font-bold text-[#450A0A]">
-                    • {food.shortNote}
-                  </p>
-                  <p className="text-[11px] font-medium text-[#450A0A] flex items-center gap-1 pt-0.5">
-                    <span>ⓘ {food.disclaimer}</span>
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* BOTTOM BIG DOCTOR DISCLAIMER BANNER (MATCHING IMAGE 3) */}
-          <div className="p-3.5 rounded-2xl bg-[#C7D7F4] border border-[#93C5FD] flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-extrabold text-lg shrink-0">
-              +
             </div>
-            <p className="text-xs font-bold text-[#0F172A] leading-snug">
-              {DOCTOR_DISCLAIMER_BANNER}
-            </p>
-          </div>
 
-          {/* BOTTOM BUTTON: AI DIETITIAN — CHAT (MATCHING IMAGE 3) */}
-          <button
-            type="button"
-            onClick={() => setSubRoute('dietitian-chat')}
-            className="w-full py-4 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-base shadow-md flex items-center justify-center gap-2 cursor-pointer transition-colors"
-          >
-            <Sparkles className="w-5 h-5" />
-            <span>AI Dietitian — Chat</span>
-          </button>
+            {/* Foods to Avoid */}
+            <div className="p-3.5 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] space-y-2">
+              <div className="text-xs font-extrabold text-[#991B1B] flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-[#DC2626]" />
+                <span>Foods to Avoid / Limit in {selectedCondition}</span>
+              </div>
+              <div className="space-y-1.5">
+                {conditionRecommendation.foodsToAvoid.map((f) => (
+                  <div
+                    key={f.name}
+                    className="p-2.5 rounded-xl bg-white border border-[#FEE2E2] flex items-center justify-between gap-2"
+                  >
+                    <div>
+                      <div className="text-xs font-extrabold text-[#7F1D1D]">
+                        ✕ {f.name}
+                      </div>
+                      <div className="text-[11px] text-[#991B1B]">
+                        {f.shortNote}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-extrabold text-[#DC2626] shrink-0">
+                      Limit / Avoid
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
 
       {/* =====================================================================
-          PART 5B & 6: AI DIETITIAN INTERACTIVE CHAT
+          STEP 4: VERIFIED HEALTHY RECIPES WITH DISH-MATCHED VISUALS + COMPLETE INGREDIENTS REQUIRED & COOKING INSTRUCTIONS
          ===================================================================== */}
-      {subRoute === 'dietitian-chat' && (
-        <div className="bg-white border border-[#BBF7D0] rounded-[28px] p-4 sm:p-5 shadow-md space-y-4">
-          <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setSubRoute('health')}
-                className="p-2 rounded-full bg-emerald-50 text-[#15803D] cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <div>
-                <h3 className="text-base font-extrabold text-[#0F291E]">
-                  ✨ AI Dietitian — Interactive Nutrition Chat
-                </h3>
-                <p className="text-[11px] text-gray-500">
-                  Ask about Diabetes, Weight Loss, PCOS, Biryani, Roti, or Meal
-                  Plans
-                </p>
-              </div>
+      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#ECF4EF] pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
+              4
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+                Step 4: Healthy Recipes with Complete Ingredients Required &amp; Step-by-Step Cooking Instructions
+              </h3>
+              <p className="text-[11px] text-[#5C7267]">
+                Click on any recipe card below to view all required ingredients (with exact grams/spoons) and full step-by-step cooking method
+              </p>
             </div>
           </div>
 
-          {/* Quick Prompt Chips */}
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              'What should I eat in Diabetes?',
-              'What to eat for weight loss?',
-              'Is Biryani healthy?',
-              'Diet plan for PCOS',
-              'Foods for High Blood Pressure'
-            ].map((q) => (
-              <button
-                key={q}
-                type="button"
-                onClick={() => handleSendDietitianMessage(undefined, q)}
-                className="px-3 py-1.5 rounded-full bg-[#F0FDF4] hover:bg-[#DCFCE7] border border-[#86EFAC] text-[#14532D] text-[11px] font-bold cursor-pointer"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-
-          {/* Chat Messages Thread */}
-          <div className="space-y-3 max-h-96 overflow-y-auto p-2 bg-[#F9FBF9] rounded-2xl border border-emerald-100">
-            {chatMessages.map((m) => (
-              <div
-                key={m.id}
-                className={`flex flex-col ${
-                  m.sender === 'user' ? 'items-end' : 'items-start'
-                }`}
-              >
-                <div
-                  className={`max-w-[88%] p-3.5 rounded-2xl text-xs leading-relaxed font-medium ${
-                    m.sender === 'user'
-                      ? 'bg-[#15803D] text-white rounded-br-none'
-                      : 'bg-white border border-emerald-200 text-[#0F291E] rounded-bl-none shadow-2xs'
-                  }`}
-                >
-                  {m.text}
-                </div>
-                <span className="text-[10px] text-gray-400 mt-0.5 px-1">
-                  {m.time}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <form
-            onSubmit={(e) => handleSendDietitianMessage(e)}
-            className="flex items-center gap-2"
-          >
+          {/* Search input */}
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-[#5C7267] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask AI Dietitian (e.g. What should I eat in Diabetes?)..."
-              className="flex-1 px-4 py-3 rounded-2xl bg-[#F0FDF4] border border-[#86EFAC] text-xs font-bold text-[#0F291E]"
+              value={recipeSearchQuery}
+              onChange={(e) => setRecipeSearchQuery(e.target.value)}
+              placeholder="Search recipe or ingredient..."
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
             />
-            <button
-              type="submit"
-              className="px-4 py-3 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs flex items-center gap-1.5 cursor-pointer"
-            >
-              <Send className="w-4 h-4" />
-              <span>Ask</span>
-            </button>
-          </form>
+          </div>
         </div>
-      )}
 
-      {/* =====================================================================
-          PART 6: EXTRA PRO FEATURES (FOOD LOG, BARCODE SCANNER, 16:8 FASTING TIMER, SUPPLEMENTS GUIDE)
-         ===================================================================== */}
-      {subRoute === 'stats-foodlog' && (
-        <div className="space-y-4">
-          {/* 1. DESI FOOD LOG CALORIE TRACKER + BARCODE SCANNER */}
-          <div className="bg-white border border-[#BBF7D0] rounded-[28px] p-4 sm:p-5 shadow-sm space-y-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h3 className="text-base font-extrabold text-[#0F291E]">
-                  1. Desi Food Log Calorie Tracker &amp; Barcode Scanner
-                </h3>
-                <p className="text-xs text-gray-500">
-                  Search Roti, Naan, Biryani, Daal, Chai or scan food barcode
-                </p>
+        {/* Category Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {[
+            'All',
+            'Desi & Pakistani',
+            'High-Protein',
+            'Vegetarian',
+            'Chinese & Italian',
+            'Healthy Bowl'
+          ].map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setRecipeCategoryFilter(cat)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap cursor-pointer transition-colors ${
+                recipeCategoryFilter === cat
+                  ? 'bg-[#0E9F6E] text-white'
+                  : 'bg-[#F4FAF7] text-[#13422B] border border-[#CBE3D6]'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Recipes Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredRecipes.map((recipe) => {
+            const isExpanded = expandedRecipeId === recipe.id;
+
+            return (
+              <div
+                key={recipe.id}
+                onClick={() =>
+                  setExpandedRecipeId(isExpanded ? null : recipe.id)
+                }
+                className={`rounded-[22px] border overflow-hidden transition-all cursor-pointer bg-white ${
+                  isExpanded
+                    ? 'border-2 border-[#0E9F6E] shadow-md'
+                    : 'border-[#CBE3D6] hover:border-[#0E9F6E] shadow-xs'
+                }`}
+              >
+                {/* Dish-Matched Culinary Visual Header (100% matches recipe name!) */}
+                <RecipeDishArtwork recipe={recipe} />
+
+                {/* Card Body */}
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-bold text-[#5C7267]">
+                      {recipe.subtitle}
+                    </p>
+                    <span className="px-2.5 py-1 rounded-lg bg-[#E2F2E9] text-[#0D6845] text-[11px] font-extrabold shrink-0 inline-flex items-center gap-1">
+                      {isExpanded ? (
+                        <>
+                          <span>Hide Recipe</span>
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </>
+                      ) : (
+                        <>
+                          <span>Ingredients &amp; Steps</span>
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Quick Macro Strip */}
+                  <div className="grid grid-cols-4 gap-1.5 text-center">
+                    <div className="p-2 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
+                      <div className="text-[10px] font-bold text-[#5C7267]">
+                        Calories
+                      </div>
+                      <div className="text-xs font-extrabold text-[#0F291E]">
+                        {recipe.calories} kcal
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
+                      <div className="text-[10px] font-bold text-[#5C7267]">
+                        Protein
+                      </div>
+                      <div className="text-xs font-extrabold text-[#0E9F6E]">
+                        {recipe.proteinG}g
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
+                      <div className="text-[10px] font-bold text-[#5C7267]">
+                        Carbs / Fiber
+                      </div>
+                      <div className="text-xs font-extrabold text-[#0F291E]">
+                        {recipe.carbsG}g / {recipe.fiberG}g
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
+                      <div className="text-[10px] font-bold text-[#5C7267]">
+                        Cook Time
+                      </div>
+                      <div className="text-xs font-extrabold text-[#0F291E]">
+                        {recipe.cookTimeMin} mins
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* COMPLETE INGREDIENTS REQUIRED & STEP-BY-STEP INSTRUCTIONS (Shown when clicked/expanded) */}
+                  {isExpanded && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="pt-3 border-t border-[#ECF4EF] space-y-3.5 animate-fade-in cursor-default"
+                    >
+                      {/* 1. Complete Required Ingredients List */}
+                      <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#BCE3C8] space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-xs font-extrabold text-[#13422B] uppercase tracking-wide flex items-center gap-1.5">
+                            <Utensils className="w-3.5 h-3.5 text-[#0E9F6E]" />
+                            <span>
+                              Ingredients Required ({recipe.ingredients.length} Items — {recipe.servings} Servings)
+                            </span>
+                          </h5>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {recipe.ingredients.map((ing, idx) => (
+                            <div
+                              key={idx}
+                              className="p-2 rounded-xl bg-white border border-[#D4E9DF] flex items-center justify-between gap-2 text-xs"
+                            >
+                              <span className="font-bold text-[#0F291E]">
+                                • {ing.item}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md bg-[#E2F2E9] text-[#0D6845] text-[10.5px] font-extrabold shrink-0">
+                                {ing.amount} ({ing.grams}g)
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 2. Complete Step-by-Step Cooking Instructions */}
+                      <div className="p-3.5 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-2">
+                        <h5 className="text-xs font-extrabold text-[#13422B] uppercase tracking-wide flex items-center gap-1.5">
+                          <Flame className="w-3.5 h-3.5 text-amber-600" />
+                          <span>
+                            Step-by-Step Cooking Instructions (Banane ka Tareeqa)
+                          </span>
+                        </h5>
+
+                        <ol className="space-y-2">
+                          {recipe.instructions.map((stepText, sIdx) => (
+                            <li
+                              key={sIdx}
+                              className="p-2.5 rounded-xl bg-white border border-[#E2F2E9] text-xs text-[#0F291E] leading-relaxed font-medium"
+                            >
+                              {stepText}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+
+                      {/* 3. Health Benefit & Action Buttons */}
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-950">
+                        💡 <strong>Nutritionist Note:</strong> {recipe.healthBenefit}
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setModalRecipe(recipe)}
+                          className="px-3.5 py-2 rounded-xl bg-[#13422B] hover:bg-[#0F291E] text-white text-xs font-extrabold cursor-pointer"
+                        >
+                          Open Full-Screen Recipe Card
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadSingleRecipePdf(recipe)}
+                          className="px-3.5 py-2 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download Recipe PDF</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* FULL-SCREEN RECIPE MODAL (WHEN USER CLICKS OPEN FULL-SCREEN RECIPE CARD) */}
+      {modalRecipe && (
+        <div
+          onClick={() => setModalRecipe(null)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-[26px] max-w-xl w-full overflow-hidden shadow-2xl border border-[#BCE3C8] my-8 max-h-[90vh] flex flex-col"
+          >
+            <div className="relative">
+              <RecipeDishArtwork recipe={modalRecipe} />
               <button
                 type="button"
-                onClick={() => setShowBarcodeModal(true)}
-                className="px-3 py-2 rounded-xl bg-[#15803D] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                onClick={() => setModalRecipe(null)}
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer z-20"
               >
-                <QrCode className="w-4 h-4" />
-                <span>Scan Barcode</span>
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="relative">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={foodSearchQuery}
-                onChange={(e) => setFoodSearchQuery(e.target.value)}
-                placeholder="Search Desi Foods (Roti, Naan, Biryani, Daal, Chai, Paratha)..."
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#F0FDF4] border border-emerald-200 text-xs font-bold"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {DESI_FOOD_LOG_DATABASE.filter(
-                (f) =>
-                  !foodSearchQuery.trim() ||
-                  f.name.toLowerCase().includes(foodSearchQuery.toLowerCase())
-              ).map((food) => (
-                <div
-                  key={food.barcode}
-                  className="p-2.5 rounded-xl bg-[#F9FBF9] border border-emerald-100 flex items-center justify-between gap-2"
-                >
-                  <div>
-                    <div className="text-xs font-extrabold text-[#0F291E]">
-                      {food.name}
-                    </div>
-                    <div className="text-[11px] font-semibold text-[#15803D]">
-                      {food.grams}g • {food.calories} kcal • P:{food.proteinG}g
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const entry: MealFoodEntry = {
-                        id: `flog-${Date.now()}`,
-                        name: food.name,
-                        grams: food.grams,
-                        calories: food.calories,
-                        proteinG: food.proteinG,
-                        carbsG: food.carbsG,
-                        fatG: food.fatG,
-                        disclaimer: DOCTOR_DISCLAIMER_SHORT
-                      };
-                      const next = [entry, ...todayLoggedFoods];
-                      setTodayLoggedFoods(next);
-                      if (user?.uid) {
-                        try {
-                          await setDoc(
-                            doc(db, 'users', user.uid, 'foodLogs', todayIso),
-                            {
-                              uid: user.uid,
-                              date: todayIso,
-                              items: next,
-                              updatedAt: new Date().toISOString()
-                            },
-                            { merge: true }
-                          );
-                        } catch {
-                          // Ignore
-                        }
-                      }
-                      showToast(
-                        `Logged "${food.name}" (${food.grams}g • ${food.calories} kcal)!`
-                      );
-                    }}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#16A34A] text-white text-[11px] font-extrabold cursor-pointer"
-                  >
-                    + Add
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Today's Logged Foods */}
-            <div className="pt-2 border-t border-emerald-100 space-y-1.5">
-              <div className="text-xs font-extrabold text-[#14532D]">
-                Today&apos;s Logged Foods (
-                {todayLoggedFoods.reduce((s, i) => s + i.calories, 0)} kcal):
-              </div>
-              {todayLoggedFoods.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-2.5 rounded-xl bg-emerald-50/60 flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <span className="font-extrabold text-[#0F291E]">
-                      {item.name}
-                    </span>{' '}
-                    • {item.grams}g •{' '}
-                    <span className="font-extrabold text-[#15803D]">
-                      {item.calories} kcal
-                    </span>
-                    <div className="text-[10px] text-gray-500">
-                      ⓘ {item.disclaimer}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setTodayLoggedFoods((prev) =>
-                        prev.filter((x) => x.id !== item.id)
-                      )
-                    }
-                    className="text-red-500 p-1 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 2. INTERMITTENT FASTING TIMER (16:8 PROTOCOL) */}
-          <div className="bg-white border border-[#BBF7D0] rounded-[28px] p-4 sm:p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-[#15803D] flex items-center justify-center">
-                  <Timer className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-[#0F291E]">
-                    2. Intermittent Fasting Timer (16:8 Protocol)
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    16 Hours Fasting Window • 8 Hours Eating Window
-                  </p>
-                </div>
-              </div>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-extrabold ${
-                  fastingActive
-                    ? 'bg-emerald-100 text-[#15803D]'
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {fastingActive ? 'Fasting Active' : 'Ready'}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#F0FDF4] border border-emerald-200 flex flex-wrap items-center justify-between gap-3">
+            <div className="p-5 overflow-y-auto space-y-4">
               <div>
-                <div className="text-xs font-bold text-[#14532D]">
-                  Elapsed Fasting Time
-                </div>
-                <div className="text-2xl font-extrabold text-[#0F291E]">
-                  {fastingElapsedHours} hrs / 16.0 hrs
-                </div>
-                <div className="text-[11px] font-semibold text-gray-600">
-                  Fat-burning ketosis zone starts after 12 hours
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!isUserPaid) {
-                      triggerPremiumLock(
-                        '16:8 Intermittent Fasting Tracker is a Paid Premium feature.'
-                      );
-                      return;
-                    }
-                    setFastingActive((v) => !v);
-                    showToast(
-                      !fastingActive
-                        ? '16:8 Fasting Timer Started!'
-                        : '16:8 Fasting Timer Paused.'
-                    );
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-[#16A34A] text-white text-xs font-extrabold cursor-pointer"
-                >
-                  {fastingActive ? 'Stop Fast' : 'Start 16:8 Fast'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFastingElapsedHours((h) =>
-                      Number(Math.min(16, h + 0.5).toFixed(1))
-                    )
-                  }
-                  className="px-3 py-2.5 rounded-xl bg-white border border-emerald-300 text-[#15803D] text-xs font-extrabold cursor-pointer"
-                >
-                  +0.5h
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. SUPPLEMENTS GUIDE (VITAMIN D, IRON, CALCIUM, OMEGA-3, B12, MAGNESIUM) */}
-          <div className="bg-white border border-[#BBF7D0] rounded-[28px] p-4 sm:p-5 shadow-sm space-y-3">
-            <div className="flex items-center gap-2">
-              <Pill className="w-5 h-5 text-[#16A34A]" />
-              <div>
-                <h3 className="text-base font-extrabold text-[#0F291E]">
-                  3. Essential Supplements &amp; Natural Sources Guide
+                <h3 className="text-lg font-extrabold text-[#0F291E]">
+                  {modalRecipe.title}
                 </h3>
-                <p className="text-xs text-gray-500">
-                  Vitamin D, Iron, Calcium, Omega-3, B12 &amp; Magnesium timing
+                <p className="text-xs text-[#5C7267] mt-0.5">
+                  {modalRecipe.subtitle}
                 </p>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {SUPPLEMENTS_GUIDE_DATA.map((supp) => (
-                <div
-                  key={supp.id}
-                  className="p-3.5 rounded-2xl bg-[#F9FBF9] border border-emerald-200 space-y-1.5"
-                >
-                  <div className="text-sm font-extrabold text-[#0F291E]">
-                    💊 {supp.name}
-                  </div>
-                  <div className="text-[11px] font-bold text-[#15803D]">
-                    🕒 Best Time: {supp.bestTimeToTake}
-                  </div>
-                  <p className="text-xs text-gray-600 leading-snug">
-                    {supp.keyBenefit}
-                  </p>
-                  <div className="text-[11px] font-semibold text-gray-700">
-                    <strong>Natural Foods:</strong>{' '}
-                    {supp.naturalFoodSources.join(', ')}
-                  </div>
-                  <div className="text-[10px] font-bold text-amber-800">
-                    ⓘ {supp.disclaimer}
-                  </div>
+              {/* Ingredients Required */}
+              <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#BCE3C8] space-y-2">
+                <h4 className="text-xs font-extrabold text-[#13422B] uppercase">
+                  Ingredients Required ({modalRecipe.ingredients.length} Items)
+                </h4>
+                <div className="space-y-1.5">
+                  {modalRecipe.ingredients.map((ing, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-[#D4E9DF]"
+                    >
+                      <span className="font-bold text-[#0F291E]">
+                        {i + 1}. {ing.item}
+                      </span>
+                      <span className="font-extrabold text-[#0E9F6E]">
+                        {ing.amount} ({ing.grams}g)
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* BARCODE SCANNER MODAL */}
-          {showBarcodeModal && (
-            <div className="fixed inset-0 z-50 bg-black/65 flex items-center justify-center p-4">
-              <div className="bg-white rounded-[28px] max-w-sm w-full p-5 space-y-3 shadow-2xl">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-base font-extrabold text-[#0F291E]">
-                    📷 Food Barcode Scanner
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setShowBarcodeModal(false)}
-                    className="p-1 rounded-full bg-gray-100"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+              {/* Cooking Instructions */}
+              <div className="p-3.5 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-2">
+                <h4 className="text-xs font-extrabold text-[#13422B] uppercase">
+                  Step-by-Step Cooking Instructions
+                </h4>
+                <div className="space-y-2">
+                  {modalRecipe.instructions.map((step, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2.5 rounded-xl bg-white border border-[#E2F2E9] text-xs text-[#0F291E] leading-relaxed"
+                    >
+                      {step}
+                    </div>
+                  ))}
                 </div>
-                <p className="text-xs text-gray-500">
-                  Enter or scan a Pakistani / International food barcode (e.g.
-                  89610001 for Roti, 89610003 for Biryani):
-                </p>
-                <input
-                  type="text"
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-[#F0FDF4] border border-emerald-300 text-xs font-bold"
-                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    const match =
-                      DESI_FOOD_LOG_DATABASE.find(
-                        (b) => b.barcode === barcodeInput.trim()
-                      ) || DESI_FOOD_LOG_DATABASE[0];
-                    setTodayLoggedFoods((prev) => [
-                      {
-                        id: `scan-${Date.now()}`,
-                        name: match.name,
-                        grams: match.grams,
-                        calories: match.calories,
-                        proteinG: match.proteinG,
-                        carbsG: match.carbsG,
-                        fatG: match.fatG,
-                        disclaimer: DOCTOR_DISCLAIMER_SHORT
-                      },
-                      ...prev
-                    ]);
-                    setShowBarcodeModal(false);
-                    showToast(
-                      `Scanned Barcode ${match.barcode}: Added "${match.name}" (${match.calories} kcal)!`
-                    );
-                  }}
-                  className="w-full py-3 rounded-xl bg-[#16A34A] text-white text-xs font-extrabold cursor-pointer"
+                  onClick={() => handleDownloadSingleRecipePdf(modalRecipe)}
+                  className="px-4 py-2.5 rounded-xl bg-[#0E9F6E] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
                 >
-                  Scan &amp; Add to Today&apos;s Log
+                  <Download className="w-4 h-4" />
+                  <span>Download Recipe PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalRecipe(null)}
+                  className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-xs font-extrabold cursor-pointer"
+                >
+                  Close
                 </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       )}
+
+      {/* DOCTOR DISCLAIMER FOOTER */}
+      <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-blue-200 text-[11px] font-bold text-blue-950 flex items-center gap-2">
+        <Heart className="w-4 h-4 text-blue-600 shrink-0" />
+        <span>{DOCTOR_DISCLAIMER_BANNER}</span>
+      </div>
     </div>
   );
 };

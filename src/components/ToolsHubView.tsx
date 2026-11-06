@@ -914,8 +914,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
 
             <div className="flex items-center justify-between pt-1 border-t border-[#ECF4EF]">
               <span className="text-[11px] font-bold text-[#13422B]">
-                Includes BMI Gauge + 7-Day AI Meal Plan + 44+ Recipes + Health
-                Guide
+                Easy 1-Page BMI, Calorie &amp; Weight Tracker + Meal Plan + Recipes
               </span>
               <span className="px-3.5 py-1.5 rounded-xl bg-[#0E9F6E] text-white text-xs font-extrabold inline-flex items-center gap-1">
                 <span>Open Nutrition Tool</span>
@@ -932,7 +931,18 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 'Food Science Exam Preparation (30 MCQs)'
               )
             }
-            className="bg-white border-[1.5px] border-[#BCE3C8] hover:border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all space-y-3.5 cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSelectToolOrAction(
+                  'exam',
+                  'Food Science Exam Preparation (30 MCQs)'
+                );
+              }
+            }}
+            className="bg-white border-[1.5px] border-[#BCE3C8] hover:border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all cursor-pointer space-y-3.5"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
@@ -967,7 +977,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 pt-1">
               <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
                 <div className="text-[10px] font-bold text-[#5C7267]">
                   Each Exam
@@ -1003,114 +1013,21 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSelectToolOrAction(
-                  'exam',
-                  'Food Science Exam Preparation (30 MCQs)'
-                );
-              }}
-              className="w-full py-3.5 px-4 rounded-2xl bg-[#169C46] hover:bg-[#13873C] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
-            >
-              <Award className="w-4 h-4 text-emerald-100" />
-              <span>Start 30-MCQs Exam Preparation →</span>
-            </button>
-          </div>
-
-          {/* TOOL CARD 3: UNIFIED INTERVIEW PREPARATION (2,000 DIFFERENT Q&As — 30 QUESTIONS PER SESSION) */}
-          <div className="bg-white border-[1.5px] border-[#BCE3C8] hover:border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all space-y-3.5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
-                  <Briefcase className="w-6 h-6 stroke-[2.2]" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] text-[10px] font-extrabold uppercase">
-                      Tool 3 • {TOTAL_INTERVIEW_BANK_SIZE.toLocaleString()}{' '}
-                      Interview Q&amp;As • 30 Qs / Session
-                    </span>
-                    {!isUserPaid && (
-                      <span className="px-2 py-0.5 rounded-md bg-amber-100 text-[#92400E] text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Premium Only
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-1">
-                    Food Science, Food Safety, HACCP, ISO 9001, ISO 22000 &amp;
-                    FSSC 22000 Interview Preparation
-                  </h2>
-                  <p className="text-xs text-[#5C7267] leading-relaxed mt-0.5">
-                    One unified Interview Preparation portal backed by{' '}
-                    <strong>2,000 different interview questions &amp; answers</strong>.
-                    Each session presents <strong>30 unique questions</strong>{' '}
-                    with expert model answers, and upon completion generates a
-                    personalized Readiness Graph &amp; PDF Report in your name!
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                <div className="text-[10px] font-bold text-[#5C7267]">
-                  Interview Q&amp;A Bank
-                </div>
-                <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  2,000 Q&amp;As
-                </div>
-                <div className="text-[10px] text-[#0E9F6E] font-bold">
-                  With Model Answers
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                <div className="text-[10px] font-bold text-[#5C7267]">
-                  Per Session
-                </div>
-                <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  30 Questions
-                </div>
-                <div className="text-[10px] text-[#5C7267] font-semibold">
-                  Fresh 30 Every Time
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                <div className="text-[10px] font-bold text-[#5C7267]">
-                  Prepared Q&amp;As
-                </div>
-                <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
-                  {toolsData.masteredInterviewIds?.length || 0} Prepared
-                </div>
-                <div className="text-[10px] text-[#0E9F6E] font-bold">
-                  {(toolsData.seenInterviewQuestionIds || []).length} / 2,000
-                  Seen
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'interview',
-                  '30-Question Interview Preparation (2,000 Q&As Bank)'
-                )
-              }
-              className="w-full py-3.5 px-4 rounded-2xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
-            >
-              <Briefcase className="w-4 h-4 text-emerald-300" />
-              <span>
-                Open Interview Preparation (30 Questions from 2,000 Q&amp;As) →
+            <div className="flex items-center justify-between pt-1 border-t border-[#ECF4EF]">
+              <span className="text-[11px] font-bold text-[#13422B]">
+                30 Different MCQs Every Exam + Score Report + PDF Download
               </span>
-            </button>
+              <span className="px-3.5 py-1.5 rounded-xl bg-[#0E9F6E] text-white text-xs font-extrabold inline-flex items-center gap-1">
+                <span>Open Exam Tool</span>
+                <ChevronRight className="w-4 h-4" />
+              </span>
+            </div>
           </div>
         </div>
       )}
 
       {/* =====================================================================
-          VIEW 1: NEW COMPLETE NUTRITION TOOL SUITE (REPLACING OLD NUTRITION APP)
+          VIEW 1: NEW COMPLETE NUTRITION TOOL SUITE (SINGLE EASY PAGE)
          ===================================================================== */}
       {activeSection === 'nutrition' && (
         <NutritionSuiteTool
@@ -1135,270 +1052,6 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           onSaveToolsData={onSaveToolsData}
           onOpenPremiumModal={onOpenPremiumModal}
         />
-      )}
-
-      {/* =====================================================================
-          VIEW 3: UNIFIED INTERVIEW PREPARATION (30 QUESTIONS AT A TIME FROM 2,000-Q&A BANK)
-         ===================================================================== */}
-      {activeSection === 'interview' && isUserPaid && (
-        <div className="space-y-4">
-          {/* Top Interview Header Banner */}
-          <div className="bg-gradient-to-r from-[#13422B] via-[#155E3A] to-[#0E9F6E] rounded-[24px] p-4 sm:p-5 text-white shadow-sm space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-200 text-[10.5px] font-extrabold uppercase tracking-wider">
-                2,000 Interview Q&amp;As Bank • Showing 30 Questions (Session #
-                {interviewBatchNumber})
-              </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadInterviewSessionReportPdf(
-                      user,
-                      activeInterviewQuestions,
-                      toolsData.masteredInterviewIds,
-                      interviewBatchNumber
-                    )
-                  }
-                  className="px-3 py-1.5 rounded-full bg-white text-[#13422B] hover:bg-emerald-50 text-xs font-extrabold inline-flex items-center gap-1 shadow-xs cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5 text-[#0E9F6E]" />
-                  <span>Download PDF Report</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLoadNext30InterviewQuestions()}
-                  className="px-3 py-1.5 rounded-full bg-amber-300 text-[#13422B] hover:bg-amber-200 text-xs font-extrabold inline-flex items-center gap-1 shadow-xs cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Next 30 Different Qs</span>
-                </button>
-              </div>
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-extrabold leading-tight">
-                Food Science, Food Safety, HACCP, ISO 9001, ISO 22000 &amp; FSSC
-                22000 Interview Preparation
-              </h2>
-              <p className="text-xs text-emerald-100 mt-0.5">
-                Specialist: <strong>{user.name || 'Food Specialist'}</strong> •
-                30 Verified Interview Questions &amp; Answers per Session •
-                Click &ldquo;Next 30 Different Qs&rdquo; anytime for a fresh set
-                of 30!
-              </p>
-            </div>
-          </div>
-
-          {/* IF INTERVIEW SESSION IS COMPLETED: SHOW PERSONALIZED INTERVIEW REPORT + GRAPH + PDF */}
-          {interviewCompletedReport && (
-            <div className="bg-white border-2 border-[#0E9F6E] rounded-[26px] p-4 sm:p-5 shadow-md space-y-4 animate-fade-in">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#ECF4EF] pb-3">
-                <div>
-                  <span className="inline-block px-3 py-0.5 rounded-full bg-[#DCFCE7] text-[#14532D] text-[10.5px] font-extrabold uppercase">
-                    ✓ INTERVIEW SESSION REPORT GENERATED
-                  </span>
-                  <h3 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-1">
-                    {user.name || 'Food Specialist'}&apos;s 30-Question
-                    Interview Readiness Report
-                  </h3>
-                  <p className="text-xs text-[#5C7267] font-medium">
-                    Email: {user.email || 'Verified Member'} • Role:{' '}
-                    {user.title || user.currentRole || 'Food Safety Specialist'}{' '}
-                    • Session #{interviewBatchNumber}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      downloadInterviewSessionReportPdf(
-                        user,
-                        activeInterviewQuestions,
-                        toolsData.masteredInterviewIds,
-                        interviewBatchNumber
-                      )
-                    }
-                    className="px-4 py-2.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download PDF Report</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleLoadNext30InterviewQuestions()}
-                    className="px-4 py-2.5 rounded-xl bg-[#13422B] hover:bg-[#0F291E] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
-                  >
-                    <RotateCcw className="w-4 h-4 text-emerald-300" />
-                    <span>Load Next 30 Different Questions</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Visual Topic & Readiness Graph */}
-              <div className="p-4 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs sm:text-sm font-extrabold text-[#0F291E]">
-                    Visual Interview Subject Coverage &amp; Readiness Graph —{' '}
-                    {user.name || 'Food Specialist'}
-                  </h4>
-                  <span className="text-xs font-extrabold text-[#0E9F6E]">
-                    {interviewCompletedReport.preparedCount} / 30 Questions
-                    Covered ({interviewCompletedReport.readinessPercentage}%)
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {interviewTopicBreakdown.map((item) => (
-                    <div key={item.topic} className="space-y-1">
-                      <div className="flex justify-between text-[11px] font-bold">
-                        <span className="text-[#0F291E]">{item.topic}</span>
-                        <span className="text-[#0E9F6E]">
-                          {item.prepared}/{item.total} Q&amp;As ({item.pct}%)
-                        </span>
-                      </div>
-                      <div className="w-full h-2.5 rounded-full bg-gray-200 overflow-hidden">
-                        <div
-                          className="h-full bg-[#0E9F6E]"
-                          style={{ width: `${item.pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Topic Filter Pills for current 30 Interview Questions */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            {[
-              'All',
-              'Food Safety & GMP',
-              'HACCP',
-              'ISO 9001',
-              'ISO 22000',
-              'FSSC 22000',
-              'Food Science & QA',
-              'Food Microbiology',
-              'Dairy & Beverage Tech',
-              'Cereal, Bakery & Meat Tech'
-            ].map((topic) => (
-              <button
-                key={topic}
-                type="button"
-                onClick={() => setInterviewTopicFilter(topic)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold whitespace-nowrap cursor-pointer ${
-                  interviewTopicFilter === topic
-                    ? 'bg-[#13422B] text-white'
-                    : 'bg-white text-[#13422B] border border-[#CBE3D6]'
-                }`}
-              >
-                {topic}
-              </button>
-            ))}
-          </div>
-
-          {/* 30 Interview Questions & Model Answers Accordion/Cards */}
-          <div className="space-y-3">
-            {activeInterviewQuestions
-              .filter(
-                (q) =>
-                  interviewTopicFilter === 'All' ||
-                  q.topic === interviewTopicFilter
-              )
-              .map((q, idx) => {
-                const isPrepared = toolsData.masteredInterviewIds.includes(
-                  q.id
-                );
-                const isExpanded =
-                  expandedQuestionId === q.id || idx === 0;
-
-                return (
-                  <div
-                    key={q.id}
-                    className={`bg-white border rounded-[22px] p-4 shadow-xs space-y-2.5 transition-all ${
-                      isPrepared
-                        ? 'border-2 border-[#0E9F6E]'
-                        : 'border-[#CBE3D6]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#E2F2E9] text-[#0D6845] text-[10.5px] font-extrabold">
-                        Q#{idx + 1} of 30 • {q.topic}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleMasteredInterview(q.id)}
-                        className={`px-2.5 py-1 rounded-full text-[10.5px] font-extrabold cursor-pointer transition-colors ${
-                          isPrepared
-                            ? 'bg-[#0E9F6E] text-white'
-                            : 'bg-[#F4FAF7] text-[#13422B] border border-[#BCE3C8]'
-                        }`}
-                      >
-                        {isPrepared ? '✓ Prepared' : 'Mark as Prepared'}
-                      </button>
-                    </div>
-
-                    <div
-                      onClick={() =>
-                        setExpandedQuestionId(
-                          expandedQuestionId === q.id ? null : q.id
-                        )
-                      }
-                      className="flex items-start justify-between gap-2 cursor-pointer"
-                    >
-                      <h4 className="text-xs sm:text-sm font-extrabold text-[#0F291E] leading-snug">
-                        {q.question}
-                      </h4>
-                      <ChevronDown
-                        className={`w-4 h-4 text-[#0E9F6E] shrink-0 mt-0.5 transition-transform ${
-                          isExpanded ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </div>
-
-                    {isExpanded && (
-                      <div className="pt-2 border-t border-[#ECF4EF] space-y-2">
-                        <div className="p-3 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF] text-xs text-[#0F291E] leading-relaxed">
-                          <strong className="text-[#13422B]">
-                            Expert Model Answer:
-                          </strong>{' '}
-                          {q.answer}
-                        </div>
-                        <div className="px-3 py-2 rounded-xl bg-[#FFFBEB] border border-amber-200 text-[11px] font-bold text-amber-950">
-                          💡 <strong>Key Takeaway:</strong> {q.keyTakeaway}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-
-          {/* Bottom Complete Session & Next 30 Different Interview Questions Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
-            <button
-              type="button"
-              onClick={handleCompleteInterviewSession}
-              className="w-full py-3.5 px-5 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>
-                Complete Session &amp; Generate My 30-Q Report + Graph
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleLoadNext30InterviewQuestions()}
-              className="w-full py-3.5 px-5 rounded-2xl bg-[#13422B] hover:bg-[#0F291E] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4 text-emerald-300" />
-              <span>Next Attempt: Load 30 Different Interview Questions</span>
-            </button>
-          </div>
-        </div>
       )}
     </div>
   );
