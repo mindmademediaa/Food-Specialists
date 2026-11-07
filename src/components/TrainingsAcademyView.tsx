@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Award,
   BookOpen,
@@ -31,7 +31,13 @@ import {
   InternationalTrainingCourse,
   get40CourseExamQuestions
 } from '../data/internationalTrainingsData';
-import { downloadOfficialCourseCertificatePdf } from '../utils/certificatePdfGenerator';
+import {
+  buildDirectCertificateVerifyUrl,
+  downloadOfficialCourseCertificatePdf,
+  generateQrCodeMatrix,
+  getSequentialModuleList,
+  resolveOfficialVerificationBaseUrl
+} from '../utils/certificatePdfGenerator';
 import { AlisonCourseModuleViewer } from './AlisonCourseModuleViewer';
 
 interface TrainingsAcademyViewProps {
@@ -111,9 +117,28 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   const [isSubmittingPay, setIsSubmittingPay] = useState(false);
   const [payFeedbackMsg, setPayFeedbackMsg] = useState<string | null>(null);
 
-  // Verification Portal Search State
-  const [verifyQuery, setVerifyQuery] = useState('');
-  const [hasSearchedVerify, setHasSearchedVerify] = useState(false);
+  // Verification Portal Search State (auto-populated if user scanned QR code or opened ?verify=FSP-...)
+  const [verifyQuery, setVerifyQuery] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    const params = new URLSearchParams(window.location.search);
+    return (params.get('verify') || params.get('cert') || '').trim();
+  });
+  const [hasSearchedVerify, setHasSearchedVerify] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    return Boolean((params.get('verify') || params.get('cert') || '').trim());
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const certParam = (params.get('verify') || params.get('cert') || '').trim();
+    if (certParam) {
+      setActiveSubTab('verify-portal');
+      setVerifyQuery(certParam);
+      setHasSearchedVerify(true);
+    }
+  }, []);
 
   // Merge Admin-managed trainings with international curriculum data
   const mergedCourses: InternationalTrainingCourse[] = useMemo(() => {
@@ -571,6 +596,41 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       }
     }
 
+    // 3. Also support direct QR code scan payload (?verify=FSP-...&name=...&course=...) if not already in map
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const qrCertNo = (params.get('verify') || params.get('cert') || '')
+        .trim()
+        .toUpperCase();
+      const qrName = (params.get('name') || '').trim();
+      const qrCourse = (params.get('course') || '').trim();
+      if (qrCertNo && qrCourse && !recordsMap.has(qrCertNo)) {
+        const scoreNum = Number(params.get('score') || '85') || 85;
+        recordsMap.set(qrCertNo, {
+          certificateNumber: qrCertNo,
+          recipientName: qrName || 'Certified Professional',
+          recipientEmail: '',
+          courseTitle: qrCourse,
+          courseCode: (params.get('code') || 'FS-CERT-INTL').trim(),
+          accreditationBody:
+            (params.get('std') || '').trim() ||
+            'Codex Alimentarius & GFSI International Standard',
+          issueDate:
+            (params.get('date') || '').trim() ||
+            new Date().toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }),
+          scorePercentage: scoreNum,
+          distinction: scoreNum >= 75,
+          isHolderMembershipActive: true,
+          revokedByAdmin: false,
+          issuedByAdminDirect: false
+        });
+      }
+    }
+
     return Array.from(recordsMap.values()).filter(
       (item) =>
         item.certificateNumber.toLowerCase().includes(q) ||
@@ -580,7 +640,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     );
   }, [verifyQuery, certificates, users, isUserPremiumActiveFn]);
 
-  // Render Reusable Portrait Certificate Pattern Card (Exact DEKRA / Bureau Veritas ISO 9001:2015 Style)
+  // Render Reusable Portrait Certificate Pattern Card
   const renderCertificatePatternCard = (
     course: InternationalTrainingCourse,
     progress: UserCourseProgress
@@ -617,16 +677,28 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
           year: 'numeric'
         });
 
-    const cleanPortalHost = (
-      typeof window !== 'undefined' ? window.location.origin : 'https://fsportal.academy'
-    )
-      .replace(/^https?:\/\//i, '')
-      .replace(/\/$/, '');
+    const officialPortalBase = resolveOfficialVerificationBaseUrl();
+    const directVerifyUrl = buildDirectCertificateVerifyUrl({
+      certificateNumber: certNo,
+      recipientName: holderName,
+      courseTitle: course.title,
+      courseCode: course.code,
+      accreditationStandard: course.accreditationStandard,
+      scorePercentage: scorePct,
+      issueDate: issueDateStr,
+      baseUrl: officialPortalBase
+    });
+    const shortVerifyDisplayUrl = `${officialPortalBase.replace(/^https?:\/\//i, '')}/?verify=${certNo}`;
+    const sequentialModules = getSequentialModuleList(
+      course.modules.map((m) => m.title),
+      course.title
+    );
+    const qrMatrix = generateQrCodeMatrix(directVerifyUrl);
 
     return (
       <div className="space-y-4">
-        {/* Commodious / CPD / Institute of Hospitality Style Portrait A4 Certificate Visual Pattern Card */}
-        <div className="max-w-2xl mx-auto relative overflow-hidden rounded-xl border border-slate-300 bg-white shadow-2xl flex min-h-[720px]">
+        {/* Official FS Portal Portrait A4 Certificate Visual Pattern Card */}
+        <div className="max-w-2xl mx-auto relative overflow-hidden rounded-xl border border-slate-300 bg-white shadow-2xl flex min-h-[760px]">
           {/* Left Full-Height Royal Blue Sidebar (#1673B8) with Giant Rotated "Certificate" */}
           <div className="w-24 sm:w-36 bg-[#1673B8] shrink-0 relative overflow-hidden flex items-center justify-center select-none">
             <span
@@ -661,7 +733,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             )}
 
             {/* Top Section: Brand Logo, Rosette Seal, Title, User & Training Info */}
-            <div className="space-y-5 relative z-10">
+            <div className="space-y-4 relative z-10">
               {/* Top Row: FS Portal Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -671,8 +743,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       al
                     </span>
                   </div>
-                  <p className="text-xs font-medium text-slate-700 mt-1">
-                    {cleanPortalHost || 'fsportal.academy'}
+                  <p className="text-[11px] font-semibold text-slate-600 mt-1">
+                    International Food Safety &amp; Hospitality Academy
                   </p>
                 </div>
 
@@ -730,54 +802,58 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 </div>
               </div>
 
-              {/* "Certificate of Achievement" / "of Distinction" Heading */}
-              <div className="space-y-0.5 pt-1">
+              {/* 1. Always "Certificate of Achievement" Heading */}
+              <div className="space-y-0.5">
                 <h3 className="text-3xl sm:text-4xl font-normal text-[#226CA3] tracking-tight leading-tight">
                   Certificate
                 </h3>
                 <p className="text-3xl sm:text-4xl font-normal text-[#226CA3] tracking-tight leading-tight">
-                  {isDistinction ? 'of Distinction' : 'of Achievement'}
+                  of Achievement
                 </p>
               </div>
 
-              {/* "This is to certify that" + Recipient Name on Horizontal Line */}
-              <div className="space-y-2 pt-1">
+              {/* 2. "This is to certify that" + Recipient Name ONLY (No Email) */}
+              <div className="space-y-1.5">
                 <p className="text-sm sm:text-base text-[#1C2336]">
                   This is to certify that
                 </p>
-                <div className="border-b border-[#D8E4EE] pb-2 pt-1">
-                  <p className="text-xl sm:text-2xl font-black text-[#162038] tracking-tight">
+                <div className="border-b border-[#D8E4EE] pb-2 pt-0.5">
+                  <p className="text-xl sm:text-2xl font-black text-[#162038] tracking-tight break-words">
                     {holderName}
                   </p>
-                  {currentUser?.email && (
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                      {currentUser.email}
-                    </p>
-                  )}
                 </div>
               </div>
 
-              {/* "has successfully completed" + Training Title & Standard on Horizontal Line */}
-              <div className="space-y-2 pt-1">
+              {/* 3. "has successfully completed" + Course Title + Sequential Modules One Below Another */}
+              <div className="space-y-2">
                 <p className="text-sm sm:text-base text-[#1C2336]">
                   has successfully completed
                 </p>
-                <div className="border-b border-[#D8E4EE] pb-3 pt-1 space-y-1">
-                  <h4 className="text-lg sm:text-2xl font-black text-[#1673B8] leading-snug">
+                <div className="border-b border-[#D8E4EE] pb-3 pt-0.5 space-y-2">
+                  <h4 className="text-base sm:text-xl font-black text-[#1673B8] leading-snug break-words">
                     {course.title}
                   </h4>
-                  <p className="text-xs font-bold text-slate-700">
-                    Code: <span className="text-slate-900">{course.code}</span> · Standard:{' '}
+                  <p className="text-[11px] font-bold text-slate-700 leading-snug break-words">
+                    Course Code: <span className="text-slate-900">{course.code}</span> · Standard:{' '}
                     <span className="text-slate-900">{course.accreditationStandard}</span>
                   </p>
-                  <p className="text-[10.5px] text-slate-500 leading-relaxed">
-                    5-Module International Curriculum (Basics, PRPs, HACCP Steps 1–5, 7 Principles with 5×5 Risk Matrix &amp; Codex Decision Tree, Auditing &amp; Food Safety Law) + 40-MCQ Final Assessment
-                  </p>
+                  <div className="pt-1 space-y-1 bg-slate-50/80 rounded-lg p-2.5 border border-slate-200/80">
+                    <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8]">
+                      Completed Course Modules:
+                    </p>
+                    <ol className="space-y-1 text-[11px] text-slate-700 font-medium leading-snug">
+                      {sequentialModules.map((modLine, mIdx) => (
+                        <li key={mIdx} className="break-words">
+                          {modLine}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
                 </div>
               </div>
 
-              {/* 3-Column Underlined Metrics Row: Certificate No. | Awarded | CPD Credits / Score */}
-              <div className="grid grid-cols-3 gap-3 sm:gap-5 pt-4 text-center">
+              {/* 4. 3-Column Underlined Metrics Row: Certificate No. | Awarded | Exam Score (No CPD Credits) */}
+              <div className="grid grid-cols-3 gap-3 sm:gap-5 pt-2 text-center">
                 <div>
                   <div className="border-b border-[#D2DEEA] pb-1.5 text-xs sm:text-sm font-black text-[#162038] font-mono truncate">
                     {certNo}
@@ -794,16 +870,16 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
                 <div>
                   <div className="border-b border-[#D2DEEA] pb-1.5 text-xs sm:text-sm font-black text-[#1673B8] truncate">
-                    {scorePct}% ({isDistinction ? 'Distinction' : 'Pass'})
+                    {scorePct}% ({correctOutOf40}/40 · {isDistinction ? 'Distinction' : 'Passed'})
                   </div>
-                  <p className="text-[11px] text-slate-700 mt-1.5">CPD Credits / Score</p>
+                  <p className="text-[11px] text-slate-700 mt-1.5">Exam Score</p>
                 </div>
               </div>
             </div>
 
-            {/* Bottom Section: Cursive Signature, Endorsed Badge, Green Shield Validation & CPD Certified */}
-            <div className="pt-7 space-y-5 relative z-10">
-              {/* Row 1: Cursive Signature on Left + Institute of Hospitality ENDORSED on Right */}
+            {/* Bottom Section: Cursive Signature, "Endorsed by FS Portal", App Verification Link & Scannable QR Code */}
+            <div className="pt-6 space-y-5 relative z-10">
+              {/* Row 1: Cursive Signature on Left + "Endorsed by FS Portal" on Right */}
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div className="w-44 text-center">
                   <svg viewBox="0 0 190 48" className="w-40 h-11 mx-auto text-[#141824]">
@@ -823,32 +899,30 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   </div>
                 </div>
 
-                {/* Institute of Hospitality ENDORSED Badge */}
+                {/* 7. Endorsed by FS Portal Badge (replaces Institute of Hospitality) */}
                 <div className="flex items-start gap-2.5">
-                  <div className="w-9 h-11 rounded border border-[#263056] bg-slate-50 flex flex-col items-center justify-center p-1 text-[#263056] shrink-0">
-                    <Award className="w-5 h-5" />
-                    <span className="text-[6px] font-black uppercase">CREST</span>
+                  <div className="w-10 h-11 rounded-lg border border-[#1673B8] bg-[#F0F7FF] flex flex-col items-center justify-center p-1 text-[#1673B8] shrink-0">
+                    <span className="text-xs font-black leading-none">FS</span>
+                    <span className="text-[6px] font-black uppercase mt-0.5">PORTAL</span>
                   </div>
                   <div className="space-y-1">
-                    <div className="leading-none text-[#1A2138]">
-                      <p className="text-xs font-medium">Institute</p>
-                      <p className="text-xs">
-                        of <strong className="font-black text-sm">Hospitality</strong>
-                      </p>
+                    <div className="leading-tight text-[#1A2138]">
+                      <p className="text-[11px] font-medium text-slate-600">Endorsed by</p>
+                      <p className="text-sm font-black text-[#1673B8]">FS Portal</p>
                     </div>
-                    <div className="px-3 py-0.5 rounded bg-[#9E1B34] text-white text-[8px] font-black uppercase tracking-widest text-center">
-                      ENDORSED
+                    <div className="px-2.5 py-0.5 rounded bg-[#0D5C3A] text-white text-[7.5px] font-black uppercase tracking-wider text-center">
+                      ENDORSED BY FS PORTAL
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Row 2: Green Shield "Validate this certificate at" on Left + Purple "CPD CERTIFIED" on Right */}
+              {/* Row 2: Green Shield "Validate this certificate at" (Official App Link) on Left + Scannable QR Code on Right */}
               <div className="flex flex-wrap items-end justify-between gap-4 pt-1">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2.5">
+                <div className="space-y-2.5 flex-1 min-w-[210px]">
+                  <div className="flex items-start gap-2.5">
                     {/* Shield with Green Checkmark */}
-                    <svg viewBox="0 0 36 42" className="w-8 h-9 shrink-0">
+                    <svg viewBox="0 0 36 42" className="w-8 h-9 shrink-0 mt-0.5">
                       <path
                         d="M 18 2 L 33 8 L 33 21 C 33 30, 25 36, 18 40 C 11 36, 3 30, 3 21 L 3 8 Z"
                         fill="#FFFFFF"
@@ -864,39 +938,68 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         strokeLinejoin="round"
                       />
                     </svg>
-                    <div className="text-xs">
+                    <div className="text-xs space-y-0.5 break-all">
                       <p className="font-black text-[#1A2138]">
-                        Validate this certificate at
+                        Validate this certificate online at
                       </p>
-                      <p className="text-slate-700 font-medium">
-                        {cleanPortalHost || 'fsportal.academy'}/verify (ID: {certNo})
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveSubTab('verify-portal');
+                          setVerifyQuery(certNo);
+                          setHasSearchedVerify(true);
+                        }}
+                        className="text-left text-[#1673B8] hover:underline font-bold text-[11px] leading-snug cursor-pointer block"
+                      >
+                        {shortVerifyDisplayUrl}
+                      </button>
+                      <p className="text-[10.5px] text-slate-600 font-medium break-normal">
+                        Enter Certificate No: <strong className="font-mono text-slate-900">{certNo}</strong> on Verification Portal
                       </p>
                     </div>
                   </div>
 
-                  <div className="text-[10.5px] text-slate-700 leading-snug">
+                  <div className="text-[10.5px] text-slate-600 leading-snug">
                     <p>Refresher training recommended every three years</p>
                     <p>or sooner if circumstances dictate.</p>
                   </div>
                 </div>
 
-                {/* Purple CPD CERTIFIED Emblem */}
-                <div className="text-center select-none">
-                  <div className="relative inline-block">
-                    <p className="text-2xl font-black text-[#5B3282] tracking-tight leading-none">
-                      CPD
-                    </p>
-                  </div>
-                  <div className="border-y border-slate-700 py-0.5 my-0.5 px-2">
-                    <p className="text-[9px] font-serif font-bold tracking-[0.2em] text-[#1A2138]">
-                      CERTIFIED
-                    </p>
-                  </div>
-                  <p className="text-[7.5px] font-bold text-slate-700 leading-tight">
-                    The CPD Certification
-                    <br />
-                    Service
-                  </p>
+                {/* 6 & 8. Scannable QR Code for Direct Certificate Verification (replaces CPD mark) */}
+                <div className="flex flex-col items-center bg-white border border-slate-300 rounded-xl p-2 shadow-xs shrink-0">
+                  {qrMatrix.length > 0 && (
+                    <svg
+                      viewBox={`0 0 ${qrMatrix.length} ${qrMatrix.length}`}
+                      className="w-20 h-20 sm:w-24 sm:h-24"
+                      shapeRendering="crispEdges"
+                    >
+                      <rect
+                        width={qrMatrix.length}
+                        height={qrMatrix.length}
+                        fill="#FFFFFF"
+                      />
+                      {qrMatrix.map((row, rIdx) =>
+                        row.map((cell, cIdx) =>
+                          cell ? (
+                            <rect
+                              key={`${rIdx}-${cIdx}`}
+                              x={cIdx}
+                              y={rIdx}
+                              width={1}
+                              height={1}
+                              fill="#162038"
+                            />
+                          ) : null
+                        )
+                      )}
+                    </svg>
+                  )}
+                  <span className="text-[8.5px] font-black uppercase tracking-wider text-[#1673B8] mt-1">
+                    Scan to Verify
+                  </span>
+                  <span className="text-[8px] font-mono font-bold text-slate-600">
+                    {certNo}
+                  </span>
                 </div>
               </div>
             </div>

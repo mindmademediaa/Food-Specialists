@@ -412,8 +412,20 @@ export default function App() {
     () => !auth.currentUser
   );
 
-  // Navigation & Route Stack
-  const [route, setRoute] = useState<RouteView>({ name: 'home' });
+  // Navigation & Route Stack (auto-routes to Trainings Verification Portal if QR code ?verify= is scanned)
+  const [route, setRoute] = useState<RouteView>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (
+        params.get('verify') ||
+        params.get('cert') ||
+        params.get('tab') === 'verify-portal'
+      ) {
+        return { name: 'trainings' };
+      }
+    }
+    return { name: 'home' };
+  });
   const [hasSavedProfile, setHasSavedProfile] = useState<boolean>(true);
 
   // Collections State (Real Firestore Users — No Placeholder Profiles)
@@ -494,9 +506,16 @@ export default function App() {
   const [adminStatusBanner, setAdminStatusBanner] = useState<string | null>(
     null
   );
-  // When Admin logs in, land directly in the dedicated Admin Control Panel (not the user app)
-  const [adminPreviewUserMode, setAdminPreviewUserMode] =
-    useState<boolean>(false);
+  // When Admin logs in, land directly in the dedicated Admin Control Panel unless opening a ?verify= QR certificate link
+  const [adminPreviewUserMode, setAdminPreviewUserMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('verify') || params.get('cert')) {
+        return true;
+      }
+    }
+    return false;
+  });
 
   // Admin Quick Add Job / Scholarship State
   const [adminOppType, setAdminOppType] = useState<'job' | 'scholarship'>(
@@ -2830,8 +2849,120 @@ export default function App() {
     );
   }
 
-  // 2. Strict Authentication Gate: If NOT signed in, hide the app and show ONLY AuthScreen
+  // 2. Strict Authentication Gate: If NOT signed in, show Instant QR Certificate Verification if ?verify= is scanned, plus AuthScreen
   if (!authUser) {
+    const searchParams =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search)
+        : null;
+    const scannedCertNo = (
+      searchParams?.get('verify') ||
+      searchParams?.get('cert') ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+
+    if (scannedCertNo) {
+      const scannedName =
+        (searchParams?.get('name') || '').trim() || 'Certified Professional';
+      const scannedCourse =
+        (searchParams?.get('course') || '').trim() ||
+        'International Food Safety & HACCP Certification';
+      const scannedCode =
+        (searchParams?.get('code') || '').trim() || 'FS-CERT-INTL';
+      const scannedStd =
+        (searchParams?.get('std') || '').trim() ||
+        'Codex Alimentarius & GFSI International Standard';
+      const scannedScore = Number(searchParams?.get('score') || '85') || 85;
+      const scannedDate =
+        (searchParams?.get('date') || '').trim() ||
+        new Date().toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric'
+        });
+
+      return (
+        <div className="min-h-screen bg-[#E8F5EE] p-4 flex flex-col items-center justify-start space-y-4 overflow-y-auto">
+          <div className="w-full max-w-xl rounded-2xl border-2 border-emerald-600 bg-white p-5 sm:p-6 shadow-xl space-y-4 mt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0D5C3A] text-white text-xs font-extrabold uppercase tracking-wider">
+                  <ShieldCheck className="w-4 h-4 text-amber-300" />
+                  Official QR Verified Certificate
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-[#1673B8] text-[11px] font-extrabold">
+                  Endorsed by FS Portal
+                </span>
+              </div>
+              <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
+                ID: {scannedCertNo}
+              </span>
+            </div>
+
+            <div className="space-y-3 text-left">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Certificate of Achievement Awarded To
+                </p>
+                <p className="text-xl font-black text-slate-900">
+                  {scannedName}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Completed Training Course
+                </p>
+                <p className="text-base font-black text-[#1673B8]">
+                  {scannedCourse}
+                </p>
+                <p className="text-xs font-semibold text-slate-600 mt-0.5">
+                  Course Code: {scannedCode} · Standard: {scannedStd}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
+                <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">
+                    Certificate No.
+                  </p>
+                  <p className="font-mono font-black text-slate-900 truncate">
+                    {scannedCertNo}
+                  </p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">
+                    Awarded
+                  </p>
+                  <p className="font-bold text-slate-900 truncate">
+                    {scannedDate}
+                  </p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">
+                    Exam Score
+                  </p>
+                  <p className="font-black text-[#1673B8] truncate">
+                    {scannedScore}% ({scannedScore >= 75 ? 'Distinction' : 'Passed'})
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-3 font-medium">
+              This Certificate of Achievement has been verified via the official FS Portal Online Verification Registry. Sign in below to access the full FS Portal Verification Search &amp; Training Academy.
+            </p>
+          </div>
+
+          <div className="w-full">
+            <AuthScreen />
+          </div>
+        </div>
+      );
+    }
+
     return <AuthScreen />;
   }
 

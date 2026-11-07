@@ -1,4 +1,8 @@
 import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
+
+export const OFFICIAL_APP_PORTAL_URL =
+  'https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app';
 
 export interface OfficialCertificatePdfParams {
   certificateNumber: string;
@@ -18,18 +22,120 @@ export interface OfficialCertificatePdfParams {
 }
 
 /**
- * Generates and downloads an official Portrait A4 (210mm x 297mm) PDF Certificate
- * modeled directly after the uploaded Commodious / CPD / Institute of Hospitality
- * Portrait Certificate template, populated dynamically with FS Portal user & training data:
- *  - Left full-height blue sidebar (#1673B8) with giant vertical "Certificate" watermark text
- *  - Faint ice-blue "U" watermark curve in the lower-right white canvas
- *  - Top-left FS Portal brand header & top-right blue scalloped rosette badge with ribbons
- *  - "Certificate of Achievement" (or "Certificate of Distinction") in medium blue
- *  - "This is to certify that" + Recipient Name on rule line
- *  - "has successfully completed" + Course Title & Accreditation Standard on rule line
- *  - 3-column underlined metrics row: Certificate No. | Awarded | CPD Credits & Score
- *  - Cursive signature ("Signed on behalf of FS Portal"), Green Shield "Validate this certificate at",
- *    Institute of Hospitality ENDORSED badge, and Purple CPD CERTIFIED emblem
+ * Resolves the official App / Website base URL for certificate verification,
+ * ensuring github.io or localhost origins are replaced with the live App Portal URL.
+ */
+export function resolveOfficialVerificationBaseUrl(rawUrl?: string): string {
+  const candidate = (
+    rawUrl ||
+    (typeof window !== 'undefined' ? window.location.origin : '') ||
+    OFFICIAL_APP_PORTAL_URL
+  )
+    .trim()
+    .replace(/\/$/, '');
+
+  if (
+    !candidate ||
+    candidate.toLowerCase().includes('github.io') ||
+    candidate.toLowerCase().includes('localhost') ||
+    candidate.toLowerCase().includes('127.0.0.1')
+  ) {
+    return OFFICIAL_APP_PORTAL_URL;
+  }
+  return candidate;
+}
+
+/**
+ * Builds the direct verification URL encoded in the QR code and validation link.
+ * Scanning the QR code or opening this link opens the app's Certificate Verification Portal
+ * and automatically verifies the certificate.
+ */
+export function buildDirectCertificateVerifyUrl(params: {
+  certificateNumber: string;
+  recipientName?: string;
+  courseTitle?: string;
+  courseCode?: string;
+  accreditationStandard?: string;
+  scorePercentage?: number;
+  issueDate?: string;
+  baseUrl?: string;
+}): string {
+  const base = resolveOfficialVerificationBaseUrl(params.baseUrl);
+  const query = new URLSearchParams();
+  query.set('verify', params.certificateNumber.trim().toUpperCase());
+  if (params.recipientName) query.set('name', params.recipientName.trim());
+  if (params.courseTitle) query.set('course', params.courseTitle.trim());
+  if (params.courseCode) query.set('code', params.courseCode.trim());
+  if (params.accreditationStandard) {
+    query.set('std', params.accreditationStandard.trim());
+  }
+  if (typeof params.scorePercentage === 'number') {
+    query.set('score', String(params.scorePercentage));
+  }
+  if (params.issueDate) query.set('date', params.issueDate.trim());
+  return `${base}/?${query.toString()}`;
+}
+
+/**
+ * Returns a 2D boolean matrix for a QR code so both the React preview SVG
+ * and the jsPDF generator can render a crisp, scannable vector QR code.
+ */
+export function generateQrCodeMatrix(text: string): boolean[][] {
+  try {
+    const qr = QRCode.create(text, { errorCorrectionLevel: 'M' });
+    const size = qr.modules.size;
+    const matrix: boolean[][] = [];
+    for (let r = 0; r < size; r++) {
+      const row: boolean[] = [];
+      for (let c = 0; c < size; c++) {
+        row.push(Boolean(qr.modules.get(r, c)));
+      }
+      matrix.push(row);
+    }
+    return matrix;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Normalizes the course's module titles into a clean sequential list (Module 1 .. Module 5).
+ */
+export function getSequentialModuleList(
+  syllabusModules?: string[],
+  courseTitle?: string
+): string[] {
+  const defaultModules = [
+    'Fundamentals, Core Terminology & International Scope',
+    'Prerequisite Programs (PRPs), Hygiene & Operational Controls',
+    'Preliminary Steps, Process Flow & System Planning',
+    'Hazard Analysis, 5x5 Risk Assessment Matrix & Decision Tree',
+    'Internal Auditing, Corrective Actions & Regulatory Law'
+  ];
+
+  const rawList =
+    syllabusModules && syllabusModules.length > 0
+      ? syllabusModules
+      : defaultModules;
+
+  return rawList.map((rawTitle, idx) => {
+    const cleaned = rawTitle
+      .replace(/^Module\s*\d+\s*[:.-]\s*/i, '')
+      .trim();
+    return `Module ${idx + 1}: ${cleaned || (courseTitle ? `${courseTitle} Stage ${idx + 1}` : defaultModules[idx] || 'Core Competency')}`;
+  });
+}
+
+/**
+ * Generates and downloads an official Portrait A4 (210mm x 297mm) PDF Certificate:
+ *  1. Always displays "Certificate of Achievement"
+ *  2. Displays ONLY the recipient's Name (no email address on certificate)
+ *  3. Properly fits Course Title, Code/Standard, and lists all Modules sequentially one below another inside the certificate bounds
+ *  4. 3-Column Metrics Row: Certificate No. | Awarded | Exam Score (no CPD Credits)
+ *  5. Validation section links directly to the App/Website Verification Portal (no GitHub link)
+ *  6. Scannable vector QR Code on the bottom-right for instant verification on scan
+ *  7. "Endorsed by FS Portal" badge (replaces Institute of Hospitality)
+ *  8. All CPD marks removed
  */
 export function downloadOfficialCourseCertificatePdf(
   params: OfficialCertificatePdfParams
@@ -37,7 +143,6 @@ export function downloadOfficialCourseCertificatePdf(
   const {
     certificateNumber,
     recipientName,
-    recipientEmail,
     courseTitle,
     courseCode,
     accreditationStandard,
@@ -46,9 +151,7 @@ export function downloadOfficialCourseCertificatePdf(
     totalQuestions = 40,
     distinction,
     issueDate,
-    verificationPortalUrl = typeof window !== 'undefined'
-      ? window.location.origin
-      : 'https://fsportal.academy',
+    verificationPortalUrl,
     syllabusModules = []
   } = params;
 
@@ -61,7 +164,23 @@ export function downloadOfficialCourseCertificatePdf(
   // Portrait A4 dimensions: 210mm x 297mm
   const W = 210;
   const H = 297;
-  const blueBarW = 48;
+  const blueBarW = 46;
+  const leftX = 54;
+  const rightEdgeX = 196;
+  const contentWidth = rightEdgeX - leftX; // 142mm
+
+  const officialBaseUrl = resolveOfficialVerificationBaseUrl(verificationPortalUrl);
+  const directVerifyUrl = buildDirectCertificateVerifyUrl({
+    certificateNumber,
+    recipientName,
+    courseTitle,
+    courseCode,
+    accreditationStandard,
+    scorePercentage,
+    issueDate,
+    baseUrl: officialBaseUrl
+  });
+  const shortVerifyDisplayUrl = `${officialBaseUrl.replace(/^https?:\/\//i, '')}/?verify=${certificateNumber}`;
 
   // =========================================================================
   // 1. PURE WHITE MAIN CANVAS & FAINT ICE-BLUE GIANT "U" WATERMARK ON RIGHT
@@ -70,243 +189,227 @@ export function downloadOfficialCourseCertificatePdf(
   doc.rect(0, 0, W, H, 'F');
 
   // Giant subtle ice-blue "U" watermark in the right/lower-right background
-  doc.setDrawColor(240, 246, 252);
-  doc.setLineWidth(28);
-  // Left vertical leg, bottom curve, right vertical leg of the giant watermark "U"
-  doc.line(103, 122, 103, 205);
-  doc.line(196, 122, 196, 205);
-  // Smooth bottom arc connecting (103, 205) to (196, 205)
+  doc.setDrawColor(242, 247, 252);
+  doc.setLineWidth(26);
+  doc.line(104, 125, 104, 205);
+  doc.line(195, 125, 195, 205);
   const arcSteps = 24;
-  let prevArcX = 103;
+  let prevArcX = 104;
   let prevArcY = 205;
   for (let i = 1; i <= arcSteps; i++) {
-    const angle = Math.PI - (i / arcSteps) * Math.PI; // PI -> 0
-    const ax = 149.5 + 46.5 * Math.cos(angle);
-    const ay = 205 + 42 * Math.sin(angle);
+    const angle = Math.PI - (i / arcSteps) * Math.PI;
+    const ax = 149.5 + 45.5 * Math.cos(angle);
+    const ay = 205 + 40 * Math.sin(angle);
     doc.line(prevArcX, prevArcY, ax, ay);
     prevArcX = ax;
     prevArcY = ay;
   }
 
   // =========================================================================
-  // 2. LEFT FULL-HEIGHT ROYAL BLUE SIDEBAR (x = 0 .. 48mm) + GIANT "Certificate"
+  // 2. LEFT FULL-HEIGHT ROYAL BLUE SIDEBAR + GIANT VERTICAL "Certificate"
   // =========================================================================
   doc.setFillColor(22, 115, 184); // #1673B8
   doc.rect(0, 0, blueBarW, H, 'F');
 
-  // Giant vertical "Certificate" text inside the left blue bar (dark translucent blue #115E98)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(148);
+  doc.setFontSize(146);
   doc.setTextColor(16, 94, 154);
-  doc.text('Certificate', 41, 290, { angle: 90 });
+  doc.text('Certificate', 39.5, 289, { angle: 90 });
 
   // =========================================================================
   // 3. TOP-LEFT BRAND LOGO ("FS Portal") & TOP-RIGHT BLUE SCALLOPED ROSETTE SEAL
   // =========================================================================
-  const leftX = 56;
-
-  // Brand name styled like "commodious" (dark navy with blue underlined accent)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(23);
-  doc.setTextColor(26, 33, 56); // #1A2138
-  doc.text('FS Port', leftX, 23);
+  doc.setFontSize(22);
+  doc.setTextColor(26, 33, 56);
+  doc.text('FS Port', leftX, 21);
 
   const portW = doc.getTextWidth('FS Port');
-  doc.setTextColor(22, 115, 184); // #1673B8 accent on "al"
-  doc.text('al', leftX + portW, 23);
+  doc.setTextColor(22, 115, 184);
+  doc.text('al', leftX + portW, 21);
   const alW = doc.getTextWidth('al');
 
-  // Blue accent underline bar under "al"
   doc.setFillColor(22, 115, 184);
-  doc.rect(leftX + portW + 0.3, 24.4, alW - 0.5, 1.4, 'F');
+  doc.rect(leftX + portW + 0.3, 22.3, alW - 0.5, 1.3, 'F');
 
-  // Portal domain / subtitle under brand
-  const cleanHost = verificationPortalUrl
-    .replace(/^https?:\/\//i, '')
-    .replace(/\/$/, '');
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
-  doc.setTextColor(30, 41, 59);
-  doc.text(cleanHost || 'fsportal.academy', leftX, 30.5);
+  doc.setFontSize(8.8);
+  doc.setTextColor(71, 85, 105);
+  doc.text('International Food Safety & Hospitality Academy', leftX, 27.5);
 
-  // Top-Right Blue Scalloped Rosette Seal with Two Ribbons (center x = 179mm, y = 39mm)
+  // Top-Right Blue Scalloped Rosette Seal with Two Ribbons (center x = 179mm, y = 35mm)
   const sealX = 179;
-  const sealY = 39;
+  const sealY = 35;
 
-  // Two hanging blue ribbons below the rosette
   doc.setFillColor(22, 115, 184);
-  // Left ribbon tail
-  doc.triangle(sealX - 9, sealY + 12, sealX - 2, sealY + 12, sealX - 11, sealY + 29, 'F');
-  doc.triangle(sealX - 2, sealY + 12, sealX - 4, sealY + 28, sealX - 8, sealY + 24, 'F');
-  // Right ribbon tail
-  doc.triangle(sealX + 2, sealY + 12, sealX + 9, sealY + 12, sealX + 11, sealY + 28, 'F');
-  doc.triangle(sealX + 2, sealY + 12, sealX + 4, sealY + 28, sealX + 8, sealY + 24, 'F');
+  doc.triangle(sealX - 8.5, sealY + 11, sealX - 2, sealY + 11, sealX - 10.5, sealY + 27, 'F');
+  doc.triangle(sealX - 2, sealY + 11, sealX - 4, sealY + 26, sealX - 7.5, sealY + 22, 'F');
+  doc.triangle(sealX + 2, sealY + 11, sealX + 8.5, sealY + 11, sealX + 10.5, sealY + 26, 'F');
+  doc.triangle(sealX + 2, sealY + 11, sealX + 4, sealY + 26, sealX + 7.5, sealY + 22, 'F');
 
-  // Scalloped outer circle (12 lobes around radius 15.5mm)
   const numLobes = 12;
-  const lobeRingR = 14.2;
+  const lobeRingR = 13.5;
   for (let k = 0; k < numLobes; k++) {
     const theta = (k / numLobes) * Math.PI * 2;
     const lx = sealX + lobeRingR * Math.cos(theta);
     const ly = sealY + lobeRingR * Math.sin(theta);
-    doc.circle(lx, ly, 4.3, 'F');
+    doc.circle(lx, ly, 4.0, 'F');
   }
-  doc.circle(sealX, sealY, 15.2, 'F');
+  doc.circle(sealX, sealY, 14.4, 'F');
 
-  // Inner white circle of the rosette
   doc.setFillColor(255, 255, 255);
-  doc.circle(sealX, sealY, 11.4, 'F');
+  doc.circle(sealX, sealY, 10.8, 'F');
 
-  // Circular text inside white rosette ring
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(5.2);
+  doc.setFontSize(5.0);
   doc.setTextColor(45, 118, 175);
-  doc.text('FS PORTAL', sealX, sealY - 6.8, { align: 'center' });
-  doc.text('CERTIFIED', sealX, sealY + 8.6, { align: 'center' });
+  doc.text('FS PORTAL', sealX, sealY - 6.3, { align: 'center' });
+  doc.text('CERTIFIED', sealX, sealY + 8.1, { align: 'center' });
 
-  // Two small blue squares on left/right of center "u" / "FS"
   doc.setFillColor(22, 115, 184);
-  doc.rect(sealX - 7.8, sealY - 0.8, 1.5, 1.5, 'F');
-  doc.rect(sealX + 6.3, sealY - 0.8, 1.5, 1.5, 'F');
+  doc.rect(sealX - 7.4, sealY - 0.8, 1.4, 1.4, 'F');
+  doc.rect(sealX + 6.0, sealY - 0.8, 1.4, 1.4, 'F');
 
-  // Center bold "u" / "FS" mark inside the rosette
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13.5);
+  doc.setFontSize(13);
   doc.setTextColor(22, 115, 184);
-  doc.text('FS', sealX, sealY + 1.8, { align: 'center' });
-  doc.rect(sealX - 3.2, sealY + 3.0, 6.4, 1.0, 'F');
+  doc.text('FS', sealX, sealY + 1.7, { align: 'center' });
+  doc.rect(sealX - 3.0, sealY + 2.8, 6.0, 0.9, 'F');
 
   // =========================================================================
-  // 4. "Certificate of Achievement" (or "of Distinction") HEADING
+  // 4. "Certificate of Achievement" HEADING (Always "of Achievement")
   // =========================================================================
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(31);
+  doc.setFontSize(29);
   doc.setTextColor(34, 108, 163); // #226CA3
-  doc.text('Certificate', leftX, 50);
-  doc.text(
-    distinction ? 'of Distinction' : 'of Achievement',
-    leftX,
-    62
-  );
+  doc.text('Certificate', leftX, 44);
+  doc.text('of Achievement', leftX, 55);
 
   // =========================================================================
-  // 5. "This is to certify that" + RECIPIENT NAME ON HORIZONTAL RULE
+  // 5. "This is to certify that" + RECIPIENT NAME ONLY (No Email)
   // =========================================================================
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(12.5);
+  doc.setFontSize(11.5);
   doc.setTextColor(28, 35, 54);
-  doc.text('This is to certify that', leftX, 78);
+  doc.text('This is to certify that', leftX, 68);
 
   const cleanRecipient = (recipientName || 'Certified Professional').trim();
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
+  const recipientFontSize = cleanRecipient.length > 32 ? 17 : 20.5;
+  doc.setFontSize(recipientFontSize);
   doc.setTextColor(22, 32, 56);
-  const nameLines = doc.splitTextToSize(cleanRecipient, 138);
-  doc.text(nameLines[0], leftX, 95);
-
-  if (recipientEmail?.trim()) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.8);
-    doc.setTextColor(100, 116, 139);
-    doc.text(recipientEmail.trim(), leftX, 100.2);
-  }
+  const nameLines = doc.splitTextToSize(cleanRecipient, contentWidth);
+  doc.text(nameLines[0], leftX, 80);
 
   // Horizontal divider line under Recipient Name
-  doc.setDrawColor(218, 228, 238);
+  doc.setDrawColor(210, 222, 234);
   doc.setLineWidth(0.45);
-  doc.line(leftX, 103, 195, 103);
+  doc.line(leftX, 85, rightEdgeX, 85);
 
   // =========================================================================
-  // 6. "has successfully completed" + TRAINING TITLE & MODULES ON HORIZONTAL RULE
+  // 6. "has successfully completed" + COURSE TITLE + SEQUENTIAL MODULES LIST
   // =========================================================================
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(12.5);
+  doc.setFontSize(11.5);
   doc.setTextColor(28, 35, 54);
-  doc.text('has successfully completed', leftX, 119.5);
+  doc.text('has successfully completed', leftX, 95);
 
-  // Course Title
+  // Course Title properly adjusted inside certificate width
   doc.setFont('helvetica', 'bold');
   const titleLen = courseTitle.length;
-  const courseFontSize = titleLen > 38 ? 16.5 : titleLen > 28 ? 19 : 21.5;
+  const courseFontSize = titleLen > 45 ? 14.5 : titleLen > 32 ? 16.5 : 18.5;
   doc.setFontSize(courseFontSize);
   doc.setTextColor(22, 115, 184);
-  const wrappedCourse = doc.splitTextToSize(courseTitle, 138);
-  doc.text(wrappedCourse.slice(0, 2), leftX, 133);
+  const wrappedCourse = doc.splitTextToSize(courseTitle, contentWidth).slice(0, 2);
+  doc.text(wrappedCourse, leftX, 105);
 
-  const subCourseY = wrappedCourse.length > 1 ? 143.5 : 139.5;
+  let cursorY = 105 + wrappedCourse.length * 6.5;
+
+  // Course Code & Standard wrapped cleanly within certificate bounds
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.2);
+  doc.setFontSize(8.5);
   doc.setTextColor(45, 55, 72);
-  doc.text(
-    `Code: ${courseCode}  ·  Standard: ${accreditationStandard}`,
-    leftX,
-    subCourseY
-  );
+  const codeAndStandardText = `Course Code: ${courseCode}  |  Standard: ${accreditationStandard}`;
+  const wrappedStandard = doc
+    .splitTextToSize(codeAndStandardText, contentWidth)
+    .slice(0, 2);
+  doc.text(wrappedStandard, leftX, cursorY);
+  cursorY += wrappedStandard.length * 4.2 + 2.5;
 
-  // Concise summary of completed curriculum modules
-  if (syllabusModules.length > 0) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(90, 105, 125);
-    const shortMods =
-      'Modules Completed: 1. Basics & Foundations · 2. Prerequisite Programs (PRPs) · 3. HACCP Steps 1–5 · 4. 7 Principles, 5x5 Risk Matrix & Decision Tree · 5. Auditing & Food Safety Law';
-    const modLines = doc.splitTextToSize(shortMods, 138);
-    doc.text(modLines.slice(0, 2), leftX, subCourseY + 4.8);
+  // Sequential Modules listed one below another (Module 1, Module 2, Module 3, Module 4, Module 5...)
+  const sequentialModules = getSequentialModuleList(syllabusModules, courseTitle);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.2);
+  doc.setTextColor(22, 115, 184);
+  doc.text('Completed Course Modules:', leftX, cursorY);
+  cursorY += 4.5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.8);
+  doc.setTextColor(51, 65, 85);
+
+  const maxModulesToShow = Math.min(sequentialModules.length, 6);
+  for (let mIdx = 0; mIdx < maxModulesToShow; mIdx++) {
+    const modItem = sequentialModules[mIdx];
+    // Fit each module neatly on a single line (or 2 if needed) within contentWidth
+    const fittedLine = doc.splitTextToSize(modItem, contentWidth - 2)[0];
+    doc.text(fittedLine, leftX + 1.5, cursorY);
+    cursorY += 4.4;
   }
 
-  // Horizontal divider line under Course Title
-  doc.setDrawColor(218, 228, 238);
+  // Horizontal divider line below sequential modules list
+  const courseRuleY = Math.max(cursorY + 2, 162);
+  doc.setDrawColor(210, 222, 234);
   doc.setLineWidth(0.45);
-  doc.line(leftX, 154, 195, 154);
+  doc.line(leftX, courseRuleY, rightEdgeX, courseRuleY);
 
   // =========================================================================
-  // 7. THREE-COLUMN METRICS ROW: Certificate No. | Awarded | CPD Credits / Score
+  // 7. THREE-COLUMN METRICS ROW: Certificate No. | Awarded | Exam Score
   // =========================================================================
-  const lineY = 181;
+  const lineY = Math.max(courseRuleY + 21, 185);
 
-  // Values above the 3 lines
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
+  doc.setFontSize(9.5);
   doc.setTextColor(22, 32, 56);
 
-  // Col 1: Certificate No. (center x = 75.5)
-  doc.text(certificateNumber, 75.5, lineY - 3, { align: 'center' });
-  // Col 2: Awarded Date (center x = 125.5)
-  doc.text(issueDate, 125.5, lineY - 3, { align: 'center' });
-  // Col 3: Score & Standing / CPD Credits (center x = 175.5)
+  // Col 1: Certificate No. (center x = 74)
+  doc.text(certificateNumber, 74, lineY - 2.8, { align: 'center' });
+  // Col 2: Awarded Date (center x = 125)
+  doc.text(issueDate, 125, lineY - 2.8, { align: 'center' });
+  // Col 3: Exam Score only (NO CPD Credits) (center x = 176)
+  doc.setTextColor(22, 115, 184);
   doc.text(
-    `${scorePercentage}% (${correctCount}/${totalQuestions}) · ${
-      distinction ? 'Distinction' : 'Pass'
-    }`,
-    175.5,
-    lineY - 3,
+    `${scorePercentage}% (${correctCount}/${totalQuestions} · ${
+      distinction ? 'Distinction' : 'Passed'
+    })`,
+    176,
+    lineY - 2.8,
     { align: 'center' }
   );
 
   // 3 Horizontal Lines
   doc.setDrawColor(210, 222, 234);
   doc.setLineWidth(0.45);
-  doc.line(56, lineY, 95, lineY);
-  doc.line(106, lineY, 145, lineY);
-  doc.line(156, lineY, 195, lineY);
+  doc.line(54, lineY, 94, lineY);
+  doc.line(105, lineY, 145, lineY);
+  doc.line(156, lineY, 196, lineY);
 
   // Labels below the 3 lines
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.2);
+  doc.setFontSize(9.0);
   doc.setTextColor(40, 48, 68);
-  doc.text('Certificate No.', 75.5, lineY + 5.2, { align: 'center' });
-  doc.text('Awarded', 125.5, lineY + 5.2, { align: 'center' });
-  doc.text('CPD Credits / Score', 175.5, lineY + 5.2, { align: 'center' });
+  doc.text('Certificate No.', 74, lineY + 5, { align: 'center' });
+  doc.text('Awarded', 125, lineY + 5, { align: 'center' });
+  doc.text('Exam Score', 176, lineY + 5, { align: 'center' });
 
   // =========================================================================
-  // 8. SIGNATURE BLOCK ("Signed on behalf of FS Portal")
+  // 8. SIGNATURE BLOCK + "Endorsed by FS Portal" BADGE
   // =========================================================================
-  const sigBaseY = 215;
+  const sigBaseY = 220;
 
-  // Authentic cursive handwritten signature ("V. M. Whitney" style)
+  // Cursive handwritten signature
   doc.setDrawColor(20, 24, 36);
   doc.setLineWidth(0.55);
-  // "V."
   doc.lines(
     [
       [2.2, 6.5],
@@ -316,7 +419,6 @@ export function downloadOfficialCourseCertificatePdf(
     sigBaseY - 8.5
   );
   doc.circle(leftX + 8.2, sigBaseY - 2.3, 0.35, 'F');
-  // "M"
   doc.lines(
     [
       [0.8, -5.5],
@@ -327,7 +429,6 @@ export function downloadOfficialCourseCertificatePdf(
     leftX + 11,
     sigBaseY - 2
   );
-  // "Whitney" cursive flow with descender loop at the end
   doc.lines(
     [
       [1.5, -6.5],
@@ -351,58 +452,54 @@ export function downloadOfficialCourseCertificatePdf(
     sigBaseY - 2.2
   );
 
-  // Horizontal line under signature
   doc.setDrawColor(210, 222, 234);
   doc.setLineWidth(0.45);
-  doc.line(leftX, sigBaseY, leftX + 45, sigBaseY);
+  doc.line(leftX, sigBaseY, leftX + 46, sigBaseY);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.8);
   doc.setTextColor(45, 55, 72);
-  doc.text('Signed on behalf of FS Portal', leftX + 22.5, sigBaseY + 4.5, {
+  doc.text('Signed on behalf of FS Portal', leftX + 23, sigBaseY + 4.5, {
     align: 'center'
   });
 
-  // =========================================================================
-  // 9. RIGHT-SIDE ENDORSEMENT BADGE ("Institute of Hospitality ENDORSED")
-  // =========================================================================
-  const instX = 148;
-  const instY = 225;
+  // Right-Side Endorsement Badge: "Endorsed by FS Portal" (replaces Institute of Hospitality)
+  const endX = 142;
+  const endY = 208;
 
-  // Small heraldic crest icon on the left of "Institute of Hospitality"
-  doc.setDrawColor(38, 48, 86);
-  doc.setLineWidth(0.4);
-  doc.rect(instX, instY, 9.5, 11, 'S');
-  doc.setFillColor(38, 48, 86);
-  doc.triangle(instX + 1.5, instY + 9.5, instX + 8, instY + 9.5, instX + 4.75, instY + 3.5, 'F');
-  doc.setFillColor(255, 255, 255);
-  doc.circle(instX + 4.75, instY + 7.2, 1.3, 'F');
+  // FS Portal Official Crest Icon
+  doc.setDrawColor(22, 115, 184);
+  doc.setFillColor(240, 247, 255);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(endX, endY, 11, 12.5, 1.5, 1.5, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(22, 115, 184);
+  doc.text('FS', endX + 5.5, endY + 7.8, { align: 'center' });
 
-  // "Institute of Hospitality" text
+  // "Endorsed by FS Portal" text
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10.5);
-  doc.setTextColor(26, 33, 56);
-  doc.text('Institute', instX + 11.5, instY + 4.5);
   doc.setFontSize(9.5);
-  doc.text('of', instX + 11.5, instY + 9.2);
+  doc.setTextColor(26, 33, 56);
+  doc.text('Endorsed by', endX + 13, endY + 4.5);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('Hospitality', instX + 15.8, instY + 9.2);
+  doc.setFontSize(12);
+  doc.setTextColor(22, 115, 184);
+  doc.text('FS Portal', endX + 13, endY + 9.8);
 
-  // Burgundy "ENDORSED" pill bar (#9E1B34)
-  doc.setFillColor(158, 27, 52);
-  doc.roundedRect(instX + 11.5, instY + 11.2, 33.5, 4.2, 0.8, 0.8, 'F');
+  // Official Endorsed Bar
+  doc.setFillColor(13, 92, 58); // #0D5C3A
+  doc.roundedRect(endX + 13, endY + 11.5, 38, 4.2, 0.8, 0.8, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6.5);
+  doc.setFontSize(6.2);
   doc.setTextColor(255, 255, 255);
-  doc.text('ENDORSED', instX + 28.25, instY + 14.1, { align: 'center' });
+  doc.text('ENDORSED BY FS PORTAL', endX + 32, endY + 14.3, { align: 'center' });
 
   // =========================================================================
-  // 10. BOTTOM-LEFT GREEN SHIELD + "Validate this certificate at"
+  // 9. BOTTOM-LEFT GREEN SHIELD + APP VERIFICATION LINK (No GitHub URL)
   // =========================================================================
-  const valY = 250;
+  const valY = 248;
 
-  // Shield outline (center x = leftX + 5.5, y = valY + 4)
   const shX = leftX + 5.2;
   const shY = valY + 3.5;
   doc.setDrawColor(26, 33, 56);
@@ -420,73 +517,91 @@ export function downloadOfficialCourseCertificatePdf(
     shY - 5.2
   );
 
-  // Green checkmark inside shield (#22C55E)
   doc.setDrawColor(34, 197, 94);
   doc.setLineWidth(1.1);
   doc.line(shX - 2.2, shY + 0.2, shX - 0.5, shY + 2.1);
   doc.line(shX - 0.5, shY + 2.1, shX + 2.6, shY - 1.8);
 
-  // "Validate this certificate at"
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.8);
+  doc.setFontSize(9.5);
   doc.setTextColor(26, 33, 56);
-  doc.text('Validate this certificate at', leftX + 13.5, valY + 1.8);
+  doc.text('Validate this certificate online at', leftX + 13, valY + 1.5);
 
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.0);
+  doc.setTextColor(22, 115, 184);
+  const wrappedVerifyUrl = doc.splitTextToSize(shortVerifyDisplayUrl, 90);
+  doc.text(wrappedVerifyUrl.slice(0, 2), leftX + 13, valY + 6.2);
+  // Make the verification area clickable in the PDF
+  doc.link(leftX + 13, valY - 2, 92, 16, { url: directVerifyUrl });
+
+  const urlBottomY = valY + 6.2 + Math.min(wrappedVerifyUrl.length, 2) * 3.8;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.2);
-  doc.setTextColor(45, 55, 72);
+  doc.setFontSize(7.8);
+  doc.setTextColor(51, 65, 85);
   doc.text(
-    `${cleanHost || 'fsportal.academy'}/verify (ID: ${certificateNumber})`,
-    leftX + 13.5,
-    valY + 7.2
+    `Enter Certificate No: ${certificateNumber} on FS Portal Verification Registry`,
+    leftX + 13,
+    urlBottomY + 1.2
   );
 
   // Refresher training note at bottom-left
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.2);
-  doc.setTextColor(45, 55, 72);
-  doc.text(
-    'Refresher training recommended every three years',
-    leftX,
-    274
-  );
-  doc.text('or sooner if circumstances dictate.', leftX, 278.5);
+  doc.setFontSize(8.0);
+  doc.setTextColor(71, 85, 105);
+  doc.text('Refresher training recommended every three years', leftX, 276);
+  doc.text('or sooner if circumstances dictate.', leftX, 280.2);
 
   // =========================================================================
-  // 11. BOTTOM-RIGHT "CPD CERTIFIED" PURPLE EMBLEM
+  // 10. BOTTOM-RIGHT SCANNABLE QR CODE (Direct Certificate Verification on Scan)
   // =========================================================================
-  const cpdX = 174;
-  const cpdY = 264;
+  const qrMatrix = generateQrCodeMatrix(directVerifyUrl);
+  const qrBoxSize = 29;
+  const qrX = 162;
+  const qrY = 242;
 
-  // Faint lilac checkmark behind "CPD"
-  doc.setDrawColor(216, 200, 232);
-  doc.setLineWidth(2.6);
-  doc.line(cpdX - 4, cpdY + 1, cpdX + 1, cpdY + 5);
-  doc.line(cpdX + 1, cpdY + 5, cpdX + 10, cpdY - 8);
+  // Outer card frame for QR code
+  doc.setDrawColor(203, 213, 225);
+  doc.setFillColor(255, 255, 255);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(qrX - 2, qrY - 2, qrBoxSize + 4, qrBoxSize + 10, 1.5, 1.5, 'FD');
 
-  // Bold purple "CPD"
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.setTextColor(91, 50, 130); // #5B3282
-  doc.text('CPD', cpdX, cpdY + 2, { align: 'center' });
+  if (qrMatrix.length > 0) {
+    const modulesCount = qrMatrix.length;
+    const cellSize = qrBoxSize / modulesCount;
+    doc.setFillColor(22, 32, 56);
+    for (let r = 0; r < modulesCount; r++) {
+      for (let c = 0; c < modulesCount; c++) {
+        if (qrMatrix[r][c]) {
+          doc.rect(
+            qrX + c * cellSize,
+            qrY + r * cellSize,
+            cellSize + 0.06,
+            cellSize + 0.06,
+            'F'
+          );
+        }
+      }
+    }
+  }
 
-  // "CERTIFIED" between thin horizontal rules
-  doc.setDrawColor(45, 55, 72);
-  doc.setLineWidth(0.3);
-  doc.line(cpdX - 14, cpdY + 4.2, cpdX + 14, cpdY + 4.2);
-
-  doc.setFont('times', 'bold');
-  doc.setFontSize(9.2);
-  doc.setTextColor(26, 33, 56);
-  doc.text('C E R T I F I E D', cpdX, cpdY + 7.8, { align: 'center' });
-
-  doc.line(cpdX - 14, cpdY + 9.2, cpdX + 14, cpdY + 9.2);
+  // Make QR code clickable in PDF as well
+  doc.link(qrX - 2, qrY - 2, qrBoxSize + 4, qrBoxSize + 10, {
+    url: directVerifyUrl
+  });
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(6.5);
-  doc.setTextColor(45, 55, 72);
-  doc.text('The CPD Certification', cpdX, cpdY + 12.2, { align: 'center' });
-  doc.text('Service', cpdX, cpdY + 15.0, { align: 'center' });
+  doc.setTextColor(22, 115, 184);
+  doc.text('SCAN TO VERIFY', qrX + qrBoxSize / 2, qrY + qrBoxSize + 3.5, {
+    align: 'center'
+  });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(5.8);
+  doc.setTextColor(71, 85, 105);
+  doc.text(certificateNumber, qrX + qrBoxSize / 2, qrY + qrBoxSize + 6.5, {
+    align: 'center'
+  });
 
   const safeSlug = courseCode.replace(/[^a-zA-Z0-9_-]/g, '_');
   const safeName = cleanRecipient
