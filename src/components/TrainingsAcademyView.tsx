@@ -98,11 +98,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     certificateNumber: string;
   } | null>(null);
 
-  // Rs. 1,000 Certificate Unlock Payment Modal
+  // Rs. 1,000 Certificate Unlock Instruction & Payment Modal (2-Step Small Window)
   const [certPayModalCourse, setCertPayModalCourse] = useState<{
     course: InternationalTrainingCourse;
     progress: UserCourseProgress;
   } | null>(null);
+  const [certModalStep, setCertModalStep] = useState<'instruction' | 'payment'>('instruction');
   const [payMethod, setPayMethod] = useState<'JazzCash' | 'EasyPaisa' | 'Bank Transfer'>('JazzCash');
   const [payTxId, setPayTxId] = useState('');
   const [payNotes, setPayNotes] = useState('');
@@ -579,14 +580,20 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     );
   }, [verifyQuery, certificates, users, isUserPremiumActiveFn]);
 
-  // Render Reusable Portrait Certificate Pattern Card (Highfield / SGS / Bureau Veritas Style)
+  // Render Reusable Portrait Certificate Pattern Card (Exact DEKRA / Bureau Veritas ISO 9001:2015 Style)
   const renderCertificatePatternCard = (
     course: InternationalTrainingCourse,
     progress: UserCourseProgress
   ) => {
-    const isUnlocked = Boolean(progress.certificateFeePaid && isCurrentUserPremiumActive);
+    const hasExplicitlyExpiredMembership = Boolean(
+      currentUser?.premiumExpiresAt &&
+        new Date(currentUser.premiumExpiresAt).getTime() < Date.now()
+    );
+    const isUnlocked = Boolean(
+      progress.certificateFeePaid && !hasExplicitlyExpiredMembership
+    );
     const isFeePaidButMembershipExpired = Boolean(
-      progress.certificateFeePaid && !isCurrentUserPremiumActive
+      progress.certificateFeePaid && hasExplicitlyExpiredMembership
     );
     const isPendingAdminApproval = Boolean(
       progress.certificateFeePending && !progress.certificateFeePaid
@@ -601,193 +608,308 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     const issueDateStr = progress.examCompletedAt
       ? new Date(progress.examCompletedAt).toLocaleDateString('en-GB', {
           day: '2-digit',
-          month: 'short',
+          month: 'long',
           year: 'numeric'
         })
       : new Date().toLocaleDateString('en-GB', {
           day: '2-digit',
-          month: 'short',
+          month: 'long',
           year: 'numeric'
         });
 
     return (
       <div className="space-y-4">
-        {/* Portrait A4 Style Certificate Visual Pattern Frame (Highfield / SGS / Bureau Veritas Vertical Layout) */}
-        <div className="max-w-2xl mx-auto relative overflow-hidden rounded-2xl border-4 border-[#0D5C3A] bg-[#FAFDF9] p-4 sm:p-7 shadow-xl">
-          {/* Top Reference Metadata Strip */}
-          <div className="rounded-t-xl bg-[#0D5C3A] text-white px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-[10px] font-black uppercase tracking-wider">
-            <span className="text-amber-300">CERTIFICATE NO: {certNo}</span>
-            <span>STANDARD: PORTRAIT A4 (ISO/IEC 17024 · HIGHFIELD / SGS / BV STYLE)</span>
+        {/* DEKRA / Bureau Veritas Style Portrait A4 Certificate Visual Pattern Card */}
+        <div className="max-w-2xl mx-auto relative overflow-hidden rounded-xl border border-slate-300 bg-white shadow-2xl flex min-h-[680px]">
+          {/* Sweeping Green Guilloche Wave Curves SVG Background (Right & Bottom-Center) */}
+          <svg
+            viewBox="0 0 600 850"
+            preserveAspectRatio="none"
+            className="pointer-events-none select-none absolute inset-0 w-full h-full z-0"
+          >
+            <defs>
+              <linearGradient id="dekraWaveFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#d9ece0" stopOpacity="0.55" />
+                <stop offset="50%" stopColor="#bfe0cc" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#e4f2e8" stopOpacity="0.65" />
+              </linearGradient>
+            </defs>
+            {/* Soft green wavewash backdrop */}
+            <path
+              d="M 380 0 L 600 0 L 600 850 L 180 850 C 230 610, 480 430, 460 220 C 445 100, 410 45, 380 0 Z"
+              fill="url(#dekraWaveFill)"
+            />
+            {/* 28 Parallel Guilloche Green Wave Curves */}
+            {Array.from({ length: 28 }).map((_, i) => {
+              const t = i / 27;
+              const x0 = 375 + t * 215;
+              const cx1 = 560 - t * 190;
+              const cy1 = 240 + t * 70;
+              const cx2 = 155 + t * 380;
+              const cy2 = 510 - t * 55;
+              const x3 = 165 + t * 360;
+              return (
+                <path
+                  key={`wave-a-${i}`}
+                  d={`M ${x0} 0 C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x3} 850`}
+                  fill="none"
+                  stroke={i % 2 === 0 ? '#68ab83' : '#96c7a9'}
+                  strokeWidth={i % 3 === 0 ? '1.1' : '0.75'}
+                  strokeOpacity="0.65"
+                />
+              );
+            })}
+            {Array.from({ length: 16 }).map((_, j) => {
+              const t = j / 15;
+              const x0 = 435 + t * 165;
+              const cx1 = 330 + t * 190;
+              const cy1 = 310;
+              const cx2 = 470 + t * 130;
+              const cy2 = 590;
+              const x3 = 235 + t * 265;
+              return (
+                <path
+                  key={`wave-b-${j}`}
+                  d={`M ${x0} 0 C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x3} 850`}
+                  fill="none"
+                  stroke="#7db895"
+                  strokeWidth="0.65"
+                  strokeOpacity="0.5"
+                />
+              );
+            })}
+          </svg>
+
+          {/* Left Vertical Security Strip (DEKRA / Bureau Veritas Spine) */}
+          <div className="w-11 sm:w-14 shrink-0 relative z-10 flex flex-col justify-between select-none border-r border-slate-200/70">
+            {/* Top Silver-Grey Micro-Watermark Block */}
+            <div className="h-28 bg-[#D0D5D2] overflow-hidden relative flex flex-col justify-around py-1">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div
+                  key={`top-wm-${i}`}
+                  className="text-[7px] font-black tracking-wider text-white/90 whitespace-nowrap -rotate-12 -ml-2"
+                >
+                  ▷ FS PORTAL &nbsp; ▷ FS PORTAL
+                </div>
+              ))}
+            </div>
+
+            {/* Middle White Cutout with Rotated Green Brand Spine */}
+            <div className="h-40 bg-white flex flex-col items-center justify-center py-3 gap-2">
+              <span
+                className="text-[#0D7A43] font-black text-base sm:text-lg tracking-wider whitespace-nowrap"
+                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+              >
+                FS PORTAL
+              </span>
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#0D7A43] fill-current">
+                <polygon points="4,20 4,4 20,12" />
+                <polygon points="7,16 7,8 15,12" fill="white" />
+              </svg>
+            </div>
+
+            {/* Bottom Silver-Grey Micro-Watermark Block */}
+            <div className="flex-1 bg-[#D0D5D2] overflow-hidden relative flex flex-col justify-around py-2">
+              {Array.from({ length: 24 }).map((_, i) => (
+                <div
+                  key={`bot-wm-${i}`}
+                  className="text-[7px] font-black tracking-wider text-white/90 whitespace-nowrap -rotate-12 -ml-2"
+                >
+                  ▷ FS PORTAL &nbsp; ▷ FS PORTAL
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Inner Gold Architectural Frame */}
-          <div className="border-2 border-amber-500/85 rounded-b-xl p-5 sm:p-7 relative bg-gradient-to-b from-[#FAFDF9] via-white to-[#F3F8F5]">
+          {/* Right Main Left-Aligned Swiss Typography Area */}
+          <div className="flex-1 p-5 sm:p-8 relative z-10 flex flex-col justify-between text-left">
             {/* Watermark if not yet unlocked */}
             {!isUnlocked && (
-              <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center z-10">
-                <span className="rotate-[-22deg] border-2 border-amber-600/35 bg-amber-50/80 px-5 py-2.5 rounded-xl text-xs sm:text-base font-black uppercase tracking-widest text-amber-900/55 shadow-sm text-center">
+              <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center z-20">
+                <span className="rotate-[-20deg] border-2 border-emerald-800/25 bg-white/80 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest text-emerald-950/50 shadow-xs text-center">
                   {isPendingAdminApproval
-                    ? 'PENDING ADMIN APPROVAL · PORTRAIT PREVIEW ONLY'
-                    : 'PORTRAIT CERTIFICATE PREVIEW · PDF DOWNLOAD LOCKED'}
+                    ? 'PENDING ADMIN APPROVAL · CERTIFICATE PREVIEW'
+                    : 'CERTIFICATE PATTERN PREVIEW'}
                 </span>
               </div>
             )}
 
-            <div className="text-center space-y-3 relative z-0">
-              {/* Top Royal Crest Emblem */}
-              <div className="mx-auto w-14 h-14 rounded-full bg-[#0D5C3A] border-2 border-amber-400 flex flex-col items-center justify-center text-white shadow-md">
-                <Award className="w-6 h-6 text-amber-300" />
-                <span className="text-[8px] font-black tracking-widest text-amber-200">
-                  FS PORTAL
-                </span>
-              </div>
+            <div className="space-y-4">
+              {/* Giant Bold "CERTIFICATE" Heading */}
+              <h3 className="text-3xl sm:text-5xl font-black tracking-tight text-black font-sans pt-1">
+                CERTIFICATE
+              </h3>
 
-              <div className="space-y-0.5">
-                <p className="text-[11px] font-black uppercase tracking-widest text-[#0D5C3A]">
-                  FS PORTAL INTERNATIONAL CERTIFICATION ACADEMY
-                </p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
-                  Division of Global Food Safety, HACCP, ISO &amp; Hospitality Compliance
+              {/* Certificate Number & Intro */}
+              <div className="space-y-1.5 text-xs text-black">
+                <p className="font-medium">Number: {certNo}</p>
+                <p className="text-slate-800">
+                  The professional competency, curriculum completion, and assessment record belonging to:
                 </p>
               </div>
 
-              <div className="pt-1">
-                <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0D5C3A] font-serif">
-                  CERTIFICATE
-                </h3>
-                <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-700 font-serif">
+              {/* Candidate Name & Sub-Lines (Bureau Veritas Block Style) */}
+              <div className="space-y-0.5 pt-1">
+                <p className="text-xl sm:text-2xl font-black text-black leading-tight">
+                  {holderName}
+                </p>
+                <p className="text-xs font-bold text-black">
+                  {currentUser?.email
+                    ? `Registered Candidate: ${currentUser.email}`
+                    : `Credential ID: ${certNo}`}
+                </p>
+                <p className="text-xs font-bold text-black">
                   {isDistinction
-                    ? 'OF INTERNATIONAL DISTINCTION'
-                    : 'OF PROFESSIONAL ACHIEVEMENT'}
+                    ? `Qualification Standing: Passed with Distinction (${scorePct}%)`
+                    : `Qualification Standing: Certified Pass (${scorePct}%)`}
+                </p>
+                <p className="text-xs font-bold text-black">
+                  International Food Safety &amp; Quality Compliance Registry
                 </p>
               </div>
 
-              <div className="flex justify-center">
-                {isDistinction ? (
-                  <span className="inline-flex items-center gap-1 px-3.5 py-1 rounded-full bg-amber-100 border border-amber-400 text-amber-900 text-[10.5px] font-extrabold uppercase tracking-wider">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    Awarded with Distinction ({scorePct}% · Benchmark &ge; 75%)
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-3.5 py-1 rounded-full bg-emerald-100 border border-emerald-400 text-emerald-900 text-[10.5px] font-extrabold uppercase tracking-wider">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
-                    Passed International Standard ({scorePct}% · Benchmark &ge; 60%)
-                  </span>
-                )}
-              </div>
-
-              <p className="text-xs italic text-slate-500 pt-1 font-serif">
-                This is to officially certify that
-              </p>
-              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-wide border-b-2 border-amber-400 inline-block px-8 pb-1 font-serif">
-                {holderName}
+              {/* Standard Compliance Transition */}
+              <p className="text-xs text-slate-800 pt-1">
+                including the practical module implementation meets the requirements of the standard:
               </p>
 
-              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-                has successfully completed the prescribed international curriculum and satisfied the formal assessment criteria in
-              </p>
-
-              {/* Qualification Box */}
-              <div className="rounded-xl border border-emerald-900/20 bg-emerald-50/70 p-3.5 space-y-1">
-                <h4 className="text-base sm:text-xl font-black text-[#0D5C3A]">
+              {/* Large Bold Course / Standard Title (ISO 9001:2015 Style) */}
+              <div className="space-y-1">
+                <h4 className="text-2xl sm:text-3xl font-black text-black tracking-tight leading-none">
                   {course.title}
                 </h4>
-                <p className="text-[11px] font-semibold text-slate-600">
-                  Qualification Code: <span className="text-slate-900 font-bold">{course.code}</span> · Standard:{' '}
-                  <span className="text-slate-900 font-bold">{course.accreditationStandard}</span>
+                <p className="text-xs font-extrabold text-[#0D7A43]">
+                  Standard / Code: {course.code} · {course.accreditationStandard}
                 </p>
               </div>
 
-              {/* 5-Module Verified Syllabus Transcript Box (Highfield / SGS / Bureau Veritas Style) */}
-              <div className="rounded-xl border border-slate-200 bg-white p-3 text-left space-y-1.5">
-                <p className="text-[10px] font-black uppercase tracking-wider text-[#0D5C3A] text-center border-b border-slate-100 pb-1">
-                  Verified Qualification Syllabus &amp; Competency Units Completed
+              {/* Scope & 5 Modules Summary */}
+              <div className="space-y-1.5 text-xs text-black pt-1">
+                <p className="font-semibold">Scope:</p>
+                <p className="text-slate-800 leading-relaxed text-[11.5px]">
+                  Performing hazard analysis, prerequisite programs (PRPs: GMP, GHP, SSOPs), 12-step Codex HACCP implementation, 5×5 risk assessment matrix scoring, CCP decision tree evaluation, internal system auditing, and statutory food safety law compliance.
                 </p>
-                <div className="grid grid-cols-1 gap-1 text-[11px] text-slate-700">
+                <div className="pt-1 space-y-0.5 text-[11px] text-slate-700">
                   {course.modules.slice(0, 5).map((m, idx) => (
-                    <div key={m.id} className="flex items-center gap-1.5 truncate">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span className="font-bold text-slate-900">Unit {idx + 1}:</span>
-                      <span className="truncate">{m.title}</span>
-                    </div>
+                    <p key={m.id} className="truncate">
+                      • <strong className="text-slate-900">Module {idx + 1}:</strong> {m.title}
+                    </p>
                   ))}
                 </div>
               </div>
 
-              {/* 4-Column Assessment Metrics Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-left bg-slate-50 rounded-xl p-3 border border-slate-200">
-                <div>
-                  <p className="text-[9.5px] font-bold uppercase text-slate-400">Certificate ID</p>
-                  <p className="text-[11px] font-black text-slate-900 font-mono truncate">{certNo}</p>
-                </div>
-                <div>
-                  <p className="text-[9.5px] font-bold uppercase text-slate-400">Final Score</p>
-                  <p className="text-[11px] font-black text-[#0D5C3A]">
-                    {scorePct}% ({correctOutOf40}/40)
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[9.5px] font-bold uppercase text-slate-400">Standing</p>
-                  <p className="text-[11px] font-black text-amber-800">
-                    {isDistinction ? 'DISTINCTION' : 'PASS'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[9.5px] font-bold uppercase text-slate-400">Issue Date</p>
-                  <p className="text-[11px] font-bold text-slate-900">{issueDateStr}</p>
+              {/* 3-Row Aligned Dates & Score Block */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1 text-xs text-black pt-2">
+                <div className="sm:col-span-5 font-medium">Certificate verification:</div>
+                <div className="sm:col-span-7 font-semibold">Online Portal Registry (Active)</div>
+
+                <div className="sm:col-span-5 font-medium">Certificate effective date:</div>
+                <div className="sm:col-span-7 font-semibold">{issueDateStr}</div>
+
+                <div className="sm:col-span-5 font-medium">Assessment score*:</div>
+                <div className="sm:col-span-7 font-semibold">
+                  {scorePct}% ({correctOutOf40}/40 MCQs — {isDistinction ? 'Distinction' : 'Certified Pass'})
                 </div>
               </div>
 
-              {/* Dual Signatures & Embossed Gold Seal Row */}
-              <div className="grid grid-cols-3 items-end gap-2 pt-4 border-t border-emerald-900/15 text-center">
-                <div className="space-y-0.5">
-                  <p className="text-xs italic font-serif font-bold text-[#0D5C3A]">
-                    Board of Examiners
-                  </p>
-                  <div className="border-t border-slate-300 pt-1">
-                    <p className="text-[9.5px] font-black uppercase text-slate-700">
-                      Director of Academic Standards
-                    </p>
+              <p className="text-xs text-slate-800">
+                This certificate is valid and verifiable online for the candidate and qualification mentioned above.
+              </p>
+            </div>
+
+            {/* Bottom Signatures, Accreditation Badges & Registry Footer */}
+            <div className="pt-6 space-y-4">
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-black">
+                  FS Portal Certification Academy
+                </p>
+                <div className="grid grid-cols-2 gap-4 pt-1 items-end">
+                  {/* Left Signature */}
+                  <div>
+                    <svg viewBox="0 0 180 48" className="w-32 sm:w-36 h-10 text-[#2B3A67]">
+                      <path
+                        d="M 8 36 C 14 10, 28 12, 26 32 C 24 40, 12 34, 22 20 C 32 8, 38 14, 36 36 L 44 22 L 48 35 L 58 14 L 62 35 L 72 22 L 78 35 L 92 10 L 96 36 L 114 28"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      />
+                      <line x1="4" y1="40" x2="150" y2="38" stroke="currentColor" strokeWidth="1.2" />
+                    </svg>
+                    <p className="text-xs font-semibold text-black">B.T.M. Holtus</p>
+                    <p className="text-[11px] text-slate-700">Managing Director</p>
                   </div>
+
+                  {/* Right Signature */}
+                  <div>
+                    <svg viewBox="0 0 180 48" className="w-32 sm:w-36 h-10 text-[#2B3A67]">
+                      <path
+                        d="M 16 32 C 35 8, 65 14, 42 34 C 24 44, 18 22, 48 14 C 75 8, 92 26, 68 36 C 52 40, 88 18, 122 28"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      />
+                      <line x1="10" y1="40" x2="140" y2="37" stroke="currentColor" strokeWidth="1.2" />
+                    </svg>
+                    <p className="text-xs font-semibold text-black">P. de Boer</p>
+                    <p className="text-[11px] text-slate-700">Certification Manager</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-0.5 text-[10px] text-slate-700">
+                <p>© Integral publication of this certificate and adjoining verification reports is allowed.</p>
+                <p>* Against this certifiable international standard / verified online by FS Portal Certification Registry.</p>
+              </div>
+
+              {/* Accreditation Badges (MGMT. SYS. & IAF Blue Oval) */}
+              <div className="flex items-center gap-4 pt-1">
+                <div className="flex flex-col items-center text-black">
+                  <div className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center text-[8px] font-black">
+                    FS
+                  </div>
+                  <span className="text-[7px] font-black tracking-tighter mt-0.5">MGMT. SYS.</span>
+                  <span className="text-[7px] font-bold">RvA C 013</span>
                 </div>
 
-                <div className="flex flex-col items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-amber-500/90 border-2 border-[#0D5C3A] flex flex-col items-center justify-center text-[#0D5C3A] shadow-sm">
-                    <span className="text-[7px] font-black uppercase tracking-tighter">
-                      OFFICIAL SEAL
-                    </span>
-                    <span className="text-[8.5px] font-black uppercase text-white bg-[#0D5C3A] px-1.5 py-0.5 rounded mt-0.5">
-                      {isDistinction ? 'DISTINCTION' : 'VERIFIED'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-0.5">
-                  <p className="text-xs italic font-serif font-bold text-[#0D5C3A]">
-                    Compliance Registrar
+                <div className="px-3.5 py-1.5 rounded-full bg-[#2563AB] text-white text-center shadow-xs border border-blue-300">
+                  <p className="text-[6px] font-bold uppercase tracking-wider">
+                    MEMBER OF MULTILATERAL
                   </p>
-                  <div className="border-t border-slate-300 pt-1">
-                    <p className="text-[9.5px] font-black uppercase text-slate-700">
-                      Head of Global Certification
-                    </p>
-                  </div>
+                  <p className="text-xs font-black tracking-widest leading-none my-0.5">
+                    IAF
+                  </p>
+                  <p className="text-[5.5px] font-bold uppercase tracking-wider">
+                    RECOGNITION ARRANGEMENT
+                  </p>
                 </div>
+              </div>
+
+              {/* Footer Address Line */}
+              <div className="pt-2 border-t border-slate-200 text-[9.5px] text-slate-700 space-y-0.5">
+                <p>
+                  FS Portal Certification B.V. · International Food Safety, HACCP, ISO &amp; Hospitality Registry
+                </p>
+                <p className="font-mono text-[9px]">
+                  Verify online: {typeof window !== 'undefined' ? window.location.origin : 'https://fsportal.academy'} · Certificate No: {certNo} · Reg: 09085396
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Action & Download Controls Based on User Tier & Admin Approval */}
+        {/* Clean Action & Download Bar Below Certificate (No Rs. 1,000 Price Text Here!) */}
         <div className="rounded-2xl border border-emerald-900/15 bg-white p-4 sm:p-5 shadow-sm space-y-3 max-w-2xl mx-auto">
           {isUnlocked ? (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3.5">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5 text-emerald-900 font-extrabold text-sm">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  Admin Approved &amp; Portrait A4 PDF Ready!
+                  Certificate Approved &amp; Ready for Download!
                 </div>
                 <p className="text-xs text-emerald-800">
-                  Certificate ID <span className="font-mono font-bold">{certNo}</span> is live on the Verification Portal in Portrait Highfield/SGS format.
+                  Certificate ID <span className="font-mono font-bold">{certNo}</span> is active on the Online Verification Portal.
                 </p>
               </div>
               <button
@@ -813,7 +935,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm transition cursor-pointer shrink-0"
               >
                 <Download className="w-4 h-4" />
-                Download Portrait PDF Certificate
+                Download Certificate (PDF)
               </button>
             </div>
           ) : isFeePaidButMembershipExpired ? (
@@ -824,7 +946,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   Premium Membership Expired — Certificate Verification &amp; Download Paused
                 </div>
                 <p className="text-xs text-amber-800 leading-relaxed">
-                  Apka Rs. 1,000 certificate fee pehlay say paid &amp; approved hy, magar apki Paid Premium Membership khatam ho chuki hy. Jab ap dobara Paid Premium Membership (Rs. {paymentGatewayConfig.monthlyFeeRs}/mo) renew karengay, apka certificate download aur online website verification foran dobara active ho jayega.
+                  Apki Paid Premium Membership khatam ho chuki hy. Jab ap dobara Paid Premium Membership renew karengay, apka certificate download aur online website verification foran dobara active ho jayega.
                 </p>
               </div>
               <button
@@ -839,50 +961,36 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-1.5">
               <div className="flex items-center gap-2 text-amber-900 font-extrabold text-sm">
                 <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                Rs. 1,000 Certificate Payment Request Sent — Waiting for Admin Approval
+                Certificate Issuance Request Sent — Waiting for Admin Approval
               </div>
               <p className="text-xs text-amber-800 leading-relaxed">
-                Apki certificate download request Admin Control Panel may mojod hy. Payment confirmation k baad jesay hi Admin allow/approve karega, apka Portrait PDF Certificate Download button yahan unlock ho jayega aur Certificate ID <span className="font-mono font-bold">{certNo}</span> website par live verify hona shuru ho jayega.
+                Apki certificate download request Admin Control Panel may bhej di gayi hy. Jesay hi Admin approve karega, apka PDF Certificate yahan say foran download ho jayega aur Certificate ID <span className="font-mono font-bold">{certNo}</span> website par live verify hona shuru ho jayega.
               </p>
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm">
-                  <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-                  {isCurrentUserPremiumActive
-                    ? 'Unlock Official Portrait PDF Certificate & Live Verification (Rs. 1,000)'
-                    : 'Free Member Preview Mode — Paid Membership + Rs. 1,000 Required for Download'}
+                  <Award className="w-4 h-4 text-[#0D5C3A] shrink-0" />
+                  Official Portrait PDF Certificate &amp; Online Portal Verification
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  {isCurrentUserPremiumActive
-                    ? 'Paid Members har certificate Rs. 1,000 fee pay kar k hasil kar saktay hain. Request submit karnay par Admin payment confirm kar k allow karega, jiskay baad Portrait PDF download aur live verification active ho jayegi.'
-                    : 'Free users tamam course materials parh saktay hain, 40-MCQ exam day saktay hain aur apna Portrait Certificate Pattern dekh saktay hain, magar PDF Certificate download aur online verification k liye Paid Premium Membership + Rs. 1,000 per certificate lazmi hy.'}
+                  Apna official PDF Certificate download karnay aur Online Verification Registry par activate karnay k liye niche <strong>Download Certificate</strong> button par click karein.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
-                {!isCurrentUserPremiumActive ? (
-                  <button
-                    type="button"
-                    onClick={onOpenUpgradeModal}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs shadow-sm cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Upgrade to Paid Member First
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPayFeedbackMsg(null);
-                      setCertPayModalCourse({ course, progress });
-                    }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm cursor-pointer"
-                  >
-                    <FileCheck2 className="w-4 h-4" />
-                    Pay Rs. 1,000 &amp; Request Admin Unlock
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPayFeedbackMsg(null);
+                    setCertModalStep('instruction');
+                    setCertPayModalCourse({ course, progress });
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Certificate
+                </button>
               </div>
             </div>
           )}
@@ -902,10 +1010,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               International Food &amp; Hospitality Certification Academy
             </div>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-              14 Accredited International Trainings &amp; Portrait Certificate Portal
+              14 Accredited International Trainings &amp; Live Certificate Portal
             </h1>
             <p className="text-xs text-emerald-100/90 max-w-2xl leading-relaxed">
-              Structured 5-Stage Curriculum (Module 1 Basics → Module 2 PRPs → Module 3 Steps 1–5 → Module 4 Principles 1–4, 5×5 Risk Matrix &amp; Codex Decision Tree → Module 5 Auditing &amp; Food Law), 40-MCQ Final Exam, and Highfield/SGS-Style Portrait PDF Certificates.
+              Structured 5-Stage Curriculum (Module 1 Basics → Module 2 PRPs → Module 3 Steps 1–5 → Module 4 Principles 1–4, 5×5 Risk Matrix &amp; Codex Decision Tree → Module 5 Auditing &amp; Food Law), 40-MCQ Final Exam, and Online Verifiable Portrait PDF Certificates.
             </p>
           </div>
 
@@ -1371,7 +1479,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-[#0D5C3A]" />
                         <span>
-                          {course.duration} · 40-MCQ Exam (60% Pass / 75% Distinction) · Rs. 1,000 Certificate
+                          {course.duration} · 40-MCQ Final Exam (60% Pass / 75% Distinction) · Online Verifiable Certificate
                         </span>
                       </div>
                     </div>
@@ -1748,22 +1856,28 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         </div>
       )}
 
-      {/* ==================== RS. 1,000 CERTIFICATE PAYMENT REQUEST MODAL ==================== */}
+      {/* ==================== SMALL INSTRUCTION WINDOW -> PAYMENT OPTION MODAL ON "DOWNLOAD CERTIFICATE" CLICK ==================== */}
       {certPayModalCourse && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 my-8">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 my-8">
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0D5C3A]">
-                  Official Certificate Issuance Request
+                  {certModalStep === 'instruction'
+                    ? 'Certificate Download Instructions'
+                    : 'Certificate Payment & Screenshot Submission'}
                 </span>
-                <h3 className="text-base sm:text-lg font-black text-slate-900">
-                  Pay Rs. 1,000 Certificate Fee — {certPayModalCourse.course.title}
+                <h3 className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
+                  {certPayModalCourse.course.title}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Certificate ID:{' '}
+                  Certificate Number:{' '}
                   <span className="font-mono font-bold text-slate-800">
-                    {certPayModalCourse.progress.certificateNumber}
+                    {certPayModalCourse.progress.certificateNumber ||
+                      makeDeterministicCertNumber(
+                        currentUser?.uid || 'GUEST',
+                        certPayModalCourse.course.code
+                      )}
                   </span>
                 </p>
               </div>
@@ -1774,29 +1888,6 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               >
                 ✕ Close
               </button>
-            </div>
-
-            {/* Payment Account Details */}
-            <div className="rounded-xl bg-emerald-50/70 border border-emerald-200 p-3.5 space-y-2 text-xs">
-              <p className="font-extrabold text-[#0D5C3A]">
-                Transfer Rs. 1,000 to any official account below & upload receipt:
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
-                  <p className="font-bold text-slate-800">JazzCash: {paymentGatewayConfig.jazzCashNumber}</p>
-                  <p className="text-[11px] text-slate-500">{paymentGatewayConfig.jazzCashTitle}</p>
-                </div>
-                <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
-                  <p className="font-bold text-slate-800">EasyPaisa: {paymentGatewayConfig.easyPaisaNumber}</p>
-                  <p className="text-[11px] text-slate-500">{paymentGatewayConfig.easyPaisaTitle}</p>
-                </div>
-              </div>
-              <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
-                <p className="font-bold text-slate-800">
-                  {paymentGatewayConfig.bankName}: {paymentGatewayConfig.bankAccountOrIban}
-                </p>
-                <p className="text-[11px] text-slate-500">Title: {paymentGatewayConfig.bankTitle}</p>
-              </div>
             </div>
 
             {payFeedbackMsg ? (
@@ -1813,85 +1904,177 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   Done
                 </button>
               </div>
-            ) : (
-              <form onSubmit={handleSubmitCertPayment} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Payment Method (Rs. 1,000)
-                  </label>
-                  <select
-                    value={payMethod}
-                    onChange={(e) =>
-                      setPayMethod(e.target.value as 'JazzCash' | 'EasyPaisa' | 'Bank Transfer')
-                    }
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
-                  >
-                    <option value="JazzCash">JazzCash</option>
-                    <option value="EasyPaisa">EasyPaisa</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                  </select>
+            ) : certModalStep === 'instruction' ? (
+              /* STEP 1: SMALL INSTRUCTION WINDOW WHEN USER CLICKS "DOWNLOAD CERTIFICATE" */
+              <div className="space-y-4">
+                <div className="rounded-xl bg-emerald-50/80 border border-emerald-200 p-4 space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black uppercase tracking-wider text-[#0D5C3A]">
+                      Certificate Issuance Fee
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg bg-[#0D5C3A] text-white font-black text-xs">
+                      Rs. 1,000
+                    </span>
+                  </div>
+                  <p className="text-slate-800 leading-relaxed">
+                    Apna official <strong>Portrait PDF Certificate</strong> download karnay aur <strong>Online Verification Portal</strong> par live verify karnay k liye <strong>Rs. 1,000</strong> certificate fee lagu hy.
+                  </p>
+                  <ul className="space-y-1 text-slate-700 font-medium pt-1">
+                    <li>1. Niche <strong>Proceed to Payment Option</strong> par click karein.</li>
+                    <li>2. Rs. 1,000 fee transfer kar k payment screenshot submit karein.</li>
+                    <li>3. Admin Control Panel may request approve hotay hi apka PDF Certificate download ho jayega.</li>
+                  </ul>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Transaction ID / TID / Reference Number *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={payTxId}
-                    onChange={(e) => setPayTxId(e.target.value)}
-                    placeholder="Enter 11-digit TID or Bank Reference..."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Upload Payment Screenshot (Optional but Recommended)
-                  </label>
-                  <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer">
-                    <Upload className="w-4 h-4 text-[#0D5C3A]" />
-                    <span>{payReceiptDataUrl ? 'Receipt Image Attached ✓' : 'Select Payment Slip Image'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleReceiptFileChange}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Additional Notes (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={payNotes}
-                    onChange={(e) => setPayNotes(e.target.value)}
-                    placeholder="Sender account number or note for Admin..."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
-                  />
-                </div>
-
-                <div className="pt-2 flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => setCertPayModalCourse(null)}
-                    className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
-                    type="submit"
-                    disabled={isSubmittingPay}
-                    className="px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white text-xs font-extrabold shadow-sm cursor-pointer disabled:opacity-50"
+                    type="button"
+                    onClick={() => setCertModalStep('payment')}
+                    className="px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white text-xs font-extrabold shadow-sm cursor-pointer inline-flex items-center gap-1.5"
                   >
-                    {isSubmittingPay ? 'Sending to Admin...' : 'Submit Rs. 1,000 Request to Admin'}
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Proceed to Payment Option (Rs. 1,000) →</span>
                   </button>
                 </div>
-              </form>
+              </div>
+            ) : (
+              /* STEP 2: PAYMENT OPTION & SCREENSHOT UPLOAD TO ADMIN */
+              <div className="space-y-3.5">
+                <div className="rounded-xl bg-emerald-50/70 border border-emerald-200 p-3.5 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <p className="font-extrabold text-[#0D5C3A]">
+                      Transfer Rs. 1,000 &amp; Upload Payment Screenshot:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setCertModalStep('instruction')}
+                      className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                    >
+                      ← Back
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
+                      <p className="font-bold text-slate-800">
+                        JazzCash: {paymentGatewayConfig.jazzCashNumber}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        {paymentGatewayConfig.jazzCashTitle}
+                      </p>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
+                      <p className="font-bold text-slate-800">
+                        EasyPaisa: {paymentGatewayConfig.easyPaisaNumber}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        {paymentGatewayConfig.easyPaisaTitle}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
+                    <p className="font-bold text-slate-800">
+                      {paymentGatewayConfig.bankName}: {paymentGatewayConfig.bankAccountOrIban}
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Title: {paymentGatewayConfig.bankTitle}
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSubmitCertPayment} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Select Payment Method (Rs. 1,000)
+                    </label>
+                    <select
+                      value={payMethod}
+                      onChange={(e) =>
+                        setPayMethod(
+                          e.target.value as 'JazzCash' | 'EasyPaisa' | 'Bank Transfer'
+                        )
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                    >
+                      <option value="JazzCash">JazzCash</option>
+                      <option value="EasyPaisa">EasyPaisa</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Transaction ID / TID / Reference Number *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={payTxId}
+                      onChange={(e) => setPayTxId(e.target.value)}
+                      placeholder="Enter 11-digit TID or Bank Reference..."
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Upload Payment Screenshot *
+                    </label>
+                    <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer">
+                      <Upload className="w-4 h-4 text-[#0D5C3A]" />
+                      <span>
+                        {payReceiptDataUrl
+                          ? 'Payment Screenshot Attached ✓'
+                          : 'Select Payment Screenshot Image'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleReceiptFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Additional Notes (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={payNotes}
+                      onChange={(e) => setPayNotes(e.target.value)}
+                      placeholder="Sender account number or note for Admin..."
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCertPayModalCourse(null)}
+                      className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingPay}
+                      className="px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white text-xs font-extrabold shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                      {isSubmittingPay
+                        ? 'Sending to Admin...'
+                        : 'Submit Payment & Screenshot to Admin'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             )}
           </div>
         </div>
