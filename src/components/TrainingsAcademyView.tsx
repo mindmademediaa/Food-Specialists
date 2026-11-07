@@ -617,116 +617,42 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
           year: 'numeric'
         });
 
+    const cleanPortalHost = (
+      typeof window !== 'undefined' ? window.location.origin : 'https://fsportal.academy'
+    )
+      .replace(/^https?:\/\//i, '')
+      .replace(/\/$/, '');
+
     return (
       <div className="space-y-4">
-        {/* DEKRA / Bureau Veritas Style Portrait A4 Certificate Visual Pattern Card */}
-        <div className="max-w-2xl mx-auto relative overflow-hidden rounded-xl border border-slate-300 bg-white shadow-2xl flex min-h-[680px]">
-          {/* Sweeping Green Guilloche Wave Curves SVG Background (Right & Bottom-Center) */}
-          <svg
-            viewBox="0 0 600 850"
-            preserveAspectRatio="none"
-            className="pointer-events-none select-none absolute inset-0 w-full h-full z-0"
-          >
-            <defs>
-              <linearGradient id="dekraWaveFill" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#d9ece0" stopOpacity="0.55" />
-                <stop offset="50%" stopColor="#bfe0cc" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#e4f2e8" stopOpacity="0.65" />
-              </linearGradient>
-            </defs>
-            {/* Soft green wavewash backdrop */}
-            <path
-              d="M 380 0 L 600 0 L 600 850 L 180 850 C 230 610, 480 430, 460 220 C 445 100, 410 45, 380 0 Z"
-              fill="url(#dekraWaveFill)"
-            />
-            {/* 28 Parallel Guilloche Green Wave Curves */}
-            {Array.from({ length: 28 }).map((_, i) => {
-              const t = i / 27;
-              const x0 = 375 + t * 215;
-              const cx1 = 560 - t * 190;
-              const cy1 = 240 + t * 70;
-              const cx2 = 155 + t * 380;
-              const cy2 = 510 - t * 55;
-              const x3 = 165 + t * 360;
-              return (
-                <path
-                  key={`wave-a-${i}`}
-                  d={`M ${x0} 0 C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x3} 850`}
-                  fill="none"
-                  stroke={i % 2 === 0 ? '#68ab83' : '#96c7a9'}
-                  strokeWidth={i % 3 === 0 ? '1.1' : '0.75'}
-                  strokeOpacity="0.65"
-                />
-              );
-            })}
-            {Array.from({ length: 16 }).map((_, j) => {
-              const t = j / 15;
-              const x0 = 435 + t * 165;
-              const cx1 = 330 + t * 190;
-              const cy1 = 310;
-              const cx2 = 470 + t * 130;
-              const cy2 = 590;
-              const x3 = 235 + t * 265;
-              return (
-                <path
-                  key={`wave-b-${j}`}
-                  d={`M ${x0} 0 C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x3} 850`}
-                  fill="none"
-                  stroke="#7db895"
-                  strokeWidth="0.65"
-                  strokeOpacity="0.5"
-                />
-              );
-            })}
-          </svg>
-
-          {/* Left Vertical Security Strip (DEKRA / Bureau Veritas Spine) */}
-          <div className="w-11 sm:w-14 shrink-0 relative z-10 flex flex-col justify-between select-none border-r border-slate-200/70">
-            {/* Top Silver-Grey Micro-Watermark Block */}
-            <div className="h-28 bg-[#D0D5D2] overflow-hidden relative flex flex-col justify-around py-1">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div
-                  key={`top-wm-${i}`}
-                  className="text-[7px] font-black tracking-wider text-white/90 whitespace-nowrap -rotate-12 -ml-2"
-                >
-                  ▷ FS PORTAL &nbsp; ▷ FS PORTAL
-                </div>
-              ))}
-            </div>
-
-            {/* Middle White Cutout with Rotated Green Brand Spine */}
-            <div className="h-40 bg-white flex flex-col items-center justify-center py-3 gap-2">
-              <span
-                className="text-[#0D7A43] font-black text-base sm:text-lg tracking-wider whitespace-nowrap"
-                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-              >
-                FS PORTAL
-              </span>
-              <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#0D7A43] fill-current">
-                <polygon points="4,20 4,4 20,12" />
-                <polygon points="7,16 7,8 15,12" fill="white" />
-              </svg>
-            </div>
-
-            {/* Bottom Silver-Grey Micro-Watermark Block */}
-            <div className="flex-1 bg-[#D0D5D2] overflow-hidden relative flex flex-col justify-around py-2">
-              {Array.from({ length: 24 }).map((_, i) => (
-                <div
-                  key={`bot-wm-${i}`}
-                  className="text-[7px] font-black tracking-wider text-white/90 whitespace-nowrap -rotate-12 -ml-2"
-                >
-                  ▷ FS PORTAL &nbsp; ▷ FS PORTAL
-                </div>
-              ))}
-            </div>
+        {/* Commodious / CPD / Institute of Hospitality Style Portrait A4 Certificate Visual Pattern Card */}
+        <div className="max-w-2xl mx-auto relative overflow-hidden rounded-xl border border-slate-300 bg-white shadow-2xl flex min-h-[720px]">
+          {/* Left Full-Height Royal Blue Sidebar (#1673B8) with Giant Rotated "Certificate" */}
+          <div className="w-24 sm:w-36 bg-[#1673B8] shrink-0 relative overflow-hidden flex items-center justify-center select-none">
+            <span
+              className="text-[#105E9A] font-black tracking-tight leading-none select-none pointer-events-none"
+              style={{
+                writingMode: 'vertical-rl',
+                transform: 'rotate(180deg)',
+                fontSize: 'clamp(5.2rem, 12vw, 8.8rem)'
+              }}
+            >
+              Certificate
+            </span>
           </div>
 
-          {/* Right Main Left-Aligned Swiss Typography Area */}
-          <div className="flex-1 p-5 sm:p-8 relative z-10 flex flex-col justify-between text-left">
-            {/* Watermark if not yet unlocked */}
+          {/* Right Main White Certificate Canvas */}
+          <div className="flex-1 p-5 sm:p-8 relative z-10 flex flex-col justify-between text-left overflow-hidden bg-white">
+            {/* Subtle Giant Ice-Blue "U" Watermark in Lower-Right Background */}
+            <div
+              className="pointer-events-none select-none absolute -right-8 top-44 w-72 h-80 border-[34px] border-[#F0F6FC] rounded-b-full border-t-0 z-0"
+              aria-hidden="true"
+            />
+
+            {/* Preview Watermark if not yet unlocked */}
             {!isUnlocked && (
               <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center z-20">
-                <span className="rotate-[-20deg] border-2 border-emerald-800/25 bg-white/80 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest text-emerald-950/50 shadow-xs text-center">
+                <span className="rotate-[-20deg] border-2 border-[#1673B8]/30 bg-white/85 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest text-[#1673B8]/60 shadow-xs text-center">
                   {isPendingAdminApproval
                     ? 'PENDING ADMIN APPROVAL · CERTIFICATE PREVIEW'
                     : 'CERTIFICATE PATTERN PREVIEW'}
@@ -734,166 +660,244 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               </div>
             )}
 
-            <div className="space-y-4">
-              {/* Giant Bold "CERTIFICATE" Heading */}
-              <h3 className="text-3xl sm:text-5xl font-black tracking-tight text-black font-sans pt-1">
-                CERTIFICATE
-              </h3>
+            {/* Top Section: Brand Logo, Rosette Seal, Title, User & Training Info */}
+            <div className="space-y-5 relative z-10">
+              {/* Top Row: FS Portal Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-2xl sm:text-3xl font-black tracking-tight text-[#1A2138] flex items-baseline">
+                    <span>FS Port</span>
+                    <span className="text-[#1673B8] border-b-[3px] border-[#1673B8] pb-0.5 leading-none">
+                      al
+                    </span>
+                  </div>
+                  <p className="text-xs font-medium text-slate-700 mt-1">
+                    {cleanPortalHost || 'fsportal.academy'}
+                  </p>
+                </div>
 
-              {/* Certificate Number & Intro */}
-              <div className="space-y-1.5 text-xs text-black">
-                <p className="font-medium">Number: {certNo}</p>
-                <p className="text-slate-800">
-                  The professional competency, curriculum completion, and assessment record belonging to:
-                </p>
+                {/* Blue Scalloped Rosette Seal with Two Hanging Ribbons */}
+                <div className="relative flex flex-col items-center shrink-0 mr-1">
+                  <svg viewBox="0 0 120 145" className="w-20 h-24 sm:w-24 sm:h-28">
+                    {/* Hanging Ribbons */}
+                    <polygon points="36,88 54,88 48,136 39,125 28,134" fill="#1673B8" />
+                    <polygon points="66,88 84,88 92,134 81,125 72,136" fill="#1673B8" />
+                    {/* 12 Scallop Lobes */}
+                    {Array.from({ length: 12 }).map((_, idx) => {
+                      const angle = (idx / 12) * Math.PI * 2;
+                      const cx = 60 + 34 * Math.cos(angle);
+                      const cy = 54 + 34 * Math.sin(angle);
+                      return <circle key={idx} cx={cx} cy={cy} r="12" fill="#1673B8" />;
+                    })}
+                    <circle cx="60" cy="54" r="36" fill="#1673B8" />
+                    <circle cx="60" cy="54" r="27" fill="#FFFFFF" />
+                    <text
+                      x="60"
+                      y="38"
+                      textAnchor="middle"
+                      fill="#236B9E"
+                      fontSize="6.5"
+                      fontWeight="800"
+                      letterSpacing="0.8"
+                    >
+                      FS PORTAL
+                    </text>
+                    <rect x="39" y="51" width="4" height="4" fill="#1673B8" />
+                    <rect x="77" y="51" width="4" height="4" fill="#1673B8" />
+                    <text
+                      x="60"
+                      y="59"
+                      textAnchor="middle"
+                      fill="#1673B8"
+                      fontSize="19"
+                      fontWeight="900"
+                    >
+                      FS
+                    </text>
+                    <rect x="50" y="62" width="20" height="2.6" fill="#1673B8" />
+                    <text
+                      x="60"
+                      y="73"
+                      textAnchor="middle"
+                      fill="#236B9E"
+                      fontSize="6.5"
+                      fontWeight="800"
+                      letterSpacing="0.8"
+                    >
+                      CERTIFIED
+                    </text>
+                  </svg>
+                </div>
               </div>
 
-              {/* Candidate Name & Sub-Lines (Bureau Veritas Block Style) */}
+              {/* "Certificate of Achievement" / "of Distinction" Heading */}
               <div className="space-y-0.5 pt-1">
-                <p className="text-xl sm:text-2xl font-black text-black leading-tight">
-                  {holderName}
-                </p>
-                <p className="text-xs font-bold text-black">
-                  {currentUser?.email
-                    ? `Registered Candidate: ${currentUser.email}`
-                    : `Credential ID: ${certNo}`}
-                </p>
-                <p className="text-xs font-bold text-black">
-                  {isDistinction
-                    ? `Qualification Standing: Passed with Distinction (${scorePct}%)`
-                    : `Qualification Standing: Certified Pass (${scorePct}%)`}
-                </p>
-                <p className="text-xs font-bold text-black">
-                  International Food Safety &amp; Quality Compliance Registry
+                <h3 className="text-3xl sm:text-4xl font-normal text-[#226CA3] tracking-tight leading-tight">
+                  Certificate
+                </h3>
+                <p className="text-3xl sm:text-4xl font-normal text-[#226CA3] tracking-tight leading-tight">
+                  {isDistinction ? 'of Distinction' : 'of Achievement'}
                 </p>
               </div>
 
-              {/* Standard Compliance Transition */}
-              <p className="text-xs text-slate-800 pt-1">
-                including the practical module implementation meets the requirements of the standard:
-              </p>
-
-              {/* Large Bold Course / Standard Title (ISO 9001:2015 Style) */}
-              <div className="space-y-1">
-                <h4 className="text-2xl sm:text-3xl font-black text-black tracking-tight leading-none">
-                  {course.title}
-                </h4>
-                <p className="text-xs font-extrabold text-[#0D7A43]">
-                  Standard / Code: {course.code} · {course.accreditationStandard}
+              {/* "This is to certify that" + Recipient Name on Horizontal Line */}
+              <div className="space-y-2 pt-1">
+                <p className="text-sm sm:text-base text-[#1C2336]">
+                  This is to certify that
                 </p>
-              </div>
-
-              {/* Scope & 5 Modules Summary */}
-              <div className="space-y-1.5 text-xs text-black pt-1">
-                <p className="font-semibold">Scope:</p>
-                <p className="text-slate-800 leading-relaxed text-[11.5px]">
-                  Performing hazard analysis, prerequisite programs (PRPs: GMP, GHP, SSOPs), 12-step Codex HACCP implementation, 5×5 risk assessment matrix scoring, CCP decision tree evaluation, internal system auditing, and statutory food safety law compliance.
-                </p>
-                <div className="pt-1 space-y-0.5 text-[11px] text-slate-700">
-                  {course.modules.slice(0, 5).map((m, idx) => (
-                    <p key={m.id} className="truncate">
-                      • <strong className="text-slate-900">Module {idx + 1}:</strong> {m.title}
+                <div className="border-b border-[#D8E4EE] pb-2 pt-1">
+                  <p className="text-xl sm:text-2xl font-black text-[#162038] tracking-tight">
+                    {holderName}
+                  </p>
+                  {currentUser?.email && (
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      {currentUser.email}
                     </p>
-                  ))}
+                  )}
                 </div>
               </div>
 
-              {/* 3-Row Aligned Dates & Score Block */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-1 text-xs text-black pt-2">
-                <div className="sm:col-span-5 font-medium">Certificate verification:</div>
-                <div className="sm:col-span-7 font-semibold">Online Portal Registry (Active)</div>
-
-                <div className="sm:col-span-5 font-medium">Certificate effective date:</div>
-                <div className="sm:col-span-7 font-semibold">{issueDateStr}</div>
-
-                <div className="sm:col-span-5 font-medium">Assessment score*:</div>
-                <div className="sm:col-span-7 font-semibold">
-                  {scorePct}% ({correctOutOf40}/40 MCQs — {isDistinction ? 'Distinction' : 'Certified Pass'})
+              {/* "has successfully completed" + Training Title & Standard on Horizontal Line */}
+              <div className="space-y-2 pt-1">
+                <p className="text-sm sm:text-base text-[#1C2336]">
+                  has successfully completed
+                </p>
+                <div className="border-b border-[#D8E4EE] pb-3 pt-1 space-y-1">
+                  <h4 className="text-lg sm:text-2xl font-black text-[#1673B8] leading-snug">
+                    {course.title}
+                  </h4>
+                  <p className="text-xs font-bold text-slate-700">
+                    Code: <span className="text-slate-900">{course.code}</span> · Standard:{' '}
+                    <span className="text-slate-900">{course.accreditationStandard}</span>
+                  </p>
+                  <p className="text-[10.5px] text-slate-500 leading-relaxed">
+                    5-Module International Curriculum (Basics, PRPs, HACCP Steps 1–5, 7 Principles with 5×5 Risk Matrix &amp; Codex Decision Tree, Auditing &amp; Food Safety Law) + 40-MCQ Final Assessment
+                  </p>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-800">
-                This certificate is valid and verifiable online for the candidate and qualification mentioned above.
-              </p>
+              {/* 3-Column Underlined Metrics Row: Certificate No. | Awarded | CPD Credits / Score */}
+              <div className="grid grid-cols-3 gap-3 sm:gap-5 pt-4 text-center">
+                <div>
+                  <div className="border-b border-[#D2DEEA] pb-1.5 text-xs sm:text-sm font-black text-[#162038] font-mono truncate">
+                    {certNo}
+                  </div>
+                  <p className="text-[11px] text-slate-700 mt-1.5">Certificate No.</p>
+                </div>
+
+                <div>
+                  <div className="border-b border-[#D2DEEA] pb-1.5 text-xs sm:text-sm font-bold text-[#162038] truncate">
+                    {issueDateStr}
+                  </div>
+                  <p className="text-[11px] text-slate-700 mt-1.5">Awarded</p>
+                </div>
+
+                <div>
+                  <div className="border-b border-[#D2DEEA] pb-1.5 text-xs sm:text-sm font-black text-[#1673B8] truncate">
+                    {scorePct}% ({isDistinction ? 'Distinction' : 'Pass'})
+                  </div>
+                  <p className="text-[11px] text-slate-700 mt-1.5">CPD Credits / Score</p>
+                </div>
+              </div>
             </div>
 
-            {/* Bottom Signatures, Accreditation Badges & Registry Footer */}
-            <div className="pt-6 space-y-4">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-black">
-                  FS Portal Certification Academy
-                </p>
-                <div className="grid grid-cols-2 gap-4 pt-1 items-end">
-                  {/* Left Signature */}
-                  <div>
-                    <svg viewBox="0 0 180 48" className="w-32 sm:w-36 h-10 text-[#2B3A67]">
+            {/* Bottom Section: Cursive Signature, Endorsed Badge, Green Shield Validation & CPD Certified */}
+            <div className="pt-7 space-y-5 relative z-10">
+              {/* Row 1: Cursive Signature on Left + Institute of Hospitality ENDORSED on Right */}
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div className="w-44 text-center">
+                  <svg viewBox="0 0 190 48" className="w-40 h-11 mx-auto text-[#141824]">
+                    <path
+                      d="M 14 14 L 22 36 L 30 12 M 36 34 C 36 34, 37 34, 37 34 M 46 35 L 49 16 L 57 30 L 65 16 L 71 35 M 84 13 L 86 35 L 94 26 L 100 35 L 108 24 L 113 35 L 121 15 L 123 35 L 132 25 L 139 34 L 148 25 L 156 34 L 164 25 L 169 42 C 166 47, 158 45, 156 39"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <div className="border-t border-[#D2DEEA] pt-1">
+                    <p className="text-[10.5px] text-slate-700">
+                      Signed on behalf of FS Portal
+                    </p>
+                  </div>
+                </div>
+
+                {/* Institute of Hospitality ENDORSED Badge */}
+                <div className="flex items-start gap-2.5">
+                  <div className="w-9 h-11 rounded border border-[#263056] bg-slate-50 flex flex-col items-center justify-center p-1 text-[#263056] shrink-0">
+                    <Award className="w-5 h-5" />
+                    <span className="text-[6px] font-black uppercase">CREST</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="leading-none text-[#1A2138]">
+                      <p className="text-xs font-medium">Institute</p>
+                      <p className="text-xs">
+                        of <strong className="font-black text-sm">Hospitality</strong>
+                      </p>
+                    </div>
+                    <div className="px-3 py-0.5 rounded bg-[#9E1B34] text-white text-[8px] font-black uppercase tracking-widest text-center">
+                      ENDORSED
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 2: Green Shield "Validate this certificate at" on Left + Purple "CPD CERTIFIED" on Right */}
+              <div className="flex flex-wrap items-end justify-between gap-4 pt-1">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    {/* Shield with Green Checkmark */}
+                    <svg viewBox="0 0 36 42" className="w-8 h-9 shrink-0">
                       <path
-                        d="M 8 36 C 14 10, 28 12, 26 32 C 24 40, 12 34, 22 20 C 32 8, 38 14, 36 36 L 44 22 L 48 35 L 58 14 L 62 35 L 72 22 L 78 35 L 92 10 L 96 36 L 114 28"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
+                        d="M 18 2 L 33 8 L 33 21 C 33 30, 25 36, 18 40 C 11 36, 3 30, 3 21 L 3 8 Z"
+                        fill="#FFFFFF"
+                        stroke="#1A2138"
+                        strokeWidth="2.2"
                       />
-                      <line x1="4" y1="40" x2="150" y2="38" stroke="currentColor" strokeWidth="1.2" />
-                    </svg>
-                    <p className="text-xs font-semibold text-black">B.T.M. Holtus</p>
-                    <p className="text-[11px] text-slate-700">Managing Director</p>
-                  </div>
-
-                  {/* Right Signature */}
-                  <div>
-                    <svg viewBox="0 0 180 48" className="w-32 sm:w-36 h-10 text-[#2B3A67]">
                       <path
-                        d="M 16 32 C 35 8, 65 14, 42 34 C 24 44, 18 22, 48 14 C 75 8, 92 26, 68 36 C 52 40, 88 18, 122 28"
+                        d="M 11 21 L 16 26 L 26 15"
                         fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
+                        stroke="#22C55E"
+                        strokeWidth="3.2"
                         strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
-                      <line x1="10" y1="40" x2="140" y2="37" stroke="currentColor" strokeWidth="1.2" />
                     </svg>
-                    <p className="text-xs font-semibold text-black">P. de Boer</p>
-                    <p className="text-[11px] text-slate-700">Certification Manager</p>
+                    <div className="text-xs">
+                      <p className="font-black text-[#1A2138]">
+                        Validate this certificate at
+                      </p>
+                      <p className="text-slate-700 font-medium">
+                        {cleanPortalHost || 'fsportal.academy'}/verify (ID: {certNo})
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-[10.5px] text-slate-700 leading-snug">
+                    <p>Refresher training recommended every three years</p>
+                    <p>or sooner if circumstances dictate.</p>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-0.5 text-[10px] text-slate-700">
-                <p>© Integral publication of this certificate and adjoining verification reports is allowed.</p>
-                <p>* Against this certifiable international standard / verified online by FS Portal Certification Registry.</p>
-              </div>
-
-              {/* Accreditation Badges (MGMT. SYS. & IAF Blue Oval) */}
-              <div className="flex items-center gap-4 pt-1">
-                <div className="flex flex-col items-center text-black">
-                  <div className="w-7 h-7 rounded-full border-2 border-black flex items-center justify-center text-[8px] font-black">
-                    FS
+                {/* Purple CPD CERTIFIED Emblem */}
+                <div className="text-center select-none">
+                  <div className="relative inline-block">
+                    <p className="text-2xl font-black text-[#5B3282] tracking-tight leading-none">
+                      CPD
+                    </p>
                   </div>
-                  <span className="text-[7px] font-black tracking-tighter mt-0.5">MGMT. SYS.</span>
-                  <span className="text-[7px] font-bold">RvA C 013</span>
-                </div>
-
-                <div className="px-3.5 py-1.5 rounded-full bg-[#2563AB] text-white text-center shadow-xs border border-blue-300">
-                  <p className="text-[6px] font-bold uppercase tracking-wider">
-                    MEMBER OF MULTILATERAL
-                  </p>
-                  <p className="text-xs font-black tracking-widest leading-none my-0.5">
-                    IAF
-                  </p>
-                  <p className="text-[5.5px] font-bold uppercase tracking-wider">
-                    RECOGNITION ARRANGEMENT
+                  <div className="border-y border-slate-700 py-0.5 my-0.5 px-2">
+                    <p className="text-[9px] font-serif font-bold tracking-[0.2em] text-[#1A2138]">
+                      CERTIFIED
+                    </p>
+                  </div>
+                  <p className="text-[7.5px] font-bold text-slate-700 leading-tight">
+                    The CPD Certification
+                    <br />
+                    Service
                   </p>
                 </div>
-              </div>
-
-              {/* Footer Address Line */}
-              <div className="pt-2 border-t border-slate-200 text-[9.5px] text-slate-700 space-y-0.5">
-                <p>
-                  FS Portal Certification B.V. · International Food Safety, HACCP, ISO &amp; Hospitality Registry
-                </p>
-                <p className="font-mono text-[9px]">
-                  Verify online: {typeof window !== 'undefined' ? window.location.origin : 'https://fsportal.academy'} · Certificate No: {certNo} · Reg: 09085396
-                </p>
               </div>
             </div>
           </div>
