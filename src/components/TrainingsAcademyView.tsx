@@ -464,39 +464,63 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       recipientName: string;
       recipientEmail: string;
       courseTitle: string;
+      courseCode: string;
       accreditationBody: string;
       issueDate: string;
       scorePercentage: number;
       distinction: boolean;
       isHolderMembershipActive: boolean;
       revokedByAdmin: boolean;
+      issuedByAdminDirect?: boolean;
     }
 
     const recordsMap = new Map<string, VerifiedRecordItem>();
 
-    // 1. From official certificates collection (Admin-approved & issued)
+    // 1. From official certificates collection (Admin-approved & Admin Direct Issued)
     for (const cert of certificates) {
       const holderUser = users.find(
         (u) =>
           (cert.recipientUid && u.uid === cert.recipientUid) ||
           (cert.recipientEmail &&
+            cert.recipientEmail.trim() !== '' &&
             u.email.trim().toLowerCase() === cert.recipientEmail.trim().toLowerCase())
       );
-      const isHolderActive = holderUser ? isUserPremiumActiveFn(holderUser) : false;
+      const isDirectByAdmin = Boolean(
+        cert.issuedBy && cert.issuedBy.toLowerCase().includes('direct')
+      );
+      const isHolderActive = isDirectByAdmin
+        ? holderUser
+          ? isUserPremiumActiveFn(holderUser) || true
+          : true
+        : holderUser
+        ? isUserPremiumActiveFn(holderUser)
+        : true;
+
+      const matchedCourse = INTERNATIONAL_TRAINING_COURSES.find(
+        (c) =>
+          c.id === cert.courseId ||
+          c.title.toLowerCase() === cert.trainingTitle.trim().toLowerCase()
+      );
 
       recordsMap.set(cert.certificateNumber.toUpperCase(), {
         certificateNumber: cert.certificateNumber.toUpperCase(),
         recipientUid: cert.recipientUid || holderUser?.uid,
-        recipientName: cert.recipientName || holderUser?.name || 'Certified Member',
+        recipientName: cert.recipientName || holderUser?.name || 'Certified Professional',
         recipientEmail: cert.recipientEmail || holderUser?.email || '',
         courseTitle: cert.trainingTitle,
+        courseCode: matchedCourse?.code || 'FS-CERT-INTL',
         accreditationBody:
-          cert.accreditationBody || 'Codex Alimentarius & GFSI International Standard',
+          cert.accreditationBody ||
+          matchedCourse?.accreditationStandard ||
+          'Codex Alimentarius & GFSI International Standard',
         issueDate: cert.issueDate,
-        scorePercentage: cert.scorePercentage || 75,
-        distinction: Boolean(cert.distinction || (cert.scorePercentage && cert.scorePercentage >= 75)),
+        scorePercentage: cert.scorePercentage || 85,
+        distinction: Boolean(
+          cert.distinction || (cert.scorePercentage && cert.scorePercentage >= 75)
+        ),
         isHolderMembershipActive: isHolderActive,
-        revokedByAdmin: cert.verificationStatus === 'revoked'
+        revokedByAdmin: cert.verificationStatus === 'revoked',
+        issuedByAdminDirect: isDirectByAdmin
       });
     }
 
@@ -516,17 +540,31 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             recipientName: u.name,
             recipientEmail: u.email,
             courseTitle: prog.courseTitle,
+            courseCode: courseObj?.code || 'FS-CERT-INTL',
             accreditationBody:
               courseObj?.accreditationStandard || 'FS Portal International Academy',
             issueDate: prog.certificateUnlockedAt
-              ? new Date(prog.certificateUnlockedAt).toLocaleDateString()
+              ? new Date(prog.certificateUnlockedAt).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                })
               : prog.examCompletedAt
-              ? new Date(prog.examCompletedAt).toLocaleDateString()
-              : new Date().toLocaleDateString(),
+              ? new Date(prog.examCompletedAt).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                })
+              : new Date().toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                }),
             scorePercentage: prog.bestExamPercentage,
             distinction: prog.distinctionEarned,
             isHolderMembershipActive: isHolderActive,
-            revokedByAdmin: false
+            revokedByAdmin: false,
+            issuedByAdminDirect: false
           });
         }
       }
@@ -536,11 +574,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       (item) =>
         item.certificateNumber.toLowerCase().includes(q) ||
         item.recipientEmail.toLowerCase().includes(q) ||
-        item.recipientName.toLowerCase().includes(q)
+        item.recipientName.toLowerCase().includes(q) ||
+        item.courseTitle.toLowerCase().includes(q)
     );
   }, [verifyQuery, certificates, users, isUserPremiumActiveFn]);
 
-  // Render Reusable Certificate Pattern Card (for Preview & Unlocked Download)
+  // Render Reusable Portrait Certificate Pattern Card (Highfield / SGS / Bureau Veritas Style)
   const renderCertificatePatternCard = (
     course: InternationalTrainingCourse,
     progress: UserCourseProgress
@@ -573,74 +612,165 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
     return (
       <div className="space-y-4">
-        {/* Certificate Visual Pattern Frame */}
-        <div className="relative overflow-hidden rounded-2xl border-4 border-[#0D5C3A] bg-[#FAFDF9] p-5 sm:p-7 shadow-xl">
-          {/* Inner Gold Border */}
-          <div className="border-2 border-amber-500/80 rounded-xl p-4 sm:p-6 relative">
+        {/* Portrait A4 Style Certificate Visual Pattern Frame (Highfield / SGS / Bureau Veritas Vertical Layout) */}
+        <div className="max-w-2xl mx-auto relative overflow-hidden rounded-2xl border-4 border-[#0D5C3A] bg-[#FAFDF9] p-4 sm:p-7 shadow-xl">
+          {/* Top Reference Metadata Strip */}
+          <div className="rounded-t-xl bg-[#0D5C3A] text-white px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-[10px] font-black uppercase tracking-wider">
+            <span className="text-amber-300">CERTIFICATE NO: {certNo}</span>
+            <span>STANDARD: PORTRAIT A4 (ISO/IEC 17024 · HIGHFIELD / SGS / BV STYLE)</span>
+          </div>
+
+          {/* Inner Gold Architectural Frame */}
+          <div className="border-2 border-amber-500/85 rounded-b-xl p-5 sm:p-7 relative bg-gradient-to-b from-[#FAFDF9] via-white to-[#F3F8F5]">
             {/* Watermark if not yet unlocked */}
             {!isUnlocked && (
               <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center z-10">
-                <span className="rotate-[-18deg] border-2 border-amber-600/30 bg-amber-50/75 px-5 py-2 rounded-xl text-xs sm:text-base font-black uppercase tracking-widest text-amber-900/50 shadow-sm">
+                <span className="rotate-[-22deg] border-2 border-amber-600/35 bg-amber-50/80 px-5 py-2.5 rounded-xl text-xs sm:text-base font-black uppercase tracking-widest text-amber-900/55 shadow-sm text-center">
                   {isPendingAdminApproval
-                    ? 'PENDING ADMIN APPROVAL · PREVIEW ONLY'
-                    : 'CERTIFICATE PATTERN PREVIEW · DOWNLOAD LOCKED'}
+                    ? 'PENDING ADMIN APPROVAL · PORTRAIT PREVIEW ONLY'
+                    : 'PORTRAIT CERTIFICATE PREVIEW · PDF DOWNLOAD LOCKED'}
                 </span>
               </div>
             )}
 
-            <div className="text-center space-y-2.5 relative z-0">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#0D5C3A] text-white text-[10px] font-extrabold uppercase tracking-widest">
-                <Award className="w-3.5 h-3.5 text-amber-300" />
-                FS Portal International Certification Academy
+            <div className="text-center space-y-3 relative z-0">
+              {/* Top Royal Crest Emblem */}
+              <div className="mx-auto w-14 h-14 rounded-full bg-[#0D5C3A] border-2 border-amber-400 flex flex-col items-center justify-center text-white shadow-md">
+                <Award className="w-6 h-6 text-amber-300" />
+                <span className="text-[8px] font-black tracking-widest text-amber-200">
+                  FS PORTAL
+                </span>
               </div>
 
-              <h3 className="text-xl sm:text-2xl font-black tracking-tight text-[#0D5C3A] font-serif">
-                {isDistinction ? 'CERTIFICATE OF DISTINCTION' : 'CERTIFICATE OF ACHIEVEMENT'}
-              </h3>
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-black uppercase tracking-widest text-[#0D5C3A]">
+                  FS PORTAL INTERNATIONAL CERTIFICATION ACADEMY
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                  Division of Global Food Safety, HACCP, ISO &amp; Hospitality Compliance
+                </p>
+              </div>
+
+              <div className="pt-1">
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0D5C3A] font-serif">
+                  CERTIFICATE
+                </h3>
+                <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-700 font-serif">
+                  {isDistinction
+                    ? 'OF INTERNATIONAL DISTINCTION'
+                    : 'OF PROFESSIONAL ACHIEVEMENT'}
+                </p>
+              </div>
 
               <div className="flex justify-center">
                 {isDistinction ? (
-                  <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-md bg-amber-100 border border-amber-400 text-amber-900 text-[11px] font-extrabold uppercase tracking-wider">
-                    <Sparkles className="w-3 h-3 text-amber-600" />
-                    Passed with Distinction ({scorePct}% · &gt;= 75%)
+                  <span className="inline-flex items-center gap-1 px-3.5 py-1 rounded-full bg-amber-100 border border-amber-400 text-amber-900 text-[10.5px] font-extrabold uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    Awarded with Distinction ({scorePct}% · Benchmark &ge; 75%)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-md bg-emerald-100 border border-emerald-400 text-emerald-900 text-[11px] font-extrabold uppercase tracking-wider">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                    Passed International Standard ({scorePct}% · &gt;= 60%)
+                  <span className="inline-flex items-center gap-1 px-3.5 py-1 rounded-full bg-emerald-100 border border-emerald-400 text-emerald-900 text-[10.5px] font-extrabold uppercase tracking-wider">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                    Passed International Standard ({scorePct}% · Benchmark &ge; 60%)
                   </span>
                 )}
               </div>
 
-              <p className="text-xs text-slate-500 pt-1">This is to officially certify that</p>
-              <p className="text-lg sm:text-2xl font-black text-slate-900 tracking-wide border-b-2 border-amber-400/80 inline-block px-6 pb-1 font-serif">
+              <p className="text-xs italic text-slate-500 pt-1 font-serif">
+                This is to officially certify that
+              </p>
+              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-wide border-b-2 border-amber-400 inline-block px-8 pb-1 font-serif">
                 {holderName}
               </p>
 
-              <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
-                has completed all 5 International Course Modules and passed the 40-MCQ Final Certification Exam in
+              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                has successfully completed the prescribed international curriculum and satisfied the formal assessment criteria in
               </p>
 
-              <h4 className="text-base sm:text-xl font-black text-[#0D5C3A]">{course.title}</h4>
-              <p className="text-[11px] font-semibold text-slate-500">
-                Course Code: <span className="text-slate-800 font-bold">{course.code}</span> · Benchmark:{' '}
-                <span className="text-slate-800">{course.accreditationStandard}</span>
-              </p>
+              {/* Qualification Box */}
+              <div className="rounded-xl border border-emerald-900/20 bg-emerald-50/70 p-3.5 space-y-1">
+                <h4 className="text-base sm:text-xl font-black text-[#0D5C3A]">
+                  {course.title}
+                </h4>
+                <p className="text-[11px] font-semibold text-slate-600">
+                  Qualification Code: <span className="text-slate-900 font-bold">{course.code}</span> · Standard:{' '}
+                  <span className="text-slate-900 font-bold">{course.accreditationStandard}</span>
+                </p>
+              </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-4 mt-3 border-t border-emerald-900/15 text-left">
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-slate-400">Certificate ID</p>
-                  <p className="text-xs font-black text-slate-800 font-mono">{certNo}</p>
+              {/* 5-Module Verified Syllabus Transcript Box (Highfield / SGS / Bureau Veritas Style) */}
+              <div className="rounded-xl border border-slate-200 bg-white p-3 text-left space-y-1.5">
+                <p className="text-[10px] font-black uppercase tracking-wider text-[#0D5C3A] text-center border-b border-slate-100 pb-1">
+                  Verified Qualification Syllabus &amp; Competency Units Completed
+                </p>
+                <div className="grid grid-cols-1 gap-1 text-[11px] text-slate-700">
+                  {course.modules.slice(0, 5).map((m, idx) => (
+                    <div key={m.id} className="flex items-center gap-1.5 truncate">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="font-bold text-slate-900">Unit {idx + 1}:</span>
+                      <span className="truncate">{m.title}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="text-center">
-                  <p className="text-[10px] font-bold uppercase text-slate-400">Exam Score</p>
-                  <p className="text-xs font-black text-[#0D5C3A]">
-                    {scorePct}% ({correctOutOf40}/40 MCQs)
+              </div>
+
+              {/* 4-Column Assessment Metrics Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-left bg-slate-50 rounded-xl p-3 border border-slate-200">
+                <div>
+                  <p className="text-[9.5px] font-bold uppercase text-slate-400">Certificate ID</p>
+                  <p className="text-[11px] font-black text-slate-900 font-mono truncate">{certNo}</p>
+                </div>
+                <div>
+                  <p className="text-[9.5px] font-bold uppercase text-slate-400">Final Score</p>
+                  <p className="text-[11px] font-black text-[#0D5C3A]">
+                    {scorePct}% ({correctOutOf40}/40)
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-bold uppercase text-slate-400">Issue Date</p>
-                  <p className="text-xs font-bold text-slate-800">{issueDateStr}</p>
+                <div>
+                  <p className="text-[9.5px] font-bold uppercase text-slate-400">Standing</p>
+                  <p className="text-[11px] font-black text-amber-800">
+                    {isDistinction ? 'DISTINCTION' : 'PASS'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9.5px] font-bold uppercase text-slate-400">Issue Date</p>
+                  <p className="text-[11px] font-bold text-slate-900">{issueDateStr}</p>
+                </div>
+              </div>
+
+              {/* Dual Signatures & Embossed Gold Seal Row */}
+              <div className="grid grid-cols-3 items-end gap-2 pt-4 border-t border-emerald-900/15 text-center">
+                <div className="space-y-0.5">
+                  <p className="text-xs italic font-serif font-bold text-[#0D5C3A]">
+                    Board of Examiners
+                  </p>
+                  <div className="border-t border-slate-300 pt-1">
+                    <p className="text-[9.5px] font-black uppercase text-slate-700">
+                      Director of Academic Standards
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-amber-500/90 border-2 border-[#0D5C3A] flex flex-col items-center justify-center text-[#0D5C3A] shadow-sm">
+                    <span className="text-[7px] font-black uppercase tracking-tighter">
+                      OFFICIAL SEAL
+                    </span>
+                    <span className="text-[8.5px] font-black uppercase text-white bg-[#0D5C3A] px-1.5 py-0.5 rounded mt-0.5">
+                      {isDistinction ? 'DISTINCTION' : 'VERIFIED'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-0.5">
+                  <p className="text-xs italic font-serif font-bold text-[#0D5C3A]">
+                    Compliance Registrar
+                  </p>
+                  <div className="border-t border-slate-300 pt-1">
+                    <p className="text-[9.5px] font-black uppercase text-slate-700">
+                      Head of Global Certification
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -648,16 +778,16 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         </div>
 
         {/* Action & Download Controls Based on User Tier & Admin Approval */}
-        <div className="rounded-2xl border border-emerald-900/15 bg-white p-4 sm:p-5 shadow-sm space-y-3">
+        <div className="rounded-2xl border border-emerald-900/15 bg-white p-4 sm:p-5 shadow-sm space-y-3 max-w-2xl mx-auto">
           {isUnlocked ? (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3.5">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5 text-emerald-900 font-extrabold text-sm">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  Admin Approved & Online Verification Active!
+                  Admin Approved &amp; Portrait A4 PDF Ready!
                 </div>
                 <p className="text-xs text-emerald-800">
-                  Certificate ID <span className="font-mono font-bold">{certNo}</span> is live on the Verification Portal while your Paid Premium Membership is active.
+                  Certificate ID <span className="font-mono font-bold">{certNo}</span> is live on the Verification Portal in Portrait Highfield/SGS format.
                 </p>
               </div>
               <button
@@ -675,13 +805,15 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     totalQuestions: 40,
                     distinction: isDistinction,
                     issueDate: issueDateStr,
-                    verificationPortalUrl: window.location.origin
+                    verificationPortalUrl: window.location.origin,
+                    syllabusModules: course.modules.map((m) => m.title),
+                    issuedByMode: 'exam'
                   })
                 }
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm transition cursor-pointer shrink-0"
               >
                 <Download className="w-4 h-4" />
-                Download Official PDF Certificate
+                Download Portrait PDF Certificate
               </button>
             </div>
           ) : isFeePaidButMembershipExpired ? (
@@ -689,10 +821,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-amber-900 font-extrabold text-sm">
                   <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-                  Premium Membership Expired — Certificate Verification & Download Paused
+                  Premium Membership Expired — Certificate Verification &amp; Download Paused
                 </div>
                 <p className="text-xs text-amber-800 leading-relaxed">
-                  Apka Rs. 1,000 certificate fee pehlay say paid & approved hy, magar apki Paid Premium Membership khatam ho chuki hy. Jab ap dobara Paid Premium Membership (Rs. {paymentGatewayConfig.monthlyFeeRs}/mo) renew karengay, apka certificate download aur online website verification foran dobara active ho jayega.
+                  Apka Rs. 1,000 certificate fee pehlay say paid &amp; approved hy, magar apki Paid Premium Membership khatam ho chuki hy. Jab ap dobara Paid Premium Membership (Rs. {paymentGatewayConfig.monthlyFeeRs}/mo) renew karengay, apka certificate download aur online website verification foran dobara active ho jayega.
                 </p>
               </div>
               <button
@@ -710,7 +842,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 Rs. 1,000 Certificate Payment Request Sent — Waiting for Admin Approval
               </div>
               <p className="text-xs text-amber-800 leading-relaxed">
-                Apki certificate download request Admin Control Panel may mojod hy. Payment confirmation k baad jesay hi Admin allow/approve karega, apka PDF Certificate Download button yahan unlock ho jayega aur Certificate ID <span className="font-mono font-bold">{certNo}</span> website par live verify hona shuru ho jayega.
+                Apki certificate download request Admin Control Panel may mojod hy. Payment confirmation k baad jesay hi Admin allow/approve karega, apka Portrait PDF Certificate Download button yahan unlock ho jayega aur Certificate ID <span className="font-mono font-bold">{certNo}</span> website par live verify hona shuru ho jayega.
               </p>
             </div>
           ) : (
@@ -719,13 +851,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm">
                   <Lock className="w-4 h-4 text-amber-600 shrink-0" />
                   {isCurrentUserPremiumActive
-                    ? 'Unlock Official PDF Certificate & Live Portal Verification (Rs. 1,000)'
+                    ? 'Unlock Official Portrait PDF Certificate & Live Verification (Rs. 1,000)'
                     : 'Free Member Preview Mode — Paid Membership + Rs. 1,000 Required for Download'}
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   {isCurrentUserPremiumActive
-                    ? 'Paid Members har certificate Rs. 1,000 fee pay kar k hasil kar saktay hain. Request submit karnay par Admin payment confirm kar k allow karega, jiskay baad PDF download aur live verification active ho jayegi.'
-                    : 'Free users tamam course materials parh saktay hain, 40-MCQ exam day saktay hain aur apna Certificate Pattern dekh saktay hain, magar PDF Certificate download aur online verification k liye Paid Premium Membership + Rs. 1,000 per certificate lazmi hy.'}
+                    ? 'Paid Members har certificate Rs. 1,000 fee pay kar k hasil kar saktay hain. Request submit karnay par Admin payment confirm kar k allow karega, jiskay baad Portrait PDF download aur live verification active ho jayegi.'
+                    : 'Free users tamam course materials parh saktay hain, 40-MCQ exam day saktay hain aur apna Portrait Certificate Pattern dekh saktay hain, magar PDF Certificate download aur online verification k liye Paid Premium Membership + Rs. 1,000 per certificate lazmi hy.'}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -748,7 +880,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm cursor-pointer"
                   >
                     <FileCheck2 className="w-4 h-4" />
-                    Pay Rs. 1,000 & Request Admin Unlock
+                    Pay Rs. 1,000 &amp; Request Admin Unlock
                   </button>
                 )}
               </div>
@@ -767,13 +899,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-emerald-200">
               <Award className="w-4 h-4 text-amber-300" />
-              International Food & Hospitality Certification Academy
+              International Food &amp; Hospitality Certification Academy
             </div>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-              14 Accredited International Trainings & Live Certificate Portal
+              14 Accredited International Trainings &amp; Portrait Certificate Portal
             </h1>
             <p className="text-xs text-emerald-100/90 max-w-2xl leading-relaxed">
-              Study international modules with automatic resume tracking, pass the 40-MCQ Final Exam (60% Pass · 75% Distinction), preview your certificate pattern free, and unlock official PDF download & live verification (Rs. 1,000/certificate with active Paid Membership).
+              Structured 5-Stage Curriculum (Module 1 Basics → Module 2 PRPs → Module 3 Steps 1–5 → Module 4 Principles 1–4, 5×5 Risk Matrix &amp; Codex Decision Tree → Module 5 Auditing &amp; Food Law), 40-MCQ Final Exam, and Highfield/SGS-Style Portrait PDF Certificates.
             </p>
           </div>
 
@@ -835,13 +967,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               Official Online Certificate Verification Registry
             </div>
             <h2 className="text-lg sm:text-xl font-black text-slate-900">
-              Verify Single or All Member Certificates Live
+              Verify Single or All Member &amp; Admin-Issued Certificates Live
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Enter a Certificate ID (e.g. <span className="font-mono font-bold text-slate-800">FSP-FSC101-...</span>), Member Email, or Full Name to verify all or single certificates issued by FS Portal.{' '}
-              <span className="font-semibold text-emerald-800">
-                Note: Certificate verification visibility is strictly linked to the member’s active Paid Premium Membership.
-              </span>
+              Enter a Certificate ID (e.g. <span className="font-mono font-bold text-slate-800">FSP-...</span>), Recipient Email, Full Name, or Course Title to verify any certificate issued via course examination or direct administration issuance.
             </p>
           </div>
 
@@ -861,7 +990,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   setVerifyQuery(e.target.value);
                   setHasSearchedVerify(true);
                 }}
-                placeholder="Enter Certificate Number (e.g. FSP-...), Member Email, or Name..."
+                placeholder="Enter Certificate Number (e.g. FSP-...), Recipient Name, Email, or Topic..."
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-[#0D5C3A]"
               />
             </div>
@@ -931,15 +1060,20 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       className="rounded-2xl border-2 border-emerald-500/70 bg-emerald-50/50 p-5 space-y-3 shadow-sm"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200 pb-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-700 text-white text-xs font-extrabold uppercase tracking-wider">
                             <ShieldCheck className="w-4 h-4 text-amber-300" />
-                            Verified & Active Credential
+                            Verified &amp; Active Credential
                           </span>
                           {rec.distinction && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-100 border border-amber-400 text-amber-900 text-xs font-extrabold">
                               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                               Passed with Distinction ({rec.scorePercentage}%)
+                            </span>
+                          )}
+                          {rec.issuedByAdminDirect && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-teal-100 border border-teal-300 text-teal-900 text-[11px] font-extrabold">
+                              Direct Executive Issuance
                             </span>
                           )}
                         </div>
@@ -948,25 +1082,58 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs items-center">
                         <div>
                           <p className="text-[10px] font-bold uppercase text-slate-400">Certified Professional</p>
                           <p className="font-black text-slate-900 text-sm">{rec.recipientName}</p>
-                          <p className="text-slate-500">{rec.recipientEmail}</p>
+                          {rec.recipientEmail && (
+                            <p className="text-slate-500">{rec.recipientEmail}</p>
+                          )}
                         </div>
                         <div>
-                          <p className="text-[10px] font-bold uppercase text-slate-400">Certification Title</p>
+                          <p className="text-[10px] font-bold uppercase text-slate-400">Certification Title / Topic</p>
                           <p className="font-black text-[#0D5C3A] text-sm">{rec.courseTitle}</p>
                           <p className="text-slate-500">{rec.accreditationBody}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-bold uppercase text-slate-400">Standing & Membership Status</p>
+                          <p className="text-[10px] font-bold uppercase text-slate-400">Standing &amp; Status</p>
                           <p className="font-bold text-slate-900">
                             Score: {rec.scorePercentage}% ({rec.distinction ? 'Distinction' : 'Passed'})
                           </p>
                           <p className="text-emerald-700 font-bold">
-                            Issued: {rec.issueDate} · Active Paid Member
+                            Issued: {rec.issueDate} · Verified Live
                           </p>
+                        </div>
+                        <div className="flex sm:justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const matched = INTERNATIONAL_TRAINING_COURSES.find(
+                                (c) =>
+                                  c.title.toLowerCase() === rec.courseTitle.trim().toLowerCase()
+                              );
+                              downloadOfficialCourseCertificatePdf({
+                                certificateNumber: rec.certificateNumber,
+                                recipientName: rec.recipientName,
+                                recipientEmail: rec.recipientEmail,
+                                courseTitle: rec.courseTitle,
+                                courseCode: rec.courseCode || matched?.code || 'FS-CERT-INTL',
+                                accreditationStandard: rec.accreditationBody,
+                                scorePercentage: rec.scorePercentage,
+                                correctCount: Math.round((rec.scorePercentage / 100) * 40),
+                                totalQuestions: 40,
+                                distinction: rec.distinction,
+                                issueDate: rec.issueDate,
+                                verificationPortalUrl: window.location.origin,
+                                syllabusModules: matched?.modules.map((m) => m.title),
+                                issuedByMode: rec.issuedByAdminDirect ? 'admin_direct' : 'exam'
+                              });
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-xs cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            Download Portrait PDF
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -983,21 +1150,107 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         <div className="space-y-4">
           <div className="rounded-2xl border border-emerald-900/15 bg-white p-5 shadow-sm">
             <h2 className="text-base sm:text-lg font-black text-slate-900">
-              My Earned Course Certificates & Pattern Previews
+              My Earned &amp; Admin-Issued Portrait Certificates
             </h2>
             <p className="text-xs text-slate-600 mt-0.5">
-              Courses where you scored 60% or above on the 40-MCQ Final Exam appear below. Score 75%+ earns a Distinction Certificate.
+              Courses where you scored 60%+ on the 40-MCQ Final Exam or certificates directly issued to your account by Administration appear below in Portrait A4 format.
             </p>
           </div>
+
+          {/* Direct Admin-Issued Certificates for Current User */}
+          {currentUser &&
+            certificates.filter(
+              (c) =>
+                c.verificationStatus === 'valid' &&
+                ((c.recipientUid && c.recipientUid === currentUser.uid) ||
+                  (c.recipientEmail &&
+                    c.recipientEmail.trim().toLowerCase() ===
+                      currentUser.email.trim().toLowerCase()))
+            ).length > 0 && (
+              <div className="space-y-3">
+                {certificates
+                  .filter(
+                    (c) =>
+                      c.verificationStatus === 'valid' &&
+                      ((c.recipientUid && c.recipientUid === currentUser.uid) ||
+                        (c.recipientEmail &&
+                          c.recipientEmail.trim().toLowerCase() ===
+                            currentUser.email.trim().toLowerCase()))
+                  )
+                  .map((cert) => {
+                    const matched = INTERNATIONAL_TRAINING_COURSES.find(
+                      (c) =>
+                        c.id === cert.courseId ||
+                        c.title.toLowerCase() === cert.trainingTitle.trim().toLowerCase()
+                    );
+                    const scorePct = cert.scorePercentage || 85;
+                    const isDist = Boolean(cert.distinction || scorePct >= 75);
+                    return (
+                      <div
+                        key={cert.id}
+                        className="rounded-2xl border-2 border-[#0D5C3A]/40 bg-emerald-50/60 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded-md bg-[#0D5C3A] text-white text-[10px] font-black uppercase tracking-wider">
+                              Official Issued Credential · {cert.certificateNumber}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-md bg-amber-100 border border-amber-300 text-amber-950 text-[10px] font-extrabold">
+                              {isDist ? `Distinction (${scorePct}%)` : `Passed (${scorePct}%)`}
+                            </span>
+                          </div>
+                          <h4 className="text-base font-black text-slate-900">
+                            {cert.trainingTitle}
+                          </h4>
+                          <p className="text-xs text-slate-600">
+                            Recipient: <strong className="text-slate-900">{cert.recipientName}</strong> · Issued: {cert.issueDate} · Standard:{' '}
+                            {cert.accreditationBody ||
+                              matched?.accreditationStandard ||
+                              'Codex Alimentarius & GFSI Standard'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            downloadOfficialCourseCertificatePdf({
+                              certificateNumber: cert.certificateNumber,
+                              recipientName: cert.recipientName,
+                              recipientEmail: cert.recipientEmail || currentUser.email,
+                              courseTitle: cert.trainingTitle,
+                              courseCode: matched?.code || 'FS-CERT-INTL',
+                              accreditationStandard:
+                                cert.accreditationBody ||
+                                matched?.accreditationStandard ||
+                                'Codex Alimentarius & GFSI International Standard',
+                              scorePercentage: scorePct,
+                              correctCount: Math.round((scorePct / 100) * 40),
+                              totalQuestions: 40,
+                              distinction: isDist,
+                              issueDate: cert.issueDate,
+                              verificationPortalUrl: window.location.origin,
+                              syllabusModules: matched?.modules.map((m) => m.title),
+                              issuedByMode: 'admin_direct'
+                            })
+                          }
+                          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm cursor-pointer shrink-0"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download Portrait PDF Certificate
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
 
           {mergedCourses.filter((c) => courseProgressMap[c.id]?.examPassed).length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center space-y-3">
               <Award className="w-10 h-10 text-slate-400 mx-auto" />
               <p className="text-sm font-bold text-slate-800">
-                Abhi tak apnay kisi course ka 40-MCQ Final Exam pass (60%+) nahi kiya.
+                Course exam certificates appear here once you pass any 40-MCQ Final Exam (60%+).
               </p>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Kisi bhi training course k modules mukammal kar k 40-MCQ exam dain. 60% marks par Pass Certificate aur 75% marks par Distinction Certificate jari hota hy.
+                Kisi bhi training course k modules mukammal kar k 40-MCQ exam dain. 60% marks par Pass Certificate aur 75% marks par Distinction Certificate Portrait PDF format may jari hota hy.
               </p>
               <button
                 type="button"

@@ -80,93 +80,93 @@ const COMPACT_COURSES: CompactSeedCourse[] = [
     title: 'Food Safety Certified',
     levelBadge: 'International Foundation & Practitioner',
     accreditationStandard: 'Codex Alimentarius CXC 1-1969 & WHO Five Keys to Safer Food',
-    duration: '12 Guided Hours · 5 Modules',
+    duration: '14 Guided Hours · 5 Modules',
     description:
-      'Comprehensive international Food Safety Certification covering biological, chemical, physical, and allergenic hazards, temperature danger zone control, cross-contamination barriers, and sanitation protocols.',
+      'Step-by-step international Food Safety Certification from Basics to Expert: Module 1 (Food Safety Basics & FAT TOM), Module 2 (Prerequisite Programs: Personal Hygiene & Sanitation PRPs), Module 3 (Initial Process Flow & Cold-Chain Setup), Module 4 (Hazard Analysis, 5x5 Risk Matrix, Codex Decision Tree & Critical Limits), and Module 5 (How to Audit Food Safety Systems & International Food Safety Law).',
     modules: [
       {
-        title: 'Foodborne Hazards, Microbiology & Growth Kinetics (FAT TOM)',
-        clause: 'Codex CXC 1-1969 Rev. 2022 Section 3 & FDA TCS Food Code',
-        overview: 'Controlling vegetative pathogens, spore-formers, viruses, mycotoxins, and FAT TOM factors (Food, Acidity, Time, Temperature, Oxygen, Moisture).',
+        title: 'Module 1: Food Safety Basics, Terminology & Microbiology (FAT TOM)',
+        clause: 'Codex CXC 1-1969 Rev. 2022 Section 2–3 & WHO Five Keys to Safer Food',
+        overview: 'Starting from zero: Understanding what Food Safety is, foodborne infection vs. intoxication, biological/chemical/physical/allergenic hazards, and the 6 FAT TOM bacterial growth factors (Food, Acidity, Time, Temperature, Oxygen, Moisture).',
         principles: [
-          'Pathogenic bacteria divide every 20 minutes by binary fission under optimal conditions (37°C, a_w > 0.95, pH 6.5–7.5).',
-          'Spore-formers (Clostridium botulinum, C. perfringens, Bacillus cereus) survive standard cooking and require rapid cooling.',
-          'Water activity (a_w) below 0.85 inhibits growth of pathogenic foodborne bacteria.'
+          'Pathogenic bacteria divide every 20 minutes by binary fission under optimal FAT TOM conditions (37°C, water activity a_w > 0.95, neutral pH 6.5–7.5).',
+          'Spore-forming bacteria (Clostridium botulinum, Clostridium perfringens, Bacillus cereus) survive normal cooking and germinate if cooled slowly in the 5°C–60°C Temperature Danger Zone.',
+          'Water activity (a_w) below 0.85 and pH below 4.5 block the growth of vegetative pathogenic bacteria.'
         ],
-        ccpParam: 'Temperature Danger Zone (TDZ) & Core Cooking',
-        ccpLimit: 'TDZ: 5°C to 60°C (Max 2h exposure) | Cooking Core: >= 75°C for 30 seconds',
-        ccpFix: 'Continue cooking until core reaches >= 75°C; chill to <= 4°C within 2 hours or discard if > 4 hours in TDZ.',
+        ccpParam: 'Temperature Danger Zone (TDZ) & Core Thermal Kill',
+        ccpLimit: 'TDZ: 5°C to 60°C (Max 2h exposure) | Core Cooking: >= 75°C for 30 seconds (7-log Salmonella reduction)',
+        ccpFix: 'Continue cooking until core reaches >= 75°C; chill to <= 4°C within 2 hours or discard if held > 4 hours in TDZ.',
         checks: [
-          'Verify calibrated probe thermometer in crushed ice slurry (0°C ± 0.5°C) before daily checks.',
-          'Store raw meats/poultry on bottom racks below ready-to-eat (RTE) foods.'
+          'Calibrate digital probe thermometer in crushed ice slurry (0.0°C ± 0.5°C) before daily checks.',
+          'Store raw meats/poultry on bottom chiller racks strictly below ready-to-eat (RTE) foods.'
         ]
       },
       {
-        title: 'Personal Hygiene, Medical Fitness & Handwashing Verification',
-        clause: 'Codex CXC 1-1969 Section 7 & ISO/TS 22002-1 Clause 13',
-        overview: 'Enforcing personal hygiene barriers, 48-hour medical exclusion after gastrointestinal illness, and surgical-grade handwashing.',
+        title: 'Module 2: Prerequisite Programs (PRPs) — Personal Hygiene, Cleaning & Pest Foundations',
+        clause: 'Codex CXC 1-1969 Section 6–7 & ISO/TS 22002-1 Prerequisite Programs',
+        overview: 'Building the foundational Prerequisite Programs (PRPs) required before advanced hazard control: personal hygiene, 48-hour medical exclusion, 6-stage cleaning & disinfection chemistry, and pest proofing.',
         principles: [
-          'Food handlers are primary vectors for Norovirus, Hepatitis A, Salmonella Typhi, and Staphylococcus aureus.',
-          'A mandatory 48-hour symptom-free exclusion period applies after acute vomiting or diarrhea ceases.',
-          'Minor cuts must be covered with waterproof, brightly colored metal-detectable blue plasters under nitrile gloves.'
+          'Food handlers are primary vectors for Norovirus, Hepatitis A, Salmonella Typhi, and Staphylococcus aureus; a 48-hour symptom-free exclusion period is mandatory after vomiting or diarrhea.',
+          '6-Stage Sanitation PRP: (1) Pre-scrape, (2) Detergent wash (removes grease/biofilm), (3) Rinse, (4) Disinfect (Chlorine 100–200 ppm or QAC 200–400 ppm), (5) Final rinse, (6) Air dry.',
+          'Minor cuts on hands must be covered with waterproof, brightly colored metal-detectable blue plasters under disposable nitrile gloves.'
         ],
-        ccpParam: 'Handwashing Water Temp & Medical Clearance',
-        ccpLimit: 'Warm potable water 38°C–43°C with 20–30s bactericidal soap wash | 48h post-illness exclusion',
-        ccpFix: 'Exclude symptomatic staff from food areas immediately and service handwash stations.',
+        ccpParam: 'Handwashing Temp, Medical Clearance & Sanitizer Concentration',
+        ccpLimit: 'Handwash water 38°C–43°C (20–30s wash) | Chlorine 100–200 ppm / QAC 200–400 ppm | ATP Swab < 30 RLU',
+        ccpFix: 'Exclude symptomatic staff immediately; re-clean and re-sanitize any surface exceeding 30 RLU.',
         checks: [
-          'Confirm knee/sensor-operated handwash sinks stocked with bactericidal soap and paper towels.',
-          'Enforce zero-jewelry, short unvarnished nails, and full hair/beard containment.'
+          'Verify knee/sensor-operated handwash stations are stocked with bactericidal soap and single-use paper towels.',
+          'Maintain a signed Master Cleaning Schedule (MCS) and locked COSHH chemical cabinet.'
         ]
       },
       {
-        title: 'Cross-Contamination Control & Major Food Allergen Management',
-        clause: 'Codex CXC 80-2020 Allergen Management & EU Reg 1169/2011',
-        overview: 'Preventing pathogen transfer using color-coded equipment and controlling the Codex Big-9 Food Allergens.',
+        title: 'Module 3: Preliminary Process Steps — Receiving, Storage, Thawing, Cooking & Two-Stage Cooling Flow',
+        clause: 'FDA Food Code 3-501.14 & Codex Linear Process Flow Steps',
+        overview: 'Mapping the complete operational food flow from Approved Supplier Receiving to Cold Storage, Safe Thawing, Core Cooking, Two-Stage Blast Chilling, and Hot/Cold Holding.',
         principles: [
-          'The 9 major global allergens are Gluten Cereals, Crustaceans, Eggs, Fish, Peanuts, Soybeans, Milk, Tree Nuts, and Sesame.',
-          'Allergenic proteins are heat-stable and are NOT destroyed by cooking, frying oil filtration, or sanitizers alone.',
-          'Color-coded boards: Red (Raw Meat), Blue (Raw Fish), Yellow (Cooked Meat), Green (Salad/Fruit), White (Bakery/Dairy), Brown (Vegetables), Purple (Allergen-Free).'
-        ],
-        ccpParam: 'Allergen Changeover Cleaning & Raw-to-RTE Separation',
-        ccpLimit: 'Zero visible residue + Validated lateral-flow ELISA swab pass (< 5 ppm)',
-        ccpFix: 'Re-wash equipment with alkaline detergent, rinse thoroughly, and re-swab before non-allergen production.',
-        checks: [
-          'Store allergen ingredients in sealed, labeled tubs on lower shelves to prevent spill cross-contact.',
-          'Verify Finished Product Label allergen declarations against recipe specification every batch.'
-        ]
-      },
-      {
-        title: 'Cold Chain Integrity, Two-Stage Blast Cooling, Thawing & Reheating',
-        clause: 'FDA Food Code 3-501.14 Two-Stage Cooling & Codex Cold Chain',
-        overview: 'Maintaining chilled (<= 4°C) and frozen (<= -18°C) cold chains, two-stage cooling curves, safe thawing, and hot holding (>= 63°C).',
-        principles: [
+          'Linear Flow Steps: (1) Approved Supplier Receiving -> (2) Chilled/Frozen/Dry Storage -> (3) Controlled Thawing -> (4) Color-Coded Prep -> (5) Core Cooking -> (6) Two-Stage Blast Cooling -> (7) Reheating/Service.',
           'Two-Stage Cooling Standard: Cool cooked food from 60°C to 20°C within 2 hours, and from 20°C to <= 4°C within 4 additional hours (total <= 6 hours).',
-          'Safe thawing is restricted to refrigeration at <= 4°C, running potable water <= 21°C (< 2 hours), or microwave followed by immediate cooking.',
-          'Reheating previously cooked TCS food requires reaching >= 75°C core temperature within 1 hour and may only be done once.'
+          'Safe thawing is restricted to refrigeration at <= 4°C, running potable water <= 21°C (< 2 hours), or microwave followed immediately by cooking.'
         ],
-        ccpParam: 'Hot Holding & Two-Stage Blast Chilling',
-        ccpLimit: 'Hot Hold >= 63°C continuously | Blast Chill 60°C->20°C (<= 2h) & 20°C->4°C (<= 4h)',
-        ccpFix: 'Divide thick batches into shallow pans (< 5 cm depth) for rapid blast chilling; discard if time limit breached.',
+        ccpParam: 'Hot Holding (>= 63°C) & Two-Stage Blast Chilling Curve',
+        ccpLimit: 'Hot Hold >= 63°C continuously | Blast Chill 60°C->20°C (<= 2h) & 20°C->4°C (<= 4h) | Reheat >= 75°C once',
+        ccpFix: 'Divide deep batches into shallow gastronorm pans (< 5 cm depth) for rapid blast chilling; discard if time limit breached.',
         checks: [
-          'Record chiller and freezer temperatures at least 3 times daily.',
+          'Record chiller (<= 4°C) and freezer (<= -18°C) temperatures at least 3 times daily.',
           'Apply FEFO (First Expired, First Out) date labels to all prepared and opened items.'
         ]
       },
       {
-        title: '6-Stage Cleaning & Disinfection Chemistry, Pest Exclusion & Traceability',
-        clause: 'Codex CXC 1-1969 Section 6 & EN 1276 Disinfectant Efficacy',
-        overview: 'Executing the 6-stage sanitation cycle, verifying chlorine/QAC ppm and contact time, and maintaining lot traceability.',
+        title: 'Module 4: Hazard Analysis, 5x5 Risk Assessment Matrix, Decision Tree & Allergen Controls',
+        clause: 'Codex Hazard Analysis Methodology & CXC 80-2020 Allergen Management',
+        overview: 'How to conduct a step-by-step Hazard Analysis, calculate Risk Scores using the 5x5 Likelihood x Severity Matrix, apply the Codex 4-Question CCP Decision Tree, and control the Big-9 Allergens.',
         principles: [
-          'Detergents emulsify grease and soil; Disinfectants/Sanitizers kill bacteria only AFTER organic soil has been removed.',
-          '6-Stage Cleaning: (1) Pre-scrape, (2) Detergent wash, (3) Intermediate rinse, (4) Disinfection at validated ppm/contact time, (5) Final rinse, (6) Air dry.',
-          'Standard chemical concentrations: Chlorine 100–200 ppm (1–2 min contact), QAC 200–400 ppm (1–5 min contact), or Thermal Hot Water >= 82°C.'
+          '5x5 Risk Assessment Matrix: Multiply Likelihood (1=Rare to 5=Almost Certain) x Severity (1=Negligible to 5=Catastrophic/Fatal). Any score >= 9 (or Severity = 5) is a Significant Hazard requiring CCP/OPRP control.',
+          'Codex 4-Question Decision Tree determines whether a step is a true CCP (e.g., Cooking is a CCP because Q2=Yes; Raw Receiving is NOT a CCP for Salmonella if subsequent Cooking Q4=Yes eliminates it).',
+          'The Big-9 Allergens (Gluten, Crustaceans, Eggs, Fish, Peanuts, Soy, Milk, Tree Nuts, Sesame) are heat-stable proteins requiring dedicated Purple allergen kits and ELISA swabbing (< 5 ppm).'
         ],
-        ccpParam: 'Sanitizer Concentration & Surface Hygiene Verification',
-        ccpLimit: 'Chlorine 100–200 ppm / QAC 200–400 ppm | ATP Swab < 30 RLU',
-        ccpFix: 'Re-calibrate chemical dosing unit and repeat full 6-stage washdown if ATP swab fails.',
+        ccpParam: '5x5 Risk Assessment Score & Allergen Changeover Verification',
+        ccpLimit: 'Significant Hazard (L x S >= 9) evaluated via Codex Decision Tree | Allergen swab < 5 ppm & 100% label check',
+        ccpFix: 'Quarantine any mislabeled allergen batch immediately and re-wash/re-swab equipment before non-allergen runs.',
         checks: [
-          'Lock all cleaning chemicals inside a bunded COSHH cabinet segregated from food.',
-          'Maintain a signed Master Cleaning Schedule (MCS) across all shifts.'
+          'Document Likelihood x Severity risk scores and Decision Tree Q1–Q4 answers for every process step.',
+          'Use color-coded boards: Red (Raw Meat), Blue (Raw Fish), Yellow (Cooked Meat), Green (Salad), White (Bakery/Dairy), Brown (Veg), Purple (Allergen-Free).'
+        ]
+      },
+      {
+        title: 'Module 5: How to Audit Food Safety Systems, Corrective Actions & Food Safety Law',
+        clause: 'ISO 19011 Auditing Guidelines, UK Food Safety Act 1990, FDA FSMA & Pure Food Laws',
+        overview: 'Mastering internal/external food safety auditing techniques, grading Minor/Major/Critical non-conformities, 4-hour traceability recall tests, and understanding National & International Food Safety Law (Legal Due Diligence).',
+        principles: [
+          'How to Audit a Food Safety System: Combine (1) Vertical Trace Audits (tracing 1 batch from raw receipt through CCP logs to dispatch), (2) Shop-Floor Observation & Operator Interviews, and (3) Calibration & Record Cross-Checks.',
+          'Food Safety Law & Legal Due Diligence: Under the UK Food Safety Act 1990 (Sec 21), EU Reg 852/2004, FDA FSMA 21 CFR 117, GCC Municipality Codes, and Pakistan Pure Food Authorities (PFA/PSQCA), food businesses must prove "All Reasonable Precautions" (documented system) AND "All Due Diligence" (active verification).',
+          'Falsifying or pre-filling temperature logs ("dry-labbing") invalidates Legal Due Diligence and triggers criminal prosecution or Emergency Prohibition closure.'
+        ],
+        ccpParam: 'Internal Audit Verification & 4-Hour Traceability Recall Law',
+        ccpLimit: '100% authentic real-time logs + <= 4-hour forward/backward mass-balance traceability + zero unresolved Major NCs',
+        ccpFix: 'Quarantine suspect lots back to last good check, complete 5-Why Root Cause CAPA within 28 days, and notify regulators if unsafe food left control.',
+        checks: [
+          'Conduct monthly internal food safety audits using the ISO 19011 evidence triangle (Observation, Interview, Records).',
+          'Perform an annual 4-hour Mock Recall exercise reconciling 99.5%–100.5% mass balance.'
         ]
       }
     ],
@@ -216,93 +216,93 @@ const COMPACT_COURSES: CompactSeedCourse[] = [
     title: 'HACCP Certified',
     levelBadge: 'Codex 12 Steps & 7 Principles',
     accreditationStandard: 'Codex Alimentarius CXC 1-1969 (2022 Revision) HACCP System',
-    duration: '14 Guided Hours · 5 Modules',
+    duration: '16 Guided Hours · 5 Modules',
     description:
-      'Complete certification in the Codex 5 Preliminary Steps and 7 Principles of Hazard Analysis and Critical Control Points (HACCP), CCP Decision Tree application, Validation, Verification, and HACCP Plan documentation.',
+      'Complete, step-by-step international HACCP Certification: Module 1 (HACCP Basics, History & Definitions), Module 2 (Prerequisite Programs - PRPs), Module 3 (The First 5 Preliminary Steps of the 12-Step Codex Sequence), Module 4 (Principles 1–4: How to Do Hazard Analysis, 5x5 Risk Assessment Matrix, Codex CCP Decision Tree, Critical Limits & Monitoring), and Module 5 (Principles 5–7: Corrective Actions, Validation, How to Audit a HACCP System & HACCP Food Law).',
     modules: [
       {
-        title: 'Prerequisite Programs (PRPs) & Codex 5 Preliminary Steps',
-        clause: 'Codex CXC 1-1969 Chapter 2 & ISO 22000 Clause 8.5.1',
-        overview: 'Establishing ISO/TS 22002 PRPs and completing Steps 1–5: HACCP Team, Product Description, Intended Use, Flow Diagram, and On-Site Verification.',
+        title: 'Module 1: HACCP Basics, NASA/Pillsbury History, Core Definitions & Why Traditional End-Product Testing Fails',
+        clause: 'Codex Alimentarius CXC 1-1969 (2022 Rev.) Introduction & Section 1',
+        overview: 'Understanding the origins of HACCP (1960s NASA Apollo space program, Pillsbury Company & US Army Natick Labs), why statistical end-product sampling fails to guarantee safety, and mastering core HACCP definitions (Hazard, Risk, Severity, PRP, OPRP, CCP, Critical Limit, Validation, Verification).',
         principles: [
-          'Prerequisite Programs (PRPs) such as GMP, pest control, and sanitation control general plant-wide hazards before HACCP is applied.',
-          'Steps 1–3 assemble a multidisciplinary HACCP Team and document Product Description (pH, a_w, shelf life) and Intended Use.',
-          'Steps 4–5 construct the Process Flow Diagram (including rework/waste loops) and verify its accuracy on-site across all shifts.'
+          'Why End-Product Testing Fails: Testing 10 packs out of a 10,000-pack batch with a 1% Salmonella defect rate gives a 90.4% probability of missing the contamination completely! HACCP replaces reactive lot testing with preventive in-process control.',
+          'Core Definitions: A "Hazard" is a biological, chemical, physical, or allergenic agent in food with the potential to cause an adverse health effect; "Risk" is a function of the probability (Likelihood) of an adverse health effect and the magnitude (Severity) of that effect.',
+          'The Codex 12-Step HACCP Logic Sequence consists of 5 Preliminary Steps (Steps 1–5) followed by the 7 Core HACCP Principles (Steps 6–12).'
         ],
-        ccpParam: 'On-Site Process Flow Diagram Verification',
-        ccpLimit: '100% match with actual plant piping, rework loops, and shift practices signed by HACCP Team',
-        ccpFix: 'Update Flow Diagram immediately whenever equipment or piping is modified prior to Hazard Analysis.',
+        ccpParam: 'Preventive In-Process Control vs. End-Product Lot Sampling',
+        ccpLimit: '100% of production lines covered by a preventive Codex 12-Step HACCP Plan rather than reliance on end-product testing alone',
+        ccpFix: 'Establish real-time in-process CCPs (thermal, pH, metal/X-ray) so safety is built into every unit produced.',
         checks: [
-          'Verify HACCP Team members hold documented competency records.',
-          'Include water, steam, air, packaging gases, and rework loops in the Process Flow Diagram.'
+          'Define the exact Legal & Regulatory Scope of the HACCP study before starting.',
+          'Ensure all team members understand the difference between a Quality defect and a Food Safety Hazard.'
         ]
       },
       {
-        title: 'Principle 1 & Principle 2: Hazard Analysis & CCP Determination',
-        clause: 'Codex Principle 1 (Hazard Analysis) & Principle 2 (CCP Decision Tree)',
-        overview: 'Conducting Likelihood x Severity risk assessment for Biological, Chemical, Physical, and Allergenic hazards, and applying the 4-Question Decision Tree.',
+        title: 'Module 2: Prerequisite Programs (PRPs) — The Foundation Supporting the HACCP System',
+        clause: 'Codex CXC 1-1969 Chapter 1 & ISO/TS 22002-1 Clauses 4–18 PRPs',
+        overview: 'Why HACCP cannot function without rock-solid Prerequisite Programs (PRPs): Good Manufacturing Practices (GMP), Good Hygiene Practices (GHP), Sanitation Standard Operating Procedures (SSOPs), Pest Control (IPM), Allergen Control, Supplier Approval, Potable Water/Air Utilities, and Calibration.',
         principles: [
-          'Hazard Analysis evaluates every process step for hazard introduction, survival, or growth using Likelihood (1–5) x Severity (1–5).',
-          'A Critical Control Point (CCP) is a step where control is essential to prevent, eliminate, or reduce a food safety hazard to an acceptable level.',
-          'In the Codex Decision Tree, if a subsequent downstream step eliminates the hazard (Q4 = Yes), the current step is NOT a CCP.'
+          'PRPs control general plant-wide environmental and operational conditions; if PRPs are weak, the HACCP plan becomes overloaded with dozens of unmanageable CCPs.',
+          'Core PRPs include: (1) Hygienic Facility Layout & Linear Flow, (2) Potable Water (0.5–2.0 ppm Cl2) & 0.01 µm Air Filtration, (3) 6-Stage SSOP Cleaning & ATP (< 30 RLU), (4) Integrated Pest Management (100% non-toxic indoor traps), (5) Personal Hygiene & 48h Medical Exclusion, and (6) Approved Supplier List (ASL).',
+          'Difference between PRP, OPRP, and CCP: PRPs are site-wide foundations; OPRPs control medium-high hazards using Action Criteria; CCPs are absolute process steps with Critical Limits where loss of control causes unsafe food.'
         ],
-        ccpParam: 'Significant Hazard & Decision Tree Assessment',
-        ccpLimit: 'Risk Score >= 9 (or Severity = 5) passed through Codex 4-Question CCP Decision Tree',
-        ccpFix: 'Assign validated control measure (OPRP or CCP) for every identified significant hazard.',
+        ccpParam: 'Pre-HACCP PRP Verification Audit Score & Water/Surface Hygiene',
+        ccpLimit: '100% of core ISO/TS 22002 PRPs verified operational prior to CCP selection | ATP < 30 RLU | Potable water 0 CFU Coliforms',
+        ccpFix: 'Rectify any structural, sanitation, or pest proofing PRP gap before finalizing the Hazard Analysis.',
         checks: [
-          'Distinguish clearly between Operational PRPs (OPRPs) and true CCPs.',
-          'Justify every Decision Tree answer (Q1–Q4) with scientific evidence.'
+          'Verify documented SOPs and monitoring records exist for all 12 core Prerequisite Programs.',
+          'Confirm ISO 17025 calibration traceability for all thermometers, pH meters, pressure gauges, and scales.'
         ]
       },
       {
-        title: 'Principle 3 & Principle 4: Validated Critical Limits & CCP Monitoring',
-        clause: 'Codex Principle 3 (Critical Limits) & Principle 4 (Monitoring)',
-        overview: 'Setting measurable Critical Limits vs. tighter Operational Limits and designing real-time continuous or batch CCP monitoring.',
+        title: 'Module 3: The 12 Steps of HACCP (Part 1) — The First 5 Preliminary Steps (Steps 1 to 5)',
+        clause: 'Codex CXC 1-1969 Steps 1, 2, 3, 4 & 5 (ISO 22000 Clause 8.5.1)',
+        overview: 'Executing the initial 5 Preliminary Steps in detail: Step 1 (Assemble Multidisciplinary HACCP Team), Step 2 (Describe the Product & Intrinsic Hurdles), Step 3 (Identify Intended Use & Vulnerable Consumers), Step 4 (Construct the Process Flow Diagram), and Step 5 (On-Site Verification of the Flow Diagram Across All Shifts).',
         principles: [
-          'A Critical Limit is a measurable criterion (>= 72°C for 15s, pH <= 4.5, Fe <= 1.5mm) separating safe from unsafe product.',
-          'Subjective visual observations ("looks clean") are NOT valid Critical Limits.',
-          'Operational Limits are stricter buffer targets set inside Critical Limits to trigger process adjustment before a CCP breach occurs.'
+          'Step 1 (HACCP Team): Must be multidisciplinary—including QA/Food Safety Leader, Production Manager, Maintenance Engineer, Sanitation Lead, and Procurement—so biological, chemical, and mechanical hazards are never missed.',
+          'Step 2 & Step 3 (Product Description & Intended Use): Document composition, intrinsic safety hurdles (pH, water activity a_w, salt/preservatives), packaging (MAP/vacuum), storage shelf-life, and whether vulnerable YOPI groups (Young, Old, Pregnant, Immunocompromised) consume the product.',
+          'Step 4 & Step 5 (Construct & Verify Process Flow Diagram On-Site): Map every step from raw material receipt, utilities (water, steam, air), allergen additions, and rework/waste loops to dispatch—then walk the factory floor across Day and Night shifts to sign off 100% physical accuracy.'
         ],
-        ccpParam: 'Pasteurization & Metal Detection Critical Limits',
-        ccpLimit: 'HTST Milk: >= 72.0°C for 15s (Op Limit >= 74°C) | Metal Detector: Fe 1.5mm, Non-Fe 2.0mm, SS 2.5mm',
-        ccpFix: 'Automatic flow-diversion valve or pneumatic reject arm isolates non-conforming product immediately.',
+        ccpParam: 'Step 5 On-Site Flow Diagram Verification & Step 2 Intrinsic Specs',
+        ccpLimit: '100% physical match of Flow Diagram with actual plant piping, rework loops & night-shift practices signed & dated by HACCP Team',
+        ccpFix: 'Halt Hazard Analysis and update the Process Flow Diagram immediately if any bypass pipe, rework loop, or manual step was omitted.',
         checks: [
-          'Calibrate all CCP monitoring probes and test pieces against ISO 17025 standards.',
-          'Require real-time operator signature and supervisor verification countersignature.'
+          'Verify HACCP Team Leader holds formal Level 3/Level 4 HACCP qualification.',
+          'Walk the process line in reverse and forward directions during both production and CIP washdown to verify Step 5.'
         ]
       },
       {
-        title: 'Principle 5: Corrective Actions, Quarantine Hold & Root Cause Analysis',
-        clause: 'Codex Principle 5 & ISO 22000 Clause 8.9 Nonconformities',
-        overview: 'Containing product back to the last good check, restoring process control, evaluating disposition, and performing 5-Why Root Cause Analysis.',
+        title: 'Module 4: The 7 Principles (Principles 1–4) — Hazard Analysis, 5x5 Risk Matrix, Codex Decision Tree, Critical Limits & Monitoring',
+        clause: 'Codex Steps 6–9 (Principles 1, 2, 3 & 4) & Codex CCP Decision Tree',
+        overview: 'Mastering the heart of HACCP: Principle 1 (How to Conduct a Proper Hazard Analysis & 5x5 Risk Assessment Matrix), Principle 2 (Applying the Codex 4-Question CCP Decision Tree), Principle 3 (Establishing Validated Critical Limits vs. Operational Limits), and Principle 4 (Designing Continuous & Batch CCP Monitoring Systems).',
         principles: [
-          'Every CCP deviation requires Immediate Correction (quarantine product back to last passed check) AND Corrective Action (eliminate root cause).',
-          'All product manufactured between the last passed check and the failed check is classified as Potentially Unsafe Product.',
-          'Quarantined product may only be released after validated re-processing or documented destruction.'
+          'Principle 1 — How to Do Proper Hazard Analysis & 5x5 Risk Matrix: At every flow step, identify exact Biological (e.g., Salmonella, L. monocytogenes, C. botulinum spores), Chemical (mycotoxins, cleaning residues, pesticides), Physical (glass, metal > 1.5mm, hard plastic), and Allergenic hazards; state the cause (introduction, survival, or growth); and score Risk = Likelihood (1–5) x Severity (1–5). Any score >= 9 (or Severity = 5) is a Significant Hazard.',
+          'Principle 2 — Codex 4-Question CCP Decision Tree: Pass every Significant Hazard through Q1 (Do preventive control measures exist?), Q2 (Is the step specifically designed to eliminate/reduce the hazard to an acceptable level? -> If YES = CCP!), Q3 (Could contamination occur/increase to unacceptable levels?), and Q4 (Will a subsequent downstream step eliminate/reduce the hazard? -> If YES = Not a CCP; if NO = CCP!).',
+          'Principle 3 & Principle 4 — Critical Limits & Monitoring: Set objective measurable Critical Limits (e.g., >= 72°C for 15s, pH <= 4.5, Fe 1.5mm / Non-Fe 2.0mm / SS 2.5mm) alongside tighter Operational Limits (e.g., >= 74°C) and define What, How, Frequency, and Who monitors the CCP in real time.'
         ],
-        ccpParam: 'Quarantine Hold Boundary on CCP Deviation',
-        ccpLimit: '100% of product produced since the last documented compliant CCP check placed on Red Hold',
-        ccpFix: 'Lock stock in ERP, re-pass 100% through calibrated detector/thermal step after repair, and complete 5-Why CAPA.',
+        ccpParam: '5x5 Risk Matrix (L x S >= 9), Codex Q1–Q4 Decision Tree & CCP Limits',
+        ccpLimit: '100% of Significant Hazards evaluated through Q1–Q4 Decision Tree | Pasteurization >= 72°C/15s | Cooking >= 75°C/30s | Metal Fe 1.5mm',
+        ccpFix: 'Automatic flow-diversion valve or pneumatic reject arm isolates product immediately if a Critical Limit is breached.',
         checks: [
-          'Pre-define written Corrective Action instructions for every CCP on the operator log sheet.',
-          'Verify locked reject bin integrity and fail-safe sensors every shift.'
+          'Document written scientific justification for every Likelihood x Severity score and every Q1–Q4 Decision Tree answer.',
+          'Ensure CCP monitoring logs specify both the Critical Limit and the stricter Operational Limit.'
         ]
       },
       {
-        title: 'Principle 6 & Principle 7: Validation, Verification & HACCP Recordkeeping',
-        clause: 'Codex Principle 6, Principle 7 & CXG 69-2008 Validation Guidelines',
-        overview: 'Distinguishing scientific upfront Validation from ongoing Verification audits, lab testing, and tamper-proof recordkeeping.',
+        title: 'Module 5: The 7 Principles (Principles 5–7) — Corrective Actions, Validation, How to Audit a HACCP System & HACCP Law',
+        clause: 'Codex Steps 10–12 (Principles 5, 6 & 7), ISO 19011 Auditing & International HACCP Law',
+        overview: 'Completing the 7 Principles and mastering governance: Principle 5 (Quarantine & Root-Cause Corrective Actions), Principle 6 (Scientific Validation vs. Verification & How to Audit a HACCP System), Principle 7 (Tamper-Proof Recordkeeping), and International/National Law on HACCP.',
         principles: [
-          'Validation = Scientific proof BEFORE implementation that a control measure achieves the required log reduction ("Doing the right thing").',
-          'Verification = Ongoing audits, microbial tests, and calibration checks confirming the HACCP plan is followed ("Doing it right").',
-          'HACCP plans must be formally reviewed at least annually or prior to any recipe, equipment, or packaging change.'
+          'Principle 5 (Corrective Actions): Whenever a CCP breaches its Critical Limit, operators must (1) Regain process control immediately, (2) Quarantine 100% of product manufactured back to the last passed CCP check, (3) Perform a 5-Why Root Cause Analysis, and (4) Dispose of or re-process held stock only under QA Director sign-off.',
+          'Principle 6 & How to Audit a HACCP System: Upfront Validation proves scientifically BEFORE production that the critical limit kills the target pathogen; ongoing Verification & HACCP Auditing uses Vertical Lot Traceability, SCADA vs. paper log reconciliation, unannounced shop-floor observation, and third-party microbial testing to prove the HACCP system works daily.',
+          'Principle 7 & What is the Law About HACCP: Retained CCP records (Shelf-Life + 12 months) are legal documents. Mandatory HACCP Law is enforced globally under EU Regulation (EC) No 852/2004 (Article 5), US FDA FSMA (21 CFR Part 117 / 120 / 123), UK Food Safety & Hygiene Regulations, GCC/UAE/Saudi SFDA Food Law, and Pakistan Pure Food Authorities (PFA/KPFA/SFA) & PSQCA.'
         ],
-        ccpParam: 'Annual HACCP Re-validation & Record Retention',
-        ccpLimit: 'Full review every 12 months | Records retained for Shelf Life + 12 months minimum',
-        ccpFix: 'Convene HACCP Team to re-validate whenever process parameters or raw materials change.',
+        ccpParam: '100% Quarantine Back to Last Good Check, Annual Re-Validation & Legal Compliance',
+        ccpLimit: '100% stock held back to last passed check | Full HACCP review every 12 months | Zero falsified ("dry-labbed") legal records',
+        ccpFix: 'Convene the HACCP Team immediately to re-validate the plan whenever a recipe, equipment line, packaging material, or food law changes.',
         checks: [
-          'Prohibit correction fluid (whitener) on CCP logs; use single-line strike-through with initials.',
-          'Conduct monthly internal HACCP verification audits and third-party lab testing.'
+          'Conduct a full Vertical HACCP Audit tracing one CCP deviation batch from raw intake to final disposition.',
+          'Verify all CCP records use single-line strike-through with initials (zero correction fluid/whitener) for Legal Due Diligence.'
         ]
       }
     ],
@@ -1819,91 +1819,91 @@ const COMPACT_COURSES: CompactSeedCourse[] = [
     accreditationStandard: 'UK RQF Level 4 Managing HACCP in Catering, Safer Food Better Business & Codex 2022',
     duration: '24 Guided Hours · 5 Modules',
     description:
-      'Advanced Level 4 Qualification in Designing, Validating, and Managing Process-Led HACCP Systems for Complex Catering Operations (Hotels, Airlines, Hospitals, Cloud Kitchens, Multi-Site Restaurant Chains, and Event Banqueting).',
+      'Advanced Level 4 Qualification in Designing, Validating, and Auditing Catering HACCP Systems: Module 1 (HACCP Basics & Process-Led 3-Trip Catering Architecture), Module 2 (Catering Prerequisite Programs - PRPs), Module 3 (The 12 Steps of HACCP: First 5 Preliminary Steps in Catering), Module 4 (Principles 1–4: Hazard Analysis, 5x5 Risk Matrix, Codex Decision Tree, Critical Limits & Monitoring), and Module 5 (Principles 5–7: Corrective Actions, Validation, How to Audit Catering HACCP & Food Safety Law).',
     modules: [
       {
-        title: 'Process-Led Catering HACCP Architecture (Process 1, Process 2 & Process 3 Trips)',
-        clause: 'FDA Food Code Annex 4 Process Approach & EU Catering Notice 2022/C 355/01',
-        overview: 'Grouping hundreds of changing restaurant recipes into 3 Thermal Trips through the Temperature Danger Zone (5°C–60°C).',
+        title: 'Module 1: HACCP Basics in Catering & Process-Led 3-Trip Architecture (Process 1, 2 & 3)',
+        clause: 'FDA Food Code Annex 4 Process Approach & Codex CXC 1-1969 (2022)',
+        overview: 'Starting with HACCP Basics for commercial kitchens, hotels, hospitals, and airlines: why traditional recipe-by-recipe HACCP fails in changing menus, and how Process-Led HACCP groups hundreds of dishes into Process 1 (No Cook), Process 2 (Same-Day Cook), and Process 3 (Complex Cook-Chill-Reheat) based on trips through the 5°C–60°C Danger Zone.',
         principles: [
-          'Process 1 (No Cook Trip): Receive -> Store -> Prep -> Hold Cold -> Serve (e.g., Sashimi, Green Salads — 0 thermal kill trips).',
-          'Process 2 (Same-Day Cook & Serve Trip): Receive -> Store -> Prep -> Cook (>= 75°C) -> Hot Hold (>= 63°C) -> Serve (1 trip through TDZ).',
-          'Process 3 (Complex Cook-Chill-Reheat Trip): Cook (>= 75°C) -> Blast Chill (60°C->20°C->4°C) -> Cold Store -> Reheat (>= 75°C) -> Hot Hold -> Serve (2–3 trips through TDZ — highest spore risk).'
+          'Process 1 (No Cook Trip — 0 Trips through Thermal Kill): Receive -> Store -> Prep -> Hold Cold -> Serve (e.g., Sashimi, Green Salads, Cold Sandwiches).',
+          'Process 2 (Same-Day Cook & Serve — 1 Trip through TDZ): Receive -> Store -> Prep -> Cook (>= 75°C) -> Hot Hold (>= 63°C) -> Serve (e.g., Grilled Steaks, Roast Chicken).',
+          'Process 3 (Complex Cook-Chill-Reheat — 2 to 3 Trips through TDZ): Cook (>= 75°C) -> Blast Chill (60°C->20°C in 2h, ->4°C in 4h) -> Cold Store -> Reheat (>= 75°C) -> Hot Hold -> Serve (highest spore germination risk for C. perfringens and B. cereus).'
         ],
         ccpParam: 'Process 3 (Cook-Chill-Reheat) Spore Germination Control',
         ccpLimit: 'Cook >= 75°C | Chill 60°C->20°C (<= 2h) & ->4°C (<= 4h) | Reheat once to >= 75°C',
         ccpFix: 'Discard any Process 3 batch that fails the blast-chill time limit or has already been reheated once.',
         checks: [
-          'Classify 100% of menu items into Process 1, Process 2, or Process 3.',
-          'Update Process Group mapping whenever seasonal or banquet menus change.'
+          'Classify 100% of catering menu items into Process 1, Process 2, or Process 3.',
+          'Update Process Group mapping whenever seasonal, hotel buffet, or banquet menus change.'
         ]
       },
       {
-        title: 'Validating Culinary Control Measures: Produce Chlorination pH & Equivalent Cooks',
-        clause: 'Codex Principles 1–3 & UK FSA / ACMSF 6-Log Listeria Time-Temperature Table',
-        overview: 'Controlling pH (6.0–7.0) in 50–100 ppm chlorine vegetable washes and applying equivalent thermal lethality combinations.',
+        title: 'Module 2: Catering Prerequisite Programs (PRPs) — Kitchen Zoning, Produce Washing, Dishwashing & Allergen PRPs',
+        clause: 'Codex CXC 1-1969 Catering PRPs & BS EN 16282 Commercial Kitchen Hygiene',
+        overview: 'Establishing the catering Prerequisite Programs (PRPs) before applying the 12 HACCP Steps: color-coded cross-contamination barriers, 50–100 ppm chlorine vegetable washing (pH 6.0–7.0), 82°C thermal dishwashing, ice machine sanitation, and Big-9 allergen zoning.',
         principles: [
-          'Chlorine Salad Wash: Immerse pre-washed produce in 50–100 ppm free chlorine at pH 6.0–7.0 for 5 minutes followed by potable water rinse.',
-          'At pH > 8.0, active hypochlorous acid (HOCl) converts into weak hypochlorite ion (OCl-), losing ~80% of its germicidal power.',
-          'Equivalent 6-Log Listeria Cook Combinations: 60°C for 45m | 65°C for 10m | 70°C for 2m | 75°C for 30s | 80°C for 6s.'
+          'Chlorine Salad Wash PRP/OPRP: Immerse pre-washed produce in 50–100 ppm free chlorine at pH 6.0–7.0 for 5 minutes followed by potable water rinse (above pH 8.0, active HOCl drops by ~80%).',
+          'Commercial rack/flight dishwashers require wash tanks at 55°C–65°C and final sanitizing rinse at >= 82°C verified weekly with irreversible thermal strips.',
+          'Commercial ice machines must be emptied, descaled, and sanitized (200 ppm chlorine) monthly with external scoop holders to prevent Coliform and Pseudomonas biofilms.'
         ],
-        ccpParam: 'Produce Chlorine Wash (ppm + pH) & Rotisserie/Shawarma Core',
-        ccpLimit: '50–100 ppm Free Chlorine at pH 6.0–7.0 for 5 mins | Shaved shawarma seared to >= 75°C',
-        ccpFix: 'Test both chlorine ppm AND pH strips every batch; never re-freeze or reuse leftover raw shawarma cones.',
+        ccpParam: 'Produce Chlorine Wash (50–100 ppm at pH 6.0–7.0) & Dishwasher >= 82°C Rinse',
+        ccpLimit: '50–100 ppm Free Chlorine at pH 6.0–7.0 for 5 mins | Dishwasher final rinse >= 82°C | Ice E. coli 0 CFU/100mL',
+        ccpFix: 'Test both chlorine ppm AND pH strips every batch; service rinse booster heater if 82°C thermal strip fails.',
         checks: [
-          'Log both free chlorine concentration and pH in the salad wash sink.',
-          'Verify core temperature of thick rotisserie joints before carving.'
+          'Log both free chlorine concentration and pH in the salad wash sink every shift.',
+          'Enforce 7-color chopping board segregation and dedicated Purple Allergen kits.'
         ]
       },
       {
-        title: 'Catering CCP Monitoring, Exception Diaries & Digital Probe Calibration',
-        clause: 'Codex Principles 4 & 5 Applied to High-Volume Kitchens',
-        overview: 'Implementing chef-friendly CCP logs, ice-point/boiling-point probe calibration, and walk-in chiller defrost recovery rules.',
+        title: 'Module 3: The 12 Steps of HACCP (Part 1) — First 5 Preliminary Steps for Catering, Banquets & Airlines',
+        clause: 'Codex Preliminary Steps 1–5 & World Food Safety Guidelines (WFSG) for Airline Catering',
+        overview: 'Executing the initial 5 Steps of Codex HACCP in catering: Step 1 (Culinary & QA HACCP Team), Step 2 (Menu Group Specifications & Shelf-Life), Step 3 (Intended Consumers & Vulnerable Hospital/School/Airline Guests), Step 4 (Kitchen & Off-Site Banquet Flow Diagrams), and Step 5 (On-Site Verification Across Prep, Peak Service & Night Clean).',
         principles: [
-          'Calibrate kitchen probe thermometers weekly in crushed ice slurry (0.0°C ± 0.5°C) and boiling water (100.0°C ± 0.5°C).',
-          'Sanitize probe stems with 70% isopropyl alcohol wipes before and after probing every food item.',
-          'Walk-in chillers undergoing automated defrost spikes must recover to <= 4°C air temperature within 30–60 minutes while keeping food core <= 5°C.'
+          'Step 1 to Step 3 in Catering: Assemble Executive Chef, Sous Chef, Stewarding Manager, and QA Manager; define Process 1/2/3 menu specs and identify high-risk YOPI consumers (hospital patients, nursery children, elderly, allergy guests).',
+          'Step 4 & Step 5 Flow Diagramming: Map Receiving -> Walk-in Chillers -> Butcher/Veg Prep -> Thermal Cooking -> Blast Chilling -> Cold Plating (<= 15°C room, max 45 mins exposure in airline catering) -> Hot/Cold Pass -> Off-Site Insulated Transport.',
+          'Walk the kitchen floor during peak Friday/Saturday service and off-site banquet loading to verify Step 5 Flow Diagram accuracy.'
         ],
-        ccpParam: 'Probe Ice/Boiling Calibration & Chiller Defrost Recovery',
-        ccpLimit: 'Ice slurry: 0.0°C ± 0.5°C | Boiling water: 100.0°C ± 0.5°C | Chiller core <= 5°C',
-        ccpFix: 'Withdraw any thermometer deviating by > ±1.0°C and relocate TCS food if chiller compressor fails.',
+        ccpParam: 'Step 5 Kitchen Flow Verification & Airline Cold-Room Exposure Limit',
+        ccpLimit: '100% verified kitchen/banquet flow diagram | Airline cold assembly <= 15°C room max 45 mins exposure',
+        ccpFix: 'Return delayed meal trays to blast chiller immediately if assembly exceeds 45 minutes; update flow chart before launching new catering services.',
         checks: [
-          'Stock 70% alcohol probe wipes at every hot-line and cold-larder station.',
-          'Spot-audit CCP logs during peak Friday/Saturday dinner service.'
+          'Pre-chill off-site banquet delivery trucks to <= 4°C before loading trolleys.',
+          'Apply tamper-evident hygiene seals to all off-site event boxes and flight carts.'
         ]
       },
       {
-        title: 'Airline Catering (IFSA/WFSG), Central Commissaries & Off-Site Banquet Logistics',
-        clause: 'World Food Safety Guidelines (WFSG) for Airline Catering & Event HACCP',
-        overview: 'Enforcing <= 15°C cold assembly room exposure limits (45 mins) and insulated tamper-sealed off-site event transport.',
+        title: 'Module 4: The 7 Principles (Principles 1–4) — Catering Hazard Analysis, 5x5 Risk Matrix, Codex Decision Tree, Critical Limits & Monitoring',
+        clause: 'Codex Steps 6–9 (Principles 1–4) & UK FSA 6-Log Listeria Equivalent Cook Table',
+        overview: 'Conducting a complete Catering Hazard Analysis using the 5x5 Risk Assessment Matrix (Likelihood x Severity), applying the Codex 4-Question CCP Decision Tree to kitchen steps, setting validated Critical Limits (Cooking, Cooling, Reheating, Sushi Rice pH <= 4.1), and calibrating digital probes.',
         principles: [
-          'Airline Catering (WFSG): Cold meal tray assembly in a <= 15°C room must not exceed 45 minutes exposure before blast chilling back to <= 4°C.',
-          'Off-site banquet transport requires pre-cooled refrigerated trucks (<= 4°C) or pre-conditioned eutectic boxes with data loggers.',
-          'All off-site banquet pans regenerated on-site must reach >= 75°C core temperature prior to transfer to >= 63°C chafing dishes.'
+          'Principle 1 & 2 (Hazard Analysis, 5x5 Risk Matrix & Codex Decision Tree): Score catering hazards (e.g., Salmonella in poultry L=4 x S=4 = 16 Significant; B. cereus in sushi rice L=3 x S=4 = 12 Significant; Anisakis in raw fish L=3 x S=4 = 12) and apply Q1–Q4 Decision Tree to pinpoint true CCPs.',
+          'Principle 3 (Validated Catering Critical Limits & Equivalent Cooks): Equivalent 6-Log Listeria Cook Combinations: 60°C/45m, 65°C/10m, 70°C/2m, 75°C/30s, 80°C/6s; Acidified Sushi Rice pH <= 4.1; Raw Sushi Fish parasite freeze <= -20°C for 7 days.',
+          'Principle 4 (Catering CCP Monitoring & Probe Calibration): Calibrate digital probes weekly in crushed ice (0.0°C ± 0.5°C) and boiling water (100.0°C ± 0.5°C), sanitize stems with 70% alcohol wipes, and record core temperatures of the thickest item per batch.'
         ],
-        ccpParam: 'Airline Cold Assembly Exposure & Off-Site Regeneration',
-        ccpLimit: 'Ambient <= 15°C room max 45 mins exposure | Off-site regeneration >= 75°C',
-        ccpFix: 'Return delayed meal trays to blast chiller immediately if assembly exceeds 45 minutes.',
+        ccpParam: '5x5 Risk Matrix, Equivalent Cook (>= 75°C/30s), Sushi pH (<= 4.1) & Probe Calibration',
+        ccpLimit: 'Cook >= 75°C/30s (or 70°C/2m) | Sushi rice pH <= 4.1 | Probe accuracy ± 0.5°C in ice/boiling water',
+        ccpFix: 'Continue cooking if < 75°C; add vinegar if sushi rice pH > 4.1; withdraw any probe deviating by > ±1.0°C.',
         checks: [
-          'Pre-chill delivery vehicles to <= 4°C before loading banquet trolleys.',
-          'Apply tamper-evident hygiene seals to all delivery boxes and flight carts.'
+          'Stock 70% isopropyl alcohol probe wipes and pH 4.0/7.0 calibration buffers in the kitchen.',
+          'Verify walk-in chillers recover to <= 4°C within 30–60 minutes after automatic defrost cycles.'
         ]
       },
       {
-        title: 'Catering HACCP Verification: Ice Machine Lab Testing, Swabbing & Annual Review',
-        clause: 'Codex Principles 6 & 7 & UKHSA Microbiological Guidelines for RTE Foods',
-        overview: 'Sampling commercial ice machines, RTE salads, and food handler hands monthly, and leading the Catering HACCP Review.',
+        title: 'Module 5: The 7 Principles (Principles 5–7) — Corrective Actions, Validation, How to Audit Catering HACCP & Food Safety Law',
+        clause: 'Codex Principles 5–7, ISO 19011 Catering Audits & Food Safety Law (Due Diligence)',
+        overview: 'Executing catering CCP Corrective Actions (Principle 5), Microbiological Verification & How to Audit a Catering HACCP System (Principle 6), Tamper-Proof Exception Diaries (Principle 7), and Catering Food Safety Law & Legal Due Diligence Defense.',
         principles: [
-          'Monthly external lab verification must test: (1) Commercial ice machines (E. coli, Enterococci, Coliforms), (2) RTE salads/sandwiches (Listeria, Salmonella), and (3) Hand/board swabs.',
-          'Commercial ice machines develop mold/Pseudomonas biofilms rapidly and must be emptied, descaled, and sanitized (200 ppm chlorine) monthly.',
-          'Ice scoops must be stored externally in a clean sanitized holder—never left buried inside the ice bin.'
+          'Principle 5 (Catering Corrective Actions): If hot-hold drops below 63°C (< 2h: reheat once to >= 75°C; > 2h: discard immediately); if blast-chill exceeds 6 hours, discard the batch and investigate blast-chiller loading depth.',
+          'Principle 6 & How to Audit a Catering HACCP System: Audit kitchen CCP diaries against delivery invoices and probe calibration logs, observe chefs probing core temperatures live, inspect 72-hour banquet reference sample banks (150g held at <= 4°C), and review monthly lab swabs.',
+          'Principle 7 & Catering Law on HACCP: Under UK/EU Food Hygiene Law (Reg 852/2004 Art 5), FDA Food Code, GCC/Dubai Municipality PIC Regulations, and Pakistan Pure Food Laws (PFA/SFA/KPFA), catering operators must maintain a HACCP-based system and prove Legal Due Diligence (zero pre-filled/"dry-labbed" temperature sheets).'
         ],
-        ccpParam: 'RTE Food & Ice Machine Microbiological Verification',
-        ccpLimit: 'Salmonella & L. monocytogenes: Absent in 25g | Ice E. coli & Enterococci: 0 CFU/100 mL',
-        ccpFix: 'Empty, descale, and sanitize ice machine and investigate water filter/hand hygiene if coliforms appear.',
+        ccpParam: 'Catering HACCP Audit Score, 72h Banquet Sample Bank & Legal Record Authenticity',
+        ccpLimit: 'Unannounced kitchen audit >= 90% | Zero pre-filled ("dry-labbed") CCP logs | 150g banquet reference samples kept 72h at <= 4°C',
+        ccpFix: 'Quarantine/discard unsafe food immediately, retrain brigade on CCP corrective actions, and transition to digital timestamped Bluetooth probes if log flat-lining is detected.',
         checks: [
-          'Include bar and kitchen ice machines in the monthly lab testing schedule.',
-          'Review the Catering HACCP Plan before launching seasonal or Ramadan/Banquet menus.'
+          'Conduct monthly unannounced Catering HACCP audits during peak dinner and banquet shifts.',
+          'Review and re-validate the Catering HACCP Plan annually or prior to any menu/equipment change.'
         ]
       }
     ],
@@ -1960,91 +1960,91 @@ const COMPACT_COURSES: CompactSeedCourse[] = [
     accreditationStandard: 'UK RQF Level 4 Managing HACCP in Food Manufacturing, Codex CXG 69-2008 & ISO 22000',
     duration: '28 Guided Hours · 5 Modules',
     description:
-      'Executive Level 4 Qualification for Industrial HACCP Team Leaders, Technical Managers, and Lead Auditors: Quantitative Risk Matrices, Complex Industrial Flow Engineering, Scientific Validation under Codex CXG 69-2008, Statistical Process Control (SPC) at CCPs, and Multi-Standard GFSI Integration.',
+      'Executive Level 4 Qualification for Industrial HACCP Team Leaders & Lead Auditors: Module 1 (Industrial HACCP Basics, Modular Architecture & ICMSF Equation), Module 2 (Industrial PRPs: EHEDG Sanitary Design, CIP, Zoning & Allergen PRPs), Module 3 (The 12 Steps of HACCP: First 5 Preliminary Steps & P&ID Flow Verification), Module 4 (Principles 1–4: Quantitative Hazard Analysis, 5x5 Risk Matrix, Codex Decision Tree, Critical Limits & Automated SPC Monitoring), and Module 5 (Principles 5–7: Corrective Actions, CXG 69-2008 Validation, How to Audit Industrial HACCP & Global Food Safety Law).',
     modules: [
       {
-        title: 'Modular Industrial HACCP Architecture & ICMSF Food Safety Objectives (FSO)',
-        clause: 'Codex CXC 1-1969 (2022) & ICMSF Quantitative Equation (H0 - ΣR + ΣI <= FSO)',
-        overview: 'Structuring modular HACCP plans for multi-line factories and applying the ICMSF quantitative equation.',
+        title: 'Module 1: Industrial HACCP Basics, Modular Architecture & ICMSF Quantitative Equation (H0 - ΣR + ΣI <= FSO)',
+        clause: 'Codex CXC 1-1969 (2022) & ICMSF Book 7 Quantitative Microbiological Risk Assessment',
+        overview: 'Mastering Level 4 Industrial HACCP Foundations: why multi-line factories use Modular HACCP Plans, the difference between PRP, OPRP, and CCP under Codex/ISO 22000, and how the ICMSF quantitative equation links raw material hazard levels to final consumer Food Safety Objectives (FSO).',
         principles: [
-          'Large factories use Modular HACCP Plans: Shared operations (Raw Reception, CIP, Packaging) form core modules, while thermal/filling lines form process modules.',
-          'ICMSF Quantitative Equation: H0 - ΣR + ΣI <= FSO (H0 = initial raw hazard, ΣR = cumulative log reductions, ΣI = log increases, FSO = Food Safety Objective).',
-          'Hold-tank buffer time and temperature prior to pasteurization/sterilization must be strictly limited to prevent heat-stable enterotoxin buildup.'
+          'Modular Industrial HACCP Architecture: Large plants separate shared operations (Raw Reception, Water/Air Utilities, CIP, Warehousing) into Core Modules and individual thermal/packaging lines into Process Modules.',
+          'ICMSF Quantitative Equation: H0 - ΣR + ΣI <= FSO (where H0 = initial log hazard in raw ingredients, ΣR = cumulative log reductions from pasteurization/retort, ΣI = log growth or recontamination, and FSO = maximum safe log level at consumption).',
+          'Surge-tank buffer time and temperature before thermal processing must be strictly controlled to prevent heat-stable Staphylococcus aureus enterotoxin or Bacillus cereus cereulide accumulation.'
         ],
         ccpParam: 'ICMSF Performance Criterion (ΣR) & Surge Tank Hold Limit',
         ccpLimit: 'H0 - ΣR + ΣI <= FSO (>= 5-log or 6-log validated kill) | Max intermediate surge-tank hold time enforced',
         ccpFix: 'Dump or re-evaluate intermediate slurry if line breakdown exceeds validated hold time.',
         checks: [
-          'Verify Flow Diagrams across Day, Swing, and Night shifts including weekend CIP.',
-          'Appoint a qualified Deputy HACCP Team Leader for 24/7 plant coverage.'
+          'Define quantitative Performance Criteria (ΣR) for every lethal thermal or chemical step.',
+          'Appoint a formally qualified Level 4 HACCP Team Leader and Deputy for 24/7 plant coverage.'
         ]
       },
       {
-        title: 'Industrial Chemical & Process-Induced Hazards: Acrylamide, Mycotoxins & Migration',
-        clause: 'Codex CXS 193-1995 Contaminants Standard & EU Reg 2023/915 MRLs',
-        overview: 'Controlling Acrylamide (> 120°C Maillard reaction), Aflatoxin M1/B1, Patulin, Veterinary Antibiotics, and Packaging PAA Migration.',
+        title: 'Module 2: Industrial Prerequisite Programs (PRPs) — ISO/TS 22002-1, EHEDG Sanitary Engineering, CIP & EMP',
+        clause: 'ISO/TS 22002-1 Clauses 4–18, EHEDG Doc. 8 & FDA Pasteurized Milk Ordinance (PMO)',
+        overview: 'Establishing industrial Prerequisite Programs (PRPs) before the 12 HACCP steps: positive air pressure zoning (+5 to +15 Pa), EHEDG dead-leg elimination (L/D <= 1.5), CIP turbulence (>= 1.5 m/s), regenerative PHE differential pressure (>= +0.5 bar), and Zones 1–4 Environmental Pathogen Monitoring.',
         principles: [
-          'Acrylamide forms via the Maillard reaction between free asparagine and reducing sugars in starchy foods baked/fried above 120°C.',
-          'Mycotoxin limits: Aflatoxin M1 in raw milk (<= 0.05 µg/kg EU / <= 0.5 µg/kg US/Codex), Patulin in apple juice (<= 50 µg/kg; <= 10 µg/kg infant).',
-          'Primary Aromatic Amines (PAAs) and phthalates from multi-layer packaging adhesives/inks require migration testing (< 10 ppb).'
+          'Sanitary Engineering PRPs: Food-contact piping must be AISI 316L stainless steel (Ra <= 0.8 µm) with dead-legs L/D <= 1.5 and CIP velocity >= 1.5 m/s so biofilms cannot form.',
+          'Regenerative Plate Heat Exchangers (PHEs) must maintain >= 0.5 bar higher pressure on the pasteurized side than the raw side, and holding tubes require a >= 2% upward slope to eliminate air pockets.',
+          'Environmental Monitoring Program (EMP Zones 1–4) swabs for Listeria spp. in wet chilled plants and Salmonella spp. in dry low-moisture factories 3–4 hours into active production.'
         ],
-        ccpParam: 'Incoming Milk Aflatoxin M1 / Antibiotics & Packaging Migration',
-        ccpLimit: 'Beta-lactam/Tetracycline antibiotics: Negative | Aflatoxin M1 within legal MRL | Overall migration <= 10 mg/dm²',
-        ccpFix: 'Reject raw milk tanker prior to silo unloading if antibiotic or aflatoxin rapid test is positive.',
+        ccpParam: 'PHE Differential Pressure (>= +0.5 bar), Holding Tube Slope (>= 2%) & CIP Velocity (>= 1.5 m/s)',
+        ccpLimit: 'Pasteurized side >= +0.5 bar over raw | Holding tube >= 2.0% upward slope | Zone 1 Listeria/Salmonella: Absent',
+        ccpFix: 'Halt line immediately if differential pressure drops below +0.5 bar; strip and deep-clean equipment if Zone 1 swab is positive.',
         checks: [
-          'Include process-induced chemicals (acrylamide, 3-MCPD, PAHs) in the Hazard Analysis.',
-          'Require accredited lab Declaration of Compliance (DoC) for all food-contact packaging films.'
+          'Verify 0.01 micron oil-free filtration on all compressed air contacting food or primary packaging.',
+          'Validate allergen changeover cleaning across 3 consecutive runs using protein-specific ELISA swabs (< 5 ppm).'
         ]
       },
       {
-        title: 'Scientific Validation under Codex CXG 69-2008 & Non-Pathogenic Surrogates',
-        clause: 'Codex CXG 69-2008 Guidelines for the Validation of Food Safety Control Measures',
-        overview: 'Conducting worst-case validation trials using approved non-pathogenic surrogates (Enterococcus faecium, C. sporogenes) and ALP testing.',
+        title: 'Module 3: The 12 Steps of HACCP (Part 1) — First 5 Preliminary Steps & Industrial P&ID Flow Verification',
+        clause: 'Codex CXC 1-1969 Preliminary Steps 1–5 & ISO 22000:2018 Clause 8.5.1',
+        overview: 'Executing the initial 5 Preliminary Steps in an industrial manufacturing plant: Step 1 (Multidisciplinary Engineering/QA/Production Team), Step 2 (Raw & Finished Specs: pH, a_w, Preservatives, Packaging Migration), Step 3 (Intended Use & Vulnerable Groups), Step 4 (Constructing Detailed Process & P&ID Flow Diagrams), and Step 5 (On-Site Multi-Shift Verification).',
         principles: [
-          'NEVER introduce live pathogens into an active food factory! In-plant biological validation uses approved non-pathogenic surrogates (e.g., Enterococcus faecium NRRL B-2354 for Salmonella in dry nut roasting; Clostridium sporogenes PA 3679 for C. botulinum).',
-          'Validation trials must run under Worst-Case Operating Conditions (maximum belt speed, minimum temperature, maximum bed depth, highest viscosity).',
-          'Alkaline Phosphatase (ALP < 350 mU/L) validates complete HTST milk pasteurization.'
+          'Step 1 to Step 3: Assemble QA, Process Engineering, Automation/PLC, Production, and R&D; document intrinsic barriers (pH, a_w, gas flush MAP ratio) and food-contact packaging migration compliance (< 10 mg/dm²).',
+          'Step 4 (Constructing the Industrial Flow Diagram): Must include every raw material stream, water/culinary steam/compressed air input, balance tank, heat exchanger, divert loop, rework entry point, and waste stream.',
+          'Step 5 (On-Site Verification of Flow Diagram): The HACCP Team must physically trace all stainless steel pipelines, diversion valves, and rework loops across Day, Swing, and Night shifts—signing off the verified schematic before starting Principle 1.'
         ],
-        ccpParam: 'Worst-Case Surrogate Validation & Alkaline Phosphatase (ALP)',
-        ccpLimit: '3 consecutive worst-case trials achieving target log reduction | Milk ALP < 350 mU/L (Negative)',
-        ccpFix: 'Lock PLC speed and temperature setpoints so production can never exceed the validated envelope.',
+        ccpParam: 'Step 5 On-Site P&ID / Flow Diagram Verification & Rework Loop Mapping',
+        ccpLimit: '100% physical match of Flow Diagram with actual plant piping, divert valves & night-shift rework practices signed by HACCP Team',
+        ccpFix: 'Remove any unmapped dead-leg or bypass jumper pipe immediately and re-verify the Flow Diagram prior to Hazard Analysis.',
         checks: [
-          'Compile a signed Validation Dossier before launching any new thermal or drying line.',
-          'Verify positive differential pressure (>= 0.5 bar) on the pasteurized side of Plate Heat Exchangers.'
+          'Trace all CIP return lines and product divert lines physically on the factory floor.',
+          'Require accredited lab Declaration of Compliance (DoC) for all primary packaging films.'
         ]
       },
       {
-        title: 'Engineering CCP Safeguards: PHE Differential Pressure, Holding Tube Slope & SPC',
-        clause: 'FDA Pasteurized Milk Ordinance (PMO) & Automated PLC Fail-Safe Standards',
-        overview: 'Validating regenerative PHE pressure (>= 0.5 bar), holding tube upward slope (>= 2%), Flow Diversion Valves, and SPC (Cpk >= 1.33).',
+        title: 'Module 4: The 7 Principles (Principles 1–4) — Industrial Hazard Analysis, 5x5 Risk Matrix, Codex Decision Tree, Critical Limits & SPC',
+        clause: 'Codex Steps 6–9 (Principles 1–4), CXS 193-1995 Contaminants & Statistical Process Control',
+        overview: 'Conducting a comprehensive Industrial Hazard Analysis (Biological, Chemical, Process-Induced Acrylamide/Mycotoxins/Antibiotics, Physical & Allergenic), scoring the 5x5 Risk Assessment Matrix, applying the Codex 4-Question CCP Decision Tree, setting Critical vs. Operational Limits, and implementing automated PLC/SPC CCP Monitoring.',
         principles: [
-          'Regenerative Plate Heat Exchangers (PHEs) must maintain >= 0.5 bar higher pressure on the pasteurized side so any pinhole leaks from pasteurized -> raw.',
-          'Pasteurizer holding tubes must have a continuous upward slope of >= 2% (1/4 inch per foot) to eliminate trapped air pockets that shorten residence time.',
-          'Statistical Process Control (SPC) tracks Process Capability Index (Cpk >= 1.33) inside Critical Limits to catch drift early.'
+          'Principle 1 — Industrial Hazard Analysis & 5x5 Risk Matrix: Evaluate biological pathogens (C. botulinum, Salmonella, Listeria), chemical contaminants (Aflatoxin M1 <= 0.05–0.5 ppb, Patulin <= 50 ppb, Beta-lactam antibiotics, Acrylamide > 120°C), physical shards (glass, SS 316), and allergens using Likelihood (1–5) x Severity (1–5). Score >= 9 (or Severity = 5) is a Significant Hazard.',
+          'Principle 2 — Codex 4-Question CCP Decision Tree: Apply Q1, Q2, Q3, and Q4 systematically to every Significant Hazard (e.g., Raw Milk Antibiotic/Aflatoxin Reception = CCP because no downstream step destroys them [Q4=No]; Raw Milk Salmonella = NOT a CCP at Reception because downstream HTST Pasteurization kills it [Q4=Yes], making Pasteurization the CCP [Q2=Yes]).',
+          'Principle 3 & Principle 4 — Critical Limits, Fail-Safe Flow Diversion & SPC Monitoring: Set validated Critical Limits (HTST >= 72°C/15s, Retort F0 >= 3.0 min at 121.1°C, Metal/X-Ray limits) with automated fail-safe Flow Diversion Valves (<= 1s response) and Statistical Process Control (Cpk >= 1.33).'
         ],
-        ccpParam: 'PHE Differential Pressure, Holding Tube Slope & FDV Response',
-        ccpLimit: 'Pasteurized side >= +0.5 bar over raw | Holding tube >= 2.0% upward slope | FDV divert response <= 1 second',
-        ccpFix: 'Seal FDV cut-in/cut-out switches with tamper-evident lead/numbered seals and test monthly.',
+        ccpParam: '5x5 Risk Matrix, Codex Decision Tree Q1–Q4, FDV Response (<= 1s) & Process Capability (Cpk >= 1.33)',
+        ccpLimit: '100% Significant Hazards passed through Codex Decision Tree | FDV divert <= 1s | SPC Capability Cpk >= 1.33 | Milk ALP < 350 mU/L',
+        ccpFix: 'Seal FDV cut-in switches with tamper-evident seals; reject raw milk tankers positive for antibiotics/aflatoxin prior to unloading.',
         checks: [
-          'Restrict PLC critical parameter edits via password-protected audit trail logs.',
-          'Challenge-test dual reject confirmation sensors (arm actuation + bin entry) every shift.'
+          'Pass certified Fe, Non-Fe, and SS 316 test spheres through the geometric center of metal/X-ray apertures hourly.',
+          'Challenge-test dual reject confirmation photo-eyes and locked reject bin full-sensors every shift.'
         ]
       },
       {
-        title: 'Vertical Trace HACCP Auditing, Management of Change (MOC) & Regulatory Defense',
-        clause: 'ISO 19011:2018 & GFSI Benchmarking Requirements for HACCP Auditing',
-        overview: 'Performing vertical lot trace audits, enforcing pre-launch Management of Change (MOC) gates, and reconciling SCADA trends against paper logs.',
+        title: 'Module 5: The 7 Principles (Principles 5–7) — Corrective Actions, CXG 69-2008 Validation, How to Audit HACCP & Global Food Law',
+        clause: 'Codex Principles 5–7, CXG 69-2008 Validation, ISO 19011 Auditing & International Food Law',
+        overview: 'Mastering Principle 5 (Mass-Balance Quarantine & 5-Why CAPA), Principle 6 (Worst-Case Surrogate Validation under Codex CXG 69-2008 & How to Conduct Vertical Trace HACCP Audits), Principle 7 (Tamper-Proof SCADA/Batch Records), and National/International Law on Manufacturing HACCP.',
         principles: [
-          'Vertical Trace Auditing selects one specific production batch (especially a shift with a CCP deviation) and cross-verifies its SCADA chart, operator log, calibration certificate, operator training, and release sign-off.',
-          'Management of Change (MOC) Gate: Zero recipe, equipment, packaging, or processing changes may occur without a pre-signed HACCP Change Impact Assessment.',
-          'Continuous digital SCADA/chart recorder graphs must correlate 100% with handwritten operator CCP checksheets.'
+          'Principle 5 (Industrial Quarantine & CAPA): Any CCP failure triggers immediate quarantine of 100% of product back to the last passed check, ERP stock-lock, 5-Why Root Cause Analysis, and formal QA/Process Authority disposition.',
+          'Principle 6 — Scientific Validation (Codex CXG 69-2008) & How to Audit a HACCP System: Never introduce live pathogens into a factory—use approved non-pathogenic surrogates (Enterococcus faecium NRRL B-2354 or C. sporogenes PA 3679) across 3 worst-case runs. Audit the HACCP system via Vertical Lot Traceability (correlating SCADA charts, operator logs, ISO 17025 calibration certificates, and release sign-offs) and strict Management of Change (MOC) gates.',
+          'Principle 7 & Manufacturing HACCP Law: Enforceable by law under US FDA FSMA 21 CFR Part 117 (HARPC) & Part 113 (LACF), EU Regulation 852/2004 Article 5, UK Food Safety Act 1990 (Section 21 Due Diligence), GCC/SFDA/UAE Export Standards, and Pakistan Pure Food Authorities (PFA/KPFA/SFA/BFA) & PSQCA mandatory standards.'
         ],
-        ccpParam: 'Management of Change (MOC) Gate & SCADA vs. Log Correlation',
-        ccpLimit: '100% MOC sign-off prior to change | 100% timestamp/temperature match between SCADA and operator logs',
-        ccpFix: 'Halt any unapproved plant trial immediately and quarantine product manufactured without MOC clearance.',
+        ccpParam: 'CXG 69-2008 Surrogate Validation, Vertical Audit Correlation & MOC Gate Compliance',
+        ccpLimit: '3 consecutive worst-case validation runs | 100% SCADA vs. paper log match | 100% MOC sign-off prior to any process change',
+        ccpFix: 'Halt any unapproved plant trial immediately, quarantine batches lacking MOC sign-off, and notify Certification Body within 3 working days of any Class I recall.',
         checks: [
-          'Conduct unannounced night-shift and weekend CCP verification walkthroughs.',
-          'Maintain a live Export Destination Regulatory & MRL Compliance Matrix.'
+          'Conduct unannounced night-shift and weekend Vertical HACCP Audits tracing a CCP deviation batch end-to-end.',
+          'Maintain a live Export Destination Regulatory, MRL & Mandatory HACCP Law Compliance Matrix.'
         ]
       }
     ],
@@ -2103,6 +2103,14 @@ const COMPACT_COURSES: CompactSeedCourse[] = [
   }
 ];
 
+const MODULE_STAGE_PREFIXES = [
+  'Module 1 (Basics, Core Definitions & Foundations)',
+  'Module 2 (Prerequisite Programs - PRPs & Foundational Controls)',
+  'Module 3 (Initial Steps 1–5, Process Flow & Operational Setup)',
+  'Module 4 (Core Principles, Hazard/Risk Matrix, Decision Tree & Critical Limits)',
+  'Module 5 (Corrective Actions, Validation, System Auditing & Regulatory Law)'
+];
+
 export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = COMPACT_COURSES.map((c) => ({
   id: c.id,
   code: c.code,
@@ -2115,49 +2123,53 @@ export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = COM
   distinctionPercentage: 75,
   totalExamQuestions: 40,
   description: c.description,
-  modules: c.modules.map((m, idx) => ({
-    id: `${c.id}-m${idx + 1}`,
-    moduleNumber: idx + 1,
-    title: m.title,
-    estimatedMinutes: 75,
-    overview: m.overview,
-    internationalClauses: [
-      m.clause,
-      `${c.accreditationStandard} (2024–2026 International Compliance Edition & ISO Climate Amendment Amd 1:2024)`
-    ],
-    keyPrinciples: [
-      ...m.principles,
-      `Operational Limit vs. Critical Limit Control: Establish a stricter internal Operational Limit inside the Critical Limit (${m.ccpLimit}) so operators adjust the process proactively before any safety breach occurs.`,
-      `Scientific Upfront Validation vs. Ongoing Verification: Validate "${m.ccpParam}" scientifically prior to production launch, and verify compliance continuously via calibrated instruments, shift supervisor countersignatures, and unannounced internal audits.`,
-      `Root-Cause Corrective Action (5-Why CAPA): Any deviation from "${m.ccpLimit}" requires immediate product containment back to the last passed check, followed by a documented 5-Why Root Cause Analysis to prevent recurrence.`
-    ],
-    criticalControlParameters: [
-      {
-        parameter: m.ccpParam,
-        standardLimit: m.ccpLimit,
-        correctiveProtocol: m.ccpFix
-      },
-      {
-        parameter: `Instrument Calibration & Metrology Verification (${m.title})`,
-        standardLimit:
-          '100% ISO/IEC 17025 traceable calibration + daily reference check (0.0°C ± 0.5°C ice-point / certified test piece / pH buffer)',
-        correctiveProtocol:
-          'Withdraw out-of-tolerance gauge immediately, tag "DO NOT USE", and retrospectively evaluate all batches measured since the last passed calibration check.'
-      },
-      {
-        parameter: 'Real-Time Record Integrity & Supervisor Verification Sign-Off',
-        standardLimit:
-          '100% real-time timestamped entries with zero correction fluid ("whitener") and zero pre-filled ("dry-labbed") shift logs',
-        correctiveProtocol:
-          'Quarantine unverified production lots, retrain staff on legal Due Diligence documentation rules, and implement supervisor shift-handover countersignature.'
-      }
-    ],
-    practicalChecklist: [
-      ...m.checks,
-      `Verify that operators on Day, Swing, and Night shifts can verbally state the exact Critical Limit (${m.ccpLimit}) and demonstrate the emergency quarantine procedure.`,
-      `Audit the last 30 days of "${m.ccpParam}" monitoring records, calibration certificates, and CAPA close-out reports for 100% traceability within ≤ 4 hours.`
-    ]
-  })),
+  modules: c.modules.map((m, idx) => {
+    const cleanTitle = m.title.replace(/^Module\s*\d+\s*:\s*/i, '');
+    const stageLabel = MODULE_STAGE_PREFIXES[idx] || `Module ${idx + 1}`;
+    return {
+      id: `${c.id}-m${idx + 1}`,
+      moduleNumber: idx + 1,
+      title: `${stageLabel}: ${cleanTitle}`,
+      estimatedMinutes: 85,
+      overview: m.overview,
+      internationalClauses: [
+        m.clause,
+        `${c.accreditationStandard} (2024–2026 International Compliance Edition & ISO Climate Amendment Amd 1:2024)`
+      ],
+      keyPrinciples: [
+        ...m.principles,
+        `Hazard Analysis, 5x5 Risk Matrix & Decision Tree Application: Evaluate every hazard at this stage using Likelihood (1–5) × Severity (1–5) and apply the 4-Question Codex Decision Tree to determine whether the step is controlled by a PRP, an OPRP, or a CCP (${m.ccpLimit}).`,
+        `Operational Limit vs. Critical Limit Control: Establish a stricter internal Operational Limit inside the Critical Limit (${m.ccpLimit}) so operators adjust the process proactively before any safety breach occurs.`,
+        `System Auditing & Legal Due Diligence Compliance: Validate "${m.ccpParam}" scientifically prior to production, audit compliance via ISO 19011 vertical trace checks, and retain tamper-proof records to satisfy EU Reg 852/2004, US FDA FSMA, UK Food Safety Act, GCC Municipality, and Pakistan Pure Food Laws.`
+      ],
+      criticalControlParameters: [
+        {
+          parameter: m.ccpParam,
+          standardLimit: m.ccpLimit,
+          correctiveProtocol: m.ccpFix
+        },
+        {
+          parameter: `Instrument Calibration & Metrology Verification (${cleanTitle})`,
+          standardLimit:
+            '100% ISO/IEC 17025 traceable calibration + daily reference check (0.0°C ± 0.5°C ice-point / certified test piece / pH buffer)',
+          correctiveProtocol:
+            'Withdraw out-of-tolerance gauge immediately, tag "DO NOT USE", and retrospectively evaluate all batches measured since the last passed calibration check.'
+        },
+        {
+          parameter: 'Real-Time Record Integrity & Legal Due Diligence Sign-Off',
+          standardLimit:
+            '100% real-time timestamped entries with zero correction fluid ("whitener") and zero pre-filled ("dry-labbed") shift logs',
+          correctiveProtocol:
+            'Quarantine unverified production lots, retrain staff on legal Due Diligence documentation rules, and implement supervisor shift-handover countersignature.'
+        }
+      ],
+      practicalChecklist: [
+        ...m.checks,
+        `Verify that operators on Day, Swing, and Night shifts can verbally state the exact Critical Limit (${m.ccpLimit}) and demonstrate the emergency quarantine procedure.`,
+        `Audit the last 30 days of "${m.ccpParam}" monitoring records, calibration certificates, and CAPA close-out reports for 100% traceability within ≤ 4 hours.`
+      ]
+    };
+  }),
   coreExamPool: c.questions
 }));
 

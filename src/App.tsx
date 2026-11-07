@@ -2607,6 +2607,60 @@ export default function App() {
     } catch {}
   };
 
+  // Admin Direct Certificate Issuance (Without Exam / Study) & Live Verification Persistence
+  const handleAdminDirectIssueCertificate = async (cert: HubCertificate) => {
+    const cleanId =
+      cert.id ||
+      `cert-${cert.certificateNumber.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+    const payload: HubCertificate = {
+      id: cleanId,
+      certificateNumber: cert.certificateNumber.slice(0, 115),
+      recipientUid: cert.recipientUid || '',
+      recipientName: cert.recipientName.slice(0, 195),
+      recipientEmail: (cert.recipientEmail || '').slice(0, 195),
+      courseId: cert.courseId || 'custom-admin-cert',
+      trainingCategory: cert.trainingCategory || 'International Certification',
+      trainingTitle: cert.trainingTitle.slice(0, 295),
+      accreditationBody: (
+        cert.accreditationBody ||
+        'Codex Alimentarius & GFSI International Standard'
+      ).slice(0, 195),
+      issueDate: (cert.issueDate || new Date().toISOString().slice(0, 10)).slice(
+        0,
+        75
+      ),
+      issuedBy: (
+        cert.issuedBy || 'FS Portal Administration (Direct Executive Issuance)'
+      ).slice(0, 195),
+      verificationStatus: 'valid',
+      createdAt: new Date().toISOString(),
+      scorePercentage: cert.scorePercentage || 85,
+      distinction: Boolean(cert.distinction)
+    };
+
+    await setDoc(doc(db, 'certificates', cleanId), payload, { merge: true });
+    setCertificates((prev) => [
+      payload,
+      ...prev.filter(
+        (c) =>
+          c.id !== cleanId &&
+          c.certificateNumber.toUpperCase() !==
+            payload.certificateNumber.toUpperCase()
+      )
+    ]);
+  };
+
+  const handleDeleteDirectCertificate = async (certId: string) => {
+    try {
+      await deleteDoc(doc(db, 'certificates', certId));
+      setCertificates((prev) => prev.filter((c) => c.id !== certId));
+      setAdminStatusBanner(
+        'Certificate removed from Online Verification Registry.'
+      );
+      setTimeout(() => setAdminStatusBanner(null), 3500);
+    } catch {}
+  };
+
   const handleAdminPublishOpportunity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminOppTitle.trim() || !adminOppOrg.trim()) return;
@@ -2808,6 +2862,9 @@ export default function App() {
         onDeleteScholarship={handleDeleteScholarship}
         onSaveTraining={handleSaveTraining}
         onDeleteTraining={handleDeleteTraining}
+        certificates={certificates}
+        onAdminDirectIssueCertificate={handleAdminDirectIssueCertificate}
+        onDeleteCertificate={handleDeleteDirectCertificate}
         onChangeStorageConfig={setStorageConfig}
         onSaveStorageConfig={handleSaveStorageConfig}
         onExportBackup={handleExportFullBackupJson}

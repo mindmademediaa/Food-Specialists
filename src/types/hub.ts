@@ -275,7 +275,8 @@ export interface HubCertificate {
   recipientUid?: string;
   recipientName: string;
   recipientEmail: string;
-  trainingCategory: 'Highfield' | 'Lead Auditor' | 'International Certification' | string;
+  courseId?: string;
+  trainingCategory?: 'Highfield' | 'Lead Auditor' | 'International Certification' | string;
   trainingTitle: string;
   accreditationBody: string;
   issueDate: string;
@@ -284,7 +285,7 @@ export interface HubCertificate {
   certificateImageUrl?: string;
   verificationStatus: 'valid' | 'revoked';
   issuedBy: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface PaymentGatewayConfig {

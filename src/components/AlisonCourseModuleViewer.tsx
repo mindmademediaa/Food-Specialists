@@ -1430,6 +1430,75 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           </p>
         </div>
 
+        {/* 5-Stage Structured Curriculum Progression Roadmap (Basics -> PRPs -> Steps 1-5 -> Principles/Matrix/Decision Tree -> Auditing & Law) */}
+        <div className="pt-3 border-t border-white/15 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[11px] font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" />
+              Structured 5-Module International Curriculum Architecture (Basic Foundations → Expert Auditing &amp; Law):
+            </span>
+            <span className="text-[10.5px] font-bold text-emerald-200">
+              Currently Studying: Stage {module.moduleNumber} of 5
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5">
+            {[
+              {
+                num: 1,
+                stage: 'Module 1 · Basics',
+                desc: 'History, Core Definitions, Science & Hazard Fundamentals'
+              },
+              {
+                num: 2,
+                stage: 'Module 2 · PRPs',
+                desc: 'Prerequisite Programs (GMP, GHP, SSOPs, Pest & Allergens)'
+              },
+              {
+                num: 3,
+                stage: 'Module 3 · Steps 1–5',
+                desc: 'Initial 5 HACCP Steps, Team, Product & Flow Verification'
+              },
+              {
+                num: 4,
+                stage: 'Module 4 · Principles 1–4',
+                desc: 'Hazard Analysis, 5×5 Risk Matrix, Codex Tree & Critical Limits'
+              },
+              {
+                num: 5,
+                stage: 'Module 5 · Principles 5–7',
+                desc: 'CAPA, Validation, How to Audit System & Food Safety Law'
+              }
+            ].map((st) => {
+              const isCurrent = module.moduleNumber === st.num;
+              return (
+                <div
+                  key={st.num}
+                  className={`rounded-xl p-2.5 border text-left transition ${
+                    isCurrent
+                      ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-xs'
+                      : 'bg-white/10 text-white border-white/15'
+                  }`}
+                >
+                  <p
+                    className={`text-[10px] font-black uppercase tracking-wider ${
+                      isCurrent ? 'text-slate-950' : 'text-amber-300'
+                    }`}
+                  >
+                    {st.stage}
+                  </p>
+                  <p
+                    className={`text-[10.5px] leading-snug mt-0.5 font-semibold ${
+                      isCurrent ? 'text-slate-900' : 'text-emerald-100/90'
+                    }`}
+                  >
+                    {st.desc}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Learning Depth Filter Pills (Beginner -> Practitioner -> Expert) */}
         <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
           <span className="text-[11px] font-bold text-emerald-200 flex items-center gap-1.5">
@@ -1776,6 +1845,425 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
         <div className="rounded-xl bg-emerald-50/70 border border-emerald-200 p-3.5 flex items-start gap-2.5 text-xs text-slate-800 leading-relaxed">
           <TrendingUp className="w-4 h-4 text-[#0D5C3A] shrink-0 mt-0.5" />
           <span>{pedagogy.statisticsReport.analyticalSummary}</span>
+        </div>
+      </div>
+
+      {/* 6B. CONCRETE PRACTICAL EXAMPLES, 5x5 RISK ASSESSMENT MATRIX, CODEX DECISION TREE & AUDITING/LAW */}
+      <div className="rounded-2xl border-2 border-[#0D5C3A]/30 bg-white p-5 sm:p-6 shadow-xs space-y-6">
+        <div className="border-b border-slate-200 pb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span className="px-3 py-1 rounded-lg bg-emerald-100 text-[#0D5C3A] text-xs font-black uppercase tracking-wider">
+              Practical Industry Mastery · Worked Examples, Risk Matrix, Decision Tree &amp; Law
+            </span>
+            <h4 className="text-base sm:text-lg font-black text-slate-900 mt-1.5">
+              Step-by-Step Practical Examples, 5×5 Hazard Risk Matrix, Codex CCP Decision Tree &amp; Legal Auditing
+            </h4>
+          </div>
+          <span className="text-xs font-bold text-slate-500">
+            Module {module.moduleNumber} Applied Field Manual
+          </span>
+        </div>
+
+        {/* 3 Concrete Real-World Worked Examples for the Current Module Stage */}
+        <div className="space-y-3">
+          <h5 className="text-xs font-black uppercase tracking-wider text-[#0D5C3A] flex items-center gap-1.5">
+            <Lightbulb className="w-4 h-4 text-amber-600" />
+            3 Concrete Step-by-Step Real-World Industry Examples (Stage {module.moduleNumber} Application)
+          </h5>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {(module.moduleNumber === 1
+              ? [
+                  {
+                    tag: 'Example 1 · Poultry & Catering',
+                    title: 'Biological Hazard vs. Spoilage in Raw Chicken Breast',
+                    scenario:
+                      'Chilled raw chicken arrives at +3.5°C with normal odor and color, but carries 10³ CFU/g Campylobacter jejuni.',
+                    solution:
+                      'Pathogens do NOT change smell or appearance. Visual inspection at receiving cannot detect Campylobacter; only validated thermal cooking to ≥75°C core for ≥30 seconds achieves a 6-log lethality reduction.'
+                  },
+                  {
+                    tag: 'Example 2 · Cooked Rice Buffet',
+                    title: 'Bacillus cereus Heat-Stable Emetic Toxin (Cereulide)',
+                    scenario:
+                      'Boiled rice is left at +28°C ambient kitchen temperature for 4.5 hours before being reheated to +85°C in a wok.',
+                    solution:
+                      'Cooking kills vegetative cells, but surviving spores germinate between +10°C and +50°C and produce cereulide toxin, which survives +121°C for 90 minutes. Reheating cannot make the rice safe—it must be discarded.'
+                  },
+                  {
+                    tag: 'Example 3 · Bakery & Milling',
+                    title: 'Chemical (Mycotoxin) & Physical Hazard Differentiation',
+                    scenario:
+                      'Wheat flour lot arrives from humid storage with 28 ppb Aflatoxin B1 and a broken 2.0 mm stainless steel sifter wire.',
+                    solution:
+                      'Aflatoxin B1 is a heat-stable chemical hazard controlled via Supplier COA + <14% grain moisture PRP; the stainless steel wire is a physical hazard controlled via a 500-micron inline sifter and metal detector CCP.'
+                  }
+                ]
+              : module.moduleNumber === 2
+              ? [
+                  {
+                    tag: 'Example 1 · Prerequisite Program (PRP)',
+                    title: 'Color-Coded Zoning & Allergen Changeover SSOP',
+                    scenario:
+                      'A catering line switches from peanut-satay chicken skewering to allergen-free grilled chicken breast on the same prep table.',
+                    solution:
+                      'Detergent + hot water + quaternary ammonium sanitizer kills bacteria but does NOT destroy peanut Ara h 1 protein. Full 7-step wet alkaline wash + Dedicated Purple Allergen Kit + ATP/Lateral Flow swab (<10 RLU / 0 ppm) is mandatory.'
+                  },
+                  {
+                    tag: 'Example 2 · Calibration PRP',
+                    title: 'Ice-Point (0.0°C) vs. Boiling-Point (100.0°C) Probe Calibration',
+                    scenario:
+                      'A digital thermistor probe reads +1.8°C in a crushed ice-slurry bath during morning pre-op check.',
+                    solution:
+                      'Tolerance is ±0.5°C. Because +1.8°C exceeds ±0.5°C drift, the probe is tagged OUT OF SERVICE, replaced with a calibrated backup probe, and all chiller logs since the previous calibration check are re-verified.'
+                  },
+                  {
+                    tag: 'Example 3 · Pest Management PRP',
+                    title: '3-Ring IPM Defense & Rodent Trend Action Threshold',
+                    scenario:
+                      'Weekly inspection finds 2 rodent droppings and gnaw marks near the dry-store roller shutter door (12 mm bottom gap).',
+                    solution:
+                      'Immediate bristle-strip door proofing (<6 mm gap), 100% quarantine of pallets within 3 meters under UV blacklight for urine fluorescence, and root-cause corrective action—zero toxic loose bait allowed inside food zones.'
+                  }
+                ]
+              : module.moduleNumber === 3
+              ? [
+                  {
+                    tag: 'Example 1 · HACCP Steps 1–3',
+                    title: 'Product Description & Vulnerable Consumer Intended Use',
+                    scenario:
+                      'A central kitchen produces pasteurized sous-vide beef cheeks (aw 0.98, pH 6.1, vacuum-packed) for both a hotel restaurant and a hospital geriatric ward.',
+                    solution:
+                      'Because intended users include immunocompromised hospital patients (Step 3), shelf-life at ≤3.0°C must be restricted to ≤10 days (to prevent psychrotrophic non-proteolytic C. botulinum growth) with strict Listeria absence in 25g.'
+                  },
+                  {
+                    tag: 'Example 2 · HACCP Step 4',
+                    title: 'Constructing a Complete Process Flow Diagram',
+                    scenario:
+                      'A dairy plant maps milk reception → pasteurization → filling, but forgets to include the rework loop and liquid nitrogen dosing line.',
+                    solution:
+                      'An incomplete flow diagram invalidates the entire Hazard Analysis (Step 6). Every input (packaging, gases, water, rework, allergen additions, waste streams, and chill-hold buffers) must be mapped with time/temperature parameters.'
+                  },
+                  {
+                    tag: 'Example 3 · HACCP Step 5',
+                    title: 'On-Site Walk-Through Verification Across All Shifts',
+                    scenario:
+                      'Day-shift flow diagram shows blast chilling from +60°C to +4°C in 90 minutes, but the night-shift team stacks hot trays on ambient racks for 2 hours when the blast chiller is full.',
+                    solution:
+                      'Step 5 requires physical walk-through verification during Day, Night, Weekend, and Peak production shifts—discovering the unmapped ambient holding delay and adding a staged cooking batch schedule.'
+                  }
+                ]
+              : module.moduleNumber === 4
+              ? [
+                  {
+                    tag: 'Example 1 · Principle 1 (5×5 Risk Matrix)',
+                    title: 'Scoring Salmonella in Raw Poultry Cooking Step',
+                    scenario:
+                      'At the Rotary Oven Cooking step: Severity of Salmonella infection = 4 (Serious hospitalization); Likelihood without control = 5 (Frequent in raw poultry).',
+                    solution:
+                      'Risk Score = Severity (4) × Likelihood (5) = 20/25 (Critical Significant Hazard). Because no downstream step eliminates Salmonella, Codex Decision Tree Q2 = YES → designated as CCP-1.'
+                  },
+                  {
+                    tag: 'Example 2 · Principle 2 (Codex Decision Tree)',
+                    title: 'Why Chilled Storage (+4°C) is an OPRP/CP vs. Cooking (+75°C) is a CCP',
+                    scenario:
+                      'A student marks all 14 steps in a kitchen flow chart as CCPs, including Raw Vegetable Washing and Dry Goods Storage.',
+                    solution:
+                      'Passing Raw Chiller Storage through the Codex Decision Tree: Q1=Yes, Q2=No (not specifically designed to eliminate hazard to acceptable level), Q3=Yes, Q4=Yes (subsequent cooking step ≥75°C eliminates pathogens) → Manage as PRP/OPRP, whereas Cooking (Q4=No) is the true CCP.'
+                  },
+                  {
+                    tag: 'Example 3 · Principles 3 & 4 (Limits & Monitoring)',
+                    title: 'Critical Limit vs. Operational Limit in Pasteurization / Metal Detection',
+                    scenario:
+                      'Legal Critical Limit for milk HTST pasteurization is ≥72.0°C for ≥15 sec. If the plant sets its alarm at 72.0°C, any 0.2°C dip triggers a legal CCP deviation.',
+                    solution:
+                      'Set an Operational Limit at 74.5°C for 16 sec. If temperature drops to 73.8°C, an early warning alarm allows steam valve adjustment BEFORE breaching the 72.0°C Critical Limit.'
+                  }
+                ]
+              : [
+                  {
+                    tag: 'Example 1 · Principle 5 (Corrective Action)',
+                    title: 'Handling a Metal Detector CCP Rejection & 100% Hold-and-Rescreen',
+                    scenario:
+                      'At 14:30, the Hourly Metal Detector test piece (2.0 mm Stainless Steel) fails to trigger the pneumatic reject arm; last passed check was at 13:30.',
+                    solution:
+                      '1) Immediately stop the packing line; 2) Quarantine 100% of finished pallets produced between 13:30 and 14:30; 3) Repair solenoid air pressure; 4) Re-pass every quarantined pack through a verified detector; 5) Complete 5-Why CAPA log.'
+                  },
+                  {
+                    tag: 'Example 2 · Principle 6 (Validation vs. Verification)',
+                    title: 'Distinguishing Scientific Validation from Routine Verification',
+                    scenario:
+                      'During a BRCGS Issue 9 audit, the QA Manager shows daily cooking temperature sheets when asked for "CCP Validation evidence".',
+                    solution:
+                      'Daily temperature logs are VERIFICATION (proving the limit was followed). VALIDATION is the scientific proof before operations (e.g., USDA D-value/z-value lethality study + worst-case cold-spot heat penetration mapping) proving ≥75°C for 30s actually achieves a 6-log reduction.'
+                  },
+                  {
+                    tag: 'Example 3 · Food Safety Law & Auditing',
+                    title: 'Proving Legal Due Diligence Defence in Regulatory Court',
+                    scenario:
+                      'A consumer alleges food poisoning from a hotel banquet meal; Food Authority Inspectors audit the kitchen records.',
+                    solution:
+                      'Under UK Food Safety Act 1990 (Sec 21), EU Reg 852/2004, US FSMA & Provincial Pure Food Laws, the hotel proves Due Diligence ("all reasonable precautions and all due diligence") using signed batch core-probe logs, blast-chill curves, retained 72-hour food bank samples, and accredited staff training certificates.'
+                  }
+                ]
+            ).map((ex, idx) => (
+              <div
+                key={idx}
+                className="rounded-xl border border-emerald-900/15 bg-emerald-50/35 p-4 space-y-2 flex flex-col justify-between"
+              >
+                <div className="space-y-1.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-md bg-[#0D5C3A] text-white text-[10px] font-black uppercase tracking-wider">
+                    {ex.tag}
+                  </span>
+                  <h6 className="text-xs sm:text-sm font-black text-slate-900 leading-snug">
+                    {ex.title}
+                  </h6>
+                  <p className="text-xs text-slate-700 leading-relaxed">
+                    <strong className="text-slate-900">Scenario: </strong>
+                    {ex.scenario}
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-emerald-200/70 text-xs text-emerald-950 leading-relaxed">
+                  <strong className="text-[#0D5C3A]">Technical Solution: </strong>
+                  {ex.solution}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 5x5 Hazard Risk Assessment Matrix & Codex 4-Question CCP Decision Tree */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-2">
+          {/* Left: 5x5 Risk Assessment Matrix */}
+          <div className="lg:col-span-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h5 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                <BarChart3 className="w-4 h-4 text-[#0D5C3A]" />
+                How to Do Hazard Risk Assessment (5×5 Likelihood × Severity Matrix)
+              </h5>
+              <span className="px-2 py-0.5 rounded bg-emerald-100 text-[#0D5C3A] text-[10px] font-black">
+                Codex / ISO 22000 Cl. 8.5.2
+              </span>
+            </div>
+            <p className="text-[11.5px] text-slate-600 leading-relaxed">
+              Every identified Biological (B), Chemical (C), Physical (P), and Allergen (A) hazard is scored from <strong>1 to 5 for Severity</strong> (health impact) and <strong>1 to 5 for Likelihood</strong> (probability of occurrence). <strong>Risk Score = Severity × Likelihood (1–25)</strong>. Any hazard scoring <strong>≥12 (or Severity = 5)</strong> is a <strong>Significant Hazard</strong> that must be evaluated in the Codex CCP Decision Tree.
+            </p>
+            <div className="overflow-x-auto rounded-xl border border-slate-300 bg-white">
+              <table className="w-full text-center border-collapse text-[10.5px]">
+                <thead>
+                  <tr className="bg-slate-800 text-white font-black">
+                    <th className="p-2 border border-slate-700 text-left">
+                      Severity ↓ \ Likelihood →
+                    </th>
+                    <th className="p-1.5 border border-slate-700">1 Rare</th>
+                    <th className="p-1.5 border border-slate-700">2 Unlikely</th>
+                    <th className="p-1.5 border border-slate-700">3 Possible</th>
+                    <th className="p-1.5 border border-slate-700">4 Likely</th>
+                    <th className="p-1.5 border border-slate-700">5 Frequent</th>
+                  </tr>
+                </thead>
+                <tbody className="font-bold">
+                  <tr>
+                    <td className="p-2 border border-slate-200 text-left bg-slate-100 font-black">
+                      5 · Catastrophic (Death)
+                    </td>
+                    <td className="p-1.5 border border-slate-200 bg-amber-100 text-amber-950">5 (Med)</td>
+                    <td className="p-1.5 border border-slate-200 bg-orange-200 text-orange-950">10 (High)</td>
+                    <td className="p-1.5 border border-slate-200 bg-rose-600 text-white">15 (CCP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-rose-700 text-white">20 (CCP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-rose-900 text-white">25 (CCP)</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 border border-slate-200 text-left bg-slate-100 font-black">
+                      4 · Major (Hospitalization)
+                    </td>
+                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">4 (Low)</td>
+                    <td className="p-1.5 border border-slate-200 bg-amber-100 text-amber-950">8 (Med)</td>
+                    <td className="p-1.5 border border-slate-200 bg-orange-300 text-orange-950">12 (Sig)</td>
+                    <td className="p-1.5 border border-slate-200 bg-rose-600 text-white">16 (CCP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-rose-700 text-white">20 (CCP)</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 border border-slate-200 text-left bg-slate-100 font-black">
+                      3 · Moderate (Medical Care)
+                    </td>
+                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">3 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-amber-100 text-amber-950">6 (Med)</td>
+                    <td className="p-1.5 border border-slate-200 bg-amber-200 text-amber-950">9 (OPRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-orange-300 text-orange-950">12 (Sig)</td>
+                    <td className="p-1.5 border border-slate-200 bg-rose-600 text-white">15 (CCP)</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 border border-slate-200 text-left bg-slate-100 font-black">
+                      2 · Minor (Short Illness)
+                    </td>
+                    <td className="p-1.5 border border-slate-200 bg-emerald-50 text-emerald-900">2 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">4 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-amber-100 text-amber-950">6 (Med)</td>
+                    <td className="p-1.5 border border-slate-200 bg-amber-200 text-amber-950">8 (OPRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-orange-200 text-orange-950">10 (High)</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 border border-slate-200 text-left bg-slate-100 font-black">
+                      1 · Negligible (Discomfort)
+                    </td>
+                    <td className="p-1.5 border border-slate-200 bg-emerald-50 text-emerald-900">1 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-emerald-50 text-emerald-900">2 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">3 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">4 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-amber-100 text-amber-950">5 (Med)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="flex flex-wrap gap-2 text-[10.5px] font-bold">
+              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900">
+                1–4: Low Risk (Manage via PRPs / GMP)
+              </span>
+              <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-950">
+                5–9: Medium Risk (OPRP / Enhanced Monitoring)
+              </span>
+              <span className="px-2 py-0.5 rounded bg-rose-600 text-white">
+                12–25: Significant Hazard → Run Codex CCP Decision Tree
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Codex Alimentarius 4-Question CCP Decision Tree */}
+          <div className="lg:col-span-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h5 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                <Compass className="w-4 h-4 text-[#0D5C3A]" />
+                Codex Alimentarius 4-Question CCP Decision Tree (Step 7 / Principle 2)
+              </h5>
+              <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-950 text-[10px] font-black">
+                CXC 1-1969 Logic
+              </span>
+            </div>
+            <p className="text-[11.5px] text-slate-600 leading-relaxed">
+              Apply these 4 sequential questions to every process step where a <strong>Significant Hazard (Score ≥12)</strong> was identified:
+            </p>
+            <div className="space-y-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
+                <p className="font-black text-slate-900">
+                  <span className="text-[#0D5C3A]">Q1: </span>Do preventative control measures exist at this step or across the process for the identified hazard?
+                </p>
+                <p className="text-[11px] text-slate-600">
+                  • <strong>YES</strong> → Proceed to <strong>Q2</strong>. &nbsp;|&nbsp; • <strong>NO</strong> → Is control at this step necessary for food safety? If YES, modify step/process or product; if NO → <strong>Not a CCP (Stop)</strong>.
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
+                <p className="font-black text-slate-900">
+                  <span className="text-[#0D5C3A]">Q2: </span>Is this specific process step specifically designed to eliminate or reduce the likely occurrence of the hazard to an acceptable level? (e.g., Cooking, Pasteurization, Retort, Metal Detector)
+                </p>
+                <p className="text-[11px] text-slate-600">
+                  • <strong>YES</strong> → <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white font-black">THIS STEP IS A CCP!</span> &nbsp;|&nbsp; • <strong>NO</strong> → Proceed to <strong>Q3</strong>.
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
+                <p className="font-black text-slate-900">
+                  <span className="text-[#0D5C3A]">Q3: </span>Could contamination with the identified hazard occur in excess of acceptable levels, or could it increase to unacceptable levels at this step?
+                </p>
+                <p className="text-[11px] text-slate-600">
+                  • <strong>YES</strong> → Proceed to <strong>Q4</strong>. &nbsp;|&nbsp; • <strong>NO</strong> → <strong>Not a CCP (Manage as PRP)</strong>.
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
+                <p className="font-black text-slate-900">
+                  <span className="text-[#0D5C3A]">Q4: </span>Will a subsequent downstream step eliminate the identified hazard or reduce its likely occurrence to an acceptable level?
+                </p>
+                <p className="text-[11px] text-slate-600">
+                  • <strong>YES</strong> → <strong>Not a CCP</strong> (Manage via OPRP/PRP; the downstream step will be the CCP). &nbsp;|&nbsp; • <strong>NO</strong> → <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white font-black">THIS STEP IS A CCP!</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* How to Audit a HACCP System & Global Food Safety Law Reference Table */}
+        <div className="rounded-2xl border border-emerald-900/20 bg-emerald-50/40 p-4 sm:p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h5 className="text-xs sm:text-sm font-black uppercase tracking-wider text-[#0D5C3A] flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" />
+              How to Audit a HACCP / Food Safety System &amp; Mandatory Food Safety Law Reference
+            </h5>
+            <span className="text-[11px] font-bold text-slate-600">
+              ISO 19011 Auditing + Statutory Compliance
+            </span>
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-emerald-200 bg-white">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-emerald-950 text-white font-black">
+                  <th className="p-3 border-b border-emerald-900">
+                    Audit Phase / Legal Statute
+                  </th>
+                  <th className="p-3 border-b border-emerald-900">
+                    Mandatory Requirement &amp; Legal Clause
+                  </th>
+                  <th className="p-3 border-b border-emerald-900">
+                    How the Auditor Verifies Compliance on Site (Objective Evidence)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-slate-100">
+                  <td className="p-3 font-black text-slate-900">
+                    1. Desk-Top HACCP Plan &amp; Hazard Analysis Audit
+                  </td>
+                  <td className="p-3 font-bold text-[#0D5C3A]">
+                    Codex CXC 1-1969 Steps 1–12 &amp; ISO 22000 Clause 8.5
+                  </td>
+                  <td className="p-3 text-slate-700">
+                    Verify multidisciplinary team competency certificates, 100% flow diagram accuracy against plant layout, 5×5 risk calculations, Codex tree justification, and scientific validation studies.
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100 bg-slate-50/60">
+                  <td className="p-3 font-black text-slate-900">
+                    2. Shop-Floor CCP Witnessing &amp; Traceability Challenge
+                  </td>
+                  <td className="p-3 font-bold text-[#0D5C3A]">
+                    BRCGS Issue 9 Cl. 2.11 / Clause 3.9 (≤4 Hour Mass Balance)
+                  </td>
+                  <td className="p-3 text-slate-700">
+                    Shadow operators performing live core-probe temperature checks and metal detector test-piece challenges; execute a timed 4-hour vertical forward/backward mass-balance recall test (99.5%–100.5%).
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="p-3 font-black text-slate-900">
+                    3. UK &amp; EU Food Safety Law
+                  </td>
+                  <td className="p-3 font-bold text-[#0D5C3A]">
+                    EU Reg (EC) 852/2004 Art. 5 &amp; UK Food Safety Act 1990 Sec. 21
+                  </td>
+                  <td className="p-3 text-slate-700">
+                    Article 5 mandates a permanent procedure based on the 7 HACCP principles. Section 21 establishes the Statutory Due Diligence Defence requiring tamper-evident monitoring &amp; CAPA logs.
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100 bg-slate-50/60">
+                  <td className="p-3 font-black text-slate-900">
+                    4. US FDA FSMA &amp; GCC / Middle East Law
+                  </td>
+                  <td className="p-3 font-bold text-[#0D5C3A]">
+                    US 21 CFR Part 117 (HARPC) · Dubai Food Code · SFDA · GSO 1694
+                  </td>
+                  <td className="p-3 text-slate-700">
+                    Requires a Preventive Controls Qualified Individual (PCQI) / Person in Charge (PIC), written Food Safety Plan, Allergen/Sanitation/Supply-Chain Preventive Controls, and valid municipal permits.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-black text-slate-900">
+                    5. Pakistan Food Authorities &amp; PSQCA Law
+                  </td>
+                  <td className="p-3 font-bold text-[#0D5C3A]">
+                    Punjab Food Authority Act 2011 · Sindh / KP / BFA · PSQCA Standards
+                  </td>
+                  <td className="p-3 text-slate-700">
+                    Valid Food Business Operator (FBO) license, medical fitness &amp; typhoid vaccination records for food handlers, accredited water potability test reports, and halal/hygiene traceability logs.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

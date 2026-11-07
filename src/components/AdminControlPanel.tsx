@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import {
   CloudStorageConfig,
+  HubCertificate,
   HubJob,
   HubPaymentRequest,
   HubScholarship,
@@ -41,6 +42,8 @@ import {
   HubUser
 } from '../types/hub';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
+import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsData';
+import { downloadOfficialCourseCertificatePdf } from '../utils/certificatePdfGenerator';
 
 export type AdminSectionTab =
   | 'overview'
@@ -81,6 +84,9 @@ interface AdminControlPanelProps {
   onDeleteScholarship: (sch: HubScholarship) => Promise<void>;
   onSaveTraining: (training: HubTraining) => Promise<void>;
   onDeleteTraining: (training: HubTraining) => Promise<void>;
+  certificates?: HubCertificate[];
+  onAdminDirectIssueCertificate?: (cert: HubCertificate) => Promise<void>;
+  onDeleteCertificate?: (certId: string) => Promise<void>;
   onChangeStorageConfig: (cfg: CloudStorageConfig) => void;
   onSaveStorageConfig: (e: React.FormEvent) => Promise<void>;
   onExportBackup: () => void;
@@ -109,6 +115,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onDeleteScholarship,
   onSaveTraining,
   onDeleteTraining,
+  certificates = [],
+  onAdminDirectIssueCertificate,
+  onDeleteCertificate,
   onChangeStorageConfig,
   onSaveStorageConfig,
   onExportBackup,
@@ -233,6 +242,145 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const [priceEdits, setPriceEdits] = useState<
     Record<string, { fees: string; duration: string }>
   >({});
+
+  // Admin Direct Certificate Generator State (Issue Certificate Without Exam / Study on Any Course or Custom Topic)
+  const [directRecipientName, setDirectRecipientName] = useState('');
+  const [directRecipientEmail, setDirectRecipientEmail] = useState('');
+  const [directSelectedUserUid, setDirectSelectedUserUid] = useState('');
+  const [directTopicMode, setDirectTopicMode] = useState<'catalog' | 'custom'>('catalog');
+  const [directCatalogCourseId, setDirectCatalogCourseId] = useState(
+    INTERNATIONAL_TRAINING_COURSES[0]?.id || 'course-haccp-l4-mfg'
+  );
+  const [directCustomTopicTitle, setDirectCustomTopicTitle] = useState('');
+  const [directCustomCourseCode, setDirectCustomCourseCode] = useState('FS-EXEC-400');
+  const [directAccreditationStd, setDirectAccreditationStd] = useState(
+    'Codex Alimentarius CXC 1-1969 · ISO 22000 & GFSI Benchmark'
+  );
+  const [directScorePct, setDirectScorePct] = useState<number>(88);
+  const [directIssueDate, setDirectIssueDate] = useState<string>(
+    new Date().toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+  );
+  const [directCustomCertNumber, setDirectCustomCertNumber] = useState<string>('');
+  const [isIssuingDirectCert, setIsIssuingDirectCert] = useState(false);
+
+  const handleSelectExistingMemberForCert = (uid: string) => {
+    setDirectSelectedUserUid(uid);
+    if (!uid) return;
+    const found = users.find((u) => u.uid === uid);
+    if (found) {
+      setDirectRecipientName(found.name);
+      setDirectRecipientEmail(found.email);
+    }
+  };
+
+  const handleAdminDirectGenerateAndIssue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = directRecipientName.trim();
+    if (!cleanName) {
+      onSetBanner('Please enter the Recipient Full Name to generate the certificate.');
+      return;
+    }
+
+    const catalogCourse = INTERNATIONAL_TRAINING_COURSES.find(
+      (c) => c.id === directCatalogCourseId
+    );
+    const finalCourseTitle =
+      directTopicMode === 'custom' && directCustomTopicTitle.trim()
+        ? directCustomTopicTitle.trim()
+        : catalogCourse?.title || 'HACCP Level 4 in Manufacturing';
+    const finalCourseCode =
+      directTopicMode === 'custom' && directCustomCourseCode.trim()
+        ? directCustomCourseCode.trim().toUpperCase()
+        : catalogCourse?.code || 'FS-HACCP-L4M';
+    const finalAccreditation =
+      directTopicMode === 'custom' && directAccreditationStd.trim()
+        ? directAccreditationStd.trim()
+        : catalogCourse?.accreditationStandard ||
+          'Codex Alimentarius CXC 1-1969 · GFSI Benchmark';
+
+    const cleanCodeSlug = finalCourseCode.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 8) || 'FSCERT';
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const generatedCertNo =
+      directCustomCertNumber.trim().toUpperCase() ||
+      `FSP-${cleanCodeSlug}-${randomSuffix}`;
+
+    const clampedScore = Math.min(100, Math.max(60, Number(directScorePct) || 85));
+    const isDistinction = clampedScore >= 75;
+    const correctOutOf40 = Math.round((clampedScore / 100) * 40);
+    const syllabusList =
+      directTopicMode === 'catalog' && catalogCourse
+        ? catalogCourse.modules.map((m) => m.title)
+        : [
+            `Module 1 (Basics & Foundations): Core Principles & Scientific Fundamentals of ${finalCourseTitle}`,
+            `Module 2 (Prerequisite Programs - PRPs): GMP, GHP, SSOPs & Hygiene Controls for ${finalCourseTitle}`,
+            `Module 3 (Initial Steps 1–5 & Process Flow): Team Setup, Product Scope & Operational Flow Verification`,
+            `Module 4 (Principles 1–4, Risk Matrix & Decision Tree): 5×5 Hazard Analysis, CCPs & Critical Limits`,
+            `Module 5 (Principles 5–7, Auditing & Law): CAPA, System Validation, ISO 19011 Auditing & Food Safety Law`
+          ];
+
+    setIsIssuingDirectCert(true);
+    try {
+      const certRecord: HubCertificate = {
+        id: `cert-direct-${Date.now()}`,
+        certificateNumber: generatedCertNo,
+        recipientUid: directSelectedUserUid || undefined,
+        recipientName: cleanName,
+        recipientEmail: directRecipientEmail.trim(),
+        courseId:
+          directTopicMode === 'catalog' && catalogCourse
+            ? catalogCourse.id
+            : `custom-${cleanCodeSlug.toLowerCase()}`,
+        trainingTitle: finalCourseTitle,
+        accreditationBody: finalAccreditation,
+        issueDate:
+          directIssueDate.trim() ||
+          new Date().toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          }),
+        issuedBy: 'FS Portal Administration (Direct Executive Issuance)',
+        verificationStatus: 'valid',
+        scorePercentage: clampedScore,
+        distinction: isDistinction
+      };
+
+      if (onAdminDirectIssueCertificate) {
+        await onAdminDirectIssueCertificate(certRecord);
+      }
+
+      // Immediately generate and download the Portrait A4 PDF Certificate (Highfield / SGS / Bureau Veritas Style)
+      downloadOfficialCourseCertificatePdf({
+        certificateNumber: generatedCertNo,
+        recipientName: cleanName,
+        recipientEmail: directRecipientEmail.trim(),
+        courseTitle: finalCourseTitle,
+        courseCode: finalCourseCode,
+        accreditationStandard: finalAccreditation,
+        scorePercentage: clampedScore,
+        correctCount: correctOutOf40,
+        totalQuestions: 40,
+        distinction: isDistinction,
+        issueDate: certRecord.issueDate,
+        verificationPortalUrl: window.location.origin,
+        syllabusModules: syllabusList,
+        issuedByMode: 'admin_direct'
+      });
+
+      onSetBanner(
+        `Portrait PDF Certificate (${generatedCertNo}) generated for "${cleanName}" in "${finalCourseTitle}" & published live to the Online Verification Portal!`
+      );
+      setDirectCustomCertNumber('');
+    } catch {
+      onSetBanner('Failed to issue direct certificate. Please try again.');
+    } finally {
+      setIsIssuingDirectCert(false);
+    }
+  };
 
   // Derived Analytics & Graph Data
   const stats = useMemo(() => {
@@ -2374,6 +2522,350 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
            ===================================================================== */}
         {activeTab === 'trainings' && (
           <div className="space-y-5">
+            {/* ADMIN DIRECT PORTRAIT CERTIFICATE GENERATOR (WITHOUT EXAM / WITHOUT MODULE STUDY — ANY COURSE OR CUSTOM TOPIC) */}
+            <form
+              onSubmit={handleAdminDirectGenerateAndIssue}
+              className="bg-white border-2 border-[#0D5C3A] rounded-[26px] p-5 sm:p-6 shadow-md space-y-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+                <div>
+                  <span className="px-3 py-1 rounded-full bg-[#0D5C3A] text-amber-300 text-[11px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5" />
+                    Direct Portrait PDF Certificate Generator (Without Exam / Study)
+                  </span>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-[#0F291E] mt-1.5">
+                    Issue Instant Portrait Certificate (Highfield / SGS / Bureau Veritas Style) on Any Course or Custom Topic
+                  </h2>
+                  <p className="text-xs text-[#5C7267] font-medium leading-relaxed">
+                    Admin kisi bhi candidate ya member ko bina exam diye aur bina modules parhay 14 Accredited Courses may say kisi par bhi—ya kisi bhi Custom Topic par—<strong>Portrait A4 PDF Certificate</strong> bana kar day sakta hy. Certificate foran PDF may download hoga aur Online Verification Portal par live verify hoga.
+                  </p>
+                </div>
+              </div>
+
+              {/* Row 1: Optional Existing Member Picker + Recipient Full Name + Recipient Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Auto-Fill from Existing Member (Optional)
+                  </label>
+                  <select
+                    value={directSelectedUserUid}
+                    onChange={(e) => handleSelectExistingMemberForCert(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                  >
+                    <option value="">-- External Candidate / Type Manually --</option>
+                    {users.map((u) => (
+                      <option key={u.uid} value={u.uid}>
+                        {u.name} ({u.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Recipient Full Name (Printed on Certificate) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={directRecipientName}
+                    onChange={(e) => setDirectRecipientName(e.target.value)}
+                    placeholder="e.g., Muhammad Bilal Khan"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Recipient Email (Optional · For Account &amp; Portal Search)
+                  </label>
+                  <input
+                    type="email"
+                    value={directRecipientEmail}
+                    onChange={(e) => setDirectRecipientEmail(e.target.value)}
+                    placeholder="e.g., candidate@company.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Mode Selector (Select from 14 Courses vs. Any Custom Topic) */}
+              <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-extrabold text-[#0F291E]">
+                    Select Certification Topic Mode:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDirectTopicMode('catalog')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition ${
+                        directTopicMode === 'catalog'
+                          ? 'bg-[#0D5C3A] text-white shadow-xs'
+                          : 'bg-white text-[#0F291E] border border-[#CBE4D6]'
+                      }`}
+                    >
+                      Choose from 14 Accredited Courses
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDirectTopicMode('custom')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition ${
+                        directTopicMode === 'custom'
+                          ? 'bg-[#0D5C3A] text-white shadow-xs'
+                          : 'bg-white text-[#0F291E] border border-[#CBE4D6]'
+                      }`}
+                    >
+                      Enter Any Custom Topic / Qualification Title
+                    </button>
+                  </div>
+                </div>
+
+                {directTopicMode === 'catalog' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                        Select Accredited Course (14 International Trainings) *
+                      </label>
+                      <select
+                        value={directCatalogCourseId}
+                        onChange={(e) => {
+                          setDirectCatalogCourseId(e.target.value);
+                          const found = INTERNATIONAL_TRAINING_COURSES.find(
+                            (c) => c.id === e.target.value
+                          );
+                          if (found) {
+                            setDirectAccreditationStd(found.accreditationStandard);
+                          }
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                      >
+                        {INTERNATIONAL_TRAINING_COURSES.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.title} ({c.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                        Accreditation Standard / Benchmark (Printed on Certificate)
+                      </label>
+                      <input
+                        type="text"
+                        value={directAccreditationStd}
+                        onChange={(e) => setDirectAccreditationStd(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                        Custom Certificate Topic / Qualification Title *
+                      </label>
+                      <input
+                        type="text"
+                        required={directTopicMode === 'custom'}
+                        value={directCustomTopicTitle}
+                        onChange={(e) => setDirectCustomTopicTitle(e.target.value)}
+                        placeholder="e.g., ISO 22000:2018 Lead Auditor / Halal Food Standards"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                        Custom Qualification Code
+                      </label>
+                      <input
+                        type="text"
+                        value={directCustomCourseCode}
+                        onChange={(e) => setDirectCustomCourseCode(e.target.value)}
+                        placeholder="e.g., FS-ISO22K-LA"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                        Accreditation Benchmark
+                      </label>
+                      <input
+                        type="text"
+                        value={directAccreditationStd}
+                        onChange={(e) => setDirectAccreditationStd(e.target.value)}
+                        placeholder="e.g., ISO 19011 & GFSI International Standard"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Row 3: Score / Standing, Issue Date, Optional Custom Certificate ID */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Score % &amp; Standing (60–74% Pass · 75–100% Distinction)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={60}
+                      max={100}
+                      value={directScorePct}
+                      onChange={(e) => setDirectScorePct(Number(e.target.value))}
+                      className="w-24 px-3 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-black text-[#0F291E]"
+                    />
+                    <span
+                      className={`px-2.5 py-1.5 rounded-xl text-[11px] font-black ${
+                        directScorePct >= 75
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                      }`}
+                    >
+                      {directScorePct >= 75
+                        ? `DISTINCTION (${directScorePct}%)`
+                        : `PASS (${directScorePct}%)`}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Certificate Issue Date
+                  </label>
+                  <input
+                    type="text"
+                    value={directIssueDate}
+                    onChange={(e) => setDirectIssueDate(e.target.value)}
+                    placeholder="e.g., 07 Nov 2026"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    Certificate ID (Leave blank to Auto-Generate)
+                  </label>
+                  <input
+                    type="text"
+                    value={directCustomCertNumber}
+                    onChange={(e) => setDirectCustomCertNumber(e.target.value)}
+                    placeholder="Auto: FSP-XXXX-123456"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-mono font-bold text-[#0F291E]"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isIssuingDirectCert}
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#0D5C3A] hover:bg-emerald-950 disabled:opacity-50 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 cursor-pointer shadow-sm transition"
+              >
+                <Download className="w-4 h-4 text-amber-300" />
+                <span>
+                  {isIssuingDirectCert
+                    ? 'Generating Portrait PDF & Publishing to Registry...'
+                    : 'Generate & Download Portrait A4 PDF Certificate + Publish to Online Verification'}
+                </span>
+              </button>
+
+              {/* Live List of All Issued Certificates in Registry with Re-Download & Revoke */}
+              {certificates.length > 0 && (
+                <div className="pt-3 border-t border-[#ECF4EF] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-[#0F291E]">
+                      Issued &amp; Live Verifiable Certificates Registry ({certificates.length})
+                    </h3>
+                    <span className="text-[11px] font-bold text-[#0E9F6E]">
+                      Instant Portrait PDF Re-Download &amp; Verification Control
+                    </span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                    {certificates.map((cert) => {
+                      const matchedCourse = INTERNATIONAL_TRAINING_COURSES.find(
+                        (c) =>
+                          c.id === cert.courseId ||
+                          c.title.toLowerCase() === cert.trainingTitle.trim().toLowerCase()
+                      );
+                      const scoreVal = cert.scorePercentage || 85;
+                      const isDist = Boolean(cert.distinction || scoreVal >= 75);
+                      return (
+                        <div
+                          key={cert.id}
+                          className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] flex flex-wrap items-center justify-between gap-2 text-xs"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono font-black text-[#0D5C3A] bg-white px-2 py-0.5 rounded border border-[#CBE4D6]">
+                                {cert.certificateNumber}
+                              </span>
+                              <span className="font-extrabold text-[#0F291E]">
+                                {cert.recipientName}
+                              </span>
+                              {cert.recipientEmail && (
+                                <span className="text-[#5C7267]">
+                                  ({cert.recipientEmail})
+                                </span>
+                              )}
+                            </div>
+                            <p className="font-bold text-[#0D6845]">
+                              {cert.trainingTitle}{' '}
+                              <span className="text-[#5C7267] font-medium">
+                                • {scoreVal}% ({isDist ? 'Distinction' : 'Pass'}) • Issued: {cert.issueDate}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                downloadOfficialCourseCertificatePdf({
+                                  certificateNumber: cert.certificateNumber,
+                                  recipientName: cert.recipientName,
+                                  recipientEmail: cert.recipientEmail || '',
+                                  courseTitle: cert.trainingTitle,
+                                  courseCode: matchedCourse?.code || 'FS-CERT-INTL',
+                                  accreditationStandard:
+                                    cert.accreditationBody ||
+                                    matchedCourse?.accreditationStandard ||
+                                    'Codex Alimentarius & GFSI Standard',
+                                  scorePercentage: scoreVal,
+                                  correctCount: Math.round((scoreVal / 100) * 40),
+                                  totalQuestions: 40,
+                                  distinction: isDist,
+                                  issueDate: cert.issueDate,
+                                  verificationPortalUrl: window.location.origin,
+                                  syllabusModules: matchedCourse?.modules.map((m) => m.title),
+                                  issuedByMode: 'admin_direct'
+                                })
+                              }
+                              className="px-3 py-1.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Portrait PDF</span>
+                            </button>
+                            {onDeleteCertificate && (
+                              <button
+                                type="button"
+                                onClick={() => onDeleteCertificate(cert.id)}
+                                className="px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </form>
+
             {/* CERTIFICATE DOWNLOAD APPROVAL REQUESTS (Rs. 1,000 PER CERTIFICATE) */}
             <div className="bg-white border-2 border-amber-500 rounded-[26px] p-5 shadow-sm space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
