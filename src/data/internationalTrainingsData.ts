@@ -2119,18 +2119,44 @@ export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = COM
     id: `${c.id}-m${idx + 1}`,
     moduleNumber: idx + 1,
     title: m.title,
-    estimatedMinutes: 35,
+    estimatedMinutes: 75,
     overview: m.overview,
-    internationalClauses: [m.clause],
-    keyPrinciples: m.principles,
+    internationalClauses: [
+      m.clause,
+      `${c.accreditationStandard} (2024–2026 International Compliance Edition & ISO Climate Amendment Amd 1:2024)`
+    ],
+    keyPrinciples: [
+      ...m.principles,
+      `Operational Limit vs. Critical Limit Control: Establish a stricter internal Operational Limit inside the Critical Limit (${m.ccpLimit}) so operators adjust the process proactively before any safety breach occurs.`,
+      `Scientific Upfront Validation vs. Ongoing Verification: Validate "${m.ccpParam}" scientifically prior to production launch, and verify compliance continuously via calibrated instruments, shift supervisor countersignatures, and unannounced internal audits.`,
+      `Root-Cause Corrective Action (5-Why CAPA): Any deviation from "${m.ccpLimit}" requires immediate product containment back to the last passed check, followed by a documented 5-Why Root Cause Analysis to prevent recurrence.`
+    ],
     criticalControlParameters: [
       {
         parameter: m.ccpParam,
         standardLimit: m.ccpLimit,
         correctiveProtocol: m.ccpFix
+      },
+      {
+        parameter: `Instrument Calibration & Metrology Verification (${m.title})`,
+        standardLimit:
+          '100% ISO/IEC 17025 traceable calibration + daily reference check (0.0°C ± 0.5°C ice-point / certified test piece / pH buffer)',
+        correctiveProtocol:
+          'Withdraw out-of-tolerance gauge immediately, tag "DO NOT USE", and retrospectively evaluate all batches measured since the last passed calibration check.'
+      },
+      {
+        parameter: 'Real-Time Record Integrity & Supervisor Verification Sign-Off',
+        standardLimit:
+          '100% real-time timestamped entries with zero correction fluid ("whitener") and zero pre-filled ("dry-labbed") shift logs',
+        correctiveProtocol:
+          'Quarantine unverified production lots, retrain staff on legal Due Diligence documentation rules, and implement supervisor shift-handover countersignature.'
       }
     ],
-    practicalChecklist: m.checks
+    practicalChecklist: [
+      ...m.checks,
+      `Verify that operators on Day, Swing, and Night shifts can verbally state the exact Critical Limit (${m.ccpLimit}) and demonstrate the emergency quarantine procedure.`,
+      `Audit the last 30 days of "${m.ccpParam}" monitoring records, calibration certificates, and CAPA close-out reports for 100% traceability within ≤ 4 hours.`
+    ]
   })),
   coreExamPool: c.questions
 }));

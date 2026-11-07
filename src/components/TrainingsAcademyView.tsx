@@ -32,6 +32,7 @@ import {
   get40CourseExamQuestions
 } from '../data/internationalTrainingsData';
 import { downloadOfficialCourseCertificatePdf } from '../utils/certificatePdfGenerator';
+import { AlisonCourseModuleViewer } from './AlisonCourseModuleViewer';
 
 interface TrainingsAcademyViewProps {
   trainings: HubTraining[];
@@ -1313,146 +1314,30 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 </div>
               </div>
 
-              {/* Right Active Module Study Content */}
-              <div className="lg:col-span-8 rounded-2xl border border-emerald-900/15 bg-white p-5 sm:p-6 shadow-sm space-y-5">
+              {/* Right Active Module Study Content (Alison.com Comprehensive Beginner-to-Expert Format) */}
+              <div className="lg:col-span-8">
                 {(() => {
-                  const mod = selectedCourse.modules[activeModuleIdx] || selectedCourse.modules[0];
-                  const isModCompleted = selectedProgress.completedModuleIds.includes(mod.id);
+                  const mod =
+                    selectedCourse.modules[activeModuleIdx] ||
+                    selectedCourse.modules[0];
+                  const isModCompleted =
+                    selectedProgress.completedModuleIds.includes(mod.id);
                   return (
-                    <>
-                      <div className="space-y-2 border-b border-slate-100 pb-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="px-2.5 py-1 rounded-md bg-emerald-100 text-[#0D5C3A] text-[11px] font-extrabold uppercase">
-                            Module {mod.moduleNumber} of {selectedCourse.modules.length} · Auto-Saved Resume Point
-                          </span>
-                          {isModCompleted && (
-                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
-                              <CheckCircle2 className="w-4 h-4" /> Module Completed
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-lg sm:text-xl font-black text-slate-900">
-                          {mod.title}
-                        </h3>
-                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                          {mod.overview}
-                        </p>
-                      </div>
-
-                      {/* International Standard Clauses */}
-                      <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-1.5">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-700">
-                          International Regulatory & Standard Clauses
-                        </p>
-                        <ul className="list-disc list-inside text-xs text-slate-700 space-y-1 font-medium">
-                          {mod.internationalClauses.map((cl, i) => (
-                            <li key={i}>{cl}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Key Technical Principles */}
-                      <div className="space-y-2.5">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-[#0D5C3A]">
-                          Core International Principles & Technical Notes
-                        </h4>
-                        <div className="space-y-2">
-                          {mod.keyPrinciples.map((p, idx) => (
-                            <div
-                              key={idx}
-                              className="rounded-xl border border-emerald-900/10 bg-emerald-50/40 p-3.5 flex items-start gap-2.5"
-                            >
-                              <span className="w-5 h-5 rounded-full bg-[#0D5C3A] text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                                {idx + 1}
-                              </span>
-                              <p className="text-xs sm:text-sm text-slate-800 leading-relaxed">
-                                {p}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Critical Control Parameters Table */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-[#0D5C3A]">
-                          Critical Control Limits & Corrective Protocols
-                        </h4>
-                        <div className="overflow-x-auto rounded-xl border border-slate-200">
-                          <table className="w-full text-left border-collapse text-xs">
-                            <thead>
-                              <tr className="bg-slate-100 text-slate-700 font-extrabold">
-                                <th className="p-3 border-b border-slate-200">Control Parameter</th>
-                                <th className="p-3 border-b border-slate-200">International Standard Limit</th>
-                                <th className="p-3 border-b border-slate-200">Mandatory Corrective Protocol</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {mod.criticalControlParameters.map((ccp, i) => (
-                                <tr key={i} className="border-b border-slate-100">
-                                  <td className="p-3 font-bold text-slate-900">{ccp.parameter}</td>
-                                  <td className="p-3 font-semibold text-[#0D5C3A]">{ccp.standardLimit}</td>
-                                  <td className="p-3 text-slate-700">{ccp.correctiveProtocol}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Practical Audit & Implementation Checklist */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                          Practical Implementation & Audit Verification Checklist
-                        </h4>
-                        <div className="grid grid-cols-1 gap-2">
-                          {mod.practicalChecklist.map((chk, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-2 text-xs text-slate-700 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200"
-                            >
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                              <span>{chk}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Bottom Navigation */}
-                      <div className="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                        <button
-                          type="button"
-                          disabled={activeModuleIdx === 0}
-                          onClick={() => handleSelectModule(Math.max(0, activeModuleIdx - 1))}
-                          className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold disabled:opacity-40 cursor-pointer"
-                        >
-                          ← Previous Module
-                        </button>
-
-                        {activeModuleIdx < selectedCourse.modules.length - 1 ? (
-                          <button
-                            type="button"
-                            onClick={handleMarkModuleCompleteAndNext}
-                            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm cursor-pointer"
-                          >
-                            Mark Module Complete & Next Module
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleMarkModuleCompleteAndNext();
-                              handleStart40McqExam(selectedCourse);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs shadow-sm cursor-pointer"
-                          >
-                            <Award className="w-4 h-4" />
-                            Complete Course & Start 40-MCQ Final Exam
-                          </button>
-                        )}
-                      </div>
-                    </>
+                    <AlisonCourseModuleViewer
+                      course={selectedCourse}
+                      module={mod}
+                      moduleIndex={activeModuleIdx}
+                      totalModules={selectedCourse.modules.length}
+                      isCompleted={isModCompleted}
+                      onSelectprev={() =>
+                        handleSelectModule(Math.max(0, activeModuleIdx - 1))
+                      }
+                      onCompleteAndNext={handleMarkModuleCompleteAndNext}
+                      onCompleteAndStartExam={() => {
+                        handleMarkModuleCompleteAndNext();
+                        handleStart40McqExam(selectedCourse);
+                      }}
+                    />
                   );
                 })()}
               </div>
