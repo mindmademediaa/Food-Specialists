@@ -1,11 +1,19 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Search,
   Bell,
   ArrowLeft,
-  Shield
+  Shield,
+  MoreVertical,
+  Lock,
+  Globe,
+  FileText,
+  Trash2,
+  Power,
+  LogOut
 } from 'lucide-react';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
+import { LegalTabType } from './LegalComplianceModal';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -15,6 +23,7 @@ interface HeaderProps {
   onBellClick: () => void;
   onProfileClick: () => void;
   onSignOutClick?: () => void;
+  onOpenLegal?: (tab: LegalTabType) => void;
   userEmail?: string | null;
   onAdminClick?: () => void;
   isAdmin?: boolean;
@@ -31,28 +40,41 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchClick,
   onBellClick,
   onSignOutClick,
-  userEmail,
+  onOpenLegal,
   onAdminClick,
   isAdmin = false,
-  notificationCount = 1,
   pendingAdminCount = 0
 }) => {
-  return (
-    <header className="shrink-0 z-30 bg-white">
-      {/* Top Green Accent Strip */}
-      <div className="h-3 w-full bg-[#2E8B57]" />
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
-      {/* Main White Header Row: Logo + FS Portal + Email + Bell + Sign Out */}
-      <div className="px-3.5 sm:px-5 py-3 border-b border-gray-200 shadow-[0_2px_6px_rgba(0,0,0,0.04)] flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  return (
+    <header className="shrink-0 z-30 bg-white border-b border-[#D2DEEA]">
+      {/* Main Header Row: Logo + FS Portal (No Email, No Green Top Bar/Dot) + Bell + 3-Dots Policy Menu */}
+      <div className="px-3.5 sm:px-4 py-2.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           {showBack && onBack && (
             <button
               type="button"
               onClick={onBack}
               aria-label="Go Back"
-              className="w-8 h-8 rounded-full bg-[#F1F5F2] hover:bg-[#E2ECE5] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+              className="w-8 h-8 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4 text-[#0E4722]" />
+              <ArrowLeft className="w-4 h-4 text-[#1A2138]" />
             </button>
           )}
 
@@ -62,49 +84,41 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onHomeClick}
             aria-label="FS Portal Home"
             title="FS Portal"
-            className="relative w-9 h-9 rounded-xl bg-[#E8F5EC] border border-[#B8DEC2] flex items-center justify-center overflow-hidden shrink-0 cursor-pointer"
+            className="relative w-8 h-8 rounded-xl bg-[#F0F6FC] border border-[#1673B8]/30 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer"
           >
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
               alt="FS Portal"
-              className="w-full h-full object-contain scale-[1.75] transform-gpu select-none"
+              className="w-full h-full object-contain scale-[1.7] transform-gpu select-none"
             />
           </button>
 
-          {/* FS Portal Title + Email inline */}
-          <div className="flex items-baseline gap-2 min-w-0 flex-1">
-            <button
-              type="button"
-              onClick={onHomeClick}
-              className="text-[20px] sm:text-[23px] font-extrabold tracking-tight text-[#0D4722] leading-none shrink-0 cursor-pointer"
-            >
-              FS Portal
-            </button>
-
-            {userEmail && (
-              <span
-                title={userEmail}
-                className="text-[10.5px] sm:text-[11.5px] font-medium text-[#222222] truncate"
-              >
-                {userEmail}
-              </span>
-            )}
-          </div>
+          {/* FS Portal Brand Title (Certificate Style — Email Removed) */}
+          <button
+            type="button"
+            onClick={onHomeClick}
+            className="text-[18px] sm:text-[20px] font-black tracking-tight leading-none flex items-baseline shrink-0 cursor-pointer"
+          >
+            <span className="text-[#1A2138]">FS Port</span>
+            <span className="text-[#1673B8] border-b-[2.5px] border-[#1673B8] pb-0.5 leading-none">
+              al
+            </span>
+          </button>
         </div>
 
-        {/* Right Actions: Admin (if admin), Bell, Sign Out */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right Actions: Admin (if admin), Bell (No Green Light Dot), 3-Dots Menu */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {isAdmin && onAdminClick && (
             <button
               type="button"
               onClick={onAdminClick}
               title="Open Admin Panel"
-              className="relative px-2.5 py-1 rounded-full bg-[#FEF3C7] hover:bg-[#FDE68A] text-[10px] font-extrabold text-[#92400E] border border-[#F59E0B] flex items-center gap-1 transition-colors cursor-pointer"
+              className="relative px-2.5 py-1 rounded-lg bg-[#F0F6FC] hover:bg-[#E1EEF9] text-[10.5px] font-extrabold text-[#1673B8] border border-[#1673B8]/40 flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <Shield className="w-3 h-3 text-[#D97706]" />
+              <Shield className="w-3 h-3 text-[#1673B8]" />
               <span>Admin</span>
               {pendingAdminCount > 0 && (
-                <span className="px-1 py-0.2 rounded-full bg-[#DC2626] text-white text-[9px] font-extrabold tabular-nums">
+                <span className="px-1 py-0.2 rounded-full bg-red-600 text-white text-[9px] font-extrabold tabular-nums">
                   {pendingAdminCount}
                 </span>
               )}
@@ -115,38 +129,127 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onBellClick}
             aria-label="Notifications"
-            className="relative w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            className="w-8 h-8 rounded-full hover:bg-[#F0F6FC] flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
-            <Bell className="w-5 h-5 text-[#111827] stroke-[2]" />
-            {notificationCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#10B981]" />
-            )}
+            <Bell className="w-4 h-4 text-[#1A2138] stroke-[2]" />
           </button>
 
-          {onSignOutClick && (
+          {/* 3-Dots Google Play Store Policy & App Closure Menu */}
+          <div className="relative" ref={menuRef}>
             <button
               type="button"
-              onClick={onSignOutClick}
-              aria-label="Sign Out"
-              title="Sign Out"
-              className="px-3.5 py-1.5 rounded-full bg-[#F3F4F3] hover:bg-[#E5E7E5] border border-[#D5DBD7] text-[#111827] text-[11.5px] font-semibold transition-colors cursor-pointer shrink-0"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label="Policies, Legal & App Closure Menu"
+              title="Policies & App Options"
+              className="w-8 h-8 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1A2138] flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >
-              Sign Out
+              <MoreVertical className="w-4 h-4 stroke-[2.2]" />
             </button>
-          )}
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white border border-[#D2DEEA] shadow-xl py-1.5 z-50 text-left">
+                <div className="px-3.5 py-2 border-b border-slate-100">
+                  <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8]">
+                    Google Play &amp; App Policies
+                  </p>
+                  <p className="text-[11px] font-semibold text-slate-600">
+                    Official Compliance &amp; Session Controls
+                  </p>
+                </div>
+
+                <div className="py-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenLegal?.('privacy');
+                    }}
+                    className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                    <span>Privacy Policy</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenLegal?.('ads');
+                    }}
+                    className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                    <span>AdMob &amp; Ads Policy</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenLegal?.('terms');
+                    }}
+                    className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                    <span>Terms &amp; Conditions Policy</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenLegal?.('deletion');
+                    }}
+                    className="w-full px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-50 flex items-center gap-2.5 cursor-pointer transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                    <span>Data &amp; Account Deletion Policy</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenLegal?.('closure');
+                    }}
+                    className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
+                  >
+                    <Power className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                    <span>App Closure Policy</span>
+                  </button>
+                </div>
+
+                {onSignOutClick && (
+                  <div className="border-t border-slate-100 pt-1 mt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onSignOutClick();
+                      }}
+                      className="w-full px-3.5 py-2 text-xs font-extrabold text-[#1A2138] hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <LogOut className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+                      <span>Sign Out / Close Session</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Rounded Search Bar Row below Header */}
-      <div className="px-4 sm:px-5 pt-3.5 pb-1 bg-[#FAFBF9]">
+      {/* Compact Responsive Search Bar Row */}
+      <div className="px-3.5 sm:px-4 py-2 bg-[#F8FAFC]">
         <button
           type="button"
           onClick={onSearchClick}
-          className="w-full h-11 sm:h-12 px-4 rounded-[16px] bg-[#F2F3F2] hover:bg-[#EAECEA] border border-[#D4D8D5] shadow-[0_2px_5px_rgba(0,0,0,0.04)] flex items-center gap-3 text-left transition-colors cursor-pointer"
+          className="w-full h-9 sm:h-10 px-3.5 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] shadow-2xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
         >
-          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#111827] stroke-[2.2] shrink-0" />
-          <span className="text-[14px] sm:text-[15px] font-normal text-[#6B7280] truncate">
-            Search jobs specialists
+          <Search className="w-4 h-4 text-[#1673B8] stroke-[2.2] shrink-0" />
+          <span className="text-[12.5px] sm:text-[13px] font-medium text-slate-500 truncate">
+            Search jobs, scholarships, trainings &amp; specialists...
           </span>
         </button>
       </div>

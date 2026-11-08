@@ -492,7 +492,7 @@ export default function App() {
   >('1-month');
   const [payMethod, setPayMethod] = useState<
     'JazzCash' | 'EasyPaisa' | 'Bank Transfer'
-  >('JazzCash');
+  >('Bank Transfer');
   const [payTransactionId, setPayTransactionId] = useState<string>('');
   const [payAmount, setPayAmount] = useState<string>('Rs. 100');
   const [payNotes, setPayNotes] = useState<string>('');
@@ -3006,27 +3006,27 @@ export default function App() {
   }
 
   return (
-    <div className="h-[100dvh] bg-[#E8F5EE] text-gray-900 flex flex-col items-center justify-start py-0 sm:py-3 px-0 sm:px-4 overflow-hidden">
+    <div className="h-[100dvh] bg-[#F0F6FC] text-[#1A2138] flex flex-col items-center justify-start py-0 sm:py-2.5 px-0 sm:px-4 overflow-hidden">
       {/* If Admin is previewing the user-facing app, show a top bar to return to Admin Control Panel */}
       {isUserAdmin && adminPreviewUserMode && (
-        <div className="w-full max-w-[480px] shrink-0 mb-1.5 px-3 py-2 bg-[#13422B] text-white sm:rounded-2xl flex items-center justify-between gap-2 shadow-md">
+        <div className="w-full max-w-[480px] shrink-0 mb-1.5 px-3 py-2 bg-[#1A2138] text-white sm:rounded-2xl flex items-center justify-between gap-2 shadow-md">
           <div className="text-xs font-extrabold flex items-center gap-1.5">
-            <Shield className="w-4 h-4 text-[#34D399]" />
+            <Shield className="w-4 h-4 text-sky-300" />
             <span>Previewing User App Mode</span>
           </div>
           <button
             type="button"
             onClick={() => setAdminPreviewUserMode(false)}
-            className="px-3 py-1 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold cursor-pointer transition-colors"
+            className="px-3 py-1 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap"
           >
-            ← Back to Admin Control Panel
+            ← Back to Admin Panel
           </button>
         </div>
       )}
 
-      {/* Mobile-First App Container — Constant Top Header + Scrollable Middle Content + Constant Bottom Footer */}
-      <div className="w-full max-w-[480px] flex-1 min-h-0 bg-[#E3F3EA] sm:rounded-[34px] sm:border-[1.5px] sm:border-[#A7D3BD] sm:shadow-2xl flex flex-col relative overflow-hidden">
-        {/* TOP FULL-WIDTH DEEP FOREST EMERALD HEADER (#13422B) — CONSTANT */}
+      {/* Mobile-First App Container — Certificate Royal Blue & Ice-Blue Scheme */}
+      <div className="w-full max-w-[480px] flex-1 min-h-0 bg-[#F4F8FD] sm:rounded-[28px] sm:border sm:border-[#D2DEEA] sm:shadow-2xl flex flex-col relative overflow-hidden">
+        {/* TOP HEADER — CONSTANT */}
         <Header
           showBack={route.name !== 'home'}
           onBack={() => {
@@ -3055,6 +3055,7 @@ export default function App() {
           isAdmin={isUserAdmin}
           pendingAdminCount={pendingPaymentRequestsCount}
           onSignOutClick={handleSignOut}
+          onOpenLegal={(tab) => setLegalModalTab(tab)}
           userEmail={authUser.email}
           userInitial={userInitial}
           userAvatarUrl={
@@ -3062,27 +3063,22 @@ export default function App() {
           }
         />
 
-        {/* MIDDLE SCROLLABLE PAGE CONTENT AREA (Header & Footer remain constant) */}
-        <main className="flex-1 overflow-y-auto overscroll-contain p-3.5 sm:p-5 pb-6 space-y-4">
-          {/* LAST 5 DAYS PREMIUM EXPIRY COUNTDOWN BANNER (Shows across app when 1–5 days remain) */}
+        {/* MIDDLE SCROLLABLE PAGE CONTENT AREA */}
+        <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 pb-5 space-y-3">
+          {/* LAST 5 DAYS PREMIUM EXPIRY COUNTDOWN BANNER */}
           {globalPremiumCountdown && (
-            <div className="rounded-2xl bg-gradient-to-r from-[#7C2D12] via-[#B45309] to-[#92400E] text-white p-3.5 shadow-md border border-amber-300/40 flex items-center justify-between gap-3">
+            <div className="rounded-2xl bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] text-white p-3 shadow-sm border border-[#D2DEEA] flex items-center justify-between gap-2.5">
               <div className="flex items-start gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center shrink-0">
-                  <Clock className="w-5 h-5 text-amber-200 animate-pulse" />
+                <div className="w-8 h-8 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+                  <Clock className="w-4 h-4 text-sky-200" />
                 </div>
                 <div className="min-w-0">
-                  <span className="inline-block px-2 py-0.5 rounded-full bg-amber-300 text-[#7C2D12] text-[10px] font-extrabold uppercase tracking-wider">
-                    ⏳ Final 5-Day Countdown: {globalPremiumCountdown.daysLeft}{' '}
+                  <span className="inline-block px-2 py-0.5 rounded-md bg-amber-300 text-[#1A2138] text-[9.5px] font-extrabold uppercase tracking-wider">
+                    Final {globalPremiumCountdown.daysLeft}{' '}
                     {globalPremiumCountdown.daysLeft === 1 ? 'Day' : 'Days'} Left
                   </span>
-                  <p className="text-xs font-extrabold text-white mt-1 leading-snug">
-                    Your Premium Membership ends in{' '}
-                    <span className="underline decoration-amber-300">
-                      {globalPremiumCountdown.daysLeft}{' '}
-                      {globalPremiumCountdown.daysLeft === 1 ? 'day' : 'days'}
-                    </span>{' '}
-                    on {globalPremiumCountdown.formattedEndDate}.
+                  <p className="text-[11px] font-bold text-white mt-0.5 leading-snug">
+                    Your Premium Membership ends on {globalPremiumCountdown.formattedEndDate}.
                   </p>
                 </div>
               </div>
@@ -3090,41 +3086,42 @@ export default function App() {
                 type="button"
                 onClick={() => {
                   setPaySubmitBanner(null);
+                  setPayMethod('Bank Transfer');
                   setShowPremiumUpgradeModal(true);
                 }}
-                className="px-3 py-2 rounded-xl bg-amber-300 hover:bg-amber-200 text-[#7C2D12] text-[11px] font-extrabold shrink-0 cursor-pointer shadow-xs"
+                className="px-3 py-1.5 rounded-xl bg-amber-300 hover:bg-amber-200 text-[#1A2138] text-[11px] font-extrabold shrink-0 cursor-pointer whitespace-nowrap"
               >
                 Renew Now
               </button>
             </div>
           )}
 
-          {/* ==================== 1. HOME SCREEN (/) ==================== */}
+          {/* ==================== 1. HOME SCREEN (/) — COMPACT PHONE-COMPATIBLE LAYOUT & CERTIFICATE BLUE THEME ==================== */}
           {route.name === 'home' && (
-            <div className="space-y-4 px-1 pt-1">
-              {/* Greeting Row matching Reference Front Design */}
-              <div className="space-y-0.5 pt-0.5">
-                <h1 className="text-[24px] sm:text-[27px] font-extrabold text-[#0B2614] tracking-tight leading-tight break-words">
-                  Good morning {firstName}
+            <div className="space-y-3 px-0.5">
+              {/* Compact Greeting Row Compatible with All Phone Screens */}
+              <div className="space-y-0.5">
+                <h1 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] tracking-tight leading-snug break-words">
+                  Good morning, {firstName}
                 </h1>
-                <p className="text-[14.5px] sm:text-[15.5px] font-normal text-[#4B5563]">
+                <p className="text-[11.5px] sm:text-[12.5px] font-medium text-slate-600">
                   Find your next opportunity today
                 </p>
               </div>
 
               {/* ADMIN QUICK BANNER FOR PENDING PAYMENT APPROVALS */}
               {isUserAdmin && (
-                <div className="bg-gradient-to-r from-[#FFFBEB] to-[#FEF3C7] border-[1.5px] border-[#F59E0B] rounded-[20px] p-3.5 shadow-xs flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
+                <div className="bg-[#F0F6FC] border border-[#1673B8]/40 rounded-2xl p-3 shadow-2xs flex items-center justify-between gap-2.5">
                   <div className="space-y-0.5 min-w-0">
-                    <div className="text-[11.5px] font-extrabold text-[#92400E] flex items-center gap-1.5 flex-wrap">
-                      <Shield className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
-                      <span>
-                        Admin Panel • {pendingPaymentRequestsCount} Pending Payment{' '}
+                    <div className="text-[11px] font-extrabold text-[#1A2138] flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                      <span className="truncate">
+                        Admin • {pendingPaymentRequestsCount} Pending{' '}
                         {pendingPaymentRequestsCount === 1 ? 'Request' : 'Requests'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#78350F] font-semibold leading-snug break-words">
-                      Review uploaded payment slips &amp; approve Premium memberships.
+                    <p className="text-[10.5px] text-slate-600 font-medium leading-snug">
+                      Review payment slips &amp; approve memberships.
                     </p>
                   </div>
                   <button
@@ -3133,103 +3130,103 @@ export default function App() {
                       setAdminTab('receipts');
                       setRoute({ name: 'admin' });
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-[11px] font-extrabold shrink-0 cursor-pointer transition-colors shadow-xs"
+                    className="px-2.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[10.5px] font-extrabold shrink-0 cursor-pointer transition-colors whitespace-nowrap"
                   >
-                    Open Receipts ({adminAllPaymentRequests.length}) →
+                    Receipts ({adminAllPaymentRequests.length}) →
                   </button>
                 </div>
               )}
 
-              {/* CARD 1 - JOBS (Reference Front Theme Design — Tags Strictly Unclickable) */}
-              <div className="bg-white border-[1.5px] border-[#2E8B57] rounded-[26px] p-5 sm:p-6 shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-all space-y-4">
-                <div className="flex items-start gap-4">
-                  {/* Left Mint Rounded Icon Box */}
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-[16px] bg-[#B8DEC2] text-[#0A2E16] flex items-center justify-center shrink-0">
-                    <Briefcase className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2]" />
+              {/* CARD 1 - JOBS (Compact Phone-Compatible Sizing & Certificate Blue Theme) */}
+              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all space-y-2.5">
+                <div className="flex items-start gap-3">
+                  {/* Left Royal Blue Rounded Icon Box */}
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                    <Briefcase className="w-5 h-5 stroke-[2.2]" />
                   </div>
 
                   {/* Right Content: Title + Unclickable Tags + Verified Roles Count */}
-                  <div className="space-y-2.5 min-w-0 flex-1">
-                    <h2 className="text-[25px] sm:text-[28px] font-extrabold text-[#0B2413] leading-none tracking-tight">
+                  <div className="space-y-1.5 min-w-0 flex-1">
+                    <h2 className="text-[15.5px] sm:text-[17px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
                       Jobs
                     </h2>
 
                     {/* 3 Strictly Unclickable Tags */}
                     <div
                       onClick={(e) => e.stopPropagation()}
-                      className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none"
+                      className="flex flex-wrap items-center gap-1 select-none cursor-default pointer-events-none"
                     >
-                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
                         Production
                       </span>
-                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
                         R&amp;D Lab
                       </span>
-                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
                         Quality &amp; Safety
                       </span>
                     </div>
 
-                    <div className="text-[14px] sm:text-[15px] font-normal text-[#222222] pt-0.5">
+                    <div className="text-[11.5px] sm:text-[12px] font-medium text-slate-600">
                       {activeJobs.length} Verified Roles Available
                     </div>
                   </div>
                 </div>
 
-                {/* Full-Width Solid Green Button */}
+                {/* Full-Width Royal Blue Button */}
                 <button
                   type="button"
                   onClick={() => navigateToJobs('All')}
-                  className="w-full py-3.5 px-4 rounded-[12px] bg-[#0F8A3E] hover:bg-[#0C7232] text-white text-[16px] sm:text-[17px] font-bold text-center shadow-xs transition-colors cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[12.5px] sm:text-[13.5px] font-bold text-center shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
                 >
                   Browse Jobs
                 </button>
               </div>
 
-              {/* CARD 2 - SCHOLARSHIPS (Reference Front Theme Design — Tags Strictly Unclickable) */}
-              <div className="bg-white border-[1.5px] border-[#D0D7D2] rounded-[26px] p-5 sm:p-6 shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition-all space-y-4">
-                <div className="flex items-start gap-4">
-                  {/* Left Mint Rounded Icon Box */}
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-[16px] bg-[#B8DEC2] text-[#0A2E16] flex items-center justify-center shrink-0">
-                    <GraduationCap className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2]" />
+              {/* CARD 2 - SCHOLARSHIPS (Compact Phone-Compatible Sizing & Certificate Blue Theme) */}
+              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all space-y-2.5">
+                <div className="flex items-start gap-3">
+                  {/* Left Royal Blue Rounded Icon Box */}
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                    <GraduationCap className="w-5 h-5 stroke-[2.2]" />
                   </div>
 
                   {/* Right Content: Title + Unclickable Tags + Global Programs Count */}
-                  <div className="space-y-2.5 min-w-0 flex-1">
-                    <h2 className="text-[25px] sm:text-[28px] font-extrabold text-[#0B2413] leading-none tracking-tight">
+                  <div className="space-y-1.5 min-w-0 flex-1">
+                    <h2 className="text-[15.5px] sm:text-[17px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
                       Scholarships
                     </h2>
 
                     {/* Strictly Unclickable Tags */}
                     <div
                       onClick={(e) => e.stopPropagation()}
-                      className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none"
+                      className="flex flex-wrap items-center gap-1 select-none cursor-default pointer-events-none"
                     >
-                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
                         Fellowships
                       </span>
-                      <span className="px-3 py-1 rounded-full bg-[#B5DFC0] text-[#0B2E16] text-[11.5px] sm:text-[12.5px] font-semibold cursor-default pointer-events-none">
+                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
                         International Grants
                       </span>
                     </div>
 
-                    <div className="text-[14px] sm:text-[15px] font-normal text-[#222222] pt-0.5">
+                    <div className="text-[11.5px] sm:text-[12px] font-medium text-slate-600">
                       {activeScholarships.length} Global Programs Open
                     </div>
                   </div>
                 </div>
 
-                {/* Full-Width Outlined Green Button */}
+                {/* Full-Width Outlined Royal Blue Button */}
                 <button
                   type="button"
                   onClick={() => navigateToScholarships('All')}
-                  className="w-full py-3.5 px-4 rounded-[12px] bg-white hover:bg-[#F0FDF4] border-2 border-[#0F8A3E] text-[#0F8A3E] text-[16px] sm:text-[17px] font-bold text-center transition-colors cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border-[1.5px] border-[#1673B8] text-[#1673B8] text-[12.5px] sm:text-[13.5px] font-bold text-center transition-colors cursor-pointer whitespace-nowrap"
                 >
                   Explore Grants
                 </button>
               </div>
 
-              {/* OFFICIAL WHATSAPP CHANNEL CARD ON HOME FRONT PAGE (Controlled via Admin Control Panel) */}
+              {/* OFFICIAL WHATSAPP CHANNEL CARD ON HOME FRONT PAGE (Certificate Blue & Navy Theme) */}
               {(() => {
                 const rawWaUrl = (
                   storageConfig.whatsappChannelUrl ||
@@ -3245,46 +3242,35 @@ export default function App() {
                   'Follow WhatsApp Channel';
 
                 return (
-                  <div className="bg-gradient-to-r from-[#0F3D24] via-[#135A35] to-[#0E7A46] border border-[#25D366]/40 rounded-[20px] p-4 shadow-[0_8px_24px_rgba(14,159,110,0.16)] text-white space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 min-w-0">
-                        {/* WhatsApp Official Emblem */}
-                        <div className="w-11 h-11 rounded-[14px] bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm">
-                          <svg
-                            viewBox="0 0 24 24"
-                            className="w-6 h-6 fill-current"
-                            aria-hidden="true"
-                          >
-                            <path d="M12.031 2C6.508 2 2.023 6.485 2.023 12.008c0 1.766.461 3.49 1.337 5.01L2 22l5.122-1.343a9.97 9.97 0 0 0 4.909 1.292h.004c5.522 0 10.007-4.485 10.007-10.008C22.042 6.485 17.554 2 12.031 2zm5.822 14.13c-.246.693-1.434 1.326-1.988 1.409-.51.076-1.155.108-1.868-.118-.434-.138-.99-.322-1.703-.63-2.996-1.294-4.953-4.311-5.103-4.511-.149-.2-1.218-1.621-1.218-3.092 0-1.471.771-2.194 1.045-2.494.274-.3.598-.375.798-.375.199 0 .399.002.573.01.184.009.43-.07.673.514.249.599.847 2.07.921 2.22.075.15.125.325.025.524-.1.2-.15.325-.299.499-.15.175-.314.391-.449.525-.15.149-.305.311-.131.611.174.3.774 1.277 1.662 2.069 1.142 1.018 2.104 1.333 2.403 1.483.3.15.474.125.649-.075.175-.2.748-.873.948-1.173.2-.3.399-.25.673-.15.274.1 1.746.823 2.045.973.3.15.499.225.574.35.075.125.075.724-.171 1.417z" />
-                          </svg>
-                        </div>
+                  <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] border border-[#1673B8]/40 rounded-2xl p-3.5 shadow-sm text-white space-y-2.5">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/25 text-white flex items-center justify-center shrink-0">
+                        <MessageSquare className="w-4 h-4 stroke-[2.2]" />
+                      </div>
 
-                        <div className="min-w-0 pt-0.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="px-2 py-0.5 rounded-full bg-[#25D366]/25 border border-[#25D366]/60 text-[#A7F3D0] text-[10px] font-extrabold uppercase tracking-wider">
-                              Official Channel
-                            </span>
-                          </div>
-                          <h2 className="text-[15.5px] sm:text-[17.5px] font-extrabold text-white leading-snug mt-1 break-words">
-                            Food Specialists WhatsApp Channel
-                          </h2>
-                          <p className="text-[11.5px] sm:text-[12.5px] text-emerald-100/90 font-medium mt-0.5 leading-snug break-words">
-                            Follow our official WhatsApp Channel for instant daily food industry jobs, global scholarships &amp; training updates.
-                          </p>
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-sky-200 block">
+                          Official Community Updates
+                        </span>
+                        <h2 className="text-[13.5px] sm:text-[14.5px] font-extrabold text-white leading-snug break-words">
+                          Food Specialists WhatsApp Channel
+                        </h2>
+                        <p className="text-[11px] text-sky-100/90 font-medium mt-0.5 leading-snug break-words">
+                          Daily food industry jobs, global scholarships &amp; training alerts.
+                        </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                       <a
                         href={waHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full sm:w-auto flex-1 py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-[#072614] font-extrabold text-[12.5px] sm:text-[13px] shadow-sm inline-flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        className="w-full sm:w-auto flex-1 py-2 px-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#1A2138] font-extrabold text-[11.5px] sm:text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
                       >
-                        <MessageSquare className="w-4 h-4 fill-[#072614]/15 stroke-[2.4] shrink-0" />
+                        <MessageSquare className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.3] shrink-0" />
                         <span>{waButtonLabel}</span>
-                        <ExternalLink className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                        <ExternalLink className="w-3 h-3 text-[#1673B8] stroke-[2.4] shrink-0" />
                       </a>
 
                       {isUserAdmin && (
@@ -3294,9 +3280,9 @@ export default function App() {
                             setAdminPreviewUserMode(false);
                             setRoute({ name: 'admin' });
                           }}
-                          className="px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[11px] font-extrabold cursor-pointer transition-colors shrink-0"
+                          className="px-2.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[10.5px] font-extrabold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
                         >
-                          Edit Channel Link ⚙️
+                          Edit Link
                         </button>
                       )}
                     </div>
@@ -3308,10 +3294,10 @@ export default function App() {
 
           {/* ==================== 2. JOBS PAGE (/jobs) ==================== */}
           {route.name === 'jobs' && (
-            <div className="space-y-4 px-0.5">
+            <div className="space-y-3.5 px-0.5">
               <div className="flex items-center justify-between pt-0.5">
                 <div>
-                  <h1 className="text-[18px] sm:text-[20px] font-extrabold text-[#0F291E] tracking-tight leading-snug">
+                  <h1 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] tracking-tight leading-snug">
                     Browse Jobs
                   </h1>
                 </div>
@@ -3322,20 +3308,20 @@ export default function App() {
                     setJobCountryFilter('All');
                     setJobCategoryFilter('All');
                   }}
-                  className="inline-flex items-center gap-1 text-[12px] font-bold text-[#0E9F6E] hover:underline transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#1673B8] hover:underline transition-colors cursor-pointer"
                 >
                   <span>Reset Filters</span>
                 </button>
               </div>
 
               {/* 2 Dropdowns: Country & Category */}
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="relative">
                   <select
                     value={jobCountryFilter}
                     onChange={(e) => setJobCountryFilter(e.target.value)}
                     aria-label="Filter by Country"
-                    className="w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[14px] bg-[#0E9F6E] text-white text-[13px] font-bold shadow-xs focus:outline-none cursor-pointer truncate"
+                    className="w-full appearance-none pl-3 pr-7 py-2 rounded-xl bg-[#1673B8] text-white text-xs font-bold shadow-2xs focus:outline-none cursor-pointer truncate"
                   >
                     <option value="All">All Countries</option>
                     {availableJobCountries.map((country) => (
@@ -3344,7 +3330,7 @@ export default function App() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="w-4 h-4 text-white stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-white stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
 
                 <div className="relative">
@@ -3352,10 +3338,10 @@ export default function App() {
                     value={jobCategoryFilter}
                     onChange={(e) => setJobCategoryFilter(e.target.value)}
                     aria-label="Filter by Category"
-                    className={`w-full appearance-none pl-3.5 pr-7 py-2.5 rounded-[14px] text-[13px] font-bold border border-[#9BCAB0] focus:outline-none cursor-pointer truncate ${
+                    className={`w-full appearance-none pl-3 pr-7 py-2 rounded-xl text-xs font-bold border border-[#D2DEEA] focus:outline-none cursor-pointer truncate ${
                       jobCategoryFilter !== 'All'
-                        ? 'bg-[#0E9F6E] text-white border-[#0E9F6E]'
-                        : 'bg-[#CFEAD9] text-[#0F291E]'
+                        ? 'bg-[#1673B8] text-white border-[#1673B8]'
+                        : 'bg-white text-[#1A2138]'
                     }`}
                   >
                     <option value="All">All Categories</option>
@@ -3695,10 +3681,10 @@ export default function App() {
 
           {/* ==================== 3. SCHOLARSHIPS PAGE (/scholarships) ==================== */}
           {route.name === 'scholarships' && (
-            <div className="space-y-4 px-1">
-              <div className="flex items-center justify-between pt-1">
+            <div className="space-y-3.5 px-0.5">
+              <div className="flex items-center justify-between pt-0.5">
                 <div>
-                  <h1 className="text-[18px] sm:text-[20px] font-extrabold text-[#0B3B1E] tracking-tight leading-snug">
+                  <h1 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] tracking-tight leading-snug">
                     Scholarships for you
                   </h1>
                 </div>
@@ -3709,7 +3695,7 @@ export default function App() {
                     setSchCountryFilter('All');
                     setSchFundingFilter('All');
                   }}
-                  className="inline-flex items-center gap-1 text-[12px] font-bold text-[#15803D] hover:text-[#0B3B1E] transition-colors cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#1673B8] hover:underline transition-colors cursor-pointer shrink-0"
                 >
                   <ListFilter className="w-3.5 h-3.5 stroke-[2.5]" />
                   <span>Reset</span>
@@ -3723,7 +3709,7 @@ export default function App() {
                     value={schCountryFilter}
                     onChange={(e) => setSchCountryFilter(e.target.value)}
                     aria-label="Filter by Country"
-                    className="w-full appearance-none pl-3 pr-6 py-2 rounded-[14px] bg-[#15803D] text-white text-[12px] font-bold shadow-xs focus:outline-none cursor-pointer truncate"
+                    className="w-full appearance-none pl-3 pr-6 py-2 rounded-xl bg-[#1673B8] text-white text-xs font-bold shadow-2xs focus:outline-none cursor-pointer truncate"
                   >
                     <option value="All">All Countries</option>
                     {availableScholarshipCountries.map((country) => (
@@ -3740,10 +3726,10 @@ export default function App() {
                     value={schFundingFilter}
                     onChange={(e) => setSchFundingFilter(e.target.value)}
                     aria-label="Filter by Funding"
-                    className={`w-full appearance-none pl-3 pr-6 py-2 rounded-[14px] text-[12px] font-bold border-[1.5px] border-[#16A34A] focus:outline-none cursor-pointer truncate ${
+                    className={`w-full appearance-none pl-3 pr-6 py-2 rounded-xl text-xs font-bold border border-[#D2DEEA] focus:outline-none cursor-pointer truncate ${
                       schFundingFilter !== 'All'
-                        ? 'bg-[#15803D] text-white'
-                        : 'bg-white text-[#15803D]'
+                        ? 'bg-[#1673B8] text-white border-[#1673B8]'
+                        : 'bg-white text-[#1A2138]'
                     }`}
                   >
                     <option value="All">All Funding Types</option>
@@ -3753,16 +3739,16 @@ export default function App() {
                   </select>
                   <ChevronDown
                     className={`w-3.5 h-3.5 stroke-[2.5] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none ${
-                      schFundingFilter !== 'All' ? 'text-white' : 'text-[#15803D]'
+                      schFundingFilter !== 'All' ? 'text-white' : 'text-[#1673B8]'
                     }`}
                   />
                 </div>
               </div>
 
-              {/* Scholarships Card List (Styled in Theme 1: Emerald Trust — Tags strictly unclickable) */}
-              <div className="space-y-3 pt-1">
+              {/* Scholarships Card List (Certificate Royal Blue Theme) */}
+              <div className="space-y-3 pt-0.5">
                 {visibleScholarships.length === 0 ? (
-                  <div className="bg-white border border-[#D4E9DF] rounded-[20px] p-6 text-center text-gray-500 font-medium text-xs">
+                  <div className="bg-white border border-[#D2DEEA] rounded-2xl p-6 text-center text-slate-500 font-medium text-xs">
                     No scholarships match the selected filters.
                   </div>
                 ) : (
@@ -3781,10 +3767,10 @@ export default function App() {
                     return (
                       <div
                         key={sch.id}
-                        className="bg-white border border-[#D4E9DF] rounded-[20px] p-4 shadow-[0_6px_22px_rgba(19,66,43,0.06)] transition-all space-y-3"
+                        className="bg-white border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all space-y-2.5"
                       >
-                        {/* Top Row: Soft Mint Icon Box + Title & Organization */}
-                        <div className="flex items-start justify-between gap-2.5 border-b border-[#ECF4EF] pb-3">
+                        {/* Top Row: Royal Blue Icon Box + Title & Organization */}
+                        <div className="flex items-start justify-between gap-2.5 border-b border-slate-100 pb-2.5">
                           <div
                             onClick={() => {
                               setRoute({
@@ -3793,16 +3779,16 @@ export default function App() {
                               });
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className="flex items-start gap-3 min-w-0 cursor-pointer flex-1"
+                            className="flex items-start gap-2.5 min-w-0 cursor-pointer flex-1"
                           >
-                            <div className="w-11 h-11 rounded-[13px] bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
-                              <BadgeIcon className="w-5 h-5 stroke-[2.2]" />
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                              <BadgeIcon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
                             </div>
                             <div className="min-w-0 pt-0.5 flex-1">
-                              <h3 className="text-[14.5px] sm:text-[16px] font-extrabold text-[#0F291E] leading-snug break-words">
+                              <h3 className="text-[14px] sm:text-[15px] font-extrabold text-[#1A2138] leading-snug break-words">
                                 {sch.title}
                               </h3>
-                              <p className="text-[12px] sm:text-[13px] font-medium text-[#5C7267] mt-0.5 leading-snug break-words">
+                              <p className="text-[11.5px] sm:text-[12.5px] font-medium text-slate-600 mt-0.5 leading-snug break-words">
                                 {sch.organization}
                               </p>
                             </div>
@@ -3816,44 +3802,44 @@ export default function App() {
                             onClick={(e) =>
                               handleToggleSavedScholarship(sch.id, e)
                             }
-                            className="p-1.5 rounded-xl text-[#0E9F6E] hover:bg-[#E2F2E9] transition-colors shrink-0 cursor-pointer"
+                            className="p-1.5 rounded-xl text-[#1673B8] hover:bg-[#F0F6FC] transition-colors shrink-0 cursor-pointer"
                           >
                             <Bookmark
-                              className={`w-4.5 h-4.5 stroke-[2.2] ${
+                              className={`w-4 h-4 stroke-[2.2] ${
                                 isSaved
-                                  ? 'fill-[#0E9F6E] text-[#0E9F6E]'
-                                  : 'text-[#0E9F6E]'
+                                  ? 'fill-[#1673B8] text-[#1673B8]'
+                                  : 'text-[#1673B8]'
                               }`}
                             />
                           </button>
                         </div>
 
-                        {/* Middle Row: Unclickable Mint Pill Badges */}
+                        {/* Middle Row: Unclickable Info Tags */}
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className="flex flex-wrap items-center gap-1.5 border-b border-[#ECF4EF] pb-3 select-none cursor-default pointer-events-none"
+                          className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5 select-none cursor-default pointer-events-none"
                         >
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                            <MapPin className="w-3 h-3 text-[#0E9F6E] stroke-[2.3] shrink-0" />
+                          <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] font-bold inline-flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-[#1673B8] stroke-[2.2] shrink-0" />
                             <span>{sch.country}</span>
                           </span>
 
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
-                            <GraduationCap className="w-3 h-3 text-[#0E9F6E] stroke-[2.3] shrink-0" />
+                          <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] font-bold inline-flex items-center gap-1">
+                            <GraduationCap className="w-3 h-3 text-[#1673B8] stroke-[2.2] shrink-0" />
                             <span>{sch.fundingType}</span>
                           </span>
 
                           {isApplied && (
-                            <span className="px-2 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[10.5px] font-bold inline-flex items-center gap-1 cursor-default pointer-events-none">
+                            <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-bold inline-flex items-center gap-1">
                               <Check className="w-3 h-3 stroke-[2.5] shrink-0" />
                               <span>Applied</span>
                             </span>
                           )}
                         </div>
 
-                        {/* Bottom Row: Deadline + Emerald Green Button */}
+                        {/* Bottom Row: Deadline + Royal Blue Button */}
                         <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
-                          <span className="text-[11px] sm:text-[12px] font-semibold text-[#4B6356] tabular-nums">
+                          <span className="text-[11px] font-semibold text-slate-500 tabular-nums">
                             Deadline {sch.deadline} ({daysLeft}d left)
                           </span>
                           <button
@@ -3865,7 +3851,7 @@ export default function App() {
                               });
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
-                            className="px-3.5 py-1.5 rounded-[10px] bg-[#0E9F6E] hover:bg-[#059669] text-white text-[11.5px] font-bold shadow-xs transition-colors cursor-pointer"
+                            className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11.5px] font-bold shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
                           >
                             See Details
                           </button>
@@ -4327,23 +4313,57 @@ export default function App() {
 
           {/* ==================== 5. COMMUNITY — PREMIUM PROFILES LIST (/communities) ==================== */}
           {route.name === 'communities' && (
-            <div className="space-y-4 px-1">
+            <div className="space-y-3.5 px-0.5">
+              {/* Top Active Bank Account Card in Communities (Pre-selected & Clickable) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPaySubmitBanner(null);
+                  setPayMethod('Bank Transfer');
+                  setShowPremiumUpgradeModal(true);
+                }}
+                className="w-full text-left rounded-2xl border-2 border-[#1673B8] bg-[#F0F6FC] hover:bg-[#E3EFFB] p-3.5 shadow-2xs transition-colors cursor-pointer flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8]">
+                        Selected Payment: Bank Account
+                      </span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                    </div>
+                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
+                      {liveGateway.bankName} • {liveGateway.bankTitle}
+                    </p>
+                    <p className="text-[10.5px] text-slate-600 truncate">
+                      {liveGateway.bankAccountOrIban} ({liveGateway.bankWhatsapp})
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-[10.5px] font-extrabold whitespace-nowrap shrink-0">
+                  Bank Account →
+                </span>
+              </button>
+
               {!isCurrentUserPaid && !isUserAdmin ? (
                 /* FREE USER VIEW IN COMMUNITIES: Show Purchase / Buy Premium Membership Button + Application Status */
-                <div className="bg-white border border-[#C6DFCB] rounded-[28px] p-6 shadow-[0_6px_20px_rgba(22,163,74,0.06)] text-center space-y-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A] border border-[#F59E0B]/40 text-[#B45309] flex items-center justify-center mx-auto shadow-xs">
-                    <Crown className="w-8 h-8 text-[#D97706]" />
+                <div className="bg-white border border-[#D2DEEA] rounded-2xl p-5 shadow-2xs text-center space-y-3.5">
+                  <div className="w-13 h-13 rounded-2xl bg-[#F0F6FC] border border-[#1673B8]/30 text-[#1673B8] flex items-center justify-center mx-auto">
+                    <Crown className="w-6 h-6 text-[#1673B8]" />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] text-[11px] font-extrabold">
-                      <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
+                  <div className="space-y-1">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#F0F6FC] text-[#1673B8] text-[10.5px] font-extrabold">
+                      <Sparkles className="w-3 h-3 text-[#1673B8]" />
                       <span>Premium Community Directory</span>
                     </span>
-                    <h1 className="text-[17px] sm:text-[21px] font-extrabold text-[#0D2E1B] leading-snug break-words">
+                    <h1 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] leading-snug break-words">
                       Connect with Verified Food Specialists
                     </h1>
-                    <p className="text-xs sm:text-[13px] text-gray-600 max-w-md mx-auto leading-relaxed font-medium">
+                    <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
                       Upgrade to Premium Membership (Only{' '}
                       <strong>
                         Rs. {liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month
@@ -4353,23 +4373,22 @@ export default function App() {
                         Rs. {liveGateway.yearlyFeeRs.toLocaleString()} / Full Year
                         with 25% Discount
                       </strong>
-                      ) to showcase your profile in the Community, view other paid
-                      members&apos; visible profile details, connect on LinkedIn,
-                      and download CVs.
+                      ) via Bank Account, JazzCash, or EasyPaisa to showcase your profile in the Community, view other paid members&apos; details, connect on LinkedIn, and download CVs.
                     </p>
                   </div>
 
-                  <div className="space-y-2.5 pt-1">
+                  <div className="space-y-2 pt-1">
                     <button
                       type="button"
                       onClick={() => {
                         setPaySubmitBanner(null);
+                        setPayMethod('Bank Transfer');
                         setShowPremiumUpgradeModal(true);
                       }}
-                      className="w-full py-3.5 px-4 rounded-[20px] bg-gradient-to-r from-[#14532D] via-[#15803D] to-[#166534] hover:from-[#0D2E1B] hover:to-[#14532D] text-white font-extrabold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                      className="w-full py-3 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs sm:text-[13px] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
                     >
                       <Crown className="w-4 h-4 text-amber-300 shrink-0" />
-                      <span>Purchase / Buy Premium Membership</span>
+                      <span>Purchase Premium via Bank Account</span>
                     </button>
 
                     {(myPaymentApplications.length > 0 ||
@@ -4378,11 +4397,11 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setShowApplicationStatusModal(true)}
-                        className="w-full py-3 px-4 rounded-[20px] bg-[#FFFBEB] hover:bg-[#FEF3C7] border-[1.5px] border-[#F59E0B] text-[#92400E] font-extrabold text-xs shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        className="w-full py-2.5 px-4 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#1673B8] text-[#1673B8] font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
                       >
-                        <Clock className="w-4 h-4 text-[#D97706] shrink-0" />
+                        <Clock className="w-4 h-4 text-[#1673B8] shrink-0" />
                         <span>
-                          View My Application Status (
+                          View Application Status (
                           {myProfile.paymentStatus === 'pending'
                             ? 'Under Review'
                             : myProfile.paymentStatus === 'rejected'
@@ -4395,22 +4414,22 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                /* PAID USER VIEW IN COMMUNITIES: Show Other Paid Members' Profiles (Only Visible Information) */
+                /* PAID USER VIEW IN COMMUNITIES: Show Other Paid Members' Profiles */
                 <>
                   {/* Top Community Header & Search/Location Filter Card */}
-                  <div className="bg-white border border-[#C6DFCB] rounded-[24px] p-4 shadow-[0_6px_20px_rgba(22,163,74,0.06)] space-y-3">
+                  <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h1 className="text-[17.5px] sm:text-[21px] font-extrabold text-[#0D2E1B] leading-snug tracking-tight">
+                          <h1 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
                             Premium Community
                           </h1>
-                          <span className="px-2 py-0.5 rounded-full bg-[#538257] border border-[#D4AF37] text-white text-[10px] font-extrabold inline-flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-[#FDE047]" />
+                          <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold inline-flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-amber-300" />
                             <span>Premium</span>
                           </span>
                         </div>
-                        <p className="text-[11.5px] sm:text-[12.5px] text-gray-600 font-medium mt-0.5 leading-snug break-words">
+                        <p className="text-[11px] sm:text-xs text-slate-600 font-medium mt-0.5 leading-snug">
                           {paidCommunityMembers.length} Verified Premium Specialists • Connect, View LinkedIn &amp; Download CVs
                         </p>
                       </div>
@@ -4424,7 +4443,7 @@ export default function App() {
                               uid: myProfile.uid
                             })
                           }
-                          className="px-3 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EAD8] text-[#15803D] text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1673B8] text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>My Public View</span>
@@ -4435,19 +4454,19 @@ export default function App() {
                     {/* Search by Name / Title / Company + Filter by Location */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div className="relative sm:col-span-2">
-                        <Search className="w-4 h-4 text-[#0D2E1B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <Search className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           value={memberSearchQuery}
                           onChange={(e) => setMemberSearchQuery(e.target.value)}
                           placeholder="Search by Name, Title, or Company..."
-                          className="w-full pl-9 pr-8 py-2 text-[12.5px] bg-[#F2F7F3] border border-[#AECBB5] rounded-[14px] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-[#16A34A] focus:bg-white transition-colors"
+                          className="w-full pl-9 pr-8 py-2 text-xs bg-[#F8FAFC] border border-[#D2DEEA] rounded-xl text-[#1A2138] placeholder:text-slate-400 focus:outline-none focus:border-[#1673B8] focus:bg-white transition-colors"
                         />
                         {memberSearchQuery && (
                           <button
                             type="button"
                             onClick={() => setMemberSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -4458,7 +4477,7 @@ export default function App() {
                         <select
                           value={commCountryFilter}
                           onChange={(e) => setCommCountryFilter(e.target.value)}
-                          className="w-full appearance-none pl-3.5 pr-8 py-2 rounded-[14px] bg-[#F2F7F3] border border-[#AECBB5] text-[#0D2E1B] text-xs font-bold focus:outline-none cursor-pointer"
+                          className="w-full appearance-none pl-3 pr-7 py-2 rounded-xl bg-[#F8FAFC] border border-[#D2DEEA] text-[#1A2138] text-xs font-bold focus:outline-none cursor-pointer"
                         >
                           <option value="All">All Locations</option>
                           {availableCommunityLocations.map((loc) => (
@@ -4476,26 +4495,26 @@ export default function App() {
                             <option value="Saudi Arabia">Saudi Arabia</option>
                           )}
                         </select>
-                        <ChevronDown className="w-3.5 h-3.5 text-[#0D2E1B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-3.5 h-3.5 text-[#1673B8] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                     </div>
                   </div>
 
                   {/* PREMIUM PROFILES LIST FOR PAID USERS */}
                   {filteredMembers.length === 0 ? (
-                    <div className="bg-white border border-[#B8D3BE] rounded-[24px] p-6 text-center space-y-2 shadow-xs">
-                      <div className="w-11 h-11 rounded-full bg-[#DCF2E3] text-[#15803D] flex items-center justify-center mx-auto">
+                    <div className="bg-white border border-[#D2DEEA] rounded-2xl p-6 text-center space-y-2 shadow-2xs">
+                      <div className="w-10 h-10 rounded-full bg-[#F0F6FC] text-[#1673B8] flex items-center justify-center mx-auto">
                         <Search className="w-5 h-5" />
                       </div>
-                      <h2 className="text-[15.5px] font-extrabold text-[#0D2E1B]">
+                      <h2 className="text-sm font-extrabold text-[#1A2138]">
                         No Matching Paid Members Found
                       </h2>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-slate-600">
                         Paid members who activate their Premium Membership will appear here automatically.
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                       {filteredMembers.map((member) => (
                         <MemberCard
                           key={member.uid}
@@ -5440,10 +5459,10 @@ export default function App() {
                 </ul>
               </div>
 
-              {/* Payment Options: JazzCash, EasyPaisa, Bank Transfer */}
+              {/* Payment Options: Bank Transfer First/Top, JazzCash, EasyPaisa */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-extrabold text-[#0D2E1B]">
+                  <label className="text-xs font-extrabold text-[#1A2138]">
                     2. Choose Payment Method (
                     {selectedPlanDuration === '1-year'
                       ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Full Year`
@@ -5453,26 +5472,26 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
-                  {(['JazzCash', 'EasyPaisa', 'Bank Transfer'] as const).map(
+                  {(['Bank Transfer', 'JazzCash', 'EasyPaisa'] as const).map(
                     (method) => (
                       <button
                         key={method}
                         type="button"
                         onClick={() => setPayMethod(method)}
-                        className={`py-2.5 px-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                        className={`py-2.5 px-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer whitespace-nowrap ${
                           payMethod === method
-                            ? 'bg-[#15803D] text-white border-[#15803D] shadow-xs'
-                            : 'bg-[#F2F7F3] text-[#0D2E1B] border-[#C6DFCB] hover:bg-[#E4F0E6]'
+                            ? 'bg-[#1673B8] text-white border-[#1673B8] shadow-xs'
+                            : 'bg-[#F0F6FC] text-[#1A2138] border-[#D2DEEA] hover:bg-[#E1EEF9]'
                         }`}
                       >
-                        {method}
+                        {method === 'Bank Transfer' ? 'Bank Account' : method}
                       </button>
                     )
                   )}
                 </div>
 
                 {/* Selected Payment Account Instructions (Live from Admin Payment Gateway Settings) */}
-                <div className="bg-[#FFFBEB] border border-[#FCD34D] rounded-2xl p-3.5 space-y-1.5 text-xs">
+                <div className="bg-[#F0F6FC] border border-[#1673B8]/40 rounded-2xl p-3.5 space-y-1.5 text-xs">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-extrabold text-[#92400E]">
                       {payMethod} Account Details
@@ -6026,7 +6045,7 @@ export default function App() {
           onOpenLegal={(tab) => setLegalModalTab(tab)}
         />
 
-        {/* LEGAL, PRIVACY POLICY, TERMS, ADSENSE/ADMOB & ACCOUNT DELETION MODAL */}
+        {/* LEGAL, PRIVACY POLICY, TERMS, ADSENSE/ADMOB, DATA DELETION & APP CLOSURE MODAL */}
         <LegalComplianceModal
           isOpen={legalModalTab !== null}
           initialTab={legalModalTab || 'privacy'}
@@ -6035,6 +6054,7 @@ export default function App() {
             setRoute({ name: 'profile' });
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
           }}
+          onSignOutApp={handleSignOut}
           monthlyFeeRs={liveGateway.monthlyFeeRs}
           yearlyFeeRs={liveGateway.yearlyFeeRs}
           yearlyDiscountPct={liveGateway.yearlyDiscountPct}

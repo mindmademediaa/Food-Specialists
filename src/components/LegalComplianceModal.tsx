@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   FileText,
@@ -7,16 +7,19 @@ import {
   X,
   CheckCircle2,
   Mail,
-  Globe
+  Globe,
+  LogOut,
+  Power
 } from 'lucide-react';
 
-export type LegalTabType = 'privacy' | 'terms' | 'ads' | 'deletion';
+export type LegalTabType = 'privacy' | 'ads' | 'terms' | 'deletion' | 'closure';
 
 interface LegalComplianceModalProps {
   isOpen: boolean;
   initialTab?: LegalTabType;
   onClose: () => void;
   onGoToDeleteAccount?: () => void;
+  onSignOutApp?: () => void;
   monthlyFeeRs?: number;
   yearlyFeeRs?: number;
   yearlyDiscountPct?: number;
@@ -27,11 +30,18 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
   initialTab = 'privacy',
   onClose,
   onGoToDeleteAccount,
+  onSignOutApp,
   monthlyFeeRs = 100,
   yearlyFeeRs = 900,
   yearlyDiscountPct = 25
 }) => {
   const [activeTab, setActiveTab] = useState<LegalTabType>(initialTab);
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
@@ -40,24 +50,24 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="legal-modal-title"
-      className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-[90] bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
     >
-      <div className="bg-white border border-[#CBE4D6] rounded-[24px] w-full max-w-2xl max-h-[90dvh] flex flex-col shadow-[0_20px_50px_rgba(15,41,30,0.28)] overflow-hidden">
-        {/* Modal Header */}
-        <div className="bg-gradient-to-r from-[#0F291E] via-[#13422B] to-[#0E9F6E] px-4 py-3.5 text-white flex items-center justify-between gap-3 shrink-0">
+      <div className="bg-white border border-[#D2DEEA] rounded-2xl w-full max-w-2xl max-h-[90dvh] flex flex-col shadow-2xl overflow-hidden">
+        {/* Modal Header — Certificate Royal Blue & Deep Navy Scheme */}
+        <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] px-4 py-3.5 text-white flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5 text-[#A7F3D0]" />
+              <ShieldCheck className="w-5 h-5 text-sky-200" />
             </div>
             <div className="min-w-0">
               <h2
                 id="legal-modal-title"
-                className="text-[15px] sm:text-[17px] font-extrabold leading-tight truncate"
+                className="text-sm sm:text-base font-extrabold leading-tight truncate"
               >
-                Privacy Policy, Terms &amp; Ad Compliance
+                Google Play Store Policies, Privacy &amp; App Closure
               </h2>
-              <p className="text-[11px] text-emerald-100 font-medium">
-                FS Portal (Food Specialists) • Google Play, AdSense &amp; AdMob Compliant
+              <p className="text-[11px] text-sky-100 font-medium truncate">
+                FS Portal • Google Play Developer Program, AdMob &amp; Data Safety Compliant
               </p>
             </div>
           </div>
@@ -73,13 +83,14 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-[#F4FAF7] border-b border-[#D4E9DF] px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+        <div className="bg-[#F0F6FC] border-b border-[#D2DEEA] px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
           {(
             [
               { id: 'privacy', label: 'Privacy Policy', icon: Lock },
+              { id: 'ads', label: 'AdMob & Ads Policy', icon: Globe },
               { id: 'terms', label: 'Terms of Use', icon: FileText },
-              { id: 'ads', label: 'AdSense & AdMob Policy', icon: Globe },
-              { id: 'deletion', label: 'Account Deletion', icon: Trash2 }
+              { id: 'deletion', label: 'Data Deletion Policy', icon: Trash2 },
+              { id: 'closure', label: 'App Closure & Sign Out', icon: Power }
             ] as const
           ).map((t) => {
             const Icon = t.icon;
@@ -89,10 +100,10 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                 key={t.id}
                 type="button"
                 onClick={() => setActiveTab(t.id)}
-                className={`px-3 py-1.5 rounded-xl text-[11.5px] font-extrabold inline-flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors ${
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                   active
-                    ? 'bg-[#0E9F6E] text-white shadow-2xs'
-                    : 'bg-white text-[#0F291E] border border-[#CBE4D6] hover:bg-[#E3F3EA]'
+                    ? 'bg-[#1673B8] text-white shadow-xs'
+                    : 'bg-white text-[#1A2138] border border-[#D2DEEA] hover:bg-[#E6F0FA]'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -103,106 +114,66 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
         </div>
 
         {/* Scrollable Legal Content */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs sm:text-[13px] text-[#1F2937] leading-relaxed flex-1">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs sm:text-[13px] text-slate-800 leading-relaxed flex-1">
           {activeTab === 'privacy' && (
             <div className="space-y-3.5">
-              <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-[#0E9F6E] shrink-0 mt-0.5" />
+              <div className="p-3 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-extrabold text-[#0F291E]">
-                    Official Privacy Policy — FS Portal (Food Specialists)
+                  <div className="font-extrabold text-[#1A2138]">
+                    Official Privacy Policy — FS Portal (Google Play Store Compliant)
                   </div>
-                  <div className="text-[11px] text-[#5C7267] font-semibold">
-                    Effective Date: November 5, 2026 • Complies with Google Play Developer Program Policies, GDPR &amp; CCPA
+                  <div className="text-[11px] text-slate-600 font-semibold">
+                    Complies with Google Play Developer Program Policies, Data Safety Section, GDPR &amp; CCPA
                   </div>
                 </div>
               </div>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  1. Information We Collect
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  1. Information We Collect (Google Play Data Safety Disclosure)
                 </h3>
                 <p>
-                  When you register or use <strong>FS Portal (Food Specialists)</strong>, we collect only the information you voluntarily provide:
+                  When you register or use <strong>FS Portal</strong>, we collect only the minimum information voluntarily provided by you to deliver app functionality:
                 </p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>
-                    <strong>Account Credentials:</strong> Name, email address, and authentication identifier via Firebase Authentication (Email/Password or Google Sign-In).
+                    <strong>Account Identifiers:</strong> Name, email address, and authentication UID via Firebase Authentication (Email/Password or Google Sign-In).
                   </li>
                   <li>
-                    <strong>Professional Profile &amp; CV Data:</strong> Job title, company, qualification, experience, trainings, projects, LinkedIn URL, profile photo, and uploaded PDF CV/resume.
+                    <strong>Professional Profile &amp; CV Data:</strong> Job title, organization, academic qualifications, work experience, trainings, projects, LinkedIn URL, profile photo, and uploaded PDF CV/resume.
                   </li>
                   <li>
-                    <strong>Membership Verification Data:</strong> Payment transaction reference IDs and payment receipt screenshots voluntarily submitted for Premium Membership verification.
+                    <strong>Membership &amp; Certificate Verification Data:</strong> Payment transaction reference IDs, receipt screenshots submitted for admin approval, and earned training certificate records.
                   </li>
                 </ul>
               </section>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
                   2. Granular Profile Privacy &amp; Field Visibility Controls
                 </h3>
                 <p>
-                  You retain full control over your personal and professional information. Every field in your profile (Name, Title, Company, Location, Bio, LinkedIn, Contact, Education, Experience, Trainings, Projects, and CV) has an individual <strong>ON / OFF Visibility Toggle</strong>. Any field switched <strong>OFF</strong> is stored strictly in your private vault and is never shown to other community members.
+                  You retain complete control over your personal and professional information. Every field in your profile (Name, Title, Company, Location, Bio, LinkedIn, Contact, Education, Experience, Certifications, Projects, and CV) has a dedicated visibility control. Any field marked private is stored strictly in your isolated vault and is never shared with other members.
                 </p>
               </section>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  3. How We Use &amp; Protect Your Data
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  3. Data Encryption, Security &amp; Zero Third-Party Selling
                 </h3>
                 <p>
-                  Your data is used solely to provide access to Food Science &amp; Technology job listings, global scholarships, accredited trainings (Highfield UK, IRCA CQI, Exemplar Global), professional PDF CV generation, and the Verified Specialist Community Directory. All data is encrypted in transit (HTTPS/TLS) and stored securely on Google Cloud Firestore with strict role-based security rules. We never sell your personal data to third parties.
+                  All data is encrypted in transit using HTTPS/TLS and stored securely on Google Cloud Firestore with strict role-based security rules. We never sell, rent, or trade your personal data to third-party data brokers.
                 </p>
               </section>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  4. Contact &amp; Data Protection Officer
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  4. Official Data Protection &amp; Support Contact
                 </h3>
-                <p className="flex items-center gap-1.5 font-semibold text-[#0D6845]">
+                <p className="flex items-center gap-1.5 font-semibold text-[#1673B8]">
                   <Mail className="w-3.5 h-3.5 shrink-0" />
-                  <span>Official Support &amp; Privacy Contact: mindmademedia9@gmail.com</span>
-                </p>
-              </section>
-            </div>
-          )}
-
-          {activeTab === 'terms' && (
-            <div className="space-y-3.5">
-              <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6]">
-                <div className="font-extrabold text-[#0F291E]">
-                  Terms &amp; Conditions of Use
-                </div>
-                <div className="text-[11px] text-[#5C7267] font-semibold">
-                  Governing access to FS Portal Jobs, Scholarships, Trainings &amp; Premium Community
-                </div>
-              </div>
-
-              <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  1. Professional Conduct &amp; Accuracy of Information
-                </h3>
-                <p>
-                  Users agree to provide accurate academic and professional credentials when creating a specialist profile or generating a CV. Impersonation, uploading fraudulent payment receipts, or posting misleading information may result in immediate account suspension.
-                </p>
-              </section>
-
-              <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  2. External Job &amp; Scholarship Verification Disclaimer
-                </h3>
-                <p>
-                  FS Portal curates and shares verified food industry job openings, fellowships, and international scholarships from credible sources. However, applicants must independently verify employer details, interview locations, and scholarship terms before applying. FS Portal does not charge candidates any recruitment or job-application fees.
-                </p>
-              </section>
-
-              <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  3. Free vs. Paid Premium Community Membership
-                </h3>
-                <p>
-                  Browsing Jobs, Scholarships, Trainings, and downloading your own PDF CV are completely free. Upgrading to <strong>Paid Premium Membership</strong> (Rs. {monthlyFeeRs.toLocaleString()} for 1 Month or Rs. {yearlyFeeRs.toLocaleString()} for 1 Full Year with {yearlyDiscountPct}% discount) unlocks visibility in the Premium Community Directory, viewing other paid specialists&apos; visible profile details, and downloading shared CVs.
+                  <span>Privacy &amp; Compliance Support: mindmademedia9@gmail.com</span>
                 </p>
               </section>
             </div>
@@ -210,56 +181,96 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
 
           {activeTab === 'ads' && (
             <div className="space-y-3.5">
-              <div className="p-3 rounded-2xl bg-[#FFFBEB] border border-[#F59E0B]">
-                <div className="font-extrabold text-[#92400E]">
-                  Google AdSense, Google AdMob &amp; Cookie Disclosure
+              <div className="p-3 rounded-xl bg-[#F0F6FC] border border-[#1673B8]/30">
+                <div className="font-extrabold text-[#1A2138]">
+                  Google AdMob &amp; Google AdSense Policy Disclosure
                 </div>
-                <div className="text-[11px] text-[#78350F] font-semibold">
-                  Required disclosure for Google Publisher Policies, AdSense Web &amp; AdMob Mobile SDK
+                <div className="text-[11px] text-slate-600 font-semibold">
+                  Compliant with Google Play Store AdMob SDK Policies, Google Publisher Policies &amp; EU User Consent Policy
                 </div>
               </div>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  1. Third-Party Advertising (Google AdSense &amp; Google AdMob)
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  1. Mobile App (Google AdMob) &amp; Web (Google AdSense) Advertising
                 </h3>
                 <p>
-                  We may use third-party advertising companies, including <strong>Google AdSense</strong> (on web) and <strong>Google AdMob</strong> (on mobile applications), to serve display, native, interstitial, or rewarded video advertisements when you visit or use FS Portal.
+                  FS Portal uses <strong>Google AdMob</strong> within the mobile application and <strong>Google AdSense</strong> on the web portal to display non-intrusive banner, native, interstitial, or rewarded advertisements that support free educational and career content.
                 </p>
               </section>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  2. DoubleClick DART Cookie &amp; Mobile Advertising IDs
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  2. Android Advertising ID (AAID) &amp; Cookie Usage
                 </h3>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>
-                    Google, as a third-party vendor, uses cookies (including the DoubleClick DART cookie) and mobile advertising identifiers (such as Android Advertising ID) to serve ads based on a user&apos;s prior visits to our platform or other websites/apps on the internet.
+                    On Android devices, the Google Mobile Ads SDK (AdMob) may access your device&apos;s resettable <strong>Advertising ID (AAID)</strong> and coarse diagnostic signals for ad delivery, frequency capping, fraud prevention, and aggregate analytics in accordance with Google Play Developer Policies.
                   </li>
                   <li>
-                    Google&apos;s use of advertising cookies and device identifiers enables it and its partners to serve relevant advertisements, measure ad performance, and prevent invalid ad traffic.
+                    On web browsers, Google uses cookies (including the DoubleClick cookie) to serve relevant ads based on prior visits.
                   </li>
                   <li>
-                    Users may opt out of personalized advertising at any time by visiting{' '}
+                    You may opt out of personalized advertising at any time via your mobile device settings (<strong>Settings &rarr; Google &rarr; Ads &rarr; Opt out of Ads Personalization / Reset Advertising ID</strong>) or on the web at{' '}
                     <a
                       href="https://adssettings.google.com"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#0E9F6E] font-extrabold underline"
+                      className="text-[#1673B8] font-extrabold underline"
                     >
-                      Google Ads Settings (adssettings.google.com)
-                    </a>{' '}
-                    or by resetting their Advertising ID in their mobile device&apos;s privacy settings.
+                      adssettings.google.com
+                    </a>
+                    .
                   </li>
                 </ul>
               </section>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  3. Private Vault &amp; CV Isolation from Advertisers
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  3. Strict Isolation of Private User Data from Ad Networks
                 </h3>
                 <p>
-                  Your uploaded PDF CVs, private profile fields, and payment verification receipts are strictly isolated and are <strong>never</strong> shared with advertising networks.
+                  Your uploaded PDF CVs, private profile fields, exam records, and payment verification screenshots are strictly isolated and are <strong>never</strong> shared with AdMob, AdSense, or any external advertising network.
+                </p>
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'terms' && (
+            <div className="space-y-3.5">
+              <div className="p-3 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                <div className="font-extrabold text-[#1A2138]">
+                  Terms &amp; Conditions of Use (Google Play App Publishing Standard)
+                </div>
+                <div className="text-[11px] text-slate-600 font-semibold">
+                  Governing use of FS Portal Jobs, Scholarships, International Trainings &amp; Community Directory
+                </div>
+              </div>
+
+              <section className="space-y-1">
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  1. User Conduct, UGC Safety &amp; Authenticity
+                </h3>
+                <p>
+                  Users agree to provide accurate academic and professional credentials when creating a profile, taking certification exams, or generating a CV. In compliance with Google Play User-Generated Content (UGC) policies, impersonation, objectionable content, or fraudulent payment receipts are strictly prohibited and result in immediate account removal.
+                </p>
+              </section>
+
+              <section className="space-y-1">
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  2. External Job &amp; Scholarship Verification Disclaimer
+                </h3>
+                <p>
+                  FS Portal curates food industry job openings, fellowships, and international scholarships from reputable organizations. Applicants must independently verify employer details and scholarship terms before applying. FS Portal never charges candidates recruitment or job-application fees.
+                </p>
+              </section>
+
+              <section className="space-y-1">
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  3. Membership &amp; Certificate Verification Rules
+                </h3>
+                <p>
+                  Browsing Jobs, Scholarships, studying Training Modules, taking 40-MCQ Exams, and using Specialist Tools are available to members. Upgrading to <strong>Paid Premium Membership</strong> (Rs. {monthlyFeeRs.toLocaleString()} / Month or Rs. {yearlyFeeRs.toLocaleString()} / Year with {yearlyDiscountPct}% discount) unlocks full Community Directory access and active Online Certificate Verification visibility.
                 </p>
               </section>
             </div>
@@ -267,51 +278,46 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
 
           {activeTab === 'deletion' && (
             <div className="space-y-3.5">
-              <div className="p-3 rounded-2xl bg-red-50 border border-red-200">
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200">
                 <div className="font-extrabold text-red-900">
-                  User Account &amp; Data Deletion Policy (Google Play Compliant)
+                  User Data &amp; Account Deletion Policy (Google Play Store Mandatory Requirement)
                 </div>
                 <div className="text-[11px] text-red-700 font-semibold">
-                  Instant self-service account &amp; personal data deletion
+                  Instant in-app self-service deletion &amp; external web/email deletion request support
                 </div>
               </div>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  1. How to Delete Your Account In-App (Instant Deletion)
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  1. Instant In-App Account &amp; Data Deletion
                 </h3>
                 <p>
-                  In accordance with Google Play Store and international data privacy requirements, any registered user can permanently delete their account and all associated personal data directly inside the app:
+                  In full compliance with Google Play&apos;s User Data &amp; Account Deletion policy, you can permanently delete your account and all associated personal data at any time directly inside the app:
                 </p>
                 <ol className="list-decimal pl-5 space-y-1 font-medium">
-                  <li>Sign in to your FS Portal account and open the <strong>Profile</strong> tab from the bottom navigation bar.</li>
-                  <li>Scroll down to the <strong>Account &amp; Data Deletion</strong> section at the bottom of your profile.</li>
-                  <li>Click <strong>&ldquo;Delete My Account &amp; Data&rdquo;</strong> and confirm permanent deletion.</li>
+                  <li>Open the <strong>Profile</strong> tab from the bottom navigation bar (or click the button below).</li>
+                  <li>Scroll to the <strong>Account &amp; Data Deletion</strong> section at the bottom of your profile.</li>
+                  <li>Tap <strong>&ldquo;Delete My Account &amp; Data&rdquo;</strong> and confirm permanent deletion.</li>
                 </ol>
               </section>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  2. What Data is Deleted
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  2. Scope of Data Permanently Erased
                 </h3>
-                <p>
-                  Confirming account deletion immediately and permanently removes:
-                </p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Your public and private specialist profile documents (`/users/{'{uid}'}` and `/users/{'{uid}'}/private/profile`).</li>
-                  <li>Your uploaded PDF CV/resume, profile photo, education, experience, trainings, and projects.</li>
+                  <li>Your uploaded PDF CV/resume, profile photo, education, experience, and tool logs.</li>
                   <li>Your payment verification requests and Firebase Authentication login credentials.</li>
                 </ul>
               </section>
 
               <section className="space-y-1">
-                <h3 className="font-extrabold text-[#0F291E] text-[13.5px]">
-                  3. Request Deletion via Email (Without Logging In)
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  3. Request Data Deletion Without Re-Installing the App
                 </h3>
                 <p>
-                  If you cannot access the app and wish to request account or data deletion via web/email, send an email from your registered address to{' '}
-                  <strong>mindmademedia9@gmail.com</strong> with the subject line{' '}
-                  <strong>&ldquo;Account Deletion Request — FS Portal&rdquo;</strong>. Your account and all associated data will be permanently purged within 48 hours.
+                  If you have uninstalled the app and wish to delete your account and data without logging in, send an email from your registered address to <strong>mindmademedia9@gmail.com</strong> with the subject <strong>&ldquo;Account &amp; Data Deletion Request — FS Portal&rdquo;</strong>. All associated data is permanently purged within 48 hours.
                 </p>
               </section>
 
@@ -330,17 +336,71 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
               )}
             </div>
           )}
+
+          {activeTab === 'closure' && (
+            <div className="space-y-3.5">
+              <div className="p-3 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                <div className="font-extrabold text-[#1A2138]">
+                  App Closure, Session Termination &amp; Background Resource Policy
+                </div>
+                <div className="text-[11px] text-slate-600 font-semibold">
+                  Google Play Store App Lifecycle, Sign-Out &amp; Device Resource Compliance
+                </div>
+              </div>
+
+              <section className="space-y-1">
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  1. Clean App Closure &amp; Zero Unauthorized Background Processes
+                </h3>
+                <p>
+                  In accordance with Google Play Store Mobile App Quality and Device Resource guidelines, closing or exiting <strong>FS Portal</strong> immediately suspends all active cloud listeners, UI timers, and network requests. The app does not run hidden background services, location trackers, or battery-draining wake locks when closed.
+                </p>
+              </section>
+
+              <section className="space-y-1">
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  2. Course Progress Auto-Save Before Closure
+                </h3>
+                <p>
+                  Whenever you close the app or sign out, your active training module progress (&ldquo;Continue Where You Left Off&rdquo;), specialist tool records, and profile settings are automatically saved so you can resume seamlessly on your next login.
+                </p>
+              </section>
+
+              <section className="space-y-1">
+                <h3 className="font-extrabold text-[#1A2138] text-[13px]">
+                  3. Sign Out / Terminate Active Session
+                </h3>
+                <p>
+                  Use the button below to securely sign out of your current Firebase Authentication session and close your active workspace on this device.
+                </p>
+              </section>
+
+              {onSignOutApp && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSignOutApp();
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-[#1A2138] hover:bg-slate-900 text-white font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out &amp; Close Active Session</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-[#F4FAF7] border-t border-[#D4E9DF] px-4 py-3 flex items-center justify-between gap-2 shrink-0">
-          <span className="text-[11px] font-semibold text-[#5C7267]">
-            FS Portal • Developed by Food Specialist
+        <div className="bg-[#F0F6FC] border-t border-[#D2DEEA] px-4 py-2.5 flex items-center justify-between gap-2 shrink-0">
+          <span className="text-[11px] font-semibold text-slate-600">
+            FS Portal • Official Google Play Compliant Policy Center
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold cursor-pointer transition-colors"
+            className="px-4 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors"
           >
             Close
           </button>

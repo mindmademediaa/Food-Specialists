@@ -110,7 +110,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     progress: UserCourseProgress;
   } | null>(null);
   const [certModalStep, setCertModalStep] = useState<'instruction' | 'payment'>('instruction');
-  const [payMethod, setPayMethod] = useState<'JazzCash' | 'EasyPaisa' | 'Bank Transfer'>('JazzCash');
+  const [payMethod, setPayMethod] = useState<'JazzCash' | 'EasyPaisa' | 'Bank Transfer'>('Bank Transfer');
   const [payTxId, setPayTxId] = useState('');
   const [payNotes, setPayNotes] = useState('');
   const [payReceiptDataUrl, setPayReceiptDataUrl] = useState('');
@@ -1109,17 +1109,17 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   return (
     <div className="space-y-5 pb-10">
       {/* Top Academy Banner & Sub-Navigation Tabs */}
-      <div className="rounded-2xl bg-gradient-to-br from-[#0D5C3A] via-[#116943] to-[#094229] text-white p-5 sm:p-6 shadow-md">
+      <div className="rounded-2xl bg-gradient-to-br from-[#1A2138] via-[#105E9A] to-[#1673B8] text-white p-4 sm:p-5 shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-emerald-200">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#DCE9F6]">
               <Award className="w-4 h-4 text-amber-300" />
               International Food &amp; Hospitality Certification Academy
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+            <h1 className="text-lg sm:text-xl font-black tracking-tight">
               14 Accredited International Trainings &amp; Live Certificate Portal
             </h1>
-            <p className="text-xs text-emerald-100/90 max-w-2xl leading-relaxed">
+            <p className="text-xs text-[#EBF4FC]/90 max-w-2xl leading-relaxed">
               Structured 5-Stage Curriculum (Module 1 Basics → Module 2 PRPs → Module 3 Steps 1–5 → Module 4 Principles 1–4, 5×5 Risk Matrix &amp; Codex Decision Tree → Module 5 Auditing &amp; Food Law), 40-MCQ Final Exam, and Online Verifiable Portrait PDF Certificates.
             </p>
           </div>
@@ -1134,7 +1134,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               }}
               className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
                 activeSubTab === 'catalog'
-                  ? 'bg-white text-[#0D5C3A] shadow-sm'
+                  ? 'bg-white text-[#1673B8] shadow-sm'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
@@ -1148,7 +1148,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               }}
               className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
                 activeSubTab === 'my-certificates'
-                  ? 'bg-white text-[#0D5C3A] shadow-sm'
+                  ? 'bg-white text-[#1673B8] shadow-sm'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >

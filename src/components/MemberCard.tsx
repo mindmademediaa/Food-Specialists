@@ -101,24 +101,28 @@ export const MemberCard: React.FC<MemberCardProps> = ({
           onClick(member);
         }
       }}
-      className="bg-white border-[1.5px] border-[#C8E2CE] hover:border-[#1E8E49] rounded-[20px] p-3.5 sm:p-4 shadow-[0_4px_16px_rgba(22,163,74,0.06)] hover:shadow-md transition-all cursor-pointer space-y-2.5"
+      className="bg-white border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer space-y-2.5"
     >
       <div className="flex items-start gap-3">
         {/* Avatar with Premium Shield Indicator */}
         <div className="relative shrink-0">
           <img
-            src={displayPhoto || makeAvatarSvg(initials)}
+            src={displayPhoto || makeAvatarSvg(initials, '#E1EEF9', '#105E9A')}
             alt={displayName}
             referrerPolicy="no-referrer"
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = makeAvatarSvg(initials);
+              (e.currentTarget as HTMLImageElement).src = makeAvatarSvg(
+                initials,
+                '#E1EEF9',
+                '#105E9A'
+              );
             }}
-            className="w-13 h-13 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-[#1E8E49] bg-[#F0FDF4] shadow-xs"
+            className="w-12 h-12 sm:w-13 sm:h-13 rounded-full object-cover border-2 border-[#1673B8] bg-[#F0F6FC] shadow-2xs"
           />
           {(member.isPremium || member.isPaid) && (
             <span
               title="Premium Verified Member"
-              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-[#F59E0B] to-[#15803D] border-2 border-white text-white flex items-center justify-center shadow-xs"
+              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#1673B8] border-2 border-white text-white flex items-center justify-center shadow-2xs"
             >
               <ShieldCheck className="w-3 h-3" />
             </span>
@@ -128,22 +132,22 @@ export const MemberCard: React.FC<MemberCardProps> = ({
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex flex-wrap items-center justify-between gap-1.5">
             <div className="flex items-center gap-1 min-w-0">
-              <h3 className="text-[14.5px] sm:text-[16px] font-extrabold text-[#0D2E1B] leading-snug break-words">
+              <h3 className="text-[14px] sm:text-[15px] font-extrabold text-[#1A2138] leading-snug break-words">
                 {displayName}
               </h3>
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#229A54] shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
             </div>
 
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#4B7F52] border border-[#D4AF37]/70 text-white text-[9.5px] sm:text-[10px] font-extrabold shrink-0">
-              <Sparkles className="w-2.5 h-2.5 text-[#FBBF24]" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#1673B8]/30 text-[#1673B8] text-[9.5px] sm:text-[10px] font-extrabold shrink-0">
+              <Sparkles className="w-2.5 h-2.5 text-[#1673B8]" />
               <span>Premium</span>
             </span>
           </div>
 
-          {/* Title & Company (filtered by field visibility toggle — full text shown) */}
+          {/* Title & Company */}
           {(canSeeTitle && displayTitle) || (canSeeCompany && member.company) ? (
-            <div className="flex items-start gap-1.5 text-[12px] sm:text-[12.5px] text-gray-800 font-semibold leading-snug">
-              <Briefcase className="w-3.5 h-3.5 text-[#1E8E49] shrink-0 mt-0.5" />
+            <div className="flex items-start gap-1.5 text-[11.5px] sm:text-[12px] text-slate-700 font-semibold leading-snug">
+              <Briefcase className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5" />
               <span className="break-words">
                 {canSeeTitle && displayTitle ? displayTitle : ''}
                 {canSeeTitle && displayTitle && canSeeCompany && member.company
@@ -154,30 +158,29 @@ export const MemberCard: React.FC<MemberCardProps> = ({
             </div>
           ) : null}
 
-          {/* Location (filtered by field visibility toggle — full text shown) */}
+          {/* Location */}
           {canSeeLocation && member.location && (
-            <div className="flex items-start gap-1.5 text-[11.5px] text-gray-600 font-medium leading-snug">
-              <MapPin className="w-3.5 h-3.5 text-[#1E8E49] shrink-0 mt-0.5" />
+            <div className="flex items-start gap-1.5 text-[11px] text-slate-500 font-medium leading-snug">
+              <MapPin className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5" />
               <span className="break-words">{member.location}</span>
             </div>
           )}
 
-          {/* Bio snippet (shown if Bio toggle is ON — full text wrap) */}
+          {/* Bio snippet */}
           {canSeeBio && member.bio && (
-            <p className="text-[11.5px] text-gray-600 pt-0.5 leading-relaxed break-words">
+            <p className="text-[11px] text-slate-600 pt-0.5 leading-relaxed break-words">
               {member.bio}
             </p>
           )}
         </div>
       </div>
 
-      {/* Bottom Row: Hire Me / LinkedIn / CV Indicator (if toggled ON) + View Profile Button */}
-      <div className="flex items-center justify-between gap-2 pt-2 border-t border-emerald-100/90 flex-wrap">
+      {/* Bottom Row: Hire Me / LinkedIn / CV Indicator + View Profile Button */}
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
           {hireMeActive && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] text-[10.5px] font-extrabold">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
-              <span>Hire Me</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] font-extrabold">
+              <span>Available for Hire</span>
             </span>
           )}
 
@@ -188,9 +191,9 @@ export const MemberCard: React.FC<MemberCardProps> = ({
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               title="Open LinkedIn Profile"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#EFF6FF] hover:bg-[#DBEAFE] border border-[#BFDBFE] text-[#0A66C2] text-[10.5px] font-extrabold transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1673B8] text-[10px] font-extrabold transition-colors"
             >
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-[#0A66C2] text-white font-black text-[9px] flex items-center justify-center leading-none">
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-[#1673B8] text-white font-black text-[9px] flex items-center justify-center leading-none">
                 in
               </span>
               <span>LinkedIn</span>
@@ -199,7 +202,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
           )}
 
           {canSeeCv && (member.cvUrl || member.cvFileName) && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#FEF3C7] border border-[#FCD34D] text-[#92400E] text-[10.5px] font-extrabold">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-extrabold">
               <span>CV Available</span>
             </span>
           )}
@@ -211,7 +214,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
             e.stopPropagation();
             onClick(member);
           }}
-          className="px-3 py-1.5 rounded-full bg-[#1E8E49] hover:bg-[#156B36] text-white text-[11px] font-extrabold inline-flex items-center gap-1 shadow-xs transition-colors cursor-pointer shrink-0"
+          className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11px] font-extrabold inline-flex items-center gap-1 shadow-2xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
         >
           <span>View Profile</span>
           <ArrowRight className="w-3 h-3" />
@@ -220,4 +223,3 @@ export const MemberCard: React.FC<MemberCardProps> = ({
     </div>
   );
 };
-
