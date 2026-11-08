@@ -249,9 +249,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const [directRecipientName, setDirectRecipientName] = useState('');
   const [directRecipientEmail, setDirectRecipientEmail] = useState('');
   const [directSelectedUserUid, setDirectSelectedUserUid] = useState('');
-  const [directTopicMode, setDirectTopicMode] = useState<'catalog' | 'custom'>('catalog');
+  const [directTopicMode, setDirectTopicMode] = useState<'catalog' | 'custom'>('custom');
   const [directCatalogCourseId, setDirectCatalogCourseId] = useState(
-    INTERNATIONAL_TRAINING_COURSES[0]?.id || 'course-haccp-l4-mfg'
+    INTERNATIONAL_TRAINING_COURSES[0]?.id || trainings[0]?.id || ''
   );
   const [directCustomTopicTitle, setDirectCustomTopicTitle] = useState('');
   const [directCustomCourseCode, setDirectCustomCourseCode] = useState('FS-EXEC-400');
@@ -290,18 +290,20 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     const catalogCourse = INTERNATIONAL_TRAINING_COURSES.find(
       (c) => c.id === directCatalogCourseId
     );
+    const activeTrMatch = trainings.find((t) => t.id === directCatalogCourseId);
     const finalCourseTitle =
       directTopicMode === 'custom' && directCustomTopicTitle.trim()
         ? directCustomTopicTitle.trim()
-        : catalogCourse?.title || 'HACCP Level 4 in Manufacturing';
+        : activeTrMatch?.title || catalogCourse?.title || directCustomTopicTitle.trim() || 'Food Safety & Quality Management';
     const finalCourseCode =
       directTopicMode === 'custom' && directCustomCourseCode.trim()
         ? directCustomCourseCode.trim().toUpperCase()
-        : catalogCourse?.code || 'FS-HACCP-L4M';
+        : activeTrMatch?.standardCode || catalogCourse?.code || 'FS-CERT-INTL';
     const finalAccreditation =
       directTopicMode === 'custom' && directAccreditationStd.trim()
         ? directAccreditationStd.trim()
         : catalogCourse?.accreditationStandard ||
+          directAccreditationStd.trim() ||
           'Codex Alimentarius CXC 1-1969 · GFSI Benchmark';
 
     const cleanCodeSlug = finalCourseCode.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 8) || 'FSCERT';
@@ -2677,7 +2679,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
                       }`}
                     >
-                      Choose from 14 Accredited Courses
+                      Choose from Published Trainings ({trainings.length})
                     </button>
                     <button
                       type="button"
@@ -2693,11 +2695,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </div>
                 </div>
 
-                {directTopicMode === 'catalog' ? (
+                {directTopicMode === 'catalog' && trainings.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-                        Select Accredited Course (14 International Trainings) *
+                        Select Published Training Course *
                       </label>
                       <select
                         value={directCatalogCourseId}
@@ -2712,9 +2714,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         }}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                       >
-                        {INTERNATIONAL_TRAINING_COURSES.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.title} ({c.code})
+                        {trainings.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.title} ({t.standardCode || 'FS-CERT'})
                           </option>
                         ))}
                       </select>
@@ -3132,7 +3134,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
               <div className="border-b border-[#D2DEEA] pb-3">
                 <h3 className="text-base font-extrabold text-[#1A2138]">
-                  All 14+ Live Trainings — Control Visibility, Edit Prices or Remove ({trainings.length})
+                  Published Trainings — Control Visibility, Edit Prices or Remove ({trainings.length})
                 </h3>
                 <p className="text-xs text-[#4A5568]">
                   Manage every training course from here: edit its fee/duration, toggle Active/Hidden on the frontend app, or remove it.

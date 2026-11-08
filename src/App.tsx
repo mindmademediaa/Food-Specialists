@@ -955,6 +955,7 @@ export default function App() {
             (t) =>
               !t.id.startsWith('tr-hf-') &&
               !t.id.startsWith('tr-la-') &&
+              !t.id.startsWith('tr-int-') &&
               !t.id.startsWith('tr-intl-') &&
               !t.id.startsWith('tr-haccp-level-4') &&
               !t.id.startsWith('course-') &&

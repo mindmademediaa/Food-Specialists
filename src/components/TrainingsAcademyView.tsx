@@ -27,6 +27,7 @@ import {
 } from '../types/hub';
 import {
   CourseExamMCQ,
+  DEFAULT_COURSE_TEMPLATE,
   INTERNATIONAL_TRAINING_COURSES,
   InternationalTrainingCourse,
   get40CourseExamQuestions
@@ -151,7 +152,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
           b.id === customTr.id ||
           b.title.trim().toLowerCase() === customTr.title.trim().toLowerCase()
       );
-      const fallbackTemplate = baseMatch || INTERNATIONAL_TRAINING_COURSES[0];
+      const fallbackTemplate = baseMatch || DEFAULT_COURSE_TEMPLATE;
       result.push({
         ...fallbackTemplate,
         id: customTr.id,
@@ -162,7 +163,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         duration:
           customTr.duration ||
           baseMatch?.duration ||
-          `18 Guided Hours · ${fallbackTemplate.modules.length} Modules`
+          `Self-Paced · ${fallbackTemplate.modules.length} Modules`
       });
     }
 
@@ -1100,10 +1101,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               International Food &amp; Hospitality Certification Academy
             </div>
             <h1 className="text-lg sm:text-xl font-black tracking-tight">
-              14 Accredited International Trainings &amp; Live Certificate Portal
+              International Certification Trainings &amp; Live Certificate Portal
             </h1>
             <p className="text-xs text-[#EBF4FC]/90 max-w-2xl leading-relaxed">
-              Structured 5-Stage Curriculum (Module 1 Basics → Module 2 PRPs → Module 3 Steps 1–5 → Module 4 Principles 1–4, 5×5 Risk Matrix &amp; Codex Decision Tree → Module 5 Auditing &amp; Food Law), 40-MCQ Final Exam, and Online Verifiable Portrait PDF Certificates.
+              Official Certification Training Portal, My Earned &amp; Admin-Issued Portrait PDF Certificates, and Live Online QR/ID Verification Registry.
             </p>
           </div>
 
@@ -1121,7 +1122,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
-              All 14 Courses
+              Training Courses
             </button>
             <button
               type="button"
@@ -1455,7 +1456,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 onClick={() => setActiveSubTab('catalog')}
                 className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-bold cursor-pointer"
               >
-                Browse 14 Certification Courses
+                Browse Training Courses
               </button>
             </div>
           ) : (
