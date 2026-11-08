@@ -140,47 +140,27 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     }
   }, []);
 
-  // Merge Admin-managed trainings with international curriculum data
+  // Build active courses only from Admin-managed trainings (pre-populated default trainings removed per user request)
   const mergedCourses: InternationalTrainingCourse[] = useMemo(() => {
     const activeAdminTrainings = trainings.filter((t) => t.isActive !== false);
     const result: InternationalTrainingCourse[] = [];
 
-    for (const baseCourse of INTERNATIONAL_TRAINING_COURSES) {
-      const adminMatch = trainings.find(
-        (t) =>
-          t.id === baseCourse.id ||
-          t.title.trim().toLowerCase() === baseCourse.title.trim().toLowerCase()
-      );
-      if (adminMatch && adminMatch.isActive === false) {
-        continue; // Hidden by Admin in Control Panel
-      }
-      result.push({
-        ...baseCourse,
-        title: adminMatch?.title || baseCourse.title,
-        description: adminMatch?.description || baseCourse.description,
-        duration: adminMatch?.duration || baseCourse.duration
-      });
-    }
-
-    // Also include any custom International Certification course added by Admin in AdminControlPanel
     for (const customTr of activeAdminTrainings) {
-      const alreadyIn = result.some(
-        (c) =>
-          c.id === customTr.id ||
-          c.title.trim().toLowerCase() === customTr.title.trim().toLowerCase()
+      const baseMatch = INTERNATIONAL_TRAINING_COURSES.find(
+        (b) =>
+          b.id === customTr.id ||
+          b.title.trim().toLowerCase() === customTr.title.trim().toLowerCase()
       );
-      if (!alreadyIn && customTr.category === 'International Certification') {
-        const fallbackTemplate = INTERNATIONAL_TRAINING_COURSES[0];
-        result.push({
-          ...fallbackTemplate,
-          id: customTr.id,
-          code: customTr.standardCode || 'FSC-INT',
-          title: customTr.title,
-          levelBadge: customTr.subType || 'International Certification',
-          description: customTr.description,
-          duration: customTr.duration || '12 Guided Hours · 5 Modules'
-        });
-      }
+      const fallbackTemplate = baseMatch || INTERNATIONAL_TRAINING_COURSES[0];
+      result.push({
+        ...fallbackTemplate,
+        id: customTr.id,
+        code: customTr.standardCode || baseMatch?.code || 'FSC-INT',
+        title: customTr.title,
+        levelBadge: customTr.subType || baseMatch?.levelBadge || 'International Certification',
+        description: customTr.description || baseMatch?.description || '',
+        duration: customTr.duration || baseMatch?.duration || '12 Guided Hours · 5 Modules'
+      });
     }
 
     return result;
@@ -1534,121 +1514,151 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             </div>
           )}
 
-          {/* 14 International Certification Courses Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mergedCourses.map((course, idx) => {
-              const prog = courseProgressMap[course.id];
-              const completedCount = prog?.completedModuleIds?.length || 0;
-              const totalMods = course.modules.length;
-              const pctMods = Math.round((completedCount / totalMods) * 100);
-              const hasStarted = Boolean(prog);
-              const resumeModNum = (prog?.lastModuleIndex ?? 0) + 1;
-
-              return (
-                <div
-                  key={course.id}
-                  className="rounded-2xl border border-[#D2DEEA] bg-white p-5 shadow-sm hover:shadow-md hover:border-[#1673B8]/50 transition flex flex-col justify-between space-y-4"
+          {/* Certification Courses Grid */}
+          {mergedCourses.length === 0 ? (
+            <div className="rounded-2xl border border-[#D2DEEA] bg-white p-8 text-center space-y-3 shadow-2xs">
+              <div className="w-12 h-12 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center mx-auto">
+                <Award className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-black text-[#1A2138]">
+                No Active Training Courses Published Yet
+              </h3>
+              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                New professional Food Safety, HACCP, ISO 22000 &amp; FSSC 22000 certification courses are being prepared and will appear here as they are published. You can still verify or download your issued certificates anytime using the tabs above.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('verify-portal')}
+                  className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors"
                 >
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] text-[10px] font-extrabold uppercase tracking-wider">
-                        #{idx + 1} · {course.code} · {course.levelBadge}
-                      </span>
-                      {prog?.examPassed && (
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase ${
-                            prog.distinctionEarned
-                              ? 'bg-amber-100 border border-amber-400 text-amber-900'
-                              : 'bg-[#EBF4FC] border border-[#1673B8]/35 text-[#105E9A]'
-                          }`}
-                        >
-                          <Award className="w-3 h-3" />
-                          {prog.distinctionEarned
-                            ? `Distinction (${prog.bestExamPercentage}%)`
-                            : `Passed (${prog.bestExamPercentage}%)`}
+                  Verify Certificate Online
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('my-certificates')}
+                  className="px-4 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] text-xs font-extrabold cursor-pointer transition-colors"
+                >
+                  View My Certificates
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {mergedCourses.map((course, idx) => {
+                const prog = courseProgressMap[course.id];
+                const completedCount = prog?.completedModuleIds?.length || 0;
+                const totalMods = course.modules.length;
+                const pctMods = Math.round((completedCount / totalMods) * 100);
+                const hasStarted = Boolean(prog);
+                const resumeModNum = (prog?.lastModuleIndex ?? 0) + 1;
+
+                return (
+                  <div
+                    key={course.id}
+                    className="rounded-2xl border border-[#D2DEEA] bg-white p-5 shadow-sm hover:shadow-md hover:border-[#1673B8]/50 transition flex flex-col justify-between space-y-4"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] text-[10px] font-extrabold uppercase tracking-wider">
+                          #{idx + 1} · {course.code} · {course.levelBadge}
                         </span>
-                      )}
+                        {prog?.examPassed && (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase ${
+                              prog.distinctionEarned
+                                ? 'bg-amber-100 border border-amber-400 text-amber-900'
+                                : 'bg-[#EBF4FC] border border-[#1673B8]/35 text-[#105E9A]'
+                            }`}
+                          >
+                            <Award className="w-3 h-3" />
+                            {prog.distinctionEarned
+                              ? `Distinction (${prog.bestExamPercentage}%)`
+                              : `Passed (${prog.bestExamPercentage}%)`}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-base sm:text-lg font-black text-[#1A2138] leading-snug">
+                        {course.title}
+                      </h3>
+
+                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                        {course.description}
+                      </p>
+
+                      <div className="text-[11px] text-slate-500 font-medium space-y-1 pt-1">
+                        <div className="flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-[#1673B8]" />
+                          <span>{course.accreditationStandard}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-[#1673B8]" />
+                          <span>
+                            {course.duration} · 40-MCQ Final Exam (60% Pass / 75% Distinction) · Online Verifiable Certificate
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-black text-[#1A2138] leading-snug">
-                      {course.title}
-                    </h3>
-
-                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
-                      {course.description}
-                    </p>
-
-                    <div className="text-[11px] text-slate-500 font-medium space-y-1 pt-1">
-                      <div className="flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-[#1673B8]" />
-                        <span>{course.accreditationStandard}</span>
+                    {/* Module Progress Bar */}
+                    <div className="space-y-3 pt-2 border-t border-slate-100">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] font-bold">
+                          <span className="text-slate-600">
+                            Module Progress: {completedCount} / {totalMods} Modules
+                          </span>
+                          <span className="text-[#1673B8]">{pctMods}%</span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full bg-[#1673B8] transition-all duration-300"
+                            style={{ width: `${pctMods}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-[#1673B8]" />
-                        <span>
-                          {course.duration} · 40-MCQ Final Exam (60% Pass / 75% Distinction) · Online Verifiable Certificate
-                        </span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Module Progress Bar */}
-                  <div className="space-y-3 pt-2 border-t border-slate-100">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[11px] font-bold">
-                        <span className="text-slate-600">
-                          Module Progress: {completedCount} / {totalMods} Modules
-                        </span>
-                        <span className="text-[#1673B8]">{pctMods}%</span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                        <div
-                          className="h-full bg-[#1673B8] transition-all duration-300"
-                          style={{ width: `${pctMods}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleOpenCourse(course, hasStarted ? prog.lastModuleIndex : 0)
-                        }
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs transition cursor-pointer"
-                      >
-                        <PlayCircle className="w-4 h-4" />
-                        {hasStarted
-                          ? `Continue (Module ${resumeModNum})`
-                          : 'Start Course Materials'}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleStart40McqExam(course)}
-                        className="px-3.5 py-2.5 rounded-xl border border-[#1673B8] text-[#1673B8] hover:bg-[#F0F6FC] font-bold text-xs transition cursor-pointer"
-                      >
-                        40-MCQ Exam
-                      </button>
-
-                      {prog?.examPassed && (
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setSelectedCourseId(course.id);
-                            setViewMode('certificate-preview');
-                          }}
-                          className="px-3 py-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-extrabold text-xs transition cursor-pointer"
+                          onClick={() =>
+                            handleOpenCourse(course, hasStarted ? prog.lastModuleIndex : 0)
+                          }
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs transition cursor-pointer"
                         >
-                          Certificate
+                          <PlayCircle className="w-4 h-4" />
+                          {hasStarted
+                            ? `Continue (Module ${resumeModNum})`
+                            : 'Start Course Materials'}
                         </button>
-                      )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleStart40McqExam(course)}
+                          className="px-3.5 py-2.5 rounded-xl border border-[#1673B8] text-[#1673B8] hover:bg-[#F0F6FC] font-bold text-xs transition cursor-pointer"
+                        >
+                          40-MCQ Exam
+                        </button>
+
+                        {prog?.examPassed && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCourseId(course.id);
+                              setViewMode('certificate-preview');
+                            }}
+                            className="px-3 py-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-extrabold text-xs transition cursor-pointer"
+                          >
+                            Certificate
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

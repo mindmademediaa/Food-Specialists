@@ -46,10 +46,12 @@ import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsDa
 import { downloadOfficialCourseCertificatePdf } from '../utils/certificatePdfGenerator';
 
 export type AdminSectionTab =
+  | 'menu'
   | 'overview'
   | 'users'
   | 'jobs'
   | 'scholarships'
+  | 'certificates'
   | 'trainings'
   | 'payments'
   | 'storage';
@@ -124,7 +126,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onPreviewUserApp,
   onSignOut
 }) => {
-  const [activeTab, setActiveTab] = useState<AdminSectionTab>('overview');
+  const [activeTab, setActiveTab] = useState<AdminSectionTab>('menu');
 
   // Users & Approvals Filter State
   const [userSearch, setUserSearch] = useState('');
@@ -619,37 +621,42 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const todayFormatted = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="h-[100dvh] bg-[#E3F3EA] text-[#0F291E] flex flex-col overflow-hidden">
-      {/* TOP DEDICATED ADMIN COMMAND HEADER (CONSTANT — DOES NOT SCROLL) */}
-      <header className="shrink-0 z-40 bg-[#13422B] text-white shadow-md border-b border-emerald-900/60">
-        <div className="max-w-5xl mx-auto px-4 pt-3 pb-2.5 flex flex-wrap items-center justify-between gap-2.5">
+    <div className="h-[100dvh] bg-[#F0F6FC] text-[#1A2138] flex flex-col overflow-hidden">
+      {/* TOP DEDICATED ADMIN COMMAND HEADER (CONSTANT — ROYAL BLUE & DEEP NAVY THEME) */}
+      <header className="shrink-0 z-40 bg-[#1A2138] text-white shadow-md border-b border-[#1673B8]/50">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-emerald-200">
+            <button
+              type="button"
+              onClick={() => setActiveTab('menu')}
+              title="Admin Control Panel Home"
+              className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-[#D2DEEA] cursor-pointer"
+            >
               <img
                 src={FS_PORTAL_LOGO_DATA_URI}
                 alt="FS Portal Admin"
                 className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
               />
-            </div>
+            </button>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-[18px] sm:text-[20px] font-extrabold tracking-tight leading-none text-white truncate">
                   FS Portal
                 </h1>
-                <span className="px-2 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[10px] font-extrabold uppercase tracking-wider">
+                <span className="px-2 py-0.5 rounded-full bg-[#1673B8] text-white text-[10px] font-extrabold uppercase tracking-wider">
                   Admin Control Panel
                 </span>
               </div>
-              <p className="text-[11px] text-emerald-200 font-medium mt-0.5 truncate">
+              <p className="text-[11px] text-sky-200 font-medium mt-0.5 truncate">
                 {adminEmail} • Full Platform Control
               </p>
             </div>
           </div>
 
-          {/* Integrated Quick Search Bar + Filter + Sign Out in Constant Header */}
+          {/* Integrated Quick Search Bar + View App + Backup + Sign Out */}
           <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
             <div className="relative flex-1 sm:w-56 max-w-xs">
-              <Search className="w-3.5 h-3.5 text-[#2C4C3B] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-[#1673B8] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={userSearch}
@@ -658,9 +665,19 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   if (activeTab !== 'users') setActiveTab('users');
                 }}
                 placeholder="Search users, email, role..."
-                className="w-full h-9 pl-8 pr-3 rounded-xl bg-[#D5E6DC] text-[#13422B] placeholder:text-[#3B5949] text-xs font-semibold focus:outline-none"
+                className="w-full h-9 pl-8 pr-3 rounded-xl bg-[#F0F6FC] text-[#1A2138] placeholder:text-slate-500 text-xs font-semibold focus:outline-none border border-[#D2DEEA]"
               />
             </div>
+
+            {activeTab !== 'menu' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('menu')}
+                className="px-3 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-xs"
+              >
+                <span>All Admin Pages</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -675,7 +692,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             <button
               type="button"
               onClick={onExportBackup}
-              className="px-3 py-2 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold hidden sm:flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs shrink-0"
+              className="px-3 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold hidden sm:flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs shrink-0"
             >
               <Download className="w-3.5 h-3.5" />
               <span className="hidden lg:inline">Backup</span>
@@ -691,392 +708,444 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             </button>
           </div>
         </div>
-
-        {/* NAVIGATION PILLS BAR INSIDE HEADER */}
-        <div className="max-w-5xl mx-auto px-4 pb-2.5 pt-0.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {(
-            [
-              {
-                id: 'overview',
-                label: '1. Dashboard & Graphs',
-                icon: BarChart3,
-                badge: null
-              },
-              {
-                id: 'users',
-                label: '2. Users & Approvals',
-                icon: Users,
-                badge:
-                  stats.pendingRequests > 0
-                    ? `${stats.pendingRequests} Pending`
-                    : `${stats.totalUsers}`
-              },
-              {
-                id: 'jobs',
-                label: '3. Post Jobs (1-Box)',
-                icon: Briefcase,
-                badge: `${jobs.length}`
-              },
-              {
-                id: 'scholarships',
-                label: '4. Scholarships (1-Box)',
-                icon: GraduationCap,
-                badge: `${scholarships.length}`
-              },
-              {
-                id: 'trainings',
-                label: '5. Trainings & Prices',
-                icon: Award,
-                badge: `${trainings.length}`
-              },
-              {
-                id: 'payments',
-                label: '6. Payment Gateway',
-                icon: CreditCard,
-                badge: 'Edit'
-              },
-              {
-                id: 'storage',
-                label: '7. Cloud Storage',
-                icon: Database,
-                badge: null
-              }
-            ] as const
-          ).map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 shrink-0 cursor-pointer transition-all ${
-                  isActive
-                    ? 'bg-[#0E9F6E] text-white shadow-sm scale-[1.01]'
-                    : 'bg-[#1D563B] hover:bg-[#256949] text-emerald-100 border border-white/10'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5 stroke-[2.3]" />
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
-                      tab.id === 'users' && stats.pendingRequests > 0
-                        ? 'bg-amber-400 text-[#0F291E]'
-                        : isActive
-                        ? 'bg-white/25 text-white'
-                        : 'bg-black/25 text-emerald-200'
-                    }`}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
       </header>
 
       {/* MAIN ADMIN SCROLLABLE CONTENT CONTAINER */}
       <main className="flex-1 overflow-y-auto overscroll-contain">
         <div className="max-w-5xl mx-auto px-3.5 sm:px-5 py-5 space-y-5">
           {/* LIVE FEEDBACK BANNER */}
-        {adminStatusBanner && (
-          <div className="p-4 rounded-2xl bg-[#13422B] border-2 border-[#0E9F6E] text-white text-xs sm:text-sm font-extrabold flex items-center justify-between gap-3 shadow-md">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-[#34D399] shrink-0" />
-              <span>{adminStatusBanner}</span>
-            </div>
-            <button
-              type="button"
-              onClick={onClearBanner}
-              className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-bold cursor-pointer shrink-0"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        {/* URGENT PENDING PAYMENT ALERT */}
-        {stats.pendingRequests > 0 && activeTab !== 'users' && (
-          <div className="bg-gradient-to-r from-[#FFFBEB] to-[#FEF3C7] border-[1.5px] border-[#F59E0B] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#D97706] text-white flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5" />
+          {adminStatusBanner && (
+            <div className="p-4 rounded-2xl bg-[#1A2138] border-2 border-[#1673B8] text-white text-xs sm:text-sm font-extrabold flex items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-sky-400 shrink-0" />
+                <span>{adminStatusBanner}</span>
               </div>
-              <div>
-                <h2 className="text-sm font-extrabold text-[#92400E]">
-                  {stats.pendingRequests} User Payment{' '}
-                  {stats.pendingRequests === 1 ? 'Request' : 'Requests'} Waiting
-                  for Your Approval
-                </h2>
-                <p className="text-xs text-[#78350F] font-semibold">
-                  Review uploaded Rs. 100 payment slips to Accept or Reject
-                  their 1-Month Premium Membership.
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={onClearBanner}
+                className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-bold cursor-pointer shrink-0"
+              >
+                Dismiss
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setActiveTab('users')}
-              className="px-4 py-2 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-extrabold cursor-pointer shadow-xs"
-            >
-              Review &amp; Approve Now →
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* =====================================================================
-            TAB 1: ANALYTICS & USERS GRAPH DASHBOARD (overview)
-           ===================================================================== */}
-        {activeTab === 'overview' && (
-          <div className="space-y-5">
-            {/* TOP 6 KPI SUMMARY CARDS */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div
+          {/* BACK TO ALL ADMIN PAGES BAR WHEN INSIDE A SPECIFIC PAGE */}
+          {activeTab !== 'menu' && (
+            <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab('menu')}
+                className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
+              >
+                <span>← Back to All Admin Control Panel Pages</span>
+              </button>
+              <span className="text-xs font-extrabold text-[#105E9A]">
+                Changes on this page are saved independently
+              </span>
+            </div>
+          )}
+
+          {/* URGENT PENDING PAYMENT ALERT */}
+          {stats.pendingRequests > 0 && activeTab !== 'users' && (
+            <div className="bg-gradient-to-r from-[#FFFBEB] to-[#FEF3C7] border-[1.5px] border-[#F59E0B] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#D97706] text-white flex items-center justify-center shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold text-[#92400E]">
+                    {stats.pendingRequests} User Payment{' '}
+                    {stats.pendingRequests === 1 ? 'Request' : 'Requests'} Waiting
+                    for Your Approval
+                  </h2>
+                  <p className="text-xs text-[#78350F] font-semibold">
+                    Review uploaded payment slips to Accept or Reject user memberships or certificates.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
                 onClick={() => setActiveTab('users')}
-                className="bg-white border border-[#CBE4D6] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#0E9F6E] transition-all"
+                className="px-4 py-2 rounded-xl bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-extrabold cursor-pointer shadow-xs"
               >
-                <div className="flex items-center justify-between text-xs font-bold text-[#5C7267]">
-                  <span>Total Users</span>
-                  <Users className="w-4 h-4 text-[#0E9F6E]" />
-                </div>
-                <div className="text-2xl font-extrabold text-[#0F291E] mt-1">
-                  {stats.totalUsers}
-                </div>
-                <div className="text-[11px] font-bold text-[#0E9F6E] mt-0.5">
-                  Registered Specialists
-                </div>
-              </div>
-
-              <div
-                onClick={() => {
-                  setUserFilter('premium');
-                  setActiveTab('users');
-                }}
-                className="bg-white border border-[#CBE4D6] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#0E9F6E] transition-all"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-[#5C7267]">
-                  <span>Paid Premium</span>
-                  <Crown className="w-4 h-4 text-[#D97706]" />
-                </div>
-                <div className="text-2xl font-extrabold text-[#0F291E] mt-1">
-                  {stats.premiumUsers}
-                </div>
-                <div className="text-[11px] font-bold text-[#D97706] mt-0.5">
-                  Rs. {liveMonthlyFee.toLocaleString()}/Mo • Rs.{' '}
-                  {liveYearlyFee.toLocaleString()}/Yr ({liveYearlyDiscountPct}% OFF)
-                </div>
-              </div>
-
-              <div
-                onClick={() => {
-                  setUserFilter('pending');
-                  setActiveTab('users');
-                }}
-                className="bg-white border border-[#CBE4D6] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#0E9F6E] transition-all"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-[#5C7267]">
-                  <span>Pending Slips</span>
-                  <Clock className="w-4 h-4 text-amber-600" />
-                </div>
-                <div className="text-2xl font-extrabold text-amber-700 mt-1">
-                  {stats.pendingRequests}
-                </div>
-                <div className="text-[11px] font-bold text-amber-700 mt-0.5">
-                  Awaiting Approval
-                </div>
-              </div>
-
-              <div
-                onClick={() => setActiveTab('jobs')}
-                className="bg-white border border-[#CBE4D6] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#0E9F6E] transition-all"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-[#5C7267]">
-                  <span>Live Jobs</span>
-                  <Briefcase className="w-4 h-4 text-[#0E9F6E]" />
-                </div>
-                <div className="text-2xl font-extrabold text-[#0F291E] mt-1">
-                  {jobs.length}
-                </div>
-                <div className="text-[11px] font-bold text-[#0E9F6E] mt-0.5">
-                  3 Categories
-                </div>
-              </div>
-
-              <div
-                onClick={() => setActiveTab('scholarships')}
-                className="bg-white border border-[#CBE4D6] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#0E9F6E] transition-all"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-[#5C7267]">
-                  <span>Scholarships</span>
-                  <GraduationCap className="w-4 h-4 text-[#0E9F6E]" />
-                </div>
-                <div className="text-2xl font-extrabold text-[#0F291E] mt-1">
-                  {scholarships.length}
-                </div>
-                <div className="text-[11px] font-bold text-[#0E9F6E] mt-0.5">
-                  Global Grants
-                </div>
-              </div>
-
-              <div
-                onClick={() => setActiveTab('trainings')}
-                className="bg-white border border-[#CBE4D6] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#0E9F6E] transition-all"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-[#5C7267]">
-                  <span>Trainings</span>
-                  <Award className="w-4 h-4 text-[#0E9F6E]" />
-                </div>
-                <div className="text-2xl font-extrabold text-[#0F291E] mt-1">
-                  {trainings.length}
-                </div>
-                <div className="text-[11px] font-bold text-[#0E9F6E] mt-0.5">
-                  Highfield &amp; IRCA
-                </div>
-              </div>
+                Review &amp; Approve Now →
+              </button>
             </div>
+          )}
 
-            {/* VISUAL GRAPHS ROW: USERS GRAPH + PLATFORM CONTENT GRAPH */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* GRAPH 1: ALL USERS ANALYTICS & ACTIVITY GRAPH */}
-              <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-[#ECF4EF] pb-3">
+          {/* =====================================================================
+              ADMIN CONTROL PANEL HOME MENU (DEFAULT LANDING — SEPARATE BUTTON PER PAGE)
+             ===================================================================== */}
+          {activeTab === 'menu' && (
+            <div className="space-y-5">
+              <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+                <div className="border-b border-[#D2DEEA] pb-3 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h2 className="text-base font-extrabold text-[#0F291E] flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-[#0E9F6E]" />
-                      <span>All Users &amp; Membership Graph</span>
+                    <span className="px-2.5 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10.5px] font-extrabold uppercase tracking-wider">
+                      Admin Control Panel Directory
+                    </span>
+                    <h2 className="text-lg sm:text-xl font-extrabold text-[#1A2138] mt-1">
+                      Select an Admin Section to Open &amp; Manage Separately
                     </h2>
-                    <p className="text-xs text-[#5C7267] font-medium">
-                      Real-time visual breakdown of user plans &amp; profile activity
+                    <p className="text-xs text-[#4A5568] font-medium">
+                      Click any button below to open that dedicated control page. Every section opens on its own page and saves changes independently.
                     </p>
                   </div>
-                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-xs font-extrabold">
-                    {stats.totalUsers} Users
-                  </span>
                 </div>
 
-                {/* Visual Column Bar Chart for User Segments */}
-                <div className="bg-[#F4FAF7] border border-[#D4E9DF] rounded-2xl p-4">
-                  <div className="grid grid-cols-5 gap-2.5 items-end h-36 pt-4 px-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  {[
+                    {
+                      id: 'overview' as AdminSectionTab,
+                      title: '1. Dashboard & Graphs',
+                      desc: 'Live platform analytics, user statistics & content charts',
+                      badge: `${stats.totalUsers} Users`,
+                      icon: BarChart3
+                    },
+                    {
+                      id: 'users' as AdminSectionTab,
+                      title: '2. Users & Approvals',
+                      desc: 'Approve membership payment slips, manage users & CVs',
+                      badge:
+                        stats.pendingRequests > 0
+                          ? `${stats.pendingRequests} Pending`
+                          : `${stats.premiumUsers} Premium`,
+                      icon: Users
+                    },
+                    {
+                      id: 'jobs' as AdminSectionTab,
+                      title: '3. Post Jobs (1-Box)',
+                      desc: 'Paste & publish new jobs and manage active job listings',
+                      badge: `${jobs.length} Jobs`,
+                      icon: Briefcase
+                    },
+                    {
+                      id: 'scholarships' as AdminSectionTab,
+                      title: '4. Scholarships (1-Box)',
+                      desc: 'Paste & publish fellowships, international & research grants',
+                      badge: `${scholarships.length} Grants`,
+                      icon: GraduationCap
+                    },
+                    {
+                      id: 'certificates' as AdminSectionTab,
+                      title: '5. Direct Certificate Generator',
+                      desc: 'Generate Portrait PDF Certificates on any topic & approve Rs. 1,000 fee requests',
+                      badge: `${certificates.length} Issued`,
+                      icon: Award
+                    },
+                    {
+                      id: 'trainings' as AdminSectionTab,
+                      title: '6. Trainings & Course Prices',
+                      desc: 'Add new training courses, edit fees, or toggle course visibility',
+                      badge: `${trainings.length} Courses`,
+                      icon: FileText
+                    },
+                    {
+                      id: 'payments' as AdminSectionTab,
+                      title: '7. Payment Gateway & Fees',
+                      desc: 'Update Bank Account, JazzCash, EasyPaisa & membership pricing',
+                      badge: `Rs. ${liveMonthlyFee}/Mo`,
+                      icon: CreditCard
+                    },
+                    {
+                      id: 'storage' as AdminSectionTab,
+                      title: '8. Cloud Storage & Backup',
+                      desc: 'Configure cloud storage endpoints & export full JSON backup',
+                      badge: 'Cloud Sync',
+                      icon: Database
+                    }
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setActiveTab(item.id)}
+                        className="text-left rounded-2xl bg-[#F0F6FC] hover:bg-[#E3EFFB] border-2 border-[#D2DEEA] hover:border-[#1673B8] p-4 shadow-2xs transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+                      >
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="w-10 h-10 rounded-xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-xs transition-colors">
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#105E9A] text-[10.5px] font-extrabold">
+                              {item.badge}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-extrabold text-[#1A2138] group-hover:text-[#1673B8] transition-colors">
+                              {item.title}
+                            </h3>
+                            <p className="text-[11px] text-[#4A5568] font-medium mt-0.5 leading-snug">
+                              {item.desc}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-[#D2DEEA]/70 flex items-center justify-between text-[11px] font-extrabold text-[#1673B8]">
+                          <span>Open Page</span>
+                          <span>→</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =====================================================================
+              TAB 1: ANALYTICS & USERS GRAPH DASHBOARD (overview)
+             ===================================================================== */}
+          {activeTab === 'overview' && (
+            <div className="space-y-5">
+              {/* TOP 6 KPI SUMMARY CARDS */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div
+                  onClick={() => setActiveTab('users')}
+                  className="bg-white border border-[#D2DEEA] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#1673B8] transition-all"
+                >
+                  <div className="flex items-center justify-between text-xs font-bold text-[#4A5568]">
+                    <span>Total Users</span>
+                    <Users className="w-4 h-4 text-[#1673B8]" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-[#1A2138] mt-1">
+                    {stats.totalUsers}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#1673B8] mt-0.5">
+                    Registered Specialists
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => {
+                    setUserFilter('premium');
+                    setActiveTab('users');
+                  }}
+                  className="bg-white border border-[#D2DEEA] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#1673B8] transition-all"
+                >
+                  <div className="flex items-center justify-between text-xs font-bold text-[#4A5568]">
+                    <span>Paid Premium</span>
+                    <Crown className="w-4 h-4 text-[#D97706]" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-[#1A2138] mt-1">
+                    {stats.premiumUsers}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#D97706] mt-0.5">
+                    Rs. {liveMonthlyFee.toLocaleString()}/Mo • Rs.{' '}
+                    {liveYearlyFee.toLocaleString()}/Yr ({liveYearlyDiscountPct}% OFF)
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => {
+                    setUserFilter('pending');
+                    setActiveTab('users');
+                  }}
+                  className="bg-white border border-[#D2DEEA] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#1673B8] transition-all"
+                >
+                  <div className="flex items-center justify-between text-xs font-bold text-[#4A5568]">
+                    <span>Pending Slips</span>
+                    <Clock className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-amber-700 mt-1">
+                    {stats.pendingRequests}
+                  </div>
+                  <div className="text-[11px] font-bold text-amber-700 mt-0.5">
+                    Awaiting Approval
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setActiveTab('jobs')}
+                  className="bg-white border border-[#D2DEEA] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#1673B8] transition-all"
+                >
+                  <div className="flex items-center justify-between text-xs font-bold text-[#4A5568]">
+                    <span>Live Jobs</span>
+                    <Briefcase className="w-4 h-4 text-[#1673B8]" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-[#1A2138] mt-1">
+                    {jobs.length}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#1673B8] mt-0.5">
+                    3 Categories
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setActiveTab('scholarships')}
+                  className="bg-white border border-[#D2DEEA] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#1673B8] transition-all"
+                >
+                  <div className="flex items-center justify-between text-xs font-bold text-[#4A5568]">
+                    <span>Scholarships</span>
+                    <GraduationCap className="w-4 h-4 text-[#1673B8]" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-[#1A2138] mt-1">
+                    {scholarships.length}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#1673B8] mt-0.5">
+                    Global Grants
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setActiveTab('trainings')}
+                  className="bg-white border border-[#D2DEEA] rounded-2xl p-4 shadow-xs cursor-pointer hover:border-[#1673B8] transition-all"
+                >
+                  <div className="flex items-center justify-between text-xs font-bold text-[#4A5568]">
+                    <span>Trainings</span>
+                    <Award className="w-4 h-4 text-[#1673B8]" />
+                  </div>
+                  <div className="text-2xl font-extrabold text-[#1A2138] mt-1">
+                    {trainings.length}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#1673B8] mt-0.5">
+                    Custom Courses
+                  </div>
+                </div>
+              </div>
+
+              {/* VISUAL GRAPHS ROW: USERS GRAPH + PLATFORM CONTENT GRAPH */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* GRAPH 1: ALL USERS ANALYTICS & ACTIVITY GRAPH */}
+                <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#D2DEEA] pb-3">
+                    <div>
+                      <h2 className="text-base font-extrabold text-[#1A2138] flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-[#1673B8]" />
+                        <span>All Users &amp; Membership Graph</span>
+                      </h2>
+                      <p className="text-xs text-[#4A5568] font-medium">
+                        Real-time visual breakdown of user plans &amp; profile activity
+                      </p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-[#EBF4FC] text-[#105E9A] text-xs font-extrabold">
+                      {stats.totalUsers} Users
+                    </span>
+                  </div>
+
+                  {/* Visual Column Bar Chart for User Segments */}
+                  <div className="bg-[#F0F6FC] border border-[#D2DEEA] rounded-2xl p-4">
+                    <div className="grid grid-cols-5 gap-2.5 items-end h-36 pt-4 px-1">
+                      {[
+                        {
+                          label: 'Total',
+                          value: stats.totalUsers,
+                          color: 'bg-[#1A2138]',
+                          max: Math.max(1, stats.totalUsers)
+                        },
+                        {
+                          label: 'Premium',
+                          value: stats.premiumUsers,
+                          color: 'bg-[#1673B8]',
+                          max: Math.max(1, stats.totalUsers)
+                        },
+                        {
+                          label: 'Free',
+                          value: stats.freeUsers,
+                          color: 'bg-[#38BDF8]',
+                          max: Math.max(1, stats.totalUsers)
+                        },
+                        {
+                          label: 'Pending',
+                          value: stats.pendingUsers,
+                          color: 'bg-[#F59E0B]',
+                          max: Math.max(1, stats.totalUsers)
+                        },
+                        {
+                          label: 'CV Added',
+                          value: stats.cvUploadedUsers,
+                          color: 'bg-[#105E9A]',
+                          max: Math.max(1, stats.totalUsers)
+                        }
+                      ].map((bar) => {
+                        const heightPct = Math.max(
+                          14,
+                          Math.min(100, Math.round((bar.value / bar.max) * 100))
+                        );
+                        return (
+                          <div
+                            key={bar.label}
+                            className="flex flex-col items-center justify-end h-full gap-1.5"
+                          >
+                            <span className="text-xs font-extrabold text-[#1A2138]">
+                              {bar.value}
+                            </span>
+                            <div className="w-full max-w-[44px] bg-[#D2DEEA] rounded-t-xl h-24 flex items-end overflow-hidden">
+                              <div
+                                style={{ height: `${heightPct}%` }}
+                                className={`w-full ${bar.color} rounded-t-xl transition-all duration-500`}
+                              />
+                            </div>
+                            <span className="text-[11px] font-bold text-[#4A5568] text-center leading-tight">
+                              {bar.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Horizontal Activity Progress Bars */}
+                  <div className="space-y-3 pt-1">
                     {[
                       {
-                        label: 'Total',
-                        value: stats.totalUsers,
-                        color: 'bg-[#13422B]',
-                        max: Math.max(1, stats.totalUsers)
+                        label: `Paid Premium Members (Rs. ${liveMonthlyFee}/Mo • ${liveYearlyDiscountPct}% OFF Yr)`,
+                        count: stats.premiumUsers,
+                        total: Math.max(1, stats.totalUsers),
+                        barClass: 'bg-[#1673B8]'
                       },
                       {
-                        label: 'Premium',
-                        value: stats.premiumUsers,
-                        color: 'bg-[#0E9F6E]',
-                        max: Math.max(1, stats.totalUsers)
+                        label: 'Free Tier Users',
+                        count: stats.freeUsers,
+                        total: Math.max(1, stats.totalUsers),
+                        barClass: 'bg-[#1A2138]'
                       },
                       {
-                        label: 'Free',
-                        value: stats.freeUsers,
-                        color: 'bg-[#34D399]',
-                        max: Math.max(1, stats.totalUsers)
+                        label: 'Completed Specialist Profiles',
+                        count: stats.completedProfiles,
+                        total: Math.max(1, stats.totalUsers),
+                        barClass: 'bg-[#105E9A]'
                       },
                       {
-                        label: 'Pending',
-                        value: stats.pendingUsers,
-                        color: 'bg-[#F59E0B]',
-                        max: Math.max(1, stats.totalUsers)
+                        label: 'Users with Uploaded CV / Resume',
+                        count: stats.cvUploadedUsers,
+                        total: Math.max(1, stats.totalUsers),
+                        barClass: 'bg-[#0284C7]'
                       },
                       {
-                        label: 'CV Added',
-                        value: stats.cvUploadedUsers,
-                        color: 'bg-[#059669]',
-                        max: Math.max(1, stats.totalUsers)
+                        label: 'Available for Hiring ("Hire Me" ON)',
+                        count: stats.hireMeActive,
+                        total: Math.max(1, stats.totalUsers),
+                        barClass: 'bg-[#D97706]'
                       }
-                    ].map((bar) => {
-                      const heightPct = Math.max(
-                        14,
-                        Math.min(100, Math.round((bar.value / bar.max) * 100))
-                      );
+                    ].map((item) => {
+                      const pct =
+                        stats.totalUsers > 0
+                          ? Math.round((item.count / item.total) * 100)
+                          : 0;
                       return (
-                        <div
-                          key={bar.label}
-                          className="flex flex-col items-center justify-end h-full gap-1.5"
-                        >
-                          <span className="text-xs font-extrabold text-[#0F291E]">
-                            {bar.value}
-                          </span>
-                          <div className="w-full max-w-[44px] bg-[#E2F2E9] rounded-t-xl h-24 flex items-end overflow-hidden">
+                        <div key={item.label} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-[#1A2138]">
+                              {item.label}
+                            </span>
+                            <span className="font-extrabold text-[#1673B8]">
+                              {item.count} ({pct}%)
+                            </span>
+                          </div>
+                          <div className="w-full h-2.5 rounded-full bg-[#EBF4FC] overflow-hidden">
                             <div
-                              style={{ height: `${heightPct}%` }}
-                              className={`w-full ${bar.color} rounded-t-xl transition-all duration-500`}
+                              style={{ width: `${Math.max(4, pct)}%` }}
+                              className={`h-full rounded-full ${item.barClass}`}
                             />
                           </div>
-                          <span className="text-[11px] font-bold text-[#4B6356] text-center leading-tight">
-                            {bar.label}
-                          </span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-
-                {/* Horizontal Activity Progress Bars */}
-                <div className="space-y-3 pt-1">
-                  {[
-                    {
-                      label: `Paid Premium Members (Rs. ${liveMonthlyFee}/Mo • ${liveYearlyDiscountPct}% OFF Yr)`,
-                      count: stats.premiumUsers,
-                      total: Math.max(1, stats.totalUsers),
-                      barClass: 'bg-[#0E9F6E]'
-                    },
-                    {
-                      label: 'Free Tier Users',
-                      count: stats.freeUsers,
-                      total: Math.max(1, stats.totalUsers),
-                      barClass: 'bg-[#13422B]'
-                    },
-                    {
-                      label: 'Completed Specialist Profiles',
-                      count: stats.completedProfiles,
-                      total: Math.max(1, stats.totalUsers),
-                      barClass: 'bg-[#059669]'
-                    },
-                    {
-                      label: 'Users with Uploaded CV / Resume',
-                      count: stats.cvUploadedUsers,
-                      total: Math.max(1, stats.totalUsers),
-                      barClass: 'bg-[#10B981]'
-                    },
-                    {
-                      label: 'Available for Hiring ("Hire Me" ON)',
-                      count: stats.hireMeActive,
-                      total: Math.max(1, stats.totalUsers),
-                      barClass: 'bg-[#D97706]'
-                    }
-                  ].map((item) => {
-                    const pct =
-                      stats.totalUsers > 0
-                        ? Math.round((item.count / item.total) * 100)
-                        : 0;
-                    return (
-                      <div key={item.label} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-[#0F291E]">
-                            {item.label}
-                          </span>
-                          <span className="font-extrabold text-[#0E9F6E]">
-                            {item.count} ({pct}%)
-                          </span>
-                        </div>
-                        <div className="w-full h-2.5 rounded-full bg-[#E3F3EA] overflow-hidden">
-                          <div
-                            style={{ width: `${Math.max(4, pct)}%` }}
-                            className={`h-full rounded-full ${item.barClass}`}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
 
               {/* GRAPH 2: JOBS, SCHOLARSHIPS & TRAININGS DISTRIBUTION GRAPH */}
               <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
@@ -2518,11 +2587,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         )}
 
         {/* =====================================================================
-            TAB 5: TRAININGS, CERTIFICATE REQUESTS & LIVE PRICES MANAGER (trainings)
+            TAB 5A: DIRECT CERTIFICATE GENERATOR & APPROVALS (certificates)
            ===================================================================== */}
-        {activeTab === 'trainings' && (
+        {(activeTab === 'certificates' || activeTab === 'trainings') && (
           <div className="space-y-5">
-            {/* ADMIN DIRECT PORTRAIT CERTIFICATE GENERATOR (WITHOUT EXAM / WITHOUT MODULE STUDY — ANY COURSE OR CUSTOM TOPIC) */}
+            {activeTab === 'certificates' && (
+              <>
+                {/* ADMIN DIRECT PORTRAIT CERTIFICATE GENERATOR (WITHOUT EXAM / WITHOUT MODULE STUDY — ANY COURSE OR CUSTOM TOPIC) */}
             <form
               onSubmit={handleAdminDirectGenerateAndIssue}
               className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 sm:p-6 shadow-md space-y-4"
@@ -2974,10 +3045,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
               )}
             </div>
+              </>
+            )}
 
-            {/* ADD NEW TRAINING FORM */}
-            <form
-              onSubmit={handleCreateNewTraining}
+            {activeTab === 'trainings' && (
+              <>
+                {/* ADD NEW TRAINING FORM */}
+                <form
+                  onSubmit={handleCreateNewTraining}
               className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-4"
             >
               <div className="border-b border-[#D2DEEA] pb-3">
@@ -3194,6 +3269,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 })}
               </div>
             </div>
+              </>
+            )}
           </div>
         )}
 

@@ -486,7 +486,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
 
-    pdf.setFillColor(19, 66, 43);
+    pdf.setFillColor(22, 115, 184);
     pdf.rect(0, 0, pageW, 36, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
@@ -506,14 +506,14 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     );
 
     let y = 46;
-    pdf.setTextColor(15, 41, 30);
+    pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(12);
     pdf.text('1. BMI, WEIGHT GOAL & DAILY CALORIE SUMMARY', 14, y);
     y += 7;
 
-    pdf.setFillColor(240, 253, 244);
-    pdf.setDrawColor(187, 247, 208);
+    pdf.setFillColor(240, 246, 252);
+    pdf.setDrawColor(187, 214, 238);
     pdf.roundedRect(14, y, pageW - 28, 36, 3, 3, 'FD');
     pdf.setFontSize(10);
     pdf.text(
@@ -605,15 +605,6 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
               Enter your details below to calculate your BMI &amp; weight target, check Nutrition Recommendations, and chat with the AI Dietitian.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={handleDownloadNutritionPdfReport}
-            className="px-4 py-2.5 rounded-xl bg-white text-[#1A2138] hover:bg-[#F0F6FC] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
-          >
-            <Download className="w-4 h-4 text-[#1673B8]" />
-            <span>Download Full Nutrition Report (PDF)</span>
-          </button>
         </div>
       </div>
 
@@ -652,15 +643,6 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
               </p>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={handleSaveHealthTracker}
-            className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
-          >
-            <Check className="w-4 h-4" />
-            <span>Calculate &amp; Save My Nutrition</span>
-          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
@@ -875,6 +857,16 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Calculate & Save My Nutrition Button Directly Below Water Intake Tracker */}
+        <button
+          type="button"
+          onClick={handleSaveHealthTracker}
+          className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-colors"
+        >
+          <Check className="w-4 h-4 stroke-[2.5]" />
+          <span>Calculate &amp; Save My Nutrition</span>
+        </button>
       </div>
 
       {/* =====================================================================
@@ -1422,6 +1414,29 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
             </button>
           )}
         </div>
+      </div>
+
+      {/* =====================================================================
+          BOTTOM REPORT DOWNLOAD SECTION — DOWNLOAD FULL NUTRITION REPORT (PDF)
+         ===================================================================== */}
+      <div className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div>
+          <h4 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
+            Download Your Personal Nutrition &amp; BMI Report
+          </h4>
+          <p className="text-[11px] sm:text-xs text-[#5A6C84]">
+            Save a complete PDF copy of your BMI, Ideal Weight, Daily Macros, Condition Guide &amp; AI Dietitian Advice.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleDownloadNutritionPdfReport}
+          className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs sm:text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-colors shrink-0"
+        >
+          <Download className="w-4 h-4 text-[#60A5FA]" />
+          <span>Download Full Nutrition Report (PDF)</span>
+        </button>
       </div>
     </div>
   );

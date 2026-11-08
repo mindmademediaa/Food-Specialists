@@ -825,209 +825,54 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       )}
 
       {/* =====================================================================
-          VIEW 0: UNIFIED TOOLS HUB OVERVIEW (ALL 3 TOOLS ON ONE PAGE — NO 5 SETS)
+          VIEW 0: TOOLS HUB — CLEAN ICON + TOOL NAME BUTTONS ONLY
          ===================================================================== */}
       {activeSection === 'hub' && (
-        <div className="space-y-4">
-          {/* TOOL CARD 1: DAILY PERSONAL HEALTH & NUTRITION TRACKER */}
-          <div
-            onClick={() =>
-              handleSelectToolOrAction(
-                'nutrition',
-                'Daily Personal Health & Nutrition Tracker'
-              )
-            }
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
+        <div className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="text-center">
+            <h1 className="text-base sm:text-lg font-extrabold text-[#1A2138] tracking-tight">
+              Specialist Tools
+            </h1>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
+            {/* TOOL 1: HEALTH & NUTRITION TOOL (ICON + NAME ONLY) */}
+            <button
+              type="button"
+              onClick={() =>
                 handleSelectToolOrAction(
                   'nutrition',
                   'Daily Personal Health & Nutrition Tracker'
-                );
+                )
               }
-            }}
-            className="bg-white border-[1.5px] border-[#D2DEEA] hover:border-[#1673B8] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all cursor-pointer space-y-3.5"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center shrink-0">
-                  <Activity className="w-6 h-6 stroke-[2.2]" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#105E9A] text-[10px] font-extrabold uppercase">
-                      Tool 1 • Personal Health &amp; Diet
-                    </span>
-                    {!isUserPaid && (
-                      <span className="px-2 py-0.5 rounded-md bg-amber-100 text-[#92400E] text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Premium Only
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138] mt-1">
-                    Complete Nutrition &amp; BMI Calculator, Health Condition Guide &amp; AI Dietitian Agent
-                  </h2>
-                  <p className="text-xs text-[#5A6C84] leading-relaxed mt-0.5">
-                    1-Page BMI Gauge &amp; Weight Goal Graph, BMR, TDEE, Ideal
-                    Weight, Daily Calorie &amp; Macro Targets, Water Tracker,
-                    Health Condition Food Guide (Recommended vs. Avoid) &amp;
-                    AI Dietitian Chat Agent for resolving any nutrition issue.
-                  </p>
-                </div>
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-5 sm:p-6 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Activity className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2]" />
               </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
-                <div className="text-[10px] font-bold text-[#5A6C84]">
-                  Saved BMI Status
-                </div>
-                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
-                  {metrics.bmi} kg/m²
-                </div>
-                <div
-                  className="text-[10px] font-extrabold truncate"
-                  style={{ color: metrics.bmiColorHex }}
-                >
-                  {metrics.bmiCategory}
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
-                <div className="text-[10px] font-bold text-[#5A6C84]">
-                  Weight &amp; Calories
-                </div>
-                <div className="text-xs font-extrabold text-[#1673B8] mt-0.5">
-                  BMI &amp; Weight Graph
-                </div>
-                <div className="text-[10px] text-[#5A6C84] font-semibold">
-                  Gain / Reduce Guide
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
-                <div className="text-[10px] font-bold text-[#5A6C84]">
-                  Health Conditions
-                </div>
-                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
-                  AI Dietitian Agent
-                </div>
-                <div className="text-[10px] text-[#1673B8] font-bold">
-                  Diabetes, BP, PCOS +
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-1 border-t border-[#E4EDF7]">
-              <span className="text-[11px] font-bold text-[#1A2138]">
-                Easy 1-Page BMI &amp; Weight Tracker + Health Guide + AI Dietitian Chat
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Health &amp; Nutrition Tool
               </span>
-              <span className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1">
-                <span>Open Nutrition Tool</span>
-                <ChevronRight className="w-4 h-4" />
-              </span>
-            </div>
-          </div>
+            </button>
 
-          {/* TOOL CARD 2: FOOD SCIENCE & FOOD SAFETY EXAM PREPARATION (30 DIFFERENT MCQs PER EXAM + SCORE REPORT & PDF DOWNLOAD) */}
-          <div
-            onClick={() =>
-              handleSelectToolOrAction(
-                'exam',
-                'Food Science Exam Preparation (30 MCQs)'
-              )
-            }
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
+            {/* TOOL 2: EXAM PREPARATION (ICON + NAME ONLY) */}
+            <button
+              type="button"
+              onClick={() =>
                 handleSelectToolOrAction(
                   'exam',
                   'Food Science Exam Preparation (30 MCQs)'
-                );
+                )
               }
-            }}
-            className="bg-white border-[1.5px] border-[#D2DEEA] hover:border-[#1673B8] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all cursor-pointer space-y-3.5"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center shrink-0">
-                  <Award className="w-6 h-6 stroke-[2.2]" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#105E9A] text-[10px] font-extrabold uppercase">
-                      Tool 2 • 30 MCQs / Exam • Score Report &amp; PDF
-                    </span>
-                    {!isUserPaid && (
-                      <span className="px-2 py-0.5 rounded-md bg-amber-100 text-[#92400E] text-[10px] font-extrabold inline-flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Free: 1 Exam / Day
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138] mt-1">
-                    Food Science &amp; Food Safety Exam Preparation (30 MCQs per
-                    Exam)
-                  </h2>
-                  <p className="text-xs text-[#5A6C84] leading-relaxed mt-0.5">
-                    Click to start your <strong>30-MCQs Exam</strong> immediately.
-                    Upon completion, view your complete{' '}
-                    <strong>Score Report (Correct vs. Wrong MCQs)</strong>,
-                    download your <strong>PDF Report</strong>, and click{' '}
-                    <strong>Next Exam / Give Exam Again</strong> to take another
-                    exam with <strong>30 brand-new, different MCQs</strong> every
-                    time!
-                  </p>
-                </div>
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-5 sm:p-6 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Award className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2]" />
               </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
-                <div className="text-[10px] font-bold text-[#5A6C84]">
-                  Each Exam
-                </div>
-                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
-                  30 MCQs
-                </div>
-                <div className="text-[10px] text-[#1673B8] font-bold">
-                  30 Mins Timed
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
-                <div className="text-[10px] font-bold text-[#5A6C84]">
-                  Next Exam
-                </div>
-                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
-                  30 New MCQs
-                </div>
-                <div className="text-[10px] text-[#5A6C84] font-semibold">
-                  Different Every Time
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
-                <div className="text-[10px] font-bold text-[#5A6C84]">
-                  Score Report
-                </div>
-                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
-                  PDF Download
-                </div>
-                <div className="text-[10px] text-[#1673B8] font-bold">
-                  Correct &amp; Wrong Key
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-1 border-t border-[#E4EDF7]">
-              <span className="text-[11px] font-bold text-[#1A2138]">
-                30 Different MCQs Every Exam + Score Report + PDF Download
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Exam Preparation
               </span>
-              <span className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1">
-                <span>Open Exam Tool</span>
-                <ChevronRight className="w-4 h-4" />
-              </span>
-            </div>
+            </button>
           </div>
         </div>
       )}

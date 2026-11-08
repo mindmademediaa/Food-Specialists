@@ -950,11 +950,13 @@ export default function App() {
             ...(d.data() as HubTraining),
             id: d.id
           }))
-          // Exclude archived Highfield & Lead Auditor trainings from earlier sessions
+          // Exclude pre-populated seed trainings so only custom Admin-created trainings appear
           .filter(
             (t) =>
               !t.id.startsWith('tr-hf-') &&
               !t.id.startsWith('tr-la-') &&
+              !t.id.startsWith('tr-intl-') &&
+              !t.id.startsWith('course-') &&
               t.category !== 'Highfield' &&
               t.category !== 'Lead Auditor'
           );
@@ -3029,6 +3031,7 @@ export default function App() {
         {/* TOP HEADER — CONSTANT */}
         <Header
           showBack={route.name !== 'home'}
+          hideSearchBar={route.name === 'communities'}
           onBack={() => {
             if (route.name === 'job-detail') setRoute({ name: 'jobs' });
             else if (route.name === 'scholarship-detail')
@@ -4314,7 +4317,86 @@ export default function App() {
           {/* ==================== 5. COMMUNITY — PREMIUM PROFILES LIST (/communities) ==================== */}
           {route.name === 'communities' && (
             <div className="space-y-3.5 px-0.5">
-              {/* Top Active Bank Account Card in Communities (Pre-selected & Clickable) */}
+              {/* Top Single Community Search Bar & Location Filter */}
+              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-[15px] sm:text-[17px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
+                      Premium Community Directory
+                    </h1>
+                    <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold inline-flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-300" />
+                      <span>{paidCommunityMembers.length} Verified</span>
+                    </span>
+                  </div>
+
+                  {(isCurrentUserPaid || isUserAdmin) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRoute({
+                          name: 'community-member',
+                          uid: myProfile.uid
+                        })
+                      }
+                      className="px-2.5 py-1 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1673B8] text-[10.5px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>My Public View</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Single Community Search Bar + Country/Location Filter */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="relative sm:col-span-2">
+                    <Search className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={memberSearchQuery}
+                      onChange={(e) => setMemberSearchQuery(e.target.value)}
+                      placeholder="Search Community by Name, Title, or Company..."
+                      className="w-full pl-9 pr-8 py-2 text-xs bg-[#F8FAFC] border border-[#D2DEEA] rounded-xl text-[#1A2138] placeholder:text-slate-400 focus:outline-none focus:border-[#1673B8] focus:bg-white transition-colors"
+                    />
+                    {memberSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setMemberSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <select
+                      value={commCountryFilter}
+                      onChange={(e) => setCommCountryFilter(e.target.value)}
+                      className="w-full appearance-none pl-3 pr-7 py-2 rounded-xl bg-[#F8FAFC] border border-[#D2DEEA] text-[#1A2138] text-xs font-bold focus:outline-none cursor-pointer"
+                    >
+                      <option value="All">All Locations</option>
+                      {availableCommunityLocations.map((loc) => (
+                        <option key={loc} value={loc}>
+                          {loc}
+                        </option>
+                      ))}
+                      {!availableCommunityLocations.includes('Pakistan') && (
+                        <option value="Pakistan">Pakistan</option>
+                      )}
+                      {!availableCommunityLocations.includes('UAE') && (
+                        <option value="UAE">UAE</option>
+                      )}
+                      {!availableCommunityLocations.includes('Saudi Arabia') && (
+                        <option value="Saudi Arabia">Saudi Arabia</option>
+                      )}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#1673B8] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Buy Premium Membership / Subscription Button (Opens Full Payment Form Modal) */}
               <button
                 type="button"
                 onClick={() => {
@@ -4322,34 +4404,14 @@ export default function App() {
                   setPayMethod('Bank Transfer');
                   setShowPremiumUpgradeModal(true);
                 }}
-                className="w-full text-left rounded-2xl border-2 border-[#1673B8] bg-[#F0F6FC] hover:bg-[#E3EFFB] p-3.5 shadow-2xs transition-colors cursor-pointer flex items-center justify-between gap-3"
+                className="w-full py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs sm:text-[13px] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
-                    <CreditCard className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8]">
-                        Selected Payment: Bank Account
-                      </span>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
-                    </div>
-                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
-                      {liveGateway.bankName} • {liveGateway.bankTitle}
-                    </p>
-                    <p className="text-[10.5px] text-slate-600 truncate">
-                      {liveGateway.bankAccountOrIban} ({liveGateway.bankWhatsapp})
-                    </p>
-                  </div>
-                </div>
-                <span className="px-2.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-[10.5px] font-extrabold whitespace-nowrap shrink-0">
-                  Bank Account →
-                </span>
+                <Crown className="w-4 h-4 text-amber-300 shrink-0" />
+                <span>Buy Premium Membership / Subscription</span>
               </button>
 
               {!isCurrentUserPaid && !isUserAdmin ? (
-                /* FREE USER VIEW IN COMMUNITIES: Show Purchase / Buy Premium Membership Button + Application Status */
+                /* FREE USER VIEW IN COMMUNITIES: Show Buy Premium Membership / Subscription + Application Status */
                 <div className="bg-white border border-[#D2DEEA] rounded-2xl p-5 shadow-2xs text-center space-y-3.5">
                   <div className="w-13 h-13 rounded-2xl bg-[#F0F6FC] border border-[#1673B8]/30 text-[#1673B8] flex items-center justify-center mx-auto">
                     <Crown className="w-6 h-6 text-[#1673B8]" />
@@ -4360,9 +4422,9 @@ export default function App() {
                       <Sparkles className="w-3 h-3 text-[#1673B8]" />
                       <span>Premium Community Directory</span>
                     </span>
-                    <h1 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] leading-snug break-words">
+                    <h2 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] leading-snug break-words">
                       Connect with Verified Food Specialists
-                    </h1>
+                    </h2>
                     <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
                       Upgrade to Premium Membership (Only{' '}
                       <strong>
@@ -4373,7 +4435,7 @@ export default function App() {
                         Rs. {liveGateway.yearlyFeeRs.toLocaleString()} / Full Year
                         with 25% Discount
                       </strong>
-                      ) via Bank Account, JazzCash, or EasyPaisa to showcase your profile in the Community, view other paid members&apos; details, connect on LinkedIn, and download CVs.
+                      ) to showcase your profile in the Community, view other paid members&apos; details, connect on LinkedIn, and download CVs.
                     </p>
                   </div>
 
@@ -4388,7 +4450,7 @@ export default function App() {
                       className="w-full py-3 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs sm:text-[13px] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
                     >
                       <Crown className="w-4 h-4 text-amber-300 shrink-0" />
-                      <span>Purchase Premium via Bank Account</span>
+                      <span>Buy Premium Membership / Subscription</span>
                     </button>
 
                     {(myPaymentApplications.length > 0 ||
@@ -4416,90 +4478,6 @@ export default function App() {
               ) : (
                 /* PAID USER VIEW IN COMMUNITIES: Show Other Paid Members' Profiles */
                 <>
-                  {/* Top Community Header & Search/Location Filter Card */}
-                  <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3">
-                    <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h1 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
-                            Premium Community
-                          </h1>
-                          <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold inline-flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-amber-300" />
-                            <span>Premium</span>
-                          </span>
-                        </div>
-                        <p className="text-[11px] sm:text-xs text-slate-600 font-medium mt-0.5 leading-snug">
-                          {paidCommunityMembers.length} Verified Premium Specialists • Connect, View LinkedIn &amp; Download CVs
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setRoute({
-                              name: 'community-member',
-                              uid: myProfile.uid
-                            })
-                          }
-                          className="px-3 py-1.5 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1673B8] text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>My Public View</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Search by Name / Title / Company + Filter by Location */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <div className="relative sm:col-span-2">
-                        <Search className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={memberSearchQuery}
-                          onChange={(e) => setMemberSearchQuery(e.target.value)}
-                          placeholder="Search by Name, Title, or Company..."
-                          className="w-full pl-9 pr-8 py-2 text-xs bg-[#F8FAFC] border border-[#D2DEEA] rounded-xl text-[#1A2138] placeholder:text-slate-400 focus:outline-none focus:border-[#1673B8] focus:bg-white transition-colors"
-                        />
-                        {memberSearchQuery && (
-                          <button
-                            type="button"
-                            onClick={() => setMemberSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="relative">
-                        <select
-                          value={commCountryFilter}
-                          onChange={(e) => setCommCountryFilter(e.target.value)}
-                          className="w-full appearance-none pl-3 pr-7 py-2 rounded-xl bg-[#F8FAFC] border border-[#D2DEEA] text-[#1A2138] text-xs font-bold focus:outline-none cursor-pointer"
-                        >
-                          <option value="All">All Locations</option>
-                          {availableCommunityLocations.map((loc) => (
-                            <option key={loc} value={loc}>
-                              {loc}
-                            </option>
-                          ))}
-                          {!availableCommunityLocations.includes('Pakistan') && (
-                            <option value="Pakistan">Pakistan</option>
-                          )}
-                          {!availableCommunityLocations.includes('UAE') && (
-                            <option value="UAE">UAE</option>
-                          )}
-                          {!availableCommunityLocations.includes('Saudi Arabia') && (
-                            <option value="Saudi Arabia">Saudi Arabia</option>
-                          )}
-                        </select>
-                        <ChevronDown className="w-3.5 h-3.5 text-[#1673B8] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-
                   {/* PREMIUM PROFILES LIST FOR PAID USERS */}
                   {filteredMembers.length === 0 ? (
                     <div className="bg-white border border-[#D2DEEA] rounded-2xl p-6 text-center space-y-2 shadow-2xs">
@@ -4634,7 +4612,7 @@ export default function App() {
               uploadStatusMsg={uploadStatusMsg}
               profileSaveMsg={profileSaveMsg}
               isUserAdmin={isUserAdmin}
-              onOpenAdmin={() => setRoute({ name: 'admin' })}
+              onOpenAdmin={() => setAdminPreviewUserMode(false)}
               onOpenPremiumModal={() => {
                 setPaySubmitBanner(null);
                 setShowPremiumUpgradeModal(true);

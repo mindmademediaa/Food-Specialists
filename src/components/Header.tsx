@@ -31,6 +31,7 @@ interface HeaderProps {
   userAvatarUrl?: string;
   notificationCount?: number;
   pendingAdminCount?: number;
+  hideSearchBar?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -43,7 +44,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLegal,
   onAdminClick,
   isAdmin = false,
-  pendingAdminCount = 0
+  pendingAdminCount = 0,
+  hideSearchBar = false
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -240,19 +242,21 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Compact Responsive Search Bar Row */}
-      <div className="px-3.5 sm:px-4 py-2 bg-[#F8FAFC]">
-        <button
-          type="button"
-          onClick={onSearchClick}
-          className="w-full h-9 sm:h-10 px-3.5 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] shadow-2xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
-        >
-          <Search className="w-4 h-4 text-[#1673B8] stroke-[2.2] shrink-0" />
-          <span className="text-[12.5px] sm:text-[13px] font-medium text-slate-500 truncate">
-            Search jobs, scholarships, trainings &amp; specialists...
-          </span>
-        </button>
-      </div>
+      {/* Compact Responsive Search Bar Row (Hidden when hideSearchBar is true, e.g. in Communities) */}
+      {!hideSearchBar && (
+        <div className="px-3.5 sm:px-4 py-2 bg-[#F8FAFC]">
+          <button
+            type="button"
+            onClick={onSearchClick}
+            className="w-full h-9 sm:h-10 px-3.5 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] shadow-2xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+          >
+            <Search className="w-4 h-4 text-[#1673B8] stroke-[2.2] shrink-0" />
+            <span className="text-[12.5px] sm:text-[13px] font-medium text-slate-500 truncate">
+              Search jobs, scholarships, trainings &amp; specialists...
+            </span>
+          </button>
+        </div>
+      )}
     </header>
   );
 };
