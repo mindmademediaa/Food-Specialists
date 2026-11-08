@@ -39,6 +39,12 @@ import {
   resolveOfficialVerificationBaseUrl
 } from '../utils/certificatePdfGenerator';
 import { AlisonCourseModuleViewer } from './AlisonCourseModuleViewer';
+import {
+  HaccpExecutiveModuleSummary,
+  HaccpPrpAuditChecklistTool,
+  HaccpRiskAndCcpSimulator
+} from './HaccpLevel4InteractiveTools';
+import { HACCP_L4_45_EXAM_QUESTIONS } from '../data/haccpLevel4CourseData';
 
 interface TrainingsAcademyViewProps {
   trainings: HubTraining[];
@@ -90,11 +96,22 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'catalog' | 'my-certificates' | 'verify-portal'>('catalog');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeModuleIdx, setActiveModuleIdx] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<'overview' | 'study' | 'exam' | 'exam-result' | 'certificate-preview'>('overview');
+  const [viewMode, setViewMode] = useState<
+    | 'overview'
+    | 'study'
+    | 'simulator'
+    | 'checklist'
+    | 'exam'
+    | 'exam-result'
+    | 'certificate-preview'
+  >('overview');
 
-  // Exam state (40 MCQs)
+  // Exam state (45 MCQs for HACCP Level 4 / 40 MCQs for other courses)
   const [examQuestions, setExamQuestions] = useState<CourseExamMCQ[]>([]);
   const [examAnswers, setExamAnswers] = useState<Record<number, number>>({});
+  const [examModFilter, setExamModFilter] = useState<
+    'ALL' | 'M1' | 'M2' | 'M3' | 'M4' | 'M5' | 'M6'
+  >('ALL');
   const [lastExamResult, setLastExamResult] = useState<{
     correctCount: number;
     totalQuestions: number;
@@ -159,7 +176,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         title: customTr.title,
         levelBadge: customTr.subType || baseMatch?.levelBadge || 'International Certification',
         description: customTr.description || baseMatch?.description || '',
-        duration: customTr.duration || baseMatch?.duration || '12 Guided Hours · 5 Modules'
+        duration:
+          customTr.duration ||
+          baseMatch?.duration ||
+          `18 Guided Hours · ${fallbackTemplate.modules.length} Modules`
       });
     }
 
@@ -348,10 +368,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   };
 
   const handleStart40McqExam = (course: InternationalTrainingCourse) => {
-    const questions40 = get40CourseExamQuestions(course.id);
+    const questions = get40CourseExamQuestions(course.id);
     setSelectedCourseId(course.id);
-    setExamQuestions(questions40);
+    setExamQuestions(questions);
     setExamAnswers({});
+    setExamModFilter('ALL');
     setLastExamResult(null);
     setViewMode('exam');
   };
@@ -1595,7 +1616,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-[#1673B8]" />
                           <span>
-                            {course.duration} · 40-MCQ Final Exam (60% Pass / 75% Distinction) · Online Verifiable Certificate
+                            {course.duration} · {course.totalExamQuestions}-MCQ Final Exam · Online Verifiable Certificate
                           </span>
                         </div>
                       </div>
@@ -1618,18 +1639,40 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() =>
                             handleOpenCourse(course, hasStarted ? prog.lastModuleIndex : 0)
                           }
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs transition cursor-pointer"
+                          className="col-span-2 sm:flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs transition cursor-pointer"
                         >
                           <PlayCircle className="w-4 h-4" />
                           {hasStarted
-                            ? `Continue (Module ${resumeModNum})`
-                            : 'Start Course Materials'}
+                            ? `1. Continue Modules (Mod ${resumeModNum}/${totalMods})`
+                            : `1. Start Modules (1–${totalMods})`}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCourseId(course.id);
+                            setViewMode('simulator');
+                          }}
+                          className="px-3 py-2.5 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] font-bold text-xs transition cursor-pointer"
+                        >
+                          2. Risk &amp; CCP Simulator
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCourseId(course.id);
+                            setViewMode('checklist');
+                          }}
+                          className="px-3 py-2.5 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] font-bold text-xs transition cursor-pointer"
+                        >
+                          3. PRP Audit Tool
                         </button>
 
                         <button
@@ -1637,7 +1680,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           onClick={() => handleStart40McqExam(course)}
                           className="px-3.5 py-2.5 rounded-xl border border-[#1673B8] text-[#1673B8] hover:bg-[#F0F6FC] font-bold text-xs transition cursor-pointer"
                         >
-                          40-MCQ Exam
+                          4. Final Exam ({course.totalExamQuestions} MCQs)
                         </button>
 
                         {prog?.examPassed && (
@@ -1662,66 +1705,96 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         </div>
       )}
 
-      {/* ==================== SELECTED COURSE: STUDY MODULES / 40-MCQ EXAM / CERTIFICATE PREVIEW ==================== */}
+      {/* ==================== SELECTED COURSE: MODULES / SIMULATOR / PRP CHECKLIST / EXAM / CERTIFICATE ==================== */}
       {activeSubTab === 'catalog' && selectedCourse && selectedProgress && (
         <div className="space-y-5">
-          {/* Course Top Bar */}
-          <div className="rounded-2xl border border-[#D2DEEA] bg-white p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCourseId(null);
-                  setViewMode('overview');
-                }}
-                className="text-xs font-extrabold text-[#1673B8] hover:underline inline-flex items-center gap-1 cursor-pointer"
-              >
-                ← Back to All 14 Courses
-              </button>
-              <h2 className="text-lg sm:text-xl font-black text-[#1A2138]">
-                {selectedCourse.title}{' '}
-                <span className="text-xs font-bold text-slate-500">({selectedCourse.code})</span>
-              </h2>
-              <p className="text-xs text-slate-500">{selectedCourse.accreditationStandard}</p>
-            </div>
+          {/* Course Top Bar with 4 Interactive Tabs */}
+          <div className="rounded-2xl border border-[#D2DEEA] bg-white p-4 sm:p-5 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCourseId(null);
+                    setViewMode('overview');
+                  }}
+                  className="text-xs font-extrabold text-[#1673B8] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                >
+                  ← Back to Training Courses
+                </button>
+                <h2 className="text-lg sm:text-xl font-black text-[#1A2138]">
+                  {selectedCourse.title}{' '}
+                  <span className="text-xs font-bold text-slate-500">
+                    ({selectedCourse.code})
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {selectedCourse.accreditationStandard}
+                </p>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setViewMode('study')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer ${
-                  viewMode === 'study'
-                    ? 'bg-[#1673B8] text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Study Modules ({selectedProgress.completedModuleIds.length}/5)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleStart40McqExam(selectedCourse)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer ${
-                  viewMode === 'exam' || viewMode === 'exam-result'
-                    ? 'bg-[#1673B8] text-white'
-                    : 'bg-[#F0F6FC] text-[#1673B8] border border-[#D2DEEA] hover:bg-[#EBF4FC]'
-                }`}
-              >
-                Take 40-MCQ Final Exam
-              </button>
               {selectedProgress.examPassed && (
                 <button
                   type="button"
                   onClick={() => setViewMode('certificate-preview')}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-extrabold cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 ${
                     viewMode === 'certificate-preview'
                       ? 'bg-amber-500 text-slate-950'
                       : 'bg-amber-100 text-amber-900 border border-amber-300'
                   }`}
                 >
-                  View Certificate Pattern
+                  View Certificate of Achievement
                 </button>
               )}
             </div>
+
+            {/* 4 Navigation Tabs from Uploaded Training Portal */}
+            <nav className="flex flex-wrap gap-1.5 bg-[#F0F6FC] p-1.5 rounded-xl border border-[#D2DEEA]">
+              <button
+                type="button"
+                onClick={() => setViewMode('study')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                  viewMode === 'study'
+                    ? 'bg-[#1A2138] text-white shadow-2xs'
+                    : 'text-[#1A2138] hover:bg-[#EBF4FC]'
+                }`}
+              >
+                1. Course Modules (1–{selectedCourse.modules.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('simulator')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                  viewMode === 'simulator'
+                    ? 'bg-[#1A2138] text-white shadow-2xs'
+                    : 'text-[#1A2138] hover:bg-[#EBF4FC]'
+                }`}
+              >
+                2. Risk &amp; CCP Simulator
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('checklist')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                  viewMode === 'checklist'
+                    ? 'bg-[#1A2138] text-white shadow-2xs'
+                    : 'text-[#1A2138] hover:bg-[#EBF4FC]'
+                }`}
+              >
+                3. PRP Audit Tool
+              </button>
+              <button
+                type="button"
+                onClick={() => handleStart40McqExam(selectedCourse)}
+                className={`px-3.5 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+                  viewMode === 'exam' || viewMode === 'exam-result'
+                    ? 'bg-[#1673B8] text-white shadow-2xs'
+                    : 'text-[#1673B8] hover:bg-[#EBF4FC]'
+                }`}
+              >
+                4. Final Exam ({selectedCourse.totalExamQuestions} MCQs)
+              </button>
+            </nav>
           </div>
 
           {/* MODE A: MODULE STUDY VIEW WITH RESUME TRACKING */}
@@ -1731,7 +1804,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               <div className="lg:col-span-4 rounded-2xl border border-[#D2DEEA] bg-white p-4 shadow-sm space-y-2.5 h-fit">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-                    Course Curriculum (5 Modules)
+                    Course Curriculum ({selectedCourse.modules.length} Modules)
                   </span>
                   <span className="text-xs font-bold text-[#1673B8]">
                     {Math.round(
@@ -1769,10 +1842,15 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-extrabold text-[#1A2138] leading-snug">
-                            Module {mod.moduleNumber}: {mod.title}
+                            {mod.title}
                           </p>
                           <p className="text-[10px] text-slate-500 mt-0.5">
-                            {mod.estimatedMinutes} mins · {isCompleted ? 'Completed' : isCurrent ? 'Reading Now (Saved Point)' : 'Pending'}
+                            {mod.estimatedMinutes} mins ·{' '}
+                            {isCompleted
+                              ? 'Completed'
+                              : isCurrent
+                              ? 'Reading Now (Saved Point)'
+                              : 'Pending'}
                           </p>
                         </div>
                       </button>
@@ -1780,20 +1858,27 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   })}
                 </div>
 
-                <div className="pt-3 border-t border-slate-100">
+                <div className="pt-3 border-t border-slate-100 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('simulator')}
+                    className="w-full py-2 px-3 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] font-extrabold text-xs transition cursor-pointer"
+                  >
+                    Open 5×5 Risk &amp; CCP Simulator →
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleStart40McqExam(selectedCourse)}
                     className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs shadow-sm transition cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Award className="w-4 h-4" />
-                    Proceed to 40-MCQ Final Exam
+                    Proceed to {selectedCourse.totalExamQuestions}-MCQ Final Exam
                   </button>
                 </div>
               </div>
 
-              {/* Right Active Module Study Content (Alison.com Comprehensive Beginner-to-Expert Format) */}
-              <div className="lg:col-span-8">
+              {/* Right Active Module Study Content */}
+              <div className="lg:col-span-8 space-y-4">
                 {(() => {
                   const mod =
                     selectedCourse.modules[activeModuleIdx] ||
@@ -1801,60 +1886,125 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   const isModCompleted =
                     selectedProgress.completedModuleIds.includes(mod.id);
                   return (
-                    <AlisonCourseModuleViewer
-                      course={selectedCourse}
-                      module={mod}
-                      moduleIndex={activeModuleIdx}
-                      totalModules={selectedCourse.modules.length}
-                      isCompleted={isModCompleted}
-                      onSelectprev={() =>
-                        handleSelectModule(Math.max(0, activeModuleIdx - 1))
-                      }
-                      onCompleteAndNext={handleMarkModuleCompleteAndNext}
-                      onCompleteAndStartExam={() => {
-                        handleMarkModuleCompleteAndNext();
-                        handleStart40McqExam(selectedCourse);
-                      }}
-                    />
+                    <>
+                      {selectedCourse.id === 'tr-haccp-level-4-managerial' && (
+                        <HaccpExecutiveModuleSummary
+                          moduleNumber={mod.moduleNumber}
+                        />
+                      )}
+                      <AlisonCourseModuleViewer
+                        course={selectedCourse}
+                        module={mod}
+                        moduleIndex={activeModuleIdx}
+                        totalModules={selectedCourse.modules.length}
+                        isCompleted={isModCompleted}
+                        onSelectprev={() =>
+                          handleSelectModule(Math.max(0, activeModuleIdx - 1))
+                        }
+                        onCompleteAndNext={handleMarkModuleCompleteAndNext}
+                        onCompleteAndStartExam={() => {
+                          handleMarkModuleCompleteAndNext();
+                          handleStart40McqExam(selectedCourse);
+                        }}
+                      />
+                    </>
                   );
                 })()}
               </div>
             </div>
           )}
 
-          {/* MODE B: 40-MCQ FINAL EXAM */}
+          {/* MODE A2: INTERACTIVE 5x5 RISK MATRIX & CODEX CCP SIMULATOR */}
+          {viewMode === 'simulator' && <HaccpRiskAndCcpSimulator />}
+
+          {/* MODE A3: INTERACTIVE DAILY MANAGERIAL PRP & GMP AUDIT CHECKLIST */}
+          {viewMode === 'checklist' && <HaccpPrpAuditChecklistTool />}
+
+          {/* MODE B: FINAL EXAM (45 SCENARIO-BASED MCQs FOR HACCP L4) */}
           {viewMode === 'exam' && (
             <div className="rounded-2xl border border-[#D2DEEA] bg-white p-5 sm:p-6 shadow-sm space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
                 <div>
                   <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1673B8]">
-                    Final Certification Examination · 40 Multiple-Choice Questions
+                    {examQuestions.length} Scenario-Based Questions · Certification Exam
                   </span>
                   <h3 className="text-lg font-black text-[#1A2138]">
-                    {selectedCourse.title} — 40-MCQ Final Exam
+                    {selectedCourse.title} — Final Exam
                   </h3>
                   <p className="text-xs text-slate-600">
-                    Minimum <strong>60% (24/40)</strong> required to Pass & qualify for Certificate ·{' '}
-                    <strong>75% (30/40)</strong> earns a <strong>Distinction Certificate</strong>.
+                    Answer all {examQuestions.length} scenario-based questions across Modules 1–{selectedCourse.modules.length} and click <strong>Submit &amp; Grade Exam</strong>.
                   </p>
                 </div>
-                <div className="px-3.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1673B8] shrink-0">
-                  Answered: {Object.keys(examAnswers).length} / {examQuestions.length}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="px-3.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1673B8]">
+                    Answered: {Object.keys(examAnswers).length} / {examQuestions.length}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setExamAnswers({})}
+                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+                  >
+                    Reset
+                  </button>
                 </div>
               </div>
 
+              {/* Filter by Module Bar for HACCP Level 4 (45 Questions) */}
+              {selectedCourse.id === 'tr-haccp-level-4-managerial' && (
+                <div className="flex flex-wrap gap-1.5 text-xs">
+                  {(
+                    [
+                      { id: 'ALL', label: 'All 45 Questions' },
+                      { id: 'M1', label: 'Mod 1: Law & Culture (1-7)' },
+                      { id: 'M2', label: 'Mod 2: PRPs & SSOPs (8-15)' },
+                      { id: 'M3', label: 'Mod 3: Steps 1-5 (16-22)' },
+                      { id: 'M4', label: 'Mod 4: Principles 1-7 (23-35)' },
+                      { id: 'M5', label: 'Mod 5: Docs & Traceability (36-40)' },
+                      { id: 'M6', label: 'Mod 6: ISO 19011 Auditing (41-45)' }
+                    ] as const
+                  ).map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setExamModFilter(f.id)}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                        examModFilter === f.id
+                          ? 'bg-[#1A2138] text-white'
+                          : 'bg-[#F0F6FC] hover:bg-[#EBF4FC] text-[#1A2138] border border-[#D2DEEA]'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="space-y-4">
                 {examQuestions.map((q, qIdx) => {
+                  const modTag =
+                    HACCP_L4_45_EXAM_QUESTIONS.find((hq) => hq.id === q.id)
+                      ?.mod || null;
+                  if (
+                    selectedCourse.id === 'tr-haccp-level-4-managerial' &&
+                    examModFilter !== 'ALL' &&
+                    modTag &&
+                    modTag !== examModFilter
+                  ) {
+                    return null;
+                  }
                   const chosen = examAnswers[qIdx];
                   return (
                     <div
                       key={q.id}
                       className="rounded-xl border border-slate-200 p-4 space-y-3 bg-slate-50/40"
                     >
-                      <p className="text-xs sm:text-sm font-bold text-[#1A2138] leading-relaxed">
-                        <span className="text-[#1673B8] font-black mr-1.5">
-                          Q{q.questionNumber}.
+                      <div className="flex justify-between items-center text-[11px] text-slate-500">
+                        <span className="font-extrabold text-[#1673B8]">
+                          Question {q.questionNumber} of {examQuestions.length}
+                          {modTag ? ` (${modTag})` : ''}
                         </span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-bold text-[#1A2138] leading-relaxed">
                         {q.question}
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1872,7 +2022,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                               }
                               className={`text-left p-3 rounded-xl border text-xs font-medium transition cursor-pointer flex items-start gap-2 ${
                                 isSelected
-                                  ? 'border-[#1673B8] bg-[#F0F6FC] text-[#1A2138] font-bold'
+                                  ? 'border-[#1673B8] bg-[#F0F6FC] text-[#1A2138] font-bold ring-2 ring-[#1673B8]/20'
                                   : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                               }`}
                             >
@@ -1905,13 +2055,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   onClick={handleSubmit40McqExam}
                   className="px-6 py-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs shadow-md cursor-pointer"
                 >
-                  Submit 40-MCQ Final Exam & View Result
+                  Submit &amp; Grade Exam ({examQuestions.length} MCQs)
                 </button>
               </div>
             </div>
           )}
 
-          {/* MODE C: EXAM RESULT & CERTIFICATE PATTERN */}
+          {/* MODE C: EXAM RESULT, CERTIFICATE PATTERN & DETAILED ANSWER EXPLANATIONS */}
           {viewMode === 'exam-result' && lastExamResult && (
             <div className="space-y-5">
               <div
@@ -1946,8 +2096,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       {lastExamResult.distinction
                         ? 'Mubarak ho! Apnay 75% say ziada marks hasil kar k Distinction Certificate qualify kar liya hy.'
                         : lastExamResult.passed
-                        ? 'Mubarak ho! Apnay 60%+ marks hasil kar k International Certification qualify kar liya hy.'
-                        : 'Certificate hasil karnay k liye kam az kam 60% (24 / 40) marks lazmi hain. Course modules review kar k dobara exam dain.'}
+                        ? 'Mubarak ho! Apnay International Certification qualify kar liya hy.'
+                        : 'Certificate hasil karnay k liye kam az kam 60% marks lazmi hain. Niche diye gaye explanations review kar k dobara exam dain.'}
                     </p>
                   </div>
 
@@ -1957,13 +2107,62 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs cursor-pointer"
                   >
                     <RefreshCw className="w-4 h-4" />
-                    Retake 40-MCQ Exam
+                    Retake Exam
                   </button>
                 </div>
               </div>
 
               {lastExamResult.passed &&
                 renderCertificatePatternCard(selectedCourse, selectedProgress)}
+
+              {/* Graded Question-by-Question Review & Technical Explanations */}
+              <div className="rounded-2xl border border-[#D2DEEA] bg-white p-5 shadow-xs space-y-4">
+                <h4 className="text-sm sm:text-base font-black text-[#1A2138] border-b border-[#D2DEEA] pb-2.5">
+                  Graded Exam Review &amp; Detailed Technical Explanations (1–{examQuestions.length})
+                </h4>
+                <div className="space-y-3">
+                  {examQuestions.map((q, qIdx) => {
+                    const selected = examAnswers[qIdx];
+                    const isCorrect = selected === q.correctIndex;
+                    return (
+                      <div
+                        key={q.id}
+                        className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2 text-xs"
+                      >
+                        <p className="font-bold text-[#1A2138]">
+                          Q{q.questionNumber}. {q.question}
+                        </p>
+                        <p className="text-slate-600">
+                          Your Answer:{' '}
+                          <strong
+                            className={
+                              isCorrect ? 'text-[#1673B8]' : 'text-rose-700'
+                            }
+                          >
+                            {selected !== undefined
+                              ? `${String.fromCharCode(65 + selected)}. ${q.options[selected]}`
+                              : 'Not Answered'}
+                          </strong>
+                        </p>
+                        <div
+                          className={`p-3 rounded-lg border ${
+                            isCorrect
+                              ? 'bg-[#F0F6FC] border-[#1673B8]/40 text-[#1A2138]'
+                              : 'bg-rose-50 border-rose-300 text-rose-950'
+                          }`}
+                        >
+                          <strong>
+                            {isCorrect
+                              ? '✓ Correct! '
+                              : `✗ Incorrect (Correct Answer: Option ${String.fromCharCode(65 + q.correctIndex)} — ${q.options[q.correctIndex]}): `}
+                          </strong>
+                          {q.explanation}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 

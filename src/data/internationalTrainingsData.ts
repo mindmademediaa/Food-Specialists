@@ -1,4 +1,8 @@
 import { HubTraining } from '../types/hub';
+import {
+  HACCP_LEVEL_4_MANAGERIAL_COURSE,
+  HACCP_L4_45_EXAM_QUESTIONS
+} from './haccpLevel4CourseData';
 
 export interface CourseStudyModule {
   id: string;
@@ -2111,72 +2115,79 @@ const MODULE_STAGE_PREFIXES = [
   'Module 5 (Corrective Actions, Validation, System Auditing & Regulatory Law)'
 ];
 
-export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = COMPACT_COURSES.map((c) => ({
-  id: c.id,
-  code: c.code,
-  title: c.title,
-  levelBadge: c.levelBadge,
-  accreditationStandard: c.accreditationStandard,
-  duration: c.duration,
-  certificateFeeRs: 1000,
-  passPercentage: 60,
-  distinctionPercentage: 75,
-  totalExamQuestions: 40,
-  description: c.description,
-  modules: c.modules.map((m, idx) => {
-    const cleanTitle = m.title.replace(/^Module\s*\d+\s*:\s*/i, '');
-    const stageLabel = MODULE_STAGE_PREFIXES[idx] || `Module ${idx + 1}`;
-    return {
-      id: `${c.id}-m${idx + 1}`,
-      moduleNumber: idx + 1,
-      title: `${stageLabel}: ${cleanTitle}`,
-      estimatedMinutes: 85,
-      overview: m.overview,
-      internationalClauses: [
-        m.clause,
-        `${c.accreditationStandard} (2024–2026 International Compliance Edition & ISO Climate Amendment Amd 1:2024)`
-      ],
-      keyPrinciples: [
-        ...m.principles,
-        `Hazard Analysis, 5x5 Risk Matrix & Decision Tree Application: Evaluate every hazard at this stage using Likelihood (1–5) × Severity (1–5) and apply the 4-Question Codex Decision Tree to determine whether the step is controlled by a PRP, an OPRP, or a CCP (${m.ccpLimit}).`,
-        `Operational Limit vs. Critical Limit Control: Establish a stricter internal Operational Limit inside the Critical Limit (${m.ccpLimit}) so operators adjust the process proactively before any safety breach occurs.`,
-        `System Auditing & Legal Due Diligence Compliance: Validate "${m.ccpParam}" scientifically prior to production, audit compliance via ISO 19011 vertical trace checks, and retain tamper-proof records to satisfy EU Reg 852/2004, US FDA FSMA, UK Food Safety Act, GCC Municipality, and Pakistan Pure Food Laws.`
-      ],
-      criticalControlParameters: [
-        {
-          parameter: m.ccpParam,
-          standardLimit: m.ccpLimit,
-          correctiveProtocol: m.ccpFix
-        },
-        {
-          parameter: `Instrument Calibration & Metrology Verification (${cleanTitle})`,
-          standardLimit:
-            '100% ISO/IEC 17025 traceable calibration + daily reference check (0.0°C ± 0.5°C ice-point / certified test piece / pH buffer)',
-          correctiveProtocol:
-            'Withdraw out-of-tolerance gauge immediately, tag "DO NOT USE", and retrospectively evaluate all batches measured since the last passed calibration check.'
-        },
-        {
-          parameter: 'Real-Time Record Integrity & Legal Due Diligence Sign-Off',
-          standardLimit:
-            '100% real-time timestamped entries with zero correction fluid ("whitener") and zero pre-filled ("dry-labbed") shift logs',
-          correctiveProtocol:
-            'Quarantine unverified production lots, retrain staff on legal Due Diligence documentation rules, and implement supervisor shift-handover countersignature.'
-        }
-      ],
-      practicalChecklist: [
-        ...m.checks,
-        `Verify that operators on Day, Swing, and Night shifts can verbally state the exact Critical Limit (${m.ccpLimit}) and demonstrate the emergency quarantine procedure.`,
-        `Audit the last 30 days of "${m.ccpParam}" monitoring records, calibration certificates, and CAPA close-out reports for 100% traceability within ≤ 4 hours.`
-      ]
-    };
-  }),
-  coreExamPool: c.questions
-}));
+export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = [
+  HACCP_LEVEL_4_MANAGERIAL_COURSE,
+  ...COMPACT_COURSES.map((c) => ({
+    id: c.id,
+    code: c.code,
+    title: c.title,
+    levelBadge: c.levelBadge,
+    accreditationStandard: c.accreditationStandard,
+    duration: c.duration,
+    certificateFeeRs: 1000,
+    passPercentage: 60,
+    distinctionPercentage: 75,
+    totalExamQuestions: 40,
+    description: c.description,
+    modules: c.modules.map((m, idx) => {
+      const cleanTitle = m.title.replace(/^Module\s*\d+\s*:\s*/i, '');
+      const stageLabel = MODULE_STAGE_PREFIXES[idx] || `Module ${idx + 1}`;
+      return {
+        id: `${c.id}-m${idx + 1}`,
+        moduleNumber: idx + 1,
+        title: `${stageLabel}: ${cleanTitle}`,
+        estimatedMinutes: 85,
+        overview: m.overview,
+        internationalClauses: [
+          m.clause,
+          `${c.accreditationStandard} (2024–2026 International Compliance Edition & ISO Climate Amendment Amd 1:2024)`
+        ],
+        keyPrinciples: [
+          ...m.principles,
+          `Hazard Analysis, 5x5 Risk Matrix & Decision Tree Application: Evaluate every hazard at this stage using Likelihood (1–5) × Severity (1–5) and apply the 4-Question Codex Decision Tree to determine whether the step is controlled by a PRP, an OPRP, or a CCP (${m.ccpLimit}).`,
+          `Operational Limit vs. Critical Limit Control: Establish a stricter internal Operational Limit inside the Critical Limit (${m.ccpLimit}) so operators adjust the process proactively before any safety breach occurs.`,
+          `System Auditing & Legal Due Diligence Compliance: Validate "${m.ccpParam}" scientifically prior to production, audit compliance via ISO 19011 vertical trace checks, and retain tamper-proof records to satisfy EU Reg 852/2004, US FDA FSMA, UK Food Safety Act, GCC Municipality, and Pakistan Pure Food Laws.`
+        ],
+        criticalControlParameters: [
+          {
+            parameter: m.ccpParam,
+            standardLimit: m.ccpLimit,
+            correctiveProtocol: m.ccpFix
+          },
+          {
+            parameter: `Instrument Calibration & Metrology Verification (${cleanTitle})`,
+            standardLimit:
+              '100% ISO/IEC 17025 traceable calibration + daily reference check (0.0°C ± 0.5°C ice-point / certified test piece / pH buffer)',
+            correctiveProtocol:
+              'Withdraw out-of-tolerance gauge immediately, tag "DO NOT USE", and retrospectively evaluate all batches measured since the last passed calibration check.'
+          },
+          {
+            parameter: 'Real-Time Record Integrity & Legal Due Diligence Sign-Off',
+            standardLimit:
+              '100% real-time timestamped entries with zero correction fluid ("whitener") and zero pre-filled ("dry-labbed") shift logs',
+            correctiveProtocol:
+              'Quarantine unverified production lots, retrain staff on legal Due Diligence documentation rules, and implement supervisor shift-handover countersignature.'
+          }
+        ],
+        practicalChecklist: [
+          ...m.checks,
+          `Verify that operators on Day, Swing, and Night shifts can verbally state the exact Critical Limit (${m.ccpLimit}) and demonstrate the emergency quarantine procedure.`,
+          `Audit the last 30 days of "${m.ccpParam}" monitoring records, calibration certificates, and CAPA close-out reports for 100% traceability within ≤ 4 hours.`
+        ]
+      };
+    }),
+    coreExamPool: c.questions
+  }))
+];
 
 /**
- * Generates a full 40-question course-specific international examination for any of the 14 courses.
+ * Generates a full course-specific international examination (45 questions for HACCP Level 4, 40 questions for other courses).
  */
 export function get40CourseExamQuestions(courseId: string): CourseExamMCQ[] {
+  if (courseId === HACCP_LEVEL_4_MANAGERIAL_COURSE.id) {
+    return HACCP_L4_45_EXAM_QUESTIONS;
+  }
+
   const course =
     INTERNATIONAL_TRAINING_COURSES.find((c) => c.id === courseId) ||
     INTERNATIONAL_TRAINING_COURSES[0];
