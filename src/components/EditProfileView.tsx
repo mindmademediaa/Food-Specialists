@@ -161,7 +161,7 @@ export const VisibilityPill: React.FC<VisibilityPillProps> = ({
       <span
         className={`font-extrabold ${
           size === 'sm' ? 'text-[10.5px]' : 'text-xs'
-        } ${isOn ? 'text-[#228B4E]' : 'text-gray-400'}`}
+        } ${isOn ? 'text-[#1673B8]' : 'text-gray-400'}`}
       >
         {isOn ? 'ON' : 'OFF'}
       </span>
@@ -170,7 +170,7 @@ export const VisibilityPill: React.FC<VisibilityPillProps> = ({
         tabIndex={-1}
         className={`rounded-full p-0.5 transition-colors flex items-center cursor-pointer ${
           size === 'sm' ? 'w-11 h-6' : 'w-12 h-6.5'
-        } ${isOn ? 'bg-[#229A54] justify-end' : 'bg-gray-300 justify-start'}`}
+        } ${isOn ? 'bg-[#1673B8] justify-end' : 'bg-gray-300 justify-start'}`}
       >
         <span
           className={`rounded-full bg-white shadow-sm ${
@@ -446,40 +446,40 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
 
   return (
     <div className="space-y-4 pb-6">
-      {/* MAIN EDIT PROFILE CARD MATCHING REFERENCE IMAGE 1 */}
+      {/* MAIN EDIT PROFILE CARD MATCHING CERTIFICATE BLUE THEME */}
       <form
         onSubmit={validateAndSubmit}
-        className="bg-[#F9FBF9] border border-[#DCE8DF] rounded-[32px] p-4 sm:p-6 shadow-[0_10px_30px_rgba(13,46,27,0.08)] space-y-5"
+        className="bg-[#F4F8FD] border border-[#D2DEEA] rounded-[32px] p-4 sm:p-6 shadow-[0_10px_30px_rgba(26,33,56,0.08)] space-y-5"
       >
         {/* TOP HEADER: Back Arrow | "Edit Profile" | "Save" */}
         <div className="flex items-center justify-between border-b border-gray-200/80 pb-3.5">
           <button
             type="button"
             onClick={onBack}
-            className="w-9 h-9 rounded-full hover:bg-gray-200/60 flex items-center justify-center text-[#111827] transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-full hover:bg-gray-200/60 flex items-center justify-center text-[#1A2138] transition-colors cursor-pointer"
             title="Back"
           >
             <ArrowLeft className="w-5 h-5 stroke-[2.4]" />
           </button>
 
-          <h1 className="text-[18px] sm:text-[22px] font-extrabold text-[#14261C] tracking-tight">
+          <h1 className="text-[18px] sm:text-[22px] font-extrabold text-[#1A2138] tracking-tight">
             Edit Profile
           </h1>
 
           <button
             type="submit"
             disabled={isSaving}
-            className="text-[14.5px] sm:text-[16px] font-extrabold text-[#228B4E] hover:text-[#14532D] transition-colors cursor-pointer disabled:opacity-50"
+            className="text-[14.5px] sm:text-[16px] font-extrabold text-[#1673B8] hover:text-[#1A2138] transition-colors cursor-pointer disabled:opacity-50"
           >
             {isSaving ? 'Saving...' : 'Save'}
           </button>
         </div>
 
         {/* Quick Public Profile Preview + Toggle Legend */}
-        <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-emerald-100 rounded-2xl px-3.5 py-2.5 shadow-2xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-[#D2DEEA] rounded-2xl px-3.5 py-2.5 shadow-2xs">
           <div className="text-[11px] font-semibold text-gray-600 flex items-center gap-1.5 flex-wrap">
             <span>Toggle next to any field:</span>
-            <span className="px-2 py-0.5 rounded-full bg-[#229A54] text-white font-extrabold text-[10px]">
+            <span className="px-2 py-0.5 rounded-full bg-[#1673B8] text-white font-extrabold text-[10px]">
               ON = Show in Community
             </span>
             <span className="px-2 py-0.5 rounded-full bg-gray-300 text-gray-700 font-extrabold text-[10px]">
@@ -489,7 +489,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <button
             type="button"
             onClick={onPreviewPublicProfile}
-            className="px-3 py-1 rounded-full bg-[#EAF5EC] hover:bg-[#D5EAD8] text-[#15803D] text-[11.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-3 py-1 rounded-full bg-[#EBF4FC] hover:bg-[#D2DEEA] text-[#1673B8] text-[11.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>View Public Profile</span>
@@ -534,17 +534,17 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
         )}
 
         {profileSaveMsg && (
-          <div className="bg-[#15803D] text-white rounded-2xl p-3.5 text-xs font-extrabold flex items-center justify-between gap-2 shadow-xs">
+          <div className="bg-[#1673B8] text-white rounded-2xl p-3.5 text-xs font-extrabold flex items-center justify-between gap-2 shadow-xs">
             <span>{profileSaveMsg}</span>
             <Check className="w-4 h-4 shrink-0" />
           </div>
         )}
 
         {uploadStatusMsg && (
-          <div className="bg-[#DCFCE7] border border-[#16A34A] text-[#0D2E1B] rounded-2xl p-3 text-xs font-extrabold flex items-center justify-between gap-2">
+          <div className="bg-[#EBF4FC] border border-[#1673B8] text-[#1A2138] rounded-2xl p-3 text-xs font-extrabold flex items-center justify-between gap-2">
             <span>{uploadStatusMsg}</span>
             {isUploadingMedia && (
-              <Loader2 className="w-4 h-4 animate-spin text-[#15803D] shrink-0" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#1673B8] shrink-0" />
             )}
           </div>
         )}
@@ -555,7 +555,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <img
               src={displayAvatar}
               alt={profile.name || 'Profile'}
-              className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white shadow-md bg-[#EBF3ED]"
+              className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white shadow-md bg-[#EBF4FC]"
             />
             <input
               ref={avatarInputRef}
@@ -568,7 +568,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
               type="button"
               onClick={() => avatarInputRef.current?.click()}
               title="Upload Profile Photo"
-              className="absolute bottom-0.5 right-0.5 w-9 h-9 rounded-full bg-[#229A54] hover:bg-[#15803D] text-white border-2 border-white shadow-md flex items-center justify-center cursor-pointer transition-transform active:scale-95"
+              className="absolute bottom-0.5 right-0.5 w-9 h-9 rounded-full bg-[#1673B8] hover:bg-[#105E9A] text-white border-2 border-white shadow-md flex items-center justify-center cursor-pointer transition-transform active:scale-95"
             >
               <Camera className="w-4 h-4 stroke-[2.3]" />
             </button>
@@ -577,7 +577,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <button
             type="button"
             onClick={() => avatarInputRef.current?.click()}
-            className="mt-2.5 px-4 py-1 rounded-full bg-[#95CEA5] hover:bg-[#7FBF91] text-[#0D2E1B] text-[12px] font-bold shadow-2xs transition-colors cursor-pointer"
+            className="mt-2.5 px-4 py-1 rounded-full bg-[#BBD6EE] hover:bg-[#9AC2E6] text-[#1A2138] text-[12px] font-bold shadow-2xs transition-colors cursor-pointer"
           >
             Change Photo
           </button>
@@ -585,7 +585,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
 
         {/* 2. BASIC INFORMATION */}
         <div className="space-y-3">
-          <h2 className="text-[15px] font-extrabold text-[#14261C]">
+          <h2 className="text-[15px] font-extrabold text-[#1A2138]">
             Basic Information
           </h2>
 
@@ -594,7 +594,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <label className="sm:w-[130px] text-[13.5px] font-semibold text-[#1F2937] shrink-0">
               Full Name
             </label>
-            <div className="relative flex-1 flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#229A54]">
+            <div className="relative flex-1 flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#1673B8]">
               <input
                 type="text"
                 required
@@ -617,7 +617,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <label className="sm:w-[130px] text-[13.5px] font-semibold text-[#1F2937] shrink-0">
               Current Title
             </label>
-            <div className="relative flex-1 flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#229A54]">
+            <div className="relative flex-1 flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#1673B8]">
               <input
                 type="text"
                 value={profile.title ?? profile.currentRole ?? ''}
@@ -643,7 +643,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <label className="sm:w-[130px] text-[13.5px] font-semibold text-[#1F2937] shrink-0">
               Current Company
             </label>
-            <div className="relative flex-1 flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#229A54]">
+            <div className="relative flex-1 flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#1673B8]">
               <input
                 type="text"
                 value={profile.company || ''}
@@ -665,7 +665,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <label className="sm:w-[130px] text-[13.5px] font-semibold text-[#1F2937] shrink-0">
               Location
             </label>
-            <div className="flex-1 flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#229A54]">
+            <div className="flex-1 flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#1673B8]">
               <MapPin className="w-4 h-4 text-gray-400 mr-2 shrink-0" />
               <input
                 type="text"
@@ -687,14 +687,14 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
         {/* ABOUT BIO (500 chars max) */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-[15px] font-extrabold text-[#14261C]">
+            <label className="text-[15px] font-extrabold text-[#1A2138]">
               About Bio
             </label>
             <span className="text-[11px] font-semibold text-gray-400">
               {(profile.bio || '').length}/500
             </span>
           </div>
-          <div className="relative bg-white border border-gray-200/90 rounded-2xl p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#229A54] flex items-center gap-2">
+          <div className="relative bg-white border border-gray-200/90 rounded-2xl p-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#1673B8] flex items-center gap-2">
             <textarea
               rows={3}
               maxLength={500}
@@ -717,10 +717,10 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
 
         {/* 3. LINKEDIN PROFILE (MUST HAVE) */}
         <div className="space-y-1.5">
-          <label className="block text-[15px] font-extrabold text-[#14261C]">
+          <label className="block text-[15px] font-extrabold text-[#1A2138]">
             LinkedIn URL
           </label>
-          <div className="flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#229A54] gap-2.5">
+          <div className="flex items-center bg-white border border-gray-200/90 rounded-2xl px-3.5 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] focus-within:border-[#1673B8] gap-2.5">
             <span className="w-7 h-7 rounded-[6px] bg-[#0A66C2] text-white font-black text-[15px] flex items-center justify-center shrink-0 leading-none">
               in
             </span>
@@ -749,15 +749,15 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
 
         {/* 4. CV / RESUME UPLOAD CARD (MUST HAVE) */}
         <div className="space-y-1.5">
-          <div className="bg-[#E6F3EA] border border-[#8BB999] rounded-[22px] p-4 space-y-2.5">
+          <div className="bg-[#EBF4FC] border border-[#9AC2E6] rounded-[22px] p-4 space-y-2.5">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-white/80 border border-[#8BB999] text-[#228B4E] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-white/90 border border-[#9AC2E6] text-[#1673B8] flex items-center justify-center shrink-0">
                   <FileText className="w-5 h-5 stroke-[2.2]" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-[14.5px] sm:text-[15.5px] font-extrabold text-[#14261C]">
+                    <h3 className="text-[14.5px] sm:text-[15.5px] font-extrabold text-[#1A2138]">
                       CV / Resume
                     </h3>
                     <VisibilityPill
@@ -787,9 +787,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                 <button
                   type="button"
                   onClick={() => cvInputRef.current?.click()}
-                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F0FDF4] border border-[#228B4E] text-[#14261C] text-[12.5px] font-extrabold inline-flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#1673B8] text-[#1A2138] text-[12.5px] font-extrabold inline-flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5 text-[#228B4E] stroke-[2.5]" />
+                  <Plus className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.5]" />
                   <span>{cvDisplayFileName ? 'Replace PDF' : 'Upload PDF'}</span>
                 </button>
                 {cvDisplayFileName && (
@@ -812,7 +812,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
               </div>
             )}
 
-            <p className="text-[11px] font-semibold text-[#14532D]/90 leading-snug">
+            <p className="text-[11px] font-semibold text-[#105E9A] leading-snug">
               Turn the toggle button ON to show your CV in the Community section, or OFF to keep it hidden
             </p>
           </div>
@@ -820,13 +820,13 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
 
         {/* 5. DETAILS — DYNAMIC ADD / EDIT / DELETE LISTS */}
         <div className="space-y-3.5 pt-1">
-          <h2 className="text-[15px] font-extrabold text-[#14261C]">Details</h2>
+          <h2 className="text-[15px] font-extrabold text-[#1A2138]">Details</h2>
 
           {/* ==================== 5A. EDUCATION ==================== */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-[17px] font-extrabold text-[#14261C]">
+                <span className="text-[17px] font-extrabold text-[#1A2138]">
                   Education
                 </span>
                 <VisibilityPill
@@ -848,7 +848,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     visibility: vis.education || 'public'
                   })
                 }
-                className="px-4 py-1.5 rounded-full bg-[#95CEA5] hover:bg-[#7FBF91] text-[#0D2E1B] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-4 py-1.5 rounded-full bg-[#BBD6EE] hover:bg-[#9AC2E6] text-[#1A2138] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Add New</span>
@@ -856,9 +856,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             </div>
 
             {editingEdu && (
-              <div className="bg-white border-2 border-[#229A54] rounded-2xl p-4 space-y-2.5 shadow-sm">
+              <div className="bg-white border-2 border-[#1673B8] rounded-2xl p-4 space-y-2.5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-[#14532D] uppercase">
+                  <span className="text-xs font-extrabold text-[#105E9A] uppercase">
                     Education Entry
                   </span>
                   <VisibilityPill
@@ -876,7 +876,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onChange={(e) =>
                     setEditingEdu({ ...editingEdu, degree: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#229A54]"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1673B8]"
                 />
                 <input
                   type="text"
@@ -885,7 +885,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onChange={(e) =>
                     setEditingEdu({ ...editingEdu, institute: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#229A54]"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1673B8]"
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <input
@@ -895,7 +895,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     onChange={(e) =>
                       setEditingEdu({ ...editingEdu, startYear: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                   />
                   <input
                     type="text"
@@ -904,7 +904,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     onChange={(e) =>
                       setEditingEdu({ ...editingEdu, endYear: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                   />
                 </div>
                 <textarea
@@ -917,7 +917,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       description: e.target.value
                     })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-medium text-gray-900 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-medium text-gray-900 focus:outline-none"
                 />
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <button
@@ -942,7 +942,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       onChangeProfile({ ...profile, education: nextList });
                       setEditingEdu(null);
                     }}
-                    className="px-4 py-1.5 rounded-xl bg-[#228B4E] text-white text-xs font-extrabold cursor-pointer"
+                    className="px-4 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
                   >
                     Save Education
                   </button>
@@ -958,7 +958,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     className="bg-white border border-gray-200 rounded-2xl p-3 flex items-start justify-between gap-2 shadow-2xs"
                   >
                     <div className="min-w-0">
-                      <div className="text-[13.5px] font-extrabold text-[#14261C]">
+                      <div className="text-[13.5px] font-extrabold text-[#1A2138]">
                         {edu.degree}
                       </div>
                       <div className="text-xs font-semibold text-gray-600">
@@ -1020,7 +1020,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-[17px] font-extrabold text-[#14261C]">
+                <span className="text-[17px] font-extrabold text-[#1A2138]">
                   Experience
                 </span>
                 <VisibilityPill
@@ -1044,7 +1044,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     visibility: vis.experience || 'public'
                   })
                 }
-                className="px-4 py-1.5 rounded-full bg-[#95CEA5] hover:bg-[#7FBF91] text-[#0D2E1B] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-4 py-1.5 rounded-full bg-[#BBD6EE] hover:bg-[#9AC2E6] text-[#1A2138] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Add New</span>
@@ -1052,9 +1052,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             </div>
 
             {editingExp && (
-              <div className="bg-white border-2 border-[#229A54] rounded-2xl p-4 space-y-2.5 shadow-sm">
+              <div className="bg-white border-2 border-[#1673B8] rounded-2xl p-4 space-y-2.5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-[#14532D] uppercase">
+                  <span className="text-xs font-extrabold text-[#105E9A] uppercase">
                     Experience Entry
                   </span>
                   <VisibilityPill
@@ -1072,7 +1072,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onChange={(e) =>
                     setEditingExp({ ...editingExp, jobTitle: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <input
@@ -1082,7 +1082,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     onChange={(e) =>
                       setEditingExp({ ...editingExp, company: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                   />
                   <input
                     type="text"
@@ -1091,7 +1091,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     onChange={(e) =>
                       setEditingExp({ ...editingExp, location: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -1105,7 +1105,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                         startDate: e.target.value
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                   />
                   <input
                     type="text"
@@ -1119,7 +1119,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                           e.target.value.trim().toLowerCase() === 'present'
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                   />
                 </div>
                 <label className="inline-flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer">
@@ -1146,7 +1146,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       description: e.target.value
                     })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-medium text-gray-900 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-medium text-gray-900 focus:outline-none"
                 />
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <button
@@ -1175,7 +1175,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       });
                       setEditingExp(null);
                     }}
-                    className="px-4 py-1.5 rounded-xl bg-[#228B4E] text-white text-xs font-extrabold cursor-pointer"
+                    className="px-4 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
                   >
                     Save Experience
                   </button>
@@ -1191,7 +1191,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     className="bg-white border border-gray-200 rounded-2xl p-3 flex items-start justify-between gap-2 shadow-2xs"
                   >
                     <div className="min-w-0">
-                      <div className="text-[13.5px] font-extrabold text-[#14261C]">
+                      <div className="text-[13.5px] font-extrabold text-[#1A2138]">
                         {exp.jobTitle}
                       </div>
                       <div className="text-xs font-semibold text-gray-600">
@@ -1260,7 +1260,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-[17px] font-extrabold text-[#14261C]">
+                <span className="text-[17px] font-extrabold text-[#1A2138]">
                   Trainings
                 </span>
                 <VisibilityPill
@@ -1281,7 +1281,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     visibility: vis.certifications || 'public'
                   })
                 }
-                className="px-4 py-1.5 rounded-full bg-[#95CEA5] hover:bg-[#7FBF91] text-[#0D2E1B] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-4 py-1.5 rounded-full bg-[#BBD6EE] hover:bg-[#9AC2E6] text-[#1A2138] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Add New</span>
@@ -1289,9 +1289,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             </div>
 
             {editingCert && (
-              <div className="bg-white border-2 border-[#229A54] rounded-2xl p-4 space-y-2.5 shadow-sm">
+              <div className="bg-white border-2 border-[#1673B8] rounded-2xl p-4 space-y-2.5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-[#14532D] uppercase">
+                  <span className="text-xs font-extrabold text-[#105E9A] uppercase">
                     Training Entry
                   </span>
                   <VisibilityPill
@@ -1309,7 +1309,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onChange={(e) =>
                     setEditingCert({ ...editingCert, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                 />
                 <input
                   type="text"
@@ -1318,7 +1318,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onChange={(e) =>
                     setEditingCert({ ...editingCert, issuer: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <input
@@ -1331,7 +1331,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                         issueDate: e.target.value
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                   />
                   <input
                     type="text"
@@ -1343,7 +1343,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                         credentialId: e.target.value
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                   />
                 </div>
                 <div className="flex items-center justify-end gap-2 pt-1">
@@ -1369,7 +1369,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       onChangeProfile({ ...profile, certifications: nextList });
                       setEditingCert(null);
                     }}
-                    className="px-4 py-1.5 rounded-xl bg-[#228B4E] text-white text-xs font-extrabold cursor-pointer"
+                    className="px-4 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
                   >
                     Save Training
                   </button>
@@ -1385,7 +1385,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     className="bg-white border border-gray-200 rounded-2xl p-3 flex items-start justify-between gap-2 shadow-2xs"
                   >
                     <div className="min-w-0">
-                      <div className="text-[13.5px] font-extrabold text-[#14261C]">
+                      <div className="text-[13.5px] font-extrabold text-[#1A2138]">
                         {cert.name}
                       </div>
                       <div className="text-xs font-semibold text-gray-600">
@@ -1442,7 +1442,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-[17px] font-extrabold text-[#14261C]">
+                <span className="text-[17px] font-extrabold text-[#1A2138]">
                   Projects
                 </span>
                 <VisibilityPill
@@ -1462,7 +1462,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     visibility: vis.projects || 'public'
                   })
                 }
-                className="px-4 py-1.5 rounded-full bg-[#95CEA5] hover:bg-[#7FBF91] text-[#0D2E1B] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-4 py-1.5 rounded-full bg-[#BBD6EE] hover:bg-[#9AC2E6] text-[#1A2138] text-[12.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Add New</span>
@@ -1470,9 +1470,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             </div>
 
             {editingProj && (
-              <div className="bg-white border-2 border-[#229A54] rounded-2xl p-4 space-y-2.5 shadow-sm">
+              <div className="bg-white border-2 border-[#1673B8] rounded-2xl p-4 space-y-2.5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-[#14532D] uppercase">
+                  <span className="text-xs font-extrabold text-[#105E9A] uppercase">
                     Project Entry
                   </span>
                   <VisibilityPill
@@ -1490,7 +1490,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onChange={(e) =>
                     setEditingProj({ ...editingProj, title: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                 />
                 <textarea
                   rows={2}
@@ -1502,7 +1502,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       description: e.target.value
                     })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-medium text-gray-900 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-medium text-gray-900 focus:outline-none"
                 />
                 <input
                   type="text"
@@ -1511,7 +1511,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onChange={(e) =>
                     setEditingProj({ ...editingProj, link: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-900 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-900 focus:outline-none"
                 />
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <button
@@ -1536,7 +1536,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                       onChangeProfile({ ...profile, projects: nextList });
                       setEditingProj(null);
                     }}
-                    className="px-4 py-1.5 rounded-xl bg-[#228B4E] text-white text-xs font-extrabold cursor-pointer"
+                    className="px-4 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
                   >
                     Save Project
                   </button>
@@ -1552,14 +1552,14 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                     className="bg-white border border-gray-200 rounded-2xl p-3 flex items-start justify-between gap-2 shadow-2xs"
                   >
                     <div className="min-w-0">
-                      <div className="text-[13.5px] font-extrabold text-[#14261C]">
+                      <div className="text-[13.5px] font-extrabold text-[#1A2138]">
                         {proj.title}
                       </div>
                       <p className="text-xs text-gray-600 mt-0.5">
                         {proj.description}
                       </p>
                       {proj.link && (
-                        <div className="text-[11px] font-bold text-[#228B4E] truncate mt-0.5">
+                        <div className="text-[11px] font-bold text-[#1673B8] truncate mt-0.5">
                           {proj.link}
                         </div>
                       )}
@@ -1609,7 +1609,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <div className="bg-white border border-gray-200/90 rounded-2xl p-3.5 space-y-2.5">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[14px] font-extrabold text-[#14261C]">
+                <div className="text-[14px] font-extrabold text-[#1A2138]">
                   Contact &amp; Message Buttons
                 </div>
                 <div className="text-[11px] text-gray-500 font-medium">
@@ -1630,7 +1630,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onChangeProfile({ ...profile, email: e.target.value })
                 }
                 placeholder="Contact Email"
-                className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-800 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-800 focus:outline-none"
               />
               <input
                 type="text"
@@ -1639,17 +1639,17 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   onChangeProfile({ ...profile, phone: e.target.value })
                 }
                 placeholder="WhatsApp / Phone (e.g. +92 300 ...)"
-                className="w-full px-3 py-2 rounded-xl bg-[#F3F7F4] text-xs font-semibold text-gray-800 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold text-gray-800 focus:outline-none"
               />
             </div>
           </div>
         </div>
 
-        {/* 6. HIRE ME TOGGLE + 7. BIG GREEN SAVE CHANGES BUTTON (BOTTOM CONTAINER MATCHING REF IMAGE 1) */}
+        {/* 6. HIRE ME TOGGLE + 7. BIG ROYAL BLUE SAVE CHANGES BUTTON */}
         <div className="bg-white border border-gray-200/80 rounded-[26px] p-4 sm:p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-[17px] font-extrabold text-[#14261C]">
+              <h3 className="text-[17px] font-extrabold text-[#1A2138]">
                 Hire Me
               </h3>
               <p className="text-[12.5px] font-medium text-gray-600">
@@ -1658,7 +1658,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs font-extrabold text-[#228B4E]">
+              <span className="text-xs font-extrabold text-[#1673B8]">
                 {hireMe ? 'ON' : 'OFF'}
               </span>
               <button
@@ -1676,7 +1676,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                   })
                 }
                 className={`w-14 h-8 rounded-full p-1 transition-colors flex items-center cursor-pointer ${
-                  hireMe ? 'bg-[#229A54] justify-end' : 'bg-gray-300 justify-start'
+                  hireMe ? 'bg-[#1673B8] justify-end' : 'bg-gray-300 justify-start'
                 }`}
               >
                 <span className="w-6 h-6 rounded-full bg-white shadow-sm" />
@@ -1687,7 +1687,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full py-4 px-6 rounded-[18px] bg-[#228B4E] hover:bg-[#196E3B] text-white font-extrabold text-[17px] shadow-md transition-colors cursor-pointer disabled:opacity-60"
+            className="w-full py-4 px-6 rounded-[18px] bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-[17px] shadow-md transition-colors cursor-pointer disabled:opacity-60"
           >
             {isSaving ? 'Saving Profile...' : 'Save Changes'}
           </button>
@@ -1698,9 +1698,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             onClick={() =>
               downloadProfessionalCvPdf(profile, { respectVisibility: false })
             }
-            className="w-full py-3.5 px-5 rounded-[18px] bg-[#0D2E1B] hover:bg-[#14532D] text-white font-extrabold text-[14.5px] shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            className="w-full py-3.5 px-5 rounded-[18px] bg-[#1A2138] hover:bg-[#1673B8] text-white font-extrabold text-[14.5px] shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
-            <Download className="w-4 h-4 text-emerald-300 shrink-0" />
+            <Download className="w-4 h-4 text-sky-300 shrink-0" />
             <span>Download Professional CV (PDF)</span>
           </button>
         </div>
@@ -1709,20 +1709,20 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
       {/* FREE USER NOTIFICATION MESSAGE: FREE VS PREMIUM MEMBERSHIP DETAILS LIST + UPGRADE BUTTON */}
       <div className="space-y-3">
         {!isPremium && (
-          <div className="bg-white border-[1.5px] border-[#0E9F6E] rounded-[26px] p-4 sm:p-5 shadow-sm space-y-4">
-            <div className="flex items-start justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+          <div className="bg-white border-[1.5px] border-[#1673B8] rounded-[26px] p-4 sm:p-5 shadow-sm space-y-4">
+            <div className="flex items-start justify-between gap-2 border-b border-[#EBF4FC] pb-3">
               <div className="flex items-start gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-[#D7EFE2] text-[#0D6845] flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center shrink-0 mt-0.5">
                   <AlertCircle className="w-5 h-5 stroke-[2.3]" />
                 </div>
                 <div>
                   <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10.5px] font-extrabold">
                     Membership Notification &amp; Guide
                   </span>
-                  <h3 className="text-[16px] font-extrabold text-[#0F291E] leading-snug mt-0.5">
+                  <h3 className="text-[16px] font-extrabold text-[#1A2138] leading-snug mt-0.5">
                     Free User Plan vs. Paid Premium Membership
                   </h3>
-                  <p className="text-xs text-[#5C7267] font-medium">
+                  <p className="text-xs text-[#475569] font-medium">
                     See what is included in your Free account and the benefits
                     of upgrading to Paid Premium:
                   </p>
@@ -1732,39 +1732,39 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* List 1: What is Allowed for Free Users */}
-              <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-2">
+              <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+                  <span className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider">
                     ✓ Free User (Allowed)
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-white border border-[#CBE4D6] text-[#0D6845] text-[10px] font-extrabold">
+                  <span className="px-2 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#1673B8] text-[10px] font-extrabold">
                     Current Plan
                   </span>
                 </div>
                 <ul className="space-y-1.5 text-xs font-semibold text-[#1F2937]">
                   <li className="flex items-start gap-1.5">
-                    <Check className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0 mt-0.5 stroke-[2.5]" />
+                    <Check className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5 stroke-[2.5]" />
                     <span>
                       Browse &amp; apply to all verified <strong>Jobs</strong>{' '}
                       (QA, R&amp;D, Production)
                     </span>
                   </li>
                   <li className="flex items-start gap-1.5">
-                    <Check className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0 mt-0.5 stroke-[2.5]" />
+                    <Check className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5 stroke-[2.5]" />
                     <span>
                       Explore &amp; apply for global{' '}
                       <strong>Scholarships &amp; Grants</strong>
                     </span>
                   </li>
                   <li className="flex items-start gap-1.5">
-                    <Check className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0 mt-0.5 stroke-[2.5]" />
+                    <Check className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5 stroke-[2.5]" />
                     <span>
                       Enroll in <strong>Highfield UK &amp; Lead Auditor</strong>{' '}
                       trainings
                     </span>
                   </li>
                   <li className="flex items-start gap-1.5">
-                    <Check className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0 mt-0.5 stroke-[2.5]" />
+                    <Check className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5 stroke-[2.5]" />
                     <span>
                       Complete your Profile &amp; download{' '}
                       <strong>Professional PDF CV</strong>
@@ -1827,12 +1827,12 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             </div>
 
             {/* Pricing Summary Strip inside Notification */}
-            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#E3F3EA] border border-[#9BCAB0] text-xs">
-              <div className="font-bold text-[#0F291E]">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#EBF4FC] border border-[#9AC2E6] text-xs">
+              <div className="font-bold text-[#1A2138]">
                 Plans: <strong>Rs. {monthlyFeeRs.toLocaleString()} / 1 Month</strong> or{' '}
                 <strong>Rs. {yearlyFeeRs.toLocaleString()} / Full Year</strong>
               </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[10.5px] font-extrabold">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#1673B8] text-white text-[10.5px] font-extrabold">
                 Save {effectiveDiscountPct}% on Yearly Plan
               </span>
             </div>
@@ -1840,7 +1840,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <button
               type="button"
               onClick={onOpenPremiumModal}
-              className="w-full py-4 px-5 rounded-[20px] bg-gradient-to-r from-[#15803D] via-[#1E8E49] to-[#14532D] hover:from-[#14532D] hover:to-[#0D2E1B] text-white font-extrabold text-[15px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="w-full py-4 px-5 rounded-[20px] bg-gradient-to-r from-[#1673B8] via-[#105E9A] to-[#1A2138] hover:from-[#105E9A] hover:to-[#1A2138] text-white font-extrabold text-[15px] shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <Crown className="w-5 h-5 text-amber-300 shrink-0" />
               <span>
@@ -1856,9 +1856,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           <button
             type="button"
             onClick={onOpenApplicationStatusModal}
-            className="w-full py-3.5 px-5 rounded-[18px] bg-white hover:bg-[#EAF5EC] border-[1.5px] border-[#16A34A] text-[#0D2E1B] font-extrabold text-[14px] shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            className="w-full py-3.5 px-5 rounded-[18px] bg-white hover:bg-[#EBF4FC] border-[1.5px] border-[#1673B8] text-[#1A2138] font-extrabold text-[14px] shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
-            <Eye className="w-4 h-4 text-[#15803D] shrink-0" />
+            <Eye className="w-4 h-4 text-[#1673B8] shrink-0" />
             <span>
               {isPremium
                 ? 'View My Application Status (Approved ✓)'
@@ -1870,29 +1870,27 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
         )}
       </div>
 
-
-
       {isUserAdmin && (
         <button
           type="button"
           onClick={onOpenAdmin}
-          className="w-full py-3.5 px-5 rounded-[18px] bg-[#0D2E1B] hover:bg-[#14532D] text-white font-extrabold text-sm shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          className="w-full py-3.5 px-5 rounded-[18px] bg-[#1A2138] hover:bg-[#1673B8] text-white font-extrabold text-sm shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
         >
-          <Database className="w-4 h-4 text-emerald-300" />
+          <Database className="w-4 h-4 text-sky-300" />
           <span>Open Admin Cloud Storage &amp; Control Panel</span>
         </button>
       )}
 
       {/* PRIVACY POLICY, TERMS, ADSENSE/ADMOB COMPLIANCE & ACCOUNT DELETION SECTION */}
-      <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+      <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EBF4FC] pb-3">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[#0E9F6E] shrink-0" />
+            <ShieldCheck className="w-5 h-5 text-[#1673B8] shrink-0" />
             <div>
-              <h3 className="text-sm font-extrabold text-[#0F291E]">
+              <h3 className="text-sm font-extrabold text-[#1A2138]">
                 Legal, Privacy Policy &amp; Account Data Controls
               </h3>
-              <p className="text-[11px] text-[#5C7267] font-medium">
+              <p className="text-[11px] text-[#475569] font-medium">
                 Google Play Store, AdSense &amp; AdMob compliance policies and self-service data deletion
               </p>
             </div>
@@ -1905,31 +1903,31 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <button
               type="button"
               onClick={() => onOpenLegalModal('privacy')}
-              className="py-2.5 px-3 rounded-xl bg-[#F4FAF7] hover:bg-[#D7EFE2] border border-[#CBE4D6] text-xs font-extrabold text-[#0F291E] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+              className="py-2.5 px-3 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
             >
-              <Lock className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0" />
+              <Lock className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
               <span>Privacy Policy</span>
             </button>
             <button
               type="button"
               onClick={() => onOpenLegalModal('terms')}
-              className="py-2.5 px-3 rounded-xl bg-[#F4FAF7] hover:bg-[#D7EFE2] border border-[#CBE4D6] text-xs font-extrabold text-[#0F291E] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+              className="py-2.5 px-3 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
             >
-              <FileText className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0" />
+              <FileText className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
               <span>Terms of Use</span>
             </button>
             <button
               type="button"
               onClick={() => onOpenLegalModal('ads')}
-              className="py-2.5 px-3 rounded-xl bg-[#F4FAF7] hover:bg-[#D7EFE2] border border-[#CBE4D6] text-xs font-extrabold text-[#0F291E] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+              className="py-2.5 px-3 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#0E9F6E] shrink-0" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
               <span>AdSense &amp; AdMob</span>
             </button>
             <button
               type="button"
               onClick={() => onOpenLegalModal('deletion')}
-              className="py-2.5 px-3 rounded-xl bg-[#F4FAF7] hover:bg-[#D7EFE2] border border-[#CBE4D6] text-xs font-extrabold text-[#0F291E] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+              className="py-2.5 px-3 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5 text-red-600 shrink-0" />
               <span>Deletion Policy</span>

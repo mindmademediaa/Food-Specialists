@@ -608,7 +608,7 @@ export default function App() {
         const isAdminUser =
           firebaseUser.email?.toLowerCase() === 'mindmademedia9@gmail.com';
         const defaultAvatar =
-          firebaseUser.photoURL || makeAvatarSvg(initials, '#DCFCE7', '#14532D');
+          firebaseUser.photoURL || makeAvatarSvg(initials, '#EBF4FC', '#1673B8');
 
         const baseUserRecord: HubUser = {
           ...DEFAULT_CURRENT_USER_PROFILE,
@@ -2806,7 +2806,7 @@ export default function App() {
     return (
       <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-fade-in">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white shadow-[0_12px_40px_rgba(13,46,27,0.12)] border border-emerald-100 flex items-center justify-center overflow-hidden">
+          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white shadow-[0_12px_40px_rgba(26,33,56,0.12)] border border-[#D2DEEA] flex items-center justify-center overflow-hidden">
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
               alt="FS Portal"
@@ -2814,10 +2814,10 @@ export default function App() {
             />
           </div>
           <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0D2E1B] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A2138] tracking-tight">
               FS Portal
             </h1>
-            <p className="text-xs font-bold text-[#15803D] uppercase tracking-widest">
+            <p className="text-xs font-bold text-[#1673B8] uppercase tracking-widest">
               Food Safety &amp; Quality Specialists
             </p>
           </div>
@@ -2829,16 +2829,16 @@ export default function App() {
   // 1. While checking Firebase Auth state on page load, show a clean loading screen
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#F0FDF4] flex flex-col items-center justify-center p-4">
-        <div className="bg-white border-[1.5px] border-[#9EC4A7] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-xs w-full">
-          <div className="w-20 h-20 rounded-2xl bg-white border border-emerald-100 shadow-xs flex items-center justify-center overflow-hidden">
+      <div className="min-h-screen bg-[#F0F6FC] flex flex-col items-center justify-center p-4">
+        <div className="bg-white border-[1.5px] border-[#BBD6EE] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-xs w-full">
+          <div className="w-20 h-20 rounded-2xl bg-white border border-[#D2DEEA] shadow-xs flex items-center justify-center overflow-hidden">
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
               alt="FS Portal"
               className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
             />
           </div>
-          <h2 className="text-base font-extrabold text-[#0D2E1B]">
+          <h2 className="text-base font-extrabold text-[#1A2138]">
             FS Portal
           </h2>
           <p className="text-xs font-medium text-gray-500">
@@ -2884,11 +2884,11 @@ export default function App() {
         });
 
       return (
-        <div className="min-h-screen bg-[#E8F5EE] p-4 flex flex-col items-center justify-start space-y-4 overflow-y-auto">
-          <div className="w-full max-w-xl rounded-2xl border-2 border-emerald-600 bg-white p-5 sm:p-6 shadow-xl space-y-4 mt-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 pb-3">
+        <div className="min-h-screen bg-[#F0F6FC] p-4 flex flex-col items-center justify-start space-y-4 overflow-y-auto">
+          <div className="w-full max-w-xl rounded-2xl border-2 border-[#1673B8] bg-white p-5 sm:p-6 shadow-xl space-y-4 mt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0D5C3A] text-white text-xs font-extrabold uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#1673B8] text-white text-xs font-extrabold uppercase tracking-wider">
                   <ShieldCheck className="w-4 h-4 text-amber-300" />
                   Official QR Verified Certificate
                 </span>
@@ -2951,7 +2951,7 @@ export default function App() {
               </div>
             </div>
 
-            <p className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-3 font-medium">
+            <p className="text-[11px] text-[#1A2138] bg-[#F0F6FC] border border-[#D2DEEA] rounded-xl p-3 font-medium">
               This Certificate of Achievement has been verified via the official FS Portal Online Verification Registry. Sign in below to access the full FS Portal Verification Search &amp; Training Academy.
             </p>
           </div>
@@ -3353,7 +3353,7 @@ export default function App() {
                   </select>
                   <ChevronDown
                     className={`w-4 h-4 stroke-[2.5] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${
-                      jobCategoryFilter !== 'All' ? 'text-white' : 'text-[#0F291E]'
+                      jobCategoryFilter !== 'All' ? 'text-white' : 'text-[#1A2138]'
                     }`}
                   />
                 </div>
@@ -3362,7 +3362,7 @@ export default function App() {
               {/* Jobs Card List (All Jobs accessible to everyone) */}
               <div className="space-y-3.5 pt-1">
                 {visibleJobs.length === 0 ? (
-                  <div className="bg-white border border-[#D4E9DF] rounded-[22px] p-8 text-center text-gray-500 font-medium">
+                  <div className="bg-white border border-[#D2DEEA] rounded-[22px] p-8 text-center text-gray-500 font-medium">
                     No jobs match the selected filters.
                   </div>
                 ) : (
@@ -3427,23 +3427,23 @@ export default function App() {
                 (job.location ? job.location.split(',').pop()?.trim() : '');
 
               return (
-                <div className="bg-white border border-emerald-200 rounded-[26px] p-5 shadow-sm space-y-4">
-                  <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-4">
+                <div className="bg-white border border-[#D2DEEA] rounded-[26px] p-5 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between gap-3 border-b border-[#D2DEEA] pb-4">
                     <div className="space-y-1">
                       {/* Top tags: Unclickable Category & Country */}
                       <div className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none">
                         {displayCategory && (
-                          <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#BCE3C5] text-[#0B3B1E] text-[11px] font-bold cursor-default pointer-events-none">
+                          <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#EBF4FC] text-[#1A2138] text-[11px] font-bold cursor-default pointer-events-none">
                             {displayCategory}
                           </span>
                         )}
                         {displayCountry && (
-                          <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#EAF5EC] text-[#15803D] text-[11px] font-bold cursor-default pointer-events-none">
+                          <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#F0F6FC] text-[#1673B8] text-[11px] font-bold cursor-default pointer-events-none">
                             {displayCountry}
                           </span>
                         )}
                       </div>
-                      <h1 className="text-[16.5px] sm:text-[19px] font-extrabold text-[#0B3B1E] leading-snug pt-1 break-words">
+                      <h1 className="text-[16.5px] sm:text-[19px] font-extrabold text-[#1A2138] leading-snug pt-1 break-words">
                         {job.title}
                       </h1>
                       <p className="text-[12.5px] sm:text-sm font-semibold text-gray-600 break-words">
@@ -3460,7 +3460,7 @@ export default function App() {
                           `Company: ${job.company} • Location: ${job.location || displayCountry}`
                         )
                       }
-                      className="px-3.5 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EBD9] text-[#15803D] font-extrabold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"
+                      className="px-3.5 py-1.5 rounded-full bg-[#EBF4FC] hover:bg-[#D2DEEA] text-[#1673B8] font-extrabold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"
                       title="Share this job opportunity"
                     >
                       {copiedId === 'share-link' ? (
@@ -3479,9 +3479,9 @@ export default function App() {
 
                   {/* Location & Experience Details */}
                   <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="p-3.5 rounded-2xl bg-[#F0FDF4]">
+                    <div className="p-3.5 rounded-2xl bg-[#F0F6FC]">
                       <div className="text-gray-500 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-[#16A34A]" />
+                        <MapPin className="w-3.5 h-3.5 text-[#1673B8]" />
                         <span>Location</span>
                       </div>
                       <div className="font-bold text-gray-900 mt-0.5">
@@ -3489,9 +3489,9 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-[#F0FDF4]">
+                    <div className="p-3.5 rounded-2xl bg-[#F0F6FC]">
                       <div className="text-gray-500 flex items-center gap-1">
-                        <Briefcase className="w-3.5 h-3.5 text-[#16A34A]" />
+                        <Briefcase className="w-3.5 h-3.5 text-[#1673B8]" />
                         <span>Experience &amp; Deadline</span>
                       </div>
                       <div className="font-bold text-gray-900 mt-0.5">
@@ -3520,23 +3520,23 @@ export default function App() {
                   </div>
 
                   {/* ==================== HOW TO APPLY BOX & VERIFICATION DISCLAIMER ==================== */}
-                  <div className="rounded-[22px] bg-[#F0FDF4] border-2 border-[#16A34A] p-4 space-y-3.5">
+                  <div className="rounded-[22px] bg-[#F0F6FC] border-2 border-[#1673B8] p-4 space-y-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-xl bg-[#15803D] text-white flex items-center justify-center shrink-0">
+                      <span className="w-8 h-8 rounded-xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
                         <Mail className="w-4 h-4" />
                       </span>
                       <div>
-                        <h3 className="text-sm font-extrabold text-[#0B3B1E]">
+                        <h3 className="text-sm font-extrabold text-[#1A2138]">
                           How to Apply &amp; Verification Disclaimer
                         </h3>
-                        <p className="text-[11px] text-[#15803D] font-semibold">
+                        <p className="text-[11px] text-[#1673B8] font-semibold">
                           Official Application Guidelines
                         </p>
                       </div>
                     </div>
 
                     {/* Professional, Short & Precise Disclaimer */}
-                    <div className="space-y-2 text-xs text-gray-700 leading-relaxed bg-white/80 p-3 rounded-xl border border-emerald-100">
+                    <div className="space-y-2 text-xs text-gray-700 leading-relaxed bg-white/80 p-3 rounded-xl border border-[#D2DEEA]">
                       <p>
                         <strong>Disclaimer:</strong> We curate and share professional opportunities from credible food industry sources. However, it is each applicant&apos;s responsibility to independently verify all company, position, and location details before applying or attending an interview.
                       </p>
@@ -3547,13 +3547,13 @@ export default function App() {
 
                     {/* Contact Details Box */}
                     {(detectedEmail || detectedPhone) && (
-                      <div className="bg-white rounded-2xl p-3 border border-emerald-200 space-y-2 text-xs">
+                      <div className="bg-white rounded-2xl p-3 border border-[#D2DEEA] space-y-2 text-xs">
                         {detectedEmail && (
                           <div>
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
                               Employer HR Contact Email
                             </span>
-                            <span className="font-extrabold text-[#0B3B1E] select-all break-all text-[13px]">
+                            <span className="font-extrabold text-[#1A2138] select-all break-all text-[13px]">
                               {detectedEmail}
                             </span>
                           </div>
@@ -3562,24 +3562,24 @@ export default function App() {
                         {detectedPhone && (
                           <div
                             className={
-                              detectedEmail ? 'border-t border-emerald-100 pt-2' : ''
+                              detectedEmail ? 'border-t border-[#D2DEEA] pt-2' : ''
                             }
                           >
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
                               Contact / WhatsApp Number
                             </span>
-                            <span className="font-extrabold text-[#0B3B1E] select-all text-[13px]">
+                            <span className="font-extrabold text-[#1A2138] select-all text-[13px]">
                               {detectedPhone}
                             </span>
                           </div>
                         )}
 
                         {emailSubject && detectedEmail && (
-                          <div className="border-t border-emerald-100 pt-2">
+                          <div className="border-t border-[#D2DEEA] pt-2">
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
                               Recommended Email Subject Line
                             </span>
-                            <span className="font-bold text-[#14532D] select-all text-xs">
+                            <span className="font-bold text-[#105E9A] select-all text-xs">
                               {emailSubject}
                             </span>
                           </div>
@@ -3593,7 +3593,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => handleCopyText(detectedEmail, 'job-email')}
-                          className="w-full py-2.5 px-4 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                          className="w-full py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
                         >
                           {copiedId === 'job-email' ? (
                             <>
@@ -3613,16 +3613,16 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => handleCopyText(detectedPhone, 'job-phone')}
-                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-emerald-50 border-2 border-[#16A34A] text-[#0B3B1E] font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border-2 border-[#1673B8] text-[#1A2138] font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
                         >
                           {copiedId === 'job-phone' ? (
                             <>
-                              <Check className="w-4 h-4 stroke-[2.5] text-[#16A34A]" />
+                              <Check className="w-4 h-4 stroke-[2.5] text-[#1673B8]" />
                               <span>Copied Contact Number!</span>
                             </>
                           ) : (
                             <>
-                              <Phone className="w-4 h-4 text-[#16A34A]" />
+                              <Phone className="w-4 h-4 text-[#1673B8]" />
                               <span>Copy Contact Number</span>
                             </>
                           )}
@@ -3633,16 +3633,16 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => handleCopyText(detectedLink, 'job-link')}
-                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-[#0B3B1E] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#BBD6EE] text-[#1A2138] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
                         >
                           {copiedId === 'job-link' ? (
                             <>
-                              <Check className="w-4 h-4 stroke-[2.5] text-[#16A34A]" />
+                              <Check className="w-4 h-4 stroke-[2.5] text-[#1673B8]" />
                               <span>Copied Application Link!</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="w-4 h-4 text-[#16A34A]" />
+                              <Copy className="w-4 h-4 text-[#1673B8]" />
                               <span>Copy Application Link</span>
                             </>
                           )}
@@ -3652,16 +3652,16 @@ export default function App() {
                   </div>
 
                   {/* Personal 'Mark as Applied' Checkbox (Preserved) */}
-                  <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#EAF5EC] border border-[#9EC4A7] cursor-pointer select-none">
+                  <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#9AC2E6] cursor-pointer select-none">
                     <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
                         checked={isApplied}
                         onChange={() => handleToggleAppliedJob(job.id)}
-                        className="w-5 h-5 accent-[#15803D] rounded cursor-pointer"
+                        className="w-5 h-5 accent-[#1673B8] rounded cursor-pointer"
                       />
                       <div>
-                        <div className="text-xs font-extrabold text-[#0B3B1E]">
+                        <div className="text-xs font-extrabold text-[#1A2138]">
                           Mark as Applied
                         </div>
                         <div className="text-[11px] text-gray-600">
@@ -3670,7 +3670,7 @@ export default function App() {
                       </div>
                     </div>
                     {isApplied && (
-                      <span className="px-2.5 py-1 rounded-full bg-[#15803D] text-white text-[11px] font-extrabold">
+                      <span className="px-2.5 py-1 rounded-full bg-[#1673B8] text-white text-[11px] font-extrabold">
                         Applied ✓
                       </span>
                     )}
@@ -3910,19 +3910,19 @@ export default function App() {
               const displayCountry = sch.country || 'International';
 
               return (
-                <div className="bg-white border border-emerald-200 rounded-[26px] p-5 shadow-sm space-y-4">
-                  <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-4">
+                <div className="bg-white border border-[#D2DEEA] rounded-[26px] p-5 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between gap-3 border-b border-[#D2DEEA] pb-4">
                     <div className="space-y-1">
                       {/* Top tags: Unclickable Funding Type & Country */}
                       <div className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none">
-                        <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#BCE3C5] text-[#0B3B1E] text-[11px] font-bold cursor-default pointer-events-none">
+                        <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#EBF4FC] text-[#1A2138] text-[11px] font-bold cursor-default pointer-events-none">
                           {displayFunding}
                         </span>
-                        <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#EAF5EC] text-[#15803D] text-[11px] font-bold cursor-default pointer-events-none">
+                        <span className="inline-block px-2.5 py-0.5 rounded-[8px] bg-[#F0F6FC] text-[#1673B8] text-[11px] font-bold cursor-default pointer-events-none">
                           {displayCountry}
                         </span>
                       </div>
-                      <h1 className="text-[16.5px] sm:text-[19px] font-extrabold text-[#0B3B1E] leading-snug pt-1 break-words">
+                      <h1 className="text-[16.5px] sm:text-[19px] font-extrabold text-[#1A2138] leading-snug pt-1 break-words">
                         {sch.title}
                       </h1>
                       <p className="text-[12.5px] sm:text-sm font-semibold text-gray-600 break-words">
@@ -3939,7 +3939,7 @@ export default function App() {
                           `Organization: ${sch.organization} • Country: ${sch.country} • Deadline: ${sch.deadline}`
                         )
                       }
-                      className="px-3.5 py-1.5 rounded-full bg-[#EAF5EC] hover:bg-[#D5EBD9] text-[#15803D] font-extrabold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"
+                      className="px-3.5 py-1.5 rounded-full bg-[#EBF4FC] hover:bg-[#D2DEEA] text-[#1673B8] font-extrabold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"
                       title="Share this scholarship"
                     >
                       {copiedId === 'share-link' ? (
@@ -3958,15 +3958,15 @@ export default function App() {
 
                   {/* Country & Deadline Countdown Cards */}
                   <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="p-3.5 rounded-2xl bg-[#F0FDF4]">
+                    <div className="p-3.5 rounded-2xl bg-[#F0F6FC]">
                       <div className="text-gray-500">Host Country</div>
                       <div className="font-bold text-gray-900 mt-0.5">
                         {sch.country || 'International'}
                       </div>
                     </div>
-                    <div className="p-3.5 rounded-2xl bg-[#DCF2E3] border border-emerald-200">
-                      <div className="text-[#14532D]">Deadline Countdown</div>
-                      <div className="font-bold text-[#0B3B1E] mt-0.5 tabular-nums">
+                    <div className="p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#D2DEEA]">
+                      <div className="text-[#105E9A]">Deadline Countdown</div>
+                      <div className="font-bold text-[#1A2138] mt-0.5 tabular-nums">
                         {sch.deadline} ({daysLeft}d left)
                       </div>
                     </div>
@@ -3991,23 +3991,23 @@ export default function App() {
                   </div>
 
                   {/* ==================== HOW TO APPLY BOX & VERIFICATION DISCLAIMER ==================== */}
-                  <div className="rounded-[22px] bg-[#F0FDF4] border-2 border-[#16A34A] p-4 space-y-3.5">
+                  <div className="rounded-[22px] bg-[#F0F6FC] border-2 border-[#1673B8] p-4 space-y-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded-xl bg-[#15803D] text-white flex items-center justify-center shrink-0">
+                      <span className="w-8 h-8 rounded-xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
                         <Mail className="w-4 h-4" />
                       </span>
                       <div>
-                        <h3 className="text-sm font-extrabold text-[#0B3B1E]">
+                        <h3 className="text-sm font-extrabold text-[#1A2138]">
                           How to Apply &amp; Verification Disclaimer
                         </h3>
-                        <p className="text-[11px] text-[#15803D] font-semibold">
+                        <p className="text-[11px] text-[#1673B8] font-semibold">
                           Official Application Guidelines
                         </p>
                       </div>
                     </div>
 
                     {/* Professional English Disclaimer & Application Instructions */}
-                    <div className="space-y-2 text-xs text-gray-700 leading-relaxed bg-white/80 p-3 rounded-xl border border-emerald-100">
+                    <div className="space-y-2 text-xs text-gray-700 leading-relaxed bg-white/80 p-3 rounded-xl border border-[#D2DEEA]">
                       <p>
                         <strong>Disclaimer:</strong> We curate and share authentic, verified scholarship opportunities from reputable academic and research institutions. However, it is each individual applicant&apos;s responsibility to independently verify all eligibility requirements, institution credentials, and official deadlines before applying.
                       </p>
@@ -4018,13 +4018,13 @@ export default function App() {
 
                     {/* Contact & Email Details Box */}
                     {(detectedEmail || detectedPhone) && (
-                      <div className="bg-white rounded-2xl p-3 border border-emerald-200 space-y-2 text-xs">
+                      <div className="bg-white rounded-2xl p-3 border border-[#D2DEEA] space-y-2 text-xs">
                         {detectedEmail && (
                           <div>
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
                               Admissions / Coordinator Email
                             </span>
-                            <span className="font-extrabold text-[#0B3B1E] select-all break-all text-[13px]">
+                            <span className="font-extrabold text-[#1A2138] select-all break-all text-[13px]">
                               {detectedEmail}
                             </span>
                           </div>
@@ -4033,24 +4033,24 @@ export default function App() {
                         {detectedPhone && (
                           <div
                             className={
-                              detectedEmail ? 'border-t border-emerald-100 pt-2' : ''
+                              detectedEmail ? 'border-t border-[#D2DEEA] pt-2' : ''
                             }
                           >
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
                               Contact / Coordinator Number
                             </span>
-                            <span className="font-extrabold text-[#0B3B1E] select-all text-[13px]">
+                            <span className="font-extrabold text-[#1A2138] select-all text-[13px]">
                               {detectedPhone}
                             </span>
                           </div>
                         )}
 
                         {emailSubject && detectedEmail && (
-                          <div className="border-t border-emerald-100 pt-2">
+                          <div className="border-t border-[#D2DEEA] pt-2">
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
                               Recommended Email Subject Line
                             </span>
-                            <span className="font-bold text-[#14532D] select-all text-xs">
+                            <span className="font-bold text-[#105E9A] select-all text-xs">
                               {emailSubject}
                             </span>
                           </div>
@@ -4064,7 +4064,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => handleCopyText(detectedEmail, 'sch-email')}
-                          className="w-full py-2.5 px-4 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                          className="w-full py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
                         >
                           {copiedId === 'sch-email' ? (
                             <>
@@ -4084,16 +4084,16 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => handleCopyText(detectedPhone, 'sch-phone')}
-                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-emerald-50 border-2 border-[#16A34A] text-[#0B3B1E] font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border-2 border-[#1673B8] text-[#1A2138] font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
                         >
                           {copiedId === 'sch-phone' ? (
                             <>
-                              <Check className="w-4 h-4 stroke-[2.5] text-[#16A34A]" />
+                              <Check className="w-4 h-4 stroke-[2.5] text-[#1673B8]" />
                               <span>Copied Contact Number!</span>
                             </>
                           ) : (
                             <>
-                              <Phone className="w-4 h-4 text-[#16A34A]" />
+                              <Phone className="w-4 h-4 text-[#1673B8]" />
                               <span>Copy Contact Number</span>
                             </>
                           )}
@@ -4104,16 +4104,16 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => handleCopyText(detectedLink, 'sch-link')}
-                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-[#0B3B1E] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#BBD6EE] text-[#1A2138] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
                         >
                           {copiedId === 'sch-link' ? (
                             <>
-                              <Check className="w-4 h-4 stroke-[2.5] text-[#16A34A]" />
+                              <Check className="w-4 h-4 stroke-[2.5] text-[#1673B8]" />
                               <span>Copied Official Link!</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="w-4 h-4 text-[#16A34A]" />
+                              <Copy className="w-4 h-4 text-[#1673B8]" />
                               <span>Copy Application Link</span>
                             </>
                           )}
@@ -4123,16 +4123,16 @@ export default function App() {
                   </div>
 
                   {/* Personal 'Mark as Applied' Checkbox (Preserved) */}
-                  <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#EAF5EC] border border-[#9EC4A7] cursor-pointer select-none">
+                  <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#9AC2E6] cursor-pointer select-none">
                     <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
                         checked={isApplied}
                         onChange={() => handleToggleAppliedScholarship(sch.id)}
-                        className="w-5 h-5 accent-[#15803D] rounded cursor-pointer"
+                        className="w-5 h-5 accent-[#1673B8] rounded cursor-pointer"
                       />
                       <div>
-                        <div className="text-xs font-extrabold text-[#0B3B1E]">
+                        <div className="text-xs font-extrabold text-[#1A2138]">
                           Mark as Applied
                         </div>
                         <div className="text-[11px] text-gray-600">
@@ -4141,7 +4141,7 @@ export default function App() {
                       </div>
                     </div>
                     {isApplied && (
-                      <span className="px-2.5 py-1 rounded-full bg-[#15803D] text-white text-[11px] font-extrabold">
+                      <span className="px-2.5 py-1 rounded-full bg-[#1673B8] text-white text-[11px] font-extrabold">
                         Applied ✓
                       </span>
                     )}
@@ -4154,14 +4154,14 @@ export default function App() {
           {route.name === 'search' && (
             <div className="space-y-4 px-1">
               <div className="relative">
-                <Search className="w-4 h-4 text-[#16A34A] absolute left-4 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-[#1673B8] absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   autoFocus
                   value={globalSearchQuery}
                   onChange={(e) => setGlobalSearchQuery(e.target.value)}
                   placeholder="Search jobs, scholarships, trainings, specialists..."
-                  className="w-full pl-10 pr-9 py-3.5 text-sm font-medium bg-white border-[1.5px] border-emerald-300 rounded-[20px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#16A34A] shadow-xs"
+                  className="w-full pl-10 pr-9 py-3.5 text-sm font-medium bg-white border-[1.5px] border-[#BBD6EE] rounded-[20px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#1673B8] shadow-xs"
                 />
                 {globalSearchQuery && (
                   <button
@@ -4183,8 +4183,8 @@ export default function App() {
                       onClick={() => setSearchTab(t)}
                       className={`px-4 py-2 rounded-[14px] text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                         searchTab === t
-                          ? 'bg-[#15803D] text-white'
-                          : 'bg-white border border-emerald-200 text-[#0B3B1E]'
+                          ? 'bg-[#1673B8] text-white'
+                          : 'bg-white border border-[#D2DEEA] text-[#1A2138]'
                       }`}
                     >
                       {t}
@@ -4197,7 +4197,7 @@ export default function App() {
                 {(searchTab === 'All' || searchTab === 'Jobs') &&
                   searchResults.jobs.length > 0 && (
                     <div className="space-y-3">
-                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#14532D] px-1">
+                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#105E9A] px-1">
                         Jobs ({searchResults.jobs.length})
                       </h2>
                       {searchResults.jobs.map((j) => (
@@ -4217,7 +4217,7 @@ export default function App() {
                 {(searchTab === 'All' || searchTab === 'Scholarships') &&
                   searchResults.scholarships.length > 0 && (
                     <div className="space-y-3">
-                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#14532D] px-1">
+                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#105E9A] px-1">
                         Scholarships ({searchResults.scholarships.length})
                       </h2>
                       {searchResults.scholarships.map((s) => (
@@ -4229,13 +4229,13 @@ export default function App() {
                               scholarshipId: s.id
                             })
                           }
-                          className="bg-white border border-emerald-200 rounded-[24px] p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-[#16A34A] shadow-xs"
+                          className="bg-white border border-[#D2DEEA] rounded-[24px] p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-[#1673B8] shadow-xs"
                         >
                           <div>
-                            <div className="text-[11px] font-bold text-[#16A34A]">
+                            <div className="text-[11px] font-bold text-[#1673B8]">
                               {s.fundingType} • {s.country}
                             </div>
-                            <div className="text-base font-bold text-[#0B3B1E]">
+                            <div className="text-base font-bold text-[#1A2138]">
                               {s.title}
                             </div>
                             <div className="text-xs text-gray-500">{s.organization}</div>
@@ -4249,7 +4249,7 @@ export default function App() {
                 {(searchTab === 'All' || searchTab === 'Trainings') &&
                   searchResults.trainings.length > 0 && (
                     <div className="space-y-3">
-                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#14532D] px-1">
+                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#105E9A] px-1">
                         Trainings ({searchResults.trainings.length})
                       </h2>
                       {searchResults.trainings.map((t) => (
@@ -4261,13 +4261,13 @@ export default function App() {
                               trainingId: t.id
                             })
                           }
-                          className="bg-white border border-emerald-200 rounded-[24px] p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-[#16A34A] shadow-xs"
+                          className="bg-white border border-[#D2DEEA] rounded-[24px] p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-[#1673B8] shadow-xs"
                         >
                           <div>
-                            <div className="text-[11px] font-bold text-[#16A34A]">
+                            <div className="text-[11px] font-bold text-[#1673B8]">
                               {t.category} {t.subType ? `• ${t.subType}` : ''}
                             </div>
-                            <div className="text-base font-bold text-[#0B3B1E]">
+                            <div className="text-base font-bold text-[#1A2138]">
                               {t.title}
                             </div>
                             <div className="text-xs text-gray-500">
@@ -4282,7 +4282,7 @@ export default function App() {
 
                 {(searchTab === 'All' || searchTab === 'Members') && (
                   <div className="space-y-3">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-[#14532D] px-1">
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-[#105E9A] px-1">
                       Premium Specialists ({searchResults.members.length})
                     </h2>
                     {searchResults.members.map((m) => (
@@ -4664,15 +4664,15 @@ export default function App() {
           {/* ==================== 8. ADMIN CLOUD STORAGE & RECEIPTS CONSOLE (/admin) ==================== */}
           {route.name === 'admin' && isUserAdmin && (
             <div className="space-y-4 px-1">
-              <div className="bg-gradient-to-r from-[#0D2E1B] via-[#14532D] to-[#15803D] rounded-[24px] p-5 text-white shadow-sm space-y-2">
+              <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] rounded-[24px] p-5 text-white shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-200 text-[10.5px] font-extrabold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/15 text-sky-200 text-[10.5px] font-extrabold">
                     Admin Cloud Storage &amp; Control Center
                   </span>
                   <button
                     type="button"
                     onClick={handleExportFullBackupJson}
-                    className="px-3 py-1 rounded-full bg-white text-[#0D2E1B] text-[11px] font-extrabold flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1 rounded-full bg-white text-[#1A2138] text-[11px] font-extrabold flex items-center gap-1 cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Backup All Data</span>
@@ -4681,13 +4681,13 @@ export default function App() {
                 <h1 className="text-[22px] font-extrabold leading-tight">
                   Cloud Storage &amp; Data Vault
                 </h1>
-                <p className="text-xs text-emerald-100 leading-relaxed">
+                <p className="text-xs text-sky-100 leading-relaxed">
                   Manage high-traffic storage for User Profiles, Avatars, CVs, Payment Receipts, Jobs &amp; Scholarships.
                 </p>
               </div>
 
               {adminStatusBanner && (
-                <div className="p-3.5 rounded-2xl bg-[#15803D] text-white text-xs font-extrabold flex items-center justify-between shadow-xs">
+                <div className="p-3.5 rounded-2xl bg-[#1673B8] text-white text-xs font-extrabold flex items-center justify-between shadow-xs">
                   <span>{adminStatusBanner}</span>
                   <button
                     type="button"
@@ -4717,8 +4717,8 @@ export default function App() {
                     onClick={() => setAdminTab(t.id)}
                     className={`py-2.5 px-2.5 rounded-2xl text-xs font-extrabold border transition-colors cursor-pointer ${
                       adminTab === t.id
-                        ? 'bg-[#15803D] text-white border-[#15803D] shadow-xs'
-                        : 'bg-white text-[#0D2E1B] border-emerald-200 hover:bg-emerald-50'
+                        ? 'bg-[#1673B8] text-white border-[#1673B8] shadow-xs'
+                        : 'bg-white text-[#1A2138] border-[#D2DEEA] hover:bg-[#F0F6FC]'
                     }`}
                   >
                     {t.label}
@@ -4729,50 +4729,50 @@ export default function App() {
               {/* TAB 1: CLOUD STORAGE ARCHITECTURE & LIVE METRICS */}
               {adminTab === 'storage' && (
                 <div className="space-y-4">
-                  <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-3">
+                  <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-4 shadow-xs space-y-3">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-sm font-extrabold text-[#0D2E1B] flex items-center gap-1.5">
-                        <Database className="w-4 h-4 text-[#15803D]" />
+                      <h2 className="text-sm font-extrabold text-[#1A2138] flex items-center gap-1.5">
+                        <Database className="w-4 h-4 text-[#1673B8]" />
                         <span>Live Cloud Storage Collections Status</span>
                       </h2>
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#14532D] text-[10.5px] font-extrabold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
                         100% Free Active
                       </span>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2.5 text-xs">
-                      <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100">
+                      <div className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
                         <div className="text-gray-500 font-semibold">
                           User Profiles &amp; Pics
                         </div>
-                        <div className="text-lg font-extrabold text-[#0D2E1B] mt-0.5">
+                        <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
                           {users.length} Users
                         </div>
-                        <div className="text-[10.5px] text-[#15803D] font-bold">
+                        <div className="text-[10.5px] text-[#1673B8] font-bold">
                           /users + /private/profile
                         </div>
                       </div>
 
-                      <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100">
+                      <div className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
                         <div className="text-gray-500 font-semibold">
                           Payment Receipts
                         </div>
-                        <div className="text-lg font-extrabold text-[#0D2E1B] mt-0.5">
+                        <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
                           {adminAllPaymentRequests.length} Receipts
                         </div>
-                        <div className="text-[10.5px] text-[#15803D] font-bold">
+                        <div className="text-[10.5px] text-[#1673B8] font-bold">
                           /paymentRequests
                         </div>
                       </div>
 
-                      <div className="p-3 rounded-2xl bg-[#F2F7F3] border border-emerald-100">
+                      <div className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
                         <div className="text-gray-500 font-semibold">
                           Jobs &amp; Scholarships
                         </div>
-                        <div className="text-lg font-extrabold text-[#0D2E1B] mt-0.5">
+                        <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
                           {jobs.length + scholarships.length} Posts
                         </div>
-                        <div className="text-[10.5px] text-[#15803D] font-bold">
+                        <div className="text-[10.5px] text-[#1673B8] font-bold">
                           {jobs.length} Jobs • {scholarships.length} Scholarships
                         </div>
                       </div>
@@ -4782,10 +4782,10 @@ export default function App() {
                   {/* STORAGE ENGINE CONFIGURATION (SMART WEBP VS 25GB CLOUDINARY FREE CDN) */}
                   <form
                     onSubmit={handleSaveStorageConfig}
-                    className="bg-white border border-emerald-200 rounded-[24px] p-5 shadow-xs space-y-3.5"
+                    className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-3.5"
                   >
                     <div>
-                      <h3 className="text-base font-extrabold text-[#0D2E1B]">
+                      <h3 className="text-base font-extrabold text-[#1A2138]">
                         High-Traffic Free Media Storage Engine
                       </h3>
                       <p className="text-xs text-gray-600 mt-0.5">
@@ -4803,15 +4803,15 @@ export default function App() {
                         }
                         className={`block p-3.5 rounded-2xl border cursor-pointer transition-all ${
                           storageConfig.provider === 'smart-firestore'
-                            ? 'bg-[#F0FDF4] border-2 border-[#16A34A]'
+                            ? 'bg-[#F0F6FC] border-2 border-[#1673B8]'
                             : 'bg-white border-gray-200'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-extrabold text-[#0D2E1B]">
+                          <span className="text-xs font-extrabold text-[#1A2138]">
                             Tier 1: Smart WebP Compression + Firebase Firestore (Default)
                           </span>
-                          <span className="px-2 py-0.5 rounded-full bg-[#15803D] text-white text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-[#1673B8] text-white text-[10px] font-bold">
                             Active &amp; Free
                           </span>
                         </div>
@@ -4829,15 +4829,15 @@ export default function App() {
                         }
                         className={`block p-3.5 rounded-2xl border cursor-pointer transition-all ${
                           storageConfig.provider === 'cloudinary'
-                            ? 'bg-[#F0FDF4] border-2 border-[#16A34A]'
+                            ? 'bg-[#F0F6FC] border-2 border-[#1673B8]'
                             : 'bg-white border-gray-200'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-extrabold text-[#0D2E1B]">
+                          <span className="text-xs font-extrabold text-[#1A2138]">
                             Tier 2: Cloudinary 25 GB Free Global CDN (Massive Traffic)
                           </span>
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[#14532D] text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10px] font-bold">
                             25 GB Free
                           </span>
                         </div>
@@ -4848,9 +4848,9 @@ export default function App() {
                     </div>
 
                     {storageConfig.provider === 'cloudinary' && (
-                      <div className="space-y-2.5 p-3.5 rounded-2xl bg-[#F2F7F3] border border-emerald-200">
+                      <div className="space-y-2.5 p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
                         <div>
-                          <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
+                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                             Cloudinary Cloud Name (Free Account at cloudinary.com)
                           </label>
                           <input
@@ -4863,11 +4863,11 @@ export default function App() {
                               })
                             }
                             placeholder="e.g. dxyz12345"
-                            className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-semibold"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-extrabold text-[#0D2E1B] mb-1">
+                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                             Unsigned Upload Preset Name
                           </label>
                           <input
@@ -4880,7 +4880,7 @@ export default function App() {
                               })
                             }
                             placeholder="e.g. food_specialists_unsigned"
-                            className="w-full px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-semibold"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold"
                           />
                         </div>
                       </div>
@@ -4888,7 +4888,7 @@ export default function App() {
 
                     <button
                       type="submit"
-                      className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer"
+                      className="w-full py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer"
                     >
                       Save Cloud Storage Configuration
                     </button>
@@ -4898,17 +4898,17 @@ export default function App() {
 
               {/* TAB 2: PAYMENT RECEIPTS & PREMIUM MEMBER APPROVALS */}
               {adminTab === 'receipts' && (
-                <div className="bg-white border border-emerald-200 rounded-[24px] p-4 shadow-xs space-y-3">
+                <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-4 shadow-xs space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <h2 className="text-base font-extrabold text-[#0D2E1B]">
+                      <h2 className="text-base font-extrabold text-[#1A2138]">
                         Premium Subscription Requests ({adminAllPaymentRequests.length})
                       </h2>
                       <p className="text-[11px] text-gray-600">
                         Verify Rs. 100 payment screenshots and approve to activate 1-Month Premium Membership
                       </p>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#14532D] text-[10.5px] font-extrabold shrink-0">
+                    <span className="px-2.5 py-1 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold shrink-0">
                       Rs. 100 / 1 Month
                     </span>
                   </div>
@@ -4921,18 +4921,18 @@ export default function App() {
                       {adminAllPaymentRequests.map((req) => (
                         <div
                           key={req.id}
-                          className="p-4 rounded-2xl bg-[#F6FBF7] border border-emerald-200 space-y-2.5"
+                          className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2.5"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <div className="text-sm font-extrabold text-[#0D2E1B]">
+                              <div className="text-sm font-extrabold text-[#1A2138]">
                                 {req.userName}
                               </div>
                               <div className="text-[11px] text-gray-600">
                                 {req.userEmail}
                                 {req.userPhone ? ` • ${req.userPhone}` : ''}
                               </div>
-                              <div className="text-xs font-extrabold text-[#15803D] mt-0.5">
+                              <div className="text-xs font-extrabold text-[#1673B8] mt-0.5">
                                 {req.paymentMethod} • {req.amount || 'Rs. 100 (1 Month)'} • TID:{' '}
                                 {req.transactionId}
                               </div>
@@ -4942,7 +4942,7 @@ export default function App() {
                                 </div>
                               )}
                               {req.status === 'verified' && req.premiumExpiresAt && (
-                                <div className="text-[11px] font-extrabold text-[#14532D] mt-1">
+                                <div className="text-[11px] font-extrabold text-[#105E9A] mt-1">
                                   ✓ 1-Month Subscription Active Until:{' '}
                                   {new Date(req.premiumExpiresAt).toLocaleDateString('en-PK', {
                                     day: 'numeric',
@@ -4955,7 +4955,7 @@ export default function App() {
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
                                 req.status === 'verified'
-                                  ? 'bg-[#DCFCE7] text-[#14532D]'
+                                  ? 'bg-[#EBF4FC] text-[#105E9A]'
                                   : req.status === 'rejected'
                                   ? 'bg-red-100 text-red-800'
                                   : 'bg-amber-100 text-amber-900'
@@ -4968,14 +4968,14 @@ export default function App() {
                           </div>
 
                           {req.receiptImageUrl && (
-                            <div className="rounded-xl overflow-hidden border border-emerald-200 bg-white p-2 space-y-1.5">
+                            <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2 space-y-1.5">
                               <div className="text-[10.5px] font-bold text-gray-500 flex items-center justify-between px-1">
                                 <span>Uploaded Payment Screenshot</span>
                                 <a
                                   href={req.receiptImageUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-[#15803D] underline font-extrabold"
+                                  className="text-[#1673B8] underline font-extrabold"
                                 >
                                   Open Full Image ↗
                                 </a>
@@ -4994,7 +4994,7 @@ export default function App() {
                               onClick={() =>
                                 handleAdminVerifyPayment(req, 'verified')
                               }
-                              className="py-2.5 px-3 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer transition-colors"
+                              className="py-2.5 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors"
                             >
                               ✓ Approve &amp; Activate 1 Month
                             </button>
@@ -5019,9 +5019,9 @@ export default function App() {
               {adminTab === 'opportunities' && (
                 <form
                   onSubmit={handleAdminPublishOpportunity}
-                  className="bg-white border border-emerald-200 rounded-[24px] p-5 shadow-xs space-y-3"
+                  className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-3"
                 >
-                  <h2 className="text-base font-extrabold text-[#0D2E1B]">
+                  <h2 className="text-base font-extrabold text-[#1A2138]">
                     Store New Job or Scholarship in Cloud Database
                   </h2>
                   <div className="grid grid-cols-2 gap-2">
@@ -5033,8 +5033,8 @@ export default function App() {
                       }}
                       className={`py-2 rounded-xl text-xs font-extrabold border cursor-pointer ${
                         adminOppType === 'job'
-                          ? 'bg-[#15803D] text-white border-[#15803D]'
-                          : 'bg-[#F2F7F3] text-[#0D2E1B] border-emerald-200'
+                          ? 'bg-[#1673B8] text-white border-[#1673B8]'
+                          : 'bg-[#F0F6FC] text-[#1A2138] border-[#D2DEEA]'
                       }`}
                     >
                       + New Job ({jobs.length})
@@ -5047,8 +5047,8 @@ export default function App() {
                       }}
                       className={`py-2 rounded-xl text-xs font-extrabold border cursor-pointer ${
                         adminOppType === 'scholarship'
-                          ? 'bg-[#15803D] text-white border-[#15803D]'
-                          : 'bg-[#F2F7F3] text-[#0D2E1B] border-emerald-200'
+                          ? 'bg-[#1673B8] text-white border-[#1673B8]'
+                          : 'bg-[#F0F6FC] text-[#1A2138] border-[#D2DEEA]'
                       }`}
                     >
                       + New Scholarship ({scholarships.length})
@@ -5071,12 +5071,12 @@ export default function App() {
                         ? 'Job Title (e.g. QA/QC Executive — Auto-creates Tag)'
                         : 'Scholarship Title (e.g. MSc Food Science Fellowship)'
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold"
                   />
 
                   {adminOppType === 'job' && (
-                    <div className="space-y-1.5 p-2.5 rounded-xl bg-[#F2F7F3] border border-emerald-200">
-                      <label className="block text-[11px] font-extrabold text-[#0D2E1B]">
+                    <div className="space-y-1.5 p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                      <label className="block text-[11px] font-extrabold text-[#1A2138]">
                         Job Tag (Auto-Created from Job Title or Type Any Custom Tag):
                       </label>
                       <input
@@ -5084,7 +5084,7 @@ export default function App() {
                         value={adminOppCat}
                         onChange={(e) => setAdminOppCat(e.target.value)}
                         placeholder="Type custom tag or pick below (e.g. Dairy QA, Food Safety)..."
-                        className="w-full px-3 py-1.5 rounded-lg bg-white border border-emerald-200 text-xs font-bold text-[#0D2E1B]"
+                        className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#D2DEEA] text-xs font-bold text-[#1A2138]"
                       />
                       <div className="flex flex-wrap gap-1 pt-0.5">
                         {[
@@ -5103,8 +5103,8 @@ export default function App() {
                             onClick={() => setAdminOppCat(t)}
                             className={`px-2 py-0.5 rounded-md text-[10.5px] font-extrabold cursor-pointer ${
                               adminOppCat === t
-                                ? 'bg-[#15803D] text-white'
-                                : 'bg-white border border-emerald-200 text-[#0D2E1B]'
+                                ? 'bg-[#1673B8] text-white'
+                                : 'bg-white border border-[#D2DEEA] text-[#1A2138]'
                             }`}
                           >
                             {t}
@@ -5124,7 +5124,7 @@ export default function App() {
                         ? 'Company Name (e.g. Engro Foods)'
                         : 'University / Organization'
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold"
                   />
 
                   <div className="grid grid-cols-2 gap-2">
@@ -5133,7 +5133,7 @@ export default function App() {
                       value={adminOppCountry}
                       onChange={(e) => setAdminOppCountry(e.target.value)}
                       placeholder="Country (e.g. Pakistan / UAE)"
-                      className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold"
                     />
                     <input
                       type="text"
@@ -5144,7 +5144,7 @@ export default function App() {
                           ? 'Experience (e.g. 2+ Years)'
                           : 'Deadline (YYYY-MM-DD)'
                       }
-                      className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold"
                     />
                   </div>
 
@@ -5154,14 +5154,14 @@ export default function App() {
                       value={adminOppEmail}
                       onChange={(e) => setAdminOppEmail(e.target.value)}
                       placeholder="Contact HR / Admissions Email"
-                      className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold"
                     />
                     <input
                       type="text"
                       value={adminOppLink}
                       onChange={(e) => setAdminOppLink(e.target.value)}
                       placeholder="Official Apply Link (https://...)"
-                      className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold"
                     />
                   </div>
 
@@ -5170,12 +5170,12 @@ export default function App() {
                     value={adminOppDesc}
                     onChange={(e) => setAdminOppDesc(e.target.value)}
                     placeholder="Full description, eligibility, and application instructions..."
-                    className="w-full px-3 py-2 rounded-xl bg-[#EAF3EC] text-xs font-semibold"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] text-xs font-semibold"
                   />
 
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold cursor-pointer"
+                    className="w-full py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer"
                   >
                     Save &amp; Publish to Cloud Database
                   </button>
@@ -5188,14 +5188,14 @@ export default function App() {
         {/* ==================== HIRE / CONTACT MEMBER MODAL ==================== */}
         {contactModalMember && (
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="w-full max-w-[420px] bg-white rounded-[28px] p-5 shadow-xl space-y-4 border border-emerald-200">
+            <div className="w-full max-w-[420px] bg-white rounded-[28px] p-5 shadow-xl space-y-4 border border-[#D2DEEA]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] text-[11px] font-extrabold inline-flex items-center gap-1">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#1673B8] text-[11px] font-extrabold inline-flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5" />
                     <span>Premium Specialist</span>
                   </span>
-                  <h3 className="text-[20px] font-extrabold text-[#0D2E1B] mt-1">
+                  <h3 className="text-[20px] font-extrabold text-[#1A2138] mt-1">
                     Connect with {contactModalMember.name}
                   </h3>
                   {(contactModalMember.title ||
@@ -5222,19 +5222,19 @@ export default function App() {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-[#0D2E1B]">
+                <label className="block text-xs font-bold text-[#1A2138]">
                   Hiring / Networking Message
                 </label>
                 <textarea
                   rows={3}
                   value={contactCustomMsg}
                   onChange={(e) => setContactCustomMsg(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl bg-[#F2F7F3] border border-[#AECBB5] text-xs font-medium text-gray-900 focus:outline-none focus:border-[#16A34A]"
+                  className="w-full px-3.5 py-2.5 rounded-2xl bg-[#F0F6FC] border border-[#BBD6EE] text-xs font-medium text-gray-900 focus:outline-none focus:border-[#1673B8]"
                 />
               </div>
 
               {contactSentBanner && (
-                <div className="p-3 rounded-2xl bg-[#DCFCE7] text-[#0D2E1B] text-xs font-bold">
+                <div className="p-3 rounded-2xl bg-[#EBF4FC] text-[#1A2138] text-xs font-bold">
                   {contactSentBanner}
                 </div>
               )}
@@ -5269,7 +5269,7 @@ export default function App() {
                     )}?text=${encodeURIComponent(contactCustomMsg)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+                    className="w-full py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
                   >
                     <MessageSquare className="w-4 h-4" />
                     <span>Message / Call on WhatsApp</span>
@@ -5283,9 +5283,9 @@ export default function App() {
                     }?subject=${encodeURIComponent(
                       'Hiring / Networking Inquiry via FS Portal'
                     )}&body=${encodeURIComponent(contactCustomMsg)}`}
-                    className="w-full py-3 px-4 rounded-2xl bg-[#EAF3EC] hover:bg-[#D5EAD8] text-[#0D2E1B] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+                    className="w-full py-3 px-4 rounded-2xl bg-[#EBF4FC] hover:bg-[#D2DEEA] text-[#1A2138] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
                   >
-                    <Mail className="w-4 h-4 text-[#15803D]" />
+                    <Mail className="w-4 h-4 text-[#1673B8]" />
                     <span>Send Direct Email ({contactModalMember.email})</span>
                   </a>
                 )}
@@ -5305,23 +5305,23 @@ export default function App() {
         {/* ==================== PREMIUM MEMBERSHIP & PAYMENT POPUP MODAL (RS. 200 / MONTH OR RS. 1,800 / YEAR - 25% OFF) ==================== */}
         {showPremiumUpgradeModal && (
           <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3.5 overflow-y-auto">
-            <div className="w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-5 shadow-2xl space-y-4 border-2 border-[#16A34A]">
+            <div className="w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-5 shadow-2xl space-y-4 border-2 border-[#1673B8]">
               {/* Modal Header */}
-              <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-3.5">
+              <div className="flex items-start justify-between gap-3 border-b border-[#D2DEEA] pb-3.5">
                 <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#D97706] to-[#B45309] text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <Crown className="w-6 h-6 text-amber-100" />
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1673B8] to-[#1A2138] text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <Crown className="w-6 h-6 text-amber-300" />
                   </div>
                   <div>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10.5px] font-extrabold">
-                      <Sparkles className="w-3 h-3 text-[#D97706]" />
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#1673B8] text-[10.5px] font-extrabold">
+                      <Sparkles className="w-3 h-3 text-[#1673B8]" />
                       <span>
                         Rs. {liveGateway.monthlyFeeRs} / Month • Rs.{' '}
                         {liveGateway.yearlyFeeRs.toLocaleString()} / Year (
                         {liveGateway.yearlyDiscountPct}% OFF)
                       </span>
                     </span>
-                    <h2 className="text-[20px] font-extrabold text-[#0D2E1B] leading-tight mt-1">
+                    <h2 className="text-[20px] font-extrabold text-[#1A2138] leading-tight mt-1">
                       Become a Premium Member
                     </h2>
                     <p className="text-xs font-medium text-gray-600 mt-0.5">
@@ -5341,7 +5341,7 @@ export default function App() {
 
               {/* STEP 1: CHOOSE SUBSCRIPTION PLAN (1 MONTH vs FULL YEAR DISCOUNT) */}
               <div className="space-y-2">
-                <label className="block text-xs font-extrabold text-[#0D2E1B]">
+                <label className="block text-xs font-extrabold text-[#1A2138]">
                   1. Select Subscription Plan
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -5354,19 +5354,19 @@ export default function App() {
                     }}
                     className={`p-3 rounded-2xl border-2 text-left transition-all cursor-pointer relative ${
                       selectedPlanDuration === '1-month'
-                        ? 'bg-[#EAF5EC] border-[#15803D] shadow-xs'
-                        : 'bg-white border-gray-200 hover:border-emerald-300'
+                        ? 'bg-[#EBF4FC] border-[#1673B8] shadow-xs'
+                        : 'bg-white border-gray-200 hover:border-[#9AC2E6]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#14532D]">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#105E9A]">
                         1 Month Plan
                       </span>
                       {selectedPlanDuration === '1-month' && (
-                        <CheckCircle2 className="w-4 h-4 text-[#15803D]" />
+                        <CheckCircle2 className="w-4 h-4 text-[#1673B8]" />
                       )}
                     </div>
-                    <div className="text-lg font-black text-[#0D2E1B] mt-1">
+                    <div className="text-lg font-black text-[#1A2138] mt-1">
                       Rs. {liveGateway.monthlyFeeRs.toLocaleString()}
                     </div>
                     <div className="text-[10.5px] font-semibold text-gray-600">
@@ -5383,30 +5383,30 @@ export default function App() {
                     }}
                     className={`p-3 rounded-2xl border-2 text-left transition-all cursor-pointer relative ${
                       selectedPlanDuration === '1-year'
-                        ? 'bg-[#FFFBEB] border-[#D97706] shadow-xs'
-                        : 'bg-white border-gray-200 hover:border-amber-300'
+                        ? 'bg-[#EBF4FC] border-[#1673B8] shadow-xs'
+                        : 'bg-white border-gray-200 hover:border-[#9AC2E6]'
                     }`}
                   >
-                    <span className="inline-block px-2 py-0.5 rounded-full bg-[#D97706] text-white text-[9.5px] font-extrabold uppercase tracking-wider mb-1">
+                    <span className="inline-block px-2 py-0.5 rounded-full bg-[#1673B8] text-white text-[9.5px] font-extrabold uppercase tracking-wider mb-1">
                       🔥 {liveGateway.yearlyDiscountPct}% Discount
                     </span>
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#92400E]">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#105E9A]">
                         Full Year (12 Mo)
                       </span>
                       {selectedPlanDuration === '1-year' && (
-                        <CheckCircle2 className="w-4 h-4 text-[#D97706]" />
+                        <CheckCircle2 className="w-4 h-4 text-[#1673B8]" />
                       )}
                     </div>
                     <div className="flex items-baseline gap-1.5 mt-0.5">
-                      <span className="text-lg font-black text-[#0D2E1B]">
+                      <span className="text-lg font-black text-[#1A2138]">
                         Rs. {liveGateway.yearlyFeeRs.toLocaleString()}
                       </span>
                       <span className="text-[10.5px] font-bold text-gray-400 line-through">
                         Rs. {(liveGateway.monthlyFeeRs * 12).toLocaleString()}
                       </span>
                     </div>
-                    <div className="text-[10.5px] font-extrabold text-[#15803D]">
+                    <div className="text-[10.5px] font-extrabold text-[#1673B8]">
                       Save Rs.{' '}
                       {Math.max(
                         0,
@@ -5419,12 +5419,12 @@ export default function App() {
               </div>
 
               {/* Premium Member Features List */}
-              <div className="bg-[#F2F9F4] border border-[#B8D8C0] rounded-2xl p-4 space-y-2.5">
+              <div className="bg-[#F0F6FC] border border-[#BBD6EE] rounded-2xl p-4 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#14532D]">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A]">
                     Premium Member Benefits
                   </h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#15803D] text-white text-[11px] font-extrabold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#1673B8] text-white text-[11px] font-extrabold">
                     {selectedPlanDuration === '1-year'
                       ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Year (${liveGateway.yearlyDiscountPct}% OFF)`
                       : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / Month`}
@@ -5433,25 +5433,25 @@ export default function App() {
 
                 <ul className="space-y-2 text-xs text-gray-800 font-semibold">
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                     <span>
                       <strong>Show Your Profile in Community:</strong> Your profile appears in the Community directory so other Premium specialists &amp; recruiters can view your profile.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                     <span>
                       <strong>View Full Profiles &amp; LinkedIn:</strong> Access complete profiles, experience, education &amp; LinkedIn links of fellow specialists.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                     <span>
                       <strong>CV Vault Access &amp; Downloads:</strong> Download CVs/Resumes of other Premium members and showcase your CV to recruiters.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#16A34A] shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                     <span>
                       <strong>Direct Contact &amp; Hiring:</strong> Enable direct WhatsApp, Email &amp; Message buttons to connect with members and recruiters.
                     </span>
@@ -5493,7 +5493,7 @@ export default function App() {
                 {/* Selected Payment Account Instructions (Live from Admin Payment Gateway Settings) */}
                 <div className="bg-[#F0F6FC] border border-[#1673B8]/40 rounded-2xl p-3.5 space-y-1.5 text-xs">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-extrabold text-[#92400E]">
+                    <span className="font-extrabold text-[#1A2138]">
                       {payMethod} Account Details
                     </span>
                     <button
@@ -5510,11 +5510,11 @@ export default function App() {
                             : liveGateway.bankWhatsapp;
                         handleCopyText(copyTarget, 'pay-acc-num');
                       }}
-                      className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-[#92400E] text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-white border border-[#BBD6EE] text-[#1673B8] text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
                     >
                       {copiedId === 'pay-acc-num' ? (
                         <>
-                          <Check className="w-3 h-3 text-[#16A34A]" />
+                          <Check className="w-3 h-3 text-[#1673B8]" />
                           <span>Copied!</span>
                         </>
                       ) : (
@@ -5599,7 +5599,7 @@ export default function App() {
 
               {/* Upload Screenshot & Transaction Details */}
               <div className="space-y-3">
-                <label className="block text-xs font-extrabold text-[#0D2E1B]">
+                <label className="block text-xs font-extrabold text-[#1A2138]">
                   3. Upload Payment Screenshot After Paying Rs.{' '}
                   {selectedPlanDuration === '1-year'
                     ? liveGateway.yearlyFeeRs.toLocaleString()
@@ -5611,7 +5611,7 @@ export default function App() {
                     <span className="block text-[10.5px] font-bold text-gray-500 mb-1">
                       Selected Plan &amp; Fee
                     </span>
-                    <div className="w-full px-3 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#C6DFCB] text-xs font-extrabold text-[#0D2E1B]">
+                    <div className="w-full px-3 py-2.5 rounded-xl bg-[#EBF4FC] border border-[#BBD6EE] text-xs font-extrabold text-[#1A2138]">
                       {selectedPlanDuration === '1-year'
                         ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / 1 Year (25% OFF)`
                         : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month`}
@@ -5626,18 +5626,18 @@ export default function App() {
                       value={payTransactionId}
                       onChange={(e) => setPayTransactionId(e.target.value)}
                       placeholder="e.g. TID 839201..."
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#EAF3EC] border border-[#C6DFCB] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#16A34A]"
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#BBD6EE] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#1673B8]"
                     />
                   </div>
                 </div>
 
                 {/* Screenshot Upload Box */}
-                <div className="p-3.5 rounded-2xl bg-[#F2F7F3] border-2 border-dashed border-[#16A34A] space-y-2.5">
+                <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border-2 border-dashed border-[#1673B8] space-y-2.5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 min-w-0">
-                      <ImageIcon className="w-5 h-5 text-[#15803D] shrink-0" />
+                      <ImageIcon className="w-5 h-5 text-[#1673B8] shrink-0" />
                       <div className="min-w-0">
-                        <span className="text-xs font-extrabold text-[#0D2E1B] block truncate">
+                        <span className="text-xs font-extrabold text-[#1A2138] block truncate">
                           {payReceiptUrl
                             ? 'Payment Screenshot Uploaded ✓'
                             : 'Upload Payment Screenshot'}
@@ -5662,7 +5662,7 @@ export default function App() {
                       type="button"
                       onClick={() => receiptInputRef.current?.click()}
                       disabled={isUploadingMedia}
-                      className="px-3.5 py-2 rounded-xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs font-extrabold shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                      className="px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
                     >
                       {isUploadingMedia ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -5674,7 +5674,7 @@ export default function App() {
                   </div>
 
                   {payReceiptUrl && (
-                    <div className="rounded-xl overflow-hidden border border-emerald-200 bg-white p-2">
+                    <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2">
                       <img
                         src={payReceiptUrl}
                         alt="Uploaded Payment Screenshot"
@@ -5685,7 +5685,7 @@ export default function App() {
                 </div>
 
                 {paySubmitBanner && (
-                  <div className="p-3 rounded-xl bg-[#DCFCE7] border border-[#16A34A] text-[#0D2E1B] text-xs font-extrabold leading-relaxed">
+                  <div className="p-3 rounded-xl bg-[#EBF4FC] border border-[#1673B8] text-[#1A2138] text-xs font-extrabold leading-relaxed">
                     {paySubmitBanner}
                   </div>
                 )}
@@ -5695,7 +5695,7 @@ export default function App() {
                     type="button"
                     onClick={handleSubmitPaymentVerification}
                     disabled={isUploadingMedia || isSubmittingPayment}
-                    className="flex-1 py-3.5 px-4 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+                    className="flex-1 py-3.5 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
                   >
                     {isSubmittingPayment && (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -5722,7 +5722,7 @@ export default function App() {
         {/* ==================== APPLICATION UNDER REVIEW & APPROVAL STATUS MODAL ==================== */}
         {showApplicationStatusModal && (
           <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3.5 overflow-y-auto">
-            <div className="w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-5 shadow-2xl space-y-4 border-2 border-[#16A34A]">
+            <div className="w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-5 shadow-2xl space-y-4 border-2 border-[#1673B8]">
               {(() => {
                 const currentStatus = isCurrentUserPaid
                   ? 'verified'
@@ -5738,12 +5738,12 @@ export default function App() {
                 return (
                   <>
                     {/* Top Modal Header */}
-                    <div className="flex items-start justify-between gap-3 border-b border-emerald-100 pb-3.5">
+                    <div className="flex items-start justify-between gap-3 border-b border-[#D2DEEA] pb-3.5">
                       <div className="flex items-start gap-3">
                         <div
                           className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
                             isApproved
-                              ? 'bg-[#15803D] text-white'
+                              ? 'bg-[#1673B8] text-white'
                               : isRejected
                               ? 'bg-red-600 text-white'
                               : 'bg-amber-500 text-white'
@@ -5761,7 +5761,7 @@ export default function App() {
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
                               isApproved
-                                ? 'bg-[#DCFCE7] text-[#14532D]'
+                                ? 'bg-[#EBF4FC] text-[#105E9A]'
                                 : isRejected
                                 ? 'bg-red-100 text-red-800'
                                 : 'bg-amber-100 text-amber-900'
@@ -5773,7 +5773,7 @@ export default function App() {
                               ? 'Application Not Approved'
                               : 'Sent to Admin for Approval'}
                           </span>
-                          <h2 className="text-[19px] font-extrabold text-[#0D2E1B] leading-tight mt-1">
+                          <h2 className="text-[19px] font-extrabold text-[#1A2138] leading-tight mt-1">
                             {isApproved
                               ? 'Premium Membership Active!'
                               : isRejected
@@ -5799,15 +5799,15 @@ export default function App() {
                     </div>
 
                     {/* Live Approval Tracker Steps */}
-                    <div className="bg-[#F2F9F4] border border-[#B8D8C0] rounded-2xl p-4 space-y-2.5">
+                    <div className="bg-[#F0F6FC] border border-[#BBD6EE] rounded-2xl p-4 space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#14532D]">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#105E9A]">
                           Live Approval Status
                         </span>
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
                             isApproved
-                              ? 'bg-[#15803D] text-white'
+                              ? 'bg-[#1673B8] text-white'
                               : isRejected
                               ? 'bg-red-600 text-white'
                               : 'bg-amber-500 text-white'
@@ -5822,18 +5822,18 @@ export default function App() {
                       </div>
 
                       <div className="space-y-2 text-xs font-semibold">
-                        <div className="flex items-center gap-2.5 text-[#0D2E1B]">
-                          <span className="w-5 h-5 rounded-full bg-[#16A34A] text-white flex items-center justify-center text-[11px] font-extrabold shrink-0">
+                        <div className="flex items-center gap-2.5 text-[#1A2138]">
+                          <span className="w-5 h-5 rounded-full bg-[#1673B8] text-white flex items-center justify-center text-[11px] font-extrabold shrink-0">
                             ✓
                           </span>
                           <span>1. Payment Slip &amp; Application Submitted</span>
                         </div>
 
-                        <div className="flex items-center gap-2.5 text-[#0D2E1B]">
+                        <div className="flex items-center gap-2.5 text-[#1A2138]">
                           <span
                             className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${
                               isApproved
-                                ? 'bg-[#16A34A] text-white'
+                                ? 'bg-[#1673B8] text-white'
                                 : isRejected
                                 ? 'bg-red-600 text-white'
                                 : 'bg-amber-500 text-white'
@@ -5846,7 +5846,7 @@ export default function App() {
                             <strong
                               className={
                                 isApproved
-                                  ? 'text-[#15803D]'
+                                  ? 'text-[#1673B8]'
                                   : isRejected
                                   ? 'text-red-700'
                                   : 'text-amber-800'
@@ -5863,11 +5863,11 @@ export default function App() {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2.5 text-[#0D2E1B]">
+                        <div className="flex items-center gap-2.5 text-[#1A2138]">
                           <span
                             className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${
                               isApproved
-                                ? 'bg-[#16A34A] text-white'
+                                ? 'bg-[#1673B8] text-white'
                                 : 'bg-gray-200 text-gray-600'
                             }`}
                           >
@@ -5875,7 +5875,7 @@ export default function App() {
                           </span>
                           <span
                             className={
-                              isApproved ? 'text-[#0D2E1B]' : 'text-gray-500'
+                              isApproved ? 'text-[#1A2138]' : 'text-gray-500'
                             }
                           >
                             3. 1-Month Premium Membership Activation{' '}
@@ -5887,9 +5887,9 @@ export default function App() {
 
                     {/* Submitted Application Details Card */}
                     {myLatestApplication && (
-                      <div className="bg-white border border-emerald-200 rounded-2xl p-4 space-y-3 shadow-2xs">
-                        <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
-                          <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#0D2E1B]">
+                      <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 space-y-3 shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-[#D2DEEA] pb-2">
+                          <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1A2138]">
                             My Submitted Application Details
                           </h3>
                           <span className="text-[10.5px] font-bold text-gray-500">
@@ -5902,23 +5902,23 @@ export default function App() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2.5 text-xs">
-                          <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100">
+                          <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
                             <span className="text-[10px] font-bold text-gray-500 block uppercase">
                               Applicant Name
                             </span>
-                            <span className="font-extrabold text-[#0D2E1B] block truncate mt-0.5">
+                            <span className="font-extrabold text-[#1A2138] block truncate mt-0.5">
                               {myLatestApplication.userName || myProfile.name}
                             </span>
                           </div>
 
-                          <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100">
+                          <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
                             <span className="text-[10px] font-bold text-gray-500 block uppercase">
                               Approval Status
                             </span>
                             <span
                               className={`font-extrabold block mt-0.5 ${
                                 isApproved
-                                  ? 'text-[#15803D]'
+                                  ? 'text-[#1673B8]'
                                   : isRejected
                                   ? 'text-red-700'
                                   : 'text-amber-700'
@@ -5932,20 +5932,20 @@ export default function App() {
                             </span>
                           </div>
 
-                          <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100">
+                          <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
                             <span className="text-[10px] font-bold text-gray-500 block uppercase">
                               Payment Method
                             </span>
-                            <span className="font-extrabold text-[#0D2E1B] block mt-0.5">
+                            <span className="font-extrabold text-[#1A2138] block mt-0.5">
                               {myLatestApplication.paymentMethod}
                             </span>
                           </div>
 
-                          <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100">
+                          <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
                             <span className="text-[10px] font-bold text-gray-500 block uppercase">
                               Subscription Plan &amp; Fee
                             </span>
-                            <span className="font-extrabold text-[#15803D] block mt-0.5">
+                            <span className="font-extrabold text-[#1673B8] block mt-0.5">
                               {myLatestApplication.amount ||
                                 myLatestApplication.subscriptionPlan ||
                                 `Rs. ${liveGateway.monthlyFeeRs} (1 Month)`}
@@ -5956,11 +5956,11 @@ export default function App() {
                         {myLatestApplication.transactionId &&
                           myLatestApplication.transactionId !==
                             'SCREENSHOT-UPLOADED' && (
-                            <div className="p-2.5 rounded-xl bg-[#F6FBF7] border border-emerald-100 text-xs flex items-center justify-between">
+                            <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs flex items-center justify-between">
                               <span className="text-gray-500 font-bold">
                                 Transaction / Ref ID:
                               </span>
-                              <span className="font-extrabold text-[#0D2E1B]">
+                              <span className="font-extrabold text-[#1A2138]">
                                 {myLatestApplication.transactionId}
                               </span>
                             </div>
@@ -5969,9 +5969,9 @@ export default function App() {
                         {isApproved &&
                           (myLatestApplication.premiumExpiresAt ||
                             myProfile.premiumExpiresAt) && (
-                            <div className="p-3 rounded-xl bg-[#DCFCE7] border border-[#16A34A] text-xs font-extrabold text-[#0D2E1B] flex items-center justify-between">
+                            <div className="p-3 rounded-xl bg-[#EBF4FC] border border-[#1673B8] text-xs font-extrabold text-[#1A2138] flex items-center justify-between">
                               <span>Premium Subscription Valid Until:</span>
-                              <span className="text-[#15803D]">
+                              <span className="text-[#1673B8]">
                                 {new Date(
                                   myLatestApplication.premiumExpiresAt ||
                                     myProfile.premiumExpiresAt ||
@@ -5993,12 +5993,12 @@ export default function App() {
                                 href={myLatestApplication.receiptImageUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#15803D] underline font-extrabold"
+                                className="text-[#1673B8] underline font-extrabold"
                               >
                                 View Full Slip ↗
                               </a>
                             </div>
-                            <div className="rounded-xl overflow-hidden border border-emerald-200 bg-[#F6FBF7] p-2">
+                            <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-[#F0F6FC] p-2">
                               <img
                                 src={myLatestApplication.receiptImageUrl}
                                 alt="Submitted Payment Slip"
@@ -6015,7 +6015,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setShowApplicationStatusModal(false)}
-                        className="w-full py-3.5 px-5 rounded-2xl bg-[#15803D] hover:bg-[#0D2E1B] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer"
+                        className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer"
                       >
                         OK, Close Window
                       </button>

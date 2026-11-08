@@ -910,7 +910,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       <p className="text-[11px] font-medium text-slate-600">Endorsed by</p>
                       <p className="text-sm font-black text-[#1673B8]">FS Portal</p>
                     </div>
-                    <div className="px-2.5 py-0.5 rounded bg-[#0D5C3A] text-white text-[7.5px] font-black uppercase tracking-wider text-center">
+                    <div className="px-2.5 py-0.5 rounded bg-[#1673B8] text-white text-[7.5px] font-black uppercase tracking-wider text-center">
                       ENDORSED BY FS PORTAL
                     </div>
                   </div>
@@ -1007,15 +1007,15 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         </div>
 
         {/* Clean Action & Download Bar Below Certificate (No Rs. 1,000 Price Text Here!) */}
-        <div className="rounded-2xl border border-emerald-900/15 bg-white p-4 sm:p-5 shadow-sm space-y-3 max-w-2xl mx-auto">
+        <div className="rounded-2xl border border-[#D2DEEA] bg-white p-4 sm:p-5 shadow-sm space-y-3 max-w-2xl mx-auto">
           {isUnlocked ? (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F0F6FC] border border-[#D2DEEA] rounded-xl p-3.5">
               <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5 text-emerald-900 font-extrabold text-sm">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div className="flex items-center gap-1.5 text-[#1A2138] font-extrabold text-sm">
+                  <ShieldCheck className="w-4 h-4 text-[#1673B8] shrink-0" />
                   Certificate Approved &amp; Ready for Download!
                 </div>
-                <p className="text-xs text-emerald-800">
+                <p className="text-xs text-[#3D4B66]">
                   Certificate ID <span className="font-mono font-bold">{certNo}</span> is active on the Online Verification Portal.
                 </p>
               </div>
@@ -1039,7 +1039,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     issuedByMode: 'exam'
                   })
                 }
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm transition cursor-pointer shrink-0"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-sm transition cursor-pointer shrink-0"
               >
                 <Download className="w-4 h-4" />
                 Download Certificate (PDF)
@@ -1075,10 +1075,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               </p>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F0F6FC] border border-[#D2DEEA] rounded-xl p-4">
               <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm">
-                  <Award className="w-4 h-4 text-[#0D5C3A] shrink-0" />
+                <div className="flex items-center gap-1.5 text-[#1A2138] font-extrabold text-sm">
+                  <Award className="w-4 h-4 text-[#1673B8] shrink-0" />
                   Official Portrait PDF Certificate &amp; Online Portal Verification
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
@@ -1093,7 +1093,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     setCertModalStep('instruction');
                     setCertPayModalCourse({ course, progress });
                   }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-sm cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   Download Certificate
@@ -1175,13 +1175,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
       {/* ==================== TAB 3: ONLINE CERTIFICATE VERIFICATION PORTAL ==================== */}
       {activeSubTab === 'verify-portal' && (
-        <div className="rounded-2xl border border-emerald-900/15 bg-white p-5 sm:p-6 shadow-sm space-y-5">
+        <div className="rounded-2xl border border-[#D2DEEA] bg-white p-5 sm:p-6 shadow-sm space-y-5">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-[#0D5C3A]">
+            <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-[#1673B8]">
               <ShieldCheck className="w-4 h-4" />
               Official Online Certificate Verification Registry
             </div>
-            <h2 className="text-lg sm:text-xl font-black text-slate-900">
+            <h2 className="text-lg sm:text-xl font-black text-[#1A2138]">
               Verify Single or All Member &amp; Admin-Issued Certificates Live
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed">
@@ -1206,12 +1206,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   setHasSearchedVerify(true);
                 }}
                 placeholder="Enter Certificate Number (e.g. FSP-...), Recipient Name, Email, or Topic..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-[#0D5C3A]"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#D2DEEA] text-sm focus:outline-none focus:border-[#1673B8]"
               />
             </div>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs cursor-pointer shrink-0"
+              className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs cursor-pointer shrink-0"
             >
               Verify Authenticity
             </button>
@@ -1272,11 +1272,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   return (
                     <div
                       key={rec.certificateNumber}
-                      className="rounded-2xl border-2 border-emerald-500/70 bg-emerald-50/50 p-5 space-y-3 shadow-sm"
+                      className="rounded-2xl border-2 border-[#1673B8]/60 bg-[#F0F6FC] p-5 space-y-3 shadow-sm"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200 pb-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-700 text-white text-xs font-extrabold uppercase tracking-wider">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#1673B8] text-white text-xs font-extrabold uppercase tracking-wider">
                             <ShieldCheck className="w-4 h-4 text-amber-300" />
                             Verified &amp; Active Credential
                           </span>
@@ -1287,12 +1287,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                             </span>
                           )}
                           {rec.issuedByAdminDirect && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-teal-100 border border-teal-300 text-teal-900 text-[11px] font-extrabold">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#EBF4FC] border border-[#1673B8]/30 text-[#105E9A] text-[11px] font-extrabold">
                               Direct Executive Issuance
                             </span>
                           )}
                         </div>
-                        <span className="text-xs font-mono font-black text-emerald-950 bg-white px-3 py-1 rounded-lg border border-emerald-200">
+                        <span className="text-xs font-mono font-black text-[#1A2138] bg-white px-3 py-1 rounded-lg border border-[#D2DEEA]">
                           ID: {rec.certificateNumber}
                         </span>
                       </div>
@@ -1300,22 +1300,22 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs items-center">
                         <div>
                           <p className="text-[10px] font-bold uppercase text-slate-400">Certified Professional</p>
-                          <p className="font-black text-slate-900 text-sm">{rec.recipientName}</p>
+                          <p className="font-black text-[#1A2138] text-sm">{rec.recipientName}</p>
                           {rec.recipientEmail && (
                             <p className="text-slate-500">{rec.recipientEmail}</p>
                           )}
                         </div>
                         <div>
                           <p className="text-[10px] font-bold uppercase text-slate-400">Certification Title / Topic</p>
-                          <p className="font-black text-[#0D5C3A] text-sm">{rec.courseTitle}</p>
+                          <p className="font-black text-[#1673B8] text-sm">{rec.courseTitle}</p>
                           <p className="text-slate-500">{rec.accreditationBody}</p>
                         </div>
                         <div>
                           <p className="text-[10px] font-bold uppercase text-slate-400">Standing &amp; Status</p>
-                          <p className="font-bold text-slate-900">
+                          <p className="font-bold text-[#1A2138]">
                             Score: {rec.scorePercentage}% ({rec.distinction ? 'Distinction' : 'Passed'})
                           </p>
-                          <p className="text-emerald-700 font-bold">
+                          <p className="text-[#1673B8] font-bold">
                             Issued: {rec.issueDate} · Verified Live
                           </p>
                         </div>
@@ -1344,7 +1344,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                                 issuedByMode: rec.issuedByAdminDirect ? 'admin_direct' : 'exam'
                               });
                             }}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-xs cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-xs cursor-pointer"
                           >
                             <Download className="w-3.5 h-3.5" />
                             Download Portrait PDF
@@ -1363,8 +1363,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       {/* ==================== TAB 2: MY CERTIFICATES ==================== */}
       {activeSubTab === 'my-certificates' && (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-emerald-900/15 bg-white p-5 shadow-sm">
-            <h2 className="text-base sm:text-lg font-black text-slate-900">
+          <div className="rounded-2xl border border-[#D2DEEA] bg-white p-5 shadow-sm">
+            <h2 className="text-base sm:text-lg font-black text-[#1A2138]">
               My Earned &amp; Admin-Issued Portrait Certificates
             </h2>
             <p className="text-xs text-slate-600 mt-0.5">
@@ -1403,22 +1403,22 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     return (
                       <div
                         key={cert.id}
-                        className="rounded-2xl border-2 border-[#0D5C3A]/40 bg-emerald-50/60 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
+                        className="rounded-2xl border-2 border-[#1673B8]/40 bg-[#F0F6FC] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
                       >
                         <div className="space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-md bg-[#0D5C3A] text-white text-[10px] font-black uppercase tracking-wider">
+                            <span className="px-2.5 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-black uppercase tracking-wider">
                               Official Issued Credential · {cert.certificateNumber}
                             </span>
                             <span className="px-2.5 py-0.5 rounded-md bg-amber-100 border border-amber-300 text-amber-950 text-[10px] font-extrabold">
                               {isDist ? `Distinction (${scorePct}%)` : `Passed (${scorePct}%)`}
                             </span>
                           </div>
-                          <h4 className="text-base font-black text-slate-900">
+                          <h4 className="text-base font-black text-[#1A2138]">
                             {cert.trainingTitle}
                           </h4>
                           <p className="text-xs text-slate-600">
-                            Recipient: <strong className="text-slate-900">{cert.recipientName}</strong> · Issued: {cert.issueDate} · Standard:{' '}
+                            Recipient: <strong className="text-[#1A2138]">{cert.recipientName}</strong> · Issued: {cert.issueDate} · Standard:{' '}
                             {cert.accreditationBody ||
                               matched?.accreditationStandard ||
                               'Codex Alimentarius & GFSI Standard'}
@@ -1447,7 +1447,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                               issuedByMode: 'admin_direct'
                             })
                           }
-                          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm cursor-pointer shrink-0"
+                          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-sm cursor-pointer shrink-0"
                         >
                           <Download className="w-4 h-4" />
                           Download Portrait PDF Certificate
@@ -1459,9 +1459,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             )}
 
           {mergedCourses.filter((c) => courseProgressMap[c.id]?.examPassed).length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center space-y-3">
+            <div className="rounded-2xl border border-[#D2DEEA] bg-white p-8 text-center space-y-3">
               <Award className="w-10 h-10 text-slate-400 mx-auto" />
-              <p className="text-sm font-bold text-slate-800">
+              <p className="text-sm font-bold text-[#1A2138]">
                 Course exam certificates appear here once you pass any 40-MCQ Final Exam (60%+).
               </p>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
@@ -1470,7 +1470,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSubTab('catalog')}
-                className="px-4 py-2 rounded-xl bg-[#0D5C3A] text-white text-xs font-bold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-bold cursor-pointer"
               >
                 Browse 14 Certification Courses
               </button>
@@ -1497,18 +1497,18 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         <div className="space-y-5">
           {/* "Continue Where You Left Off" Banner */}
           {lastInProgressCourse && (
-            <div className="rounded-2xl border-2 border-[#0D5C3A]/30 bg-emerald-50/70 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+            <div className="rounded-2xl border-2 border-[#1673B8]/30 bg-[#F0F6FC] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-[#0D5C3A]">
+                <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-[#1673B8]">
                   <PlayCircle className="w-4 h-4" />
                   Continue Where You Left Off
                 </div>
-                <h3 className="text-base font-black text-slate-900">
+                <h3 className="text-base font-black text-[#1A2138]">
                   {lastInProgressCourse.course.title}
                 </h3>
                 <p className="text-xs text-slate-600">
                   Resume at{' '}
-                  <span className="font-bold text-slate-900">
+                  <span className="font-bold text-[#1A2138]">
                     Module {lastInProgressCourse.progress.lastModuleIndex + 1}:{' '}
                     {lastInProgressCourse.course.modules[
                       lastInProgressCourse.progress.lastModuleIndex
@@ -1526,7 +1526,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     lastInProgressCourse.progress.lastModuleIndex
                   )
                 }
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm transition cursor-pointer shrink-0"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-sm transition cursor-pointer shrink-0"
               >
                 <PlayCircle className="w-4 h-4" />
                 Resume Module {lastInProgressCourse.progress.lastModuleIndex + 1}
@@ -1547,11 +1547,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               return (
                 <div
                   key={course.id}
-                  className="rounded-2xl border border-emerald-900/15 bg-white p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4"
+                  className="rounded-2xl border border-[#D2DEEA] bg-white p-5 shadow-sm hover:shadow-md hover:border-[#1673B8]/50 transition flex flex-col justify-between space-y-4"
                 >
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-[#0D5C3A] text-[10px] font-extrabold uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] text-[10px] font-extrabold uppercase tracking-wider">
                         #{idx + 1} · {course.code} · {course.levelBadge}
                       </span>
                       {prog?.examPassed && (
@@ -1559,7 +1559,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase ${
                             prog.distinctionEarned
                               ? 'bg-amber-100 border border-amber-400 text-amber-900'
-                              : 'bg-emerald-100 border border-emerald-400 text-emerald-900'
+                              : 'bg-[#EBF4FC] border border-[#1673B8]/35 text-[#105E9A]'
                           }`}
                         >
                           <Award className="w-3 h-3" />
@@ -1570,7 +1570,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       )}
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
+                    <h3 className="text-base sm:text-lg font-black text-[#1A2138] leading-snug">
                       {course.title}
                     </h3>
 
@@ -1580,11 +1580,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
                     <div className="text-[11px] text-slate-500 font-medium space-y-1 pt-1">
                       <div className="flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-[#0D5C3A]" />
+                        <BookOpen className="w-3.5 h-3.5 text-[#1673B8]" />
                         <span>{course.accreditationStandard}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-[#0D5C3A]" />
+                        <Clock className="w-3.5 h-3.5 text-[#1673B8]" />
                         <span>
                           {course.duration} · 40-MCQ Final Exam (60% Pass / 75% Distinction) · Online Verifiable Certificate
                         </span>
@@ -1599,11 +1599,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         <span className="text-slate-600">
                           Module Progress: {completedCount} / {totalMods} Modules
                         </span>
-                        <span className="text-[#0D5C3A]">{pctMods}%</span>
+                        <span className="text-[#1673B8]">{pctMods}%</span>
                       </div>
                       <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                         <div
-                          className="h-full bg-[#15803D] transition-all duration-300"
+                          className="h-full bg-[#1673B8] transition-all duration-300"
                           style={{ width: `${pctMods}%` }}
                         />
                       </div>
@@ -1615,7 +1615,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         onClick={() =>
                           handleOpenCourse(course, hasStarted ? prog.lastModuleIndex : 0)
                         }
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs transition cursor-pointer"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs transition cursor-pointer"
                       >
                         <PlayCircle className="w-4 h-4" />
                         {hasStarted
@@ -1626,7 +1626,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       <button
                         type="button"
                         onClick={() => handleStart40McqExam(course)}
-                        className="px-3.5 py-2.5 rounded-xl border border-[#0D5C3A] text-[#0D5C3A] hover:bg-emerald-50 font-bold text-xs transition cursor-pointer"
+                        className="px-3.5 py-2.5 rounded-xl border border-[#1673B8] text-[#1673B8] hover:bg-[#F0F6FC] font-bold text-xs transition cursor-pointer"
                       >
                         40-MCQ Exam
                       </button>
@@ -1656,7 +1656,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       {activeSubTab === 'catalog' && selectedCourse && selectedProgress && (
         <div className="space-y-5">
           {/* Course Top Bar */}
-          <div className="rounded-2xl border border-emerald-900/15 bg-white p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="rounded-2xl border border-[#D2DEEA] bg-white p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
               <button
                 type="button"
@@ -1664,11 +1664,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   setSelectedCourseId(null);
                   setViewMode('overview');
                 }}
-                className="text-xs font-extrabold text-[#0D5C3A] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                className="text-xs font-extrabold text-[#1673B8] hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 ← Back to All 14 Courses
               </button>
-              <h2 className="text-lg sm:text-xl font-black text-slate-900">
+              <h2 className="text-lg sm:text-xl font-black text-[#1A2138]">
                 {selectedCourse.title}{' '}
                 <span className="text-xs font-bold text-slate-500">({selectedCourse.code})</span>
               </h2>
@@ -1681,7 +1681,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 onClick={() => setViewMode('study')}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer ${
                   viewMode === 'study'
-                    ? 'bg-[#0D5C3A] text-white'
+                    ? 'bg-[#1673B8] text-white'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -1692,8 +1692,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 onClick={() => handleStart40McqExam(selectedCourse)}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer ${
                   viewMode === 'exam' || viewMode === 'exam-result'
-                    ? 'bg-[#0D5C3A] text-white'
-                    : 'bg-emerald-50 text-[#0D5C3A] border border-emerald-300 hover:bg-emerald-100'
+                    ? 'bg-[#1673B8] text-white'
+                    : 'bg-[#F0F6FC] text-[#1673B8] border border-[#D2DEEA] hover:bg-[#EBF4FC]'
                 }`}
               >
                 Take 40-MCQ Final Exam
@@ -1718,12 +1718,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
           {viewMode === 'study' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               {/* Left Module List Sidebar */}
-              <div className="lg:col-span-4 rounded-2xl border border-emerald-900/15 bg-white p-4 shadow-sm space-y-2.5 h-fit">
+              <div className="lg:col-span-4 rounded-2xl border border-[#D2DEEA] bg-white p-4 shadow-sm space-y-2.5 h-fit">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <span className="text-xs font-black uppercase tracking-wider text-slate-700">
                     Course Curriculum (5 Modules)
                   </span>
-                  <span className="text-xs font-bold text-[#0D5C3A]">
+                  <span className="text-xs font-bold text-[#1673B8]">
                     {Math.round(
                       (selectedProgress.completedModuleIds.length /
                         selectedCourse.modules.length) *
@@ -1744,13 +1744,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         onClick={() => handleSelectModule(mIdx)}
                         className={`w-full text-left p-3 rounded-xl border transition flex items-start gap-2.5 cursor-pointer ${
                           isCurrent
-                            ? 'border-[#0D5C3A] bg-emerald-50/70'
+                            ? 'border-[#1673B8] bg-[#F0F6FC]'
                             : 'border-slate-200 hover:bg-slate-50'
                         }`}
                       >
                         <div className="mt-0.5 shrink-0">
                           {isCompleted ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <CheckCircle2 className="w-4 h-4 text-[#1673B8]" />
                           ) : (
                             <span className="w-4 h-4 rounded-full border border-slate-400 text-[10px] font-bold flex items-center justify-center text-slate-600">
                               {mod.moduleNumber}
@@ -1758,7 +1758,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-extrabold text-slate-900 leading-snug">
+                          <p className="text-xs font-extrabold text-[#1A2138] leading-snug">
                             Module {mod.moduleNumber}: {mod.title}
                           </p>
                           <p className="text-[10px] text-slate-500 mt-0.5">
@@ -1814,13 +1814,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
           {/* MODE B: 40-MCQ FINAL EXAM */}
           {viewMode === 'exam' && (
-            <div className="rounded-2xl border border-emerald-900/15 bg-white p-5 sm:p-6 shadow-sm space-y-5">
+            <div className="rounded-2xl border border-[#D2DEEA] bg-white p-5 sm:p-6 shadow-sm space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
                 <div>
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#0D5C3A]">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1673B8]">
                     Final Certification Examination · 40 Multiple-Choice Questions
                   </span>
-                  <h3 className="text-lg font-black text-slate-900">
+                  <h3 className="text-lg font-black text-[#1A2138]">
                     {selectedCourse.title} — 40-MCQ Final Exam
                   </h3>
                   <p className="text-xs text-slate-600">
@@ -1828,7 +1828,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     <strong>75% (30/40)</strong> earns a <strong>Distinction Certificate</strong>.
                   </p>
                 </div>
-                <div className="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-extrabold text-[#0D5C3A] shrink-0">
+                <div className="px-3.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1673B8] shrink-0">
                   Answered: {Object.keys(examAnswers).length} / {examQuestions.length}
                 </div>
               </div>
@@ -1841,8 +1841,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       key={q.id}
                       className="rounded-xl border border-slate-200 p-4 space-y-3 bg-slate-50/40"
                     >
-                      <p className="text-xs sm:text-sm font-bold text-slate-900 leading-relaxed">
-                        <span className="text-[#0D5C3A] font-black mr-1.5">
+                      <p className="text-xs sm:text-sm font-bold text-[#1A2138] leading-relaxed">
+                        <span className="text-[#1673B8] font-black mr-1.5">
                           Q{q.questionNumber}.
                         </span>
                         {q.question}
@@ -1862,14 +1862,14 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                               }
                               className={`text-left p-3 rounded-xl border text-xs font-medium transition cursor-pointer flex items-start gap-2 ${
                                 isSelected
-                                  ? 'border-[#0D5C3A] bg-emerald-50 text-emerald-950 font-bold'
+                                  ? 'border-[#1673B8] bg-[#F0F6FC] text-[#1A2138] font-bold'
                                   : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                               }`}
                             >
                               <span
                                 className={`w-5 h-5 rounded-md text-[11px] font-extrabold flex items-center justify-center shrink-0 ${
                                   isSelected
-                                    ? 'bg-[#0D5C3A] text-white'
+                                    ? 'bg-[#1673B8] text-white'
                                     : 'bg-slate-100 text-slate-600'
                                 }`}
                               >
@@ -1893,7 +1893,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 <button
                   type="button"
                   onClick={handleSubmit40McqExam}
-                  className="px-6 py-3 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-extrabold text-xs shadow-md cursor-pointer"
+                  className="px-6 py-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs shadow-md cursor-pointer"
                 >
                   Submit 40-MCQ Final Exam & View Result
                 </button>
@@ -1907,7 +1907,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               <div
                 className={`rounded-2xl border-2 p-5 sm:p-6 shadow-sm space-y-3 ${
                   lastExamResult.passed
-                    ? 'border-emerald-500 bg-emerald-50/60'
+                    ? 'border-[#1673B8] bg-[#F0F6FC]'
                     : 'border-rose-300 bg-rose-50/70'
                 }`}
               >
@@ -1918,7 +1918,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         lastExamResult.distinction
                           ? 'bg-amber-400 text-slate-950'
                           : lastExamResult.passed
-                          ? 'bg-emerald-700 text-white'
+                          ? 'bg-[#1673B8] text-white'
                           : 'bg-rose-600 text-white'
                       }`}
                     >
@@ -1928,7 +1928,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         ? 'EXAM PASSED (>= 60%)'
                         : 'NOT PASSED (< 60% REQUIRED)'}
                     </span>
-                    <h3 className="text-xl font-black text-slate-900">
+                    <h3 className="text-xl font-black text-[#1A2138]">
                       Your Score: {lastExamResult.percentage}% ({lastExamResult.correctCount} /{' '}
                       {lastExamResult.totalQuestions} Correct)
                     </h3>
@@ -1965,21 +1965,21 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
       {/* ==================== SMALL INSTRUCTION WINDOW -> PAYMENT OPTION MODAL ON "DOWNLOAD CERTIFICATE" CLICK ==================== */}
       {certPayModalCourse && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 my-8">
+        <div className="fixed inset-0 z-50 bg-[#1A2138]/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-[#D2DEEA] space-y-4 my-8">
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0D5C3A]">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8]">
                   {certModalStep === 'instruction'
                     ? 'Certificate Download Instructions'
                     : 'Certificate Payment & Screenshot Submission'}
                 </span>
-                <h3 className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
+                <h3 className="text-base sm:text-lg font-black text-[#1A2138] mt-0.5">
                   {certPayModalCourse.course.title}
                 </h3>
                 <p className="text-xs text-slate-500">
                   Certificate Number:{' '}
-                  <span className="font-mono font-bold text-slate-800">
+                  <span className="font-mono font-bold text-[#1A2138]">
                     {certPayModalCourse.progress.certificateNumber ||
                       makeDeterministicCertNumber(
                         currentUser?.uid || 'GUEST',
@@ -1998,15 +1998,15 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             </div>
 
             {payFeedbackMsg ? (
-              <div className="rounded-xl bg-emerald-50 border border-emerald-300 p-4 space-y-3 text-center">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-                <p className="text-xs sm:text-sm font-bold text-emerald-950 leading-relaxed">
+              <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-4 space-y-3 text-center">
+                <CheckCircle2 className="w-8 h-8 text-[#1673B8] mx-auto" />
+                <p className="text-xs sm:text-sm font-bold text-[#1A2138] leading-relaxed">
                   {payFeedbackMsg}
                 </p>
                 <button
                   type="button"
                   onClick={() => setCertPayModalCourse(null)}
-                  className="px-5 py-2 rounded-xl bg-[#0D5C3A] text-white text-xs font-bold cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-bold cursor-pointer"
                 >
                   Done
                 </button>
@@ -2014,16 +2014,16 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             ) : certModalStep === 'instruction' ? (
               /* STEP 1: SMALL INSTRUCTION WINDOW WHEN USER CLICKS "DOWNLOAD CERTIFICATE" */
               <div className="space-y-4">
-                <div className="rounded-xl bg-emerald-50/80 border border-emerald-200 p-4 space-y-2.5 text-xs">
+                <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-4 space-y-2.5 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-black uppercase tracking-wider text-[#0D5C3A]">
+                    <span className="font-black uppercase tracking-wider text-[#1673B8]">
                       Certificate Issuance Fee
                     </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-[#0D5C3A] text-white font-black text-xs">
+                    <span className="px-2.5 py-1 rounded-lg bg-[#1673B8] text-white font-black text-xs">
                       Rs. 1,000
                     </span>
                   </div>
-                  <p className="text-slate-800 leading-relaxed">
+                  <p className="text-[#1A2138] leading-relaxed">
                     Apna official <strong>Portrait PDF Certificate</strong> download karnay aur <strong>Online Verification Portal</strong> par live verify karnay k liye <strong>Rs. 1,000</strong> certificate fee lagu hy.
                   </p>
                   <ul className="space-y-1 text-slate-700 font-medium pt-1">
@@ -2044,7 +2044,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setCertModalStep('payment')}
-                    className="px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white text-xs font-extrabold shadow-sm cursor-pointer inline-flex items-center gap-1.5"
+                    className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-sm cursor-pointer inline-flex items-center gap-1.5"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Proceed to Payment Option (Rs. 1,000) →</span>
@@ -2054,9 +2054,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             ) : (
               /* STEP 2: PAYMENT OPTION & SCREENSHOT UPLOAD TO ADMIN */
               <div className="space-y-3.5">
-                <div className="rounded-xl bg-emerald-50/70 border border-emerald-200 p-3.5 space-y-2 text-xs">
+                <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-3.5 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <p className="font-extrabold text-[#0D5C3A]">
+                    <p className="font-extrabold text-[#1673B8]">
                       Transfer Rs. 1,000 &amp; Upload Payment Screenshot:
                     </p>
                     <button
@@ -2068,16 +2068,16 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
-                      <p className="font-bold text-slate-800">
+                    <div className="bg-white p-2.5 rounded-lg border border-[#D2DEEA]">
+                      <p className="font-bold text-[#1A2138]">
                         JazzCash: {paymentGatewayConfig.jazzCashNumber}
                       </p>
                       <p className="text-[11px] text-slate-500">
                         {paymentGatewayConfig.jazzCashTitle}
                       </p>
                     </div>
-                    <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
-                      <p className="font-bold text-slate-800">
+                    <div className="bg-white p-2.5 rounded-lg border border-[#D2DEEA]">
+                      <p className="font-bold text-[#1A2138]">
                         EasyPaisa: {paymentGatewayConfig.easyPaisaNumber}
                       </p>
                       <p className="text-[11px] text-slate-500">
@@ -2085,8 +2085,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       </p>
                     </div>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-emerald-100">
-                    <p className="font-bold text-slate-800">
+                  <div className="bg-white p-2.5 rounded-lg border border-[#D2DEEA]">
+                    <p className="font-bold text-[#1A2138]">
                       {paymentGatewayConfig.bankName}: {paymentGatewayConfig.bankAccountOrIban}
                     </p>
                     <p className="text-[11px] text-slate-500">
@@ -2107,7 +2107,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           e.target.value as 'JazzCash' | 'EasyPaisa' | 'Bank Transfer'
                         )
                       }
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                      className="w-full px-3 py-2 rounded-xl border border-[#D2DEEA] text-xs font-semibold focus:outline-none focus:border-[#1673B8]"
                     >
                       <option value="JazzCash">JazzCash</option>
                       <option value="EasyPaisa">EasyPaisa</option>
@@ -2125,7 +2125,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       value={payTxId}
                       onChange={(e) => setPayTxId(e.target.value)}
                       placeholder="Enter 11-digit TID or Bank Reference..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                      className="w-full px-3 py-2 rounded-xl border border-[#D2DEEA] text-xs focus:outline-none focus:border-[#1673B8]"
                     />
                   </div>
 
@@ -2133,8 +2133,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Upload Payment Screenshot *
                     </label>
-                    <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer">
-                      <Upload className="w-4 h-4 text-[#0D5C3A]" />
+                    <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-[#D2DEEA] bg-[#F0F6FC] hover:bg-[#EBF4FC] text-xs font-semibold text-[#1A2138] cursor-pointer">
+                      <Upload className="w-4 h-4 text-[#1673B8]" />
                       <span>
                         {payReceiptDataUrl
                           ? 'Payment Screenshot Attached ✓'
@@ -2158,7 +2158,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       value={payNotes}
                       onChange={(e) => setPayNotes(e.target.value)}
                       placeholder="Sender account number or note for Admin..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                      className="w-full px-3 py-2 rounded-xl border border-[#D2DEEA] text-xs focus:outline-none focus:border-[#1673B8]"
                     />
                   </div>
 
@@ -2173,7 +2173,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     <button
                       type="submit"
                       disabled={isSubmittingPay}
-                      className="px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white text-xs font-extrabold shadow-sm cursor-pointer disabled:opacity-50"
+                      className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-sm cursor-pointer disabled:opacity-50"
                     >
                       {isSubmittingPay
                         ? 'Sending to Admin...'

@@ -555,8 +555,8 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
     <div className="max-w-xl mx-auto pb-8 space-y-4">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#13422B] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-emerald-400/30">
-          <Sparkles className="w-4 h-4 text-emerald-300 shrink-0" />
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+          <Sparkles className="w-4 h-4 text-[#60A5FA] shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -564,17 +564,17 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
       {/* Premium Paywall Modal */}
       {paywallModalFeature && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-[28px] max-w-md w-full p-6 shadow-2xl border-2 border-[#16A34A] space-y-4 text-center">
+          <div className="bg-white rounded-[28px] max-w-md w-full p-6 shadow-2xl border-2 border-[#1673B8] space-y-4 text-center">
             <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
               <Crown className="w-7 h-7 stroke-[2.2]" />
             </div>
             <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold uppercase">
               🔒 Premium Exam Feature
             </span>
-            <h3 className="text-lg font-extrabold text-[#0F291E]">
+            <h3 className="text-lg font-extrabold text-[#1A2138]">
               Unlock {paywallModalFeature}
             </h3>
-            <p className="text-xs text-[#5C7267] leading-relaxed">
+            <p className="text-xs text-[#5A6C84] leading-relaxed">
               Free users can attempt <strong>1 Exam per day (30 MCQs)</strong> and view
               their full score &amp; answers. Upgrade to <strong>Paid Premium</strong> to
               take unlimited exams with 30 new MCQs every time and download the{' '}
@@ -584,7 +584,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               <button
                 type="button"
                 onClick={() => setPaywallModalFeature(null)}
-                className="flex-1 py-3 rounded-xl border border-gray-300 text-xs font-extrabold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                className="flex-1 py-3 rounded-xl border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] hover:bg-[#F0F6FC] cursor-pointer"
               >
                 Maybe Later
               </button>
@@ -594,7 +594,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   setPaywallModalFeature(null);
                   onOpenPremiumModal();
                 }}
-                className="flex-1 py-3 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-extrabold shadow-md cursor-pointer"
+                className="flex-1 py-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-md cursor-pointer"
               >
                 Upgrade to Premium →
               </button>
@@ -607,22 +607,22 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           SCREEN 1: SIMPLE & CLEAN EXAM DASHBOARD (NO SEPARATE CATEGORIES)
          ===================================================================== */}
       {screen === 'dashboard' && (
-        <div className="bg-[#F4F8F5] rounded-[32px] overflow-hidden border border-[#D5E8DC] shadow-md">
-          {/* Top Green Banner */}
-          <div className="bg-gradient-to-br from-[#388E5A] via-[#2E7D4E] to-[#1F633B] px-5 pt-6 pb-14 text-white flex items-center justify-between">
+        <div className="bg-[#F0F6FC] rounded-[32px] overflow-hidden border border-[#D2DEEA] shadow-md">
+          {/* Top Royal Blue & Navy Banner */}
+          <div className="bg-gradient-to-br from-[#1A2138] via-[#105E9A] to-[#1673B8] px-5 pt-6 pb-14 text-white flex items-center justify-between">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2">
                 <span>Hi, {firstName}</span>
                 <span>👋</span>
               </h1>
-              <p className="text-xs sm:text-sm text-emerald-50 font-semibold mt-0.5">
+              <p className="text-xs sm:text-sm text-[#DCE9F6] font-semibold mt-0.5">
                 Food Science &amp; Food Safety Exam Preparation
               </p>
             </div>
             <button
               type="button"
               onClick={() => setScreen('profile')}
-              className="w-13 h-13 rounded-full bg-white text-[#1F633B] font-extrabold text-xl flex items-center justify-center ring-4 ring-white/30 shadow-md cursor-pointer shrink-0"
+              className="w-13 h-13 rounded-full bg-white text-[#1673B8] font-extrabold text-xl flex items-center justify-center ring-4 ring-white/30 shadow-md cursor-pointer shrink-0"
               title="Candidate Profile"
             >
               {avatarInitial}
@@ -631,20 +631,20 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
 
           <div className="px-4 sm:px-5 -mt-9 space-y-5 pb-6">
             {/* Floating Total Progress Card */}
-            <div className="bg-white rounded-[24px] p-4 sm:p-5 shadow-md border border-[#E2EFE7] flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-full bg-[#16A34A] text-white flex items-center justify-center shrink-0 shadow-xs">
+            <div className="bg-white rounded-[24px] p-4 sm:p-5 shadow-md border border-[#D2DEEA] flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full bg-[#1673B8] text-white flex items-center justify-center shrink-0 shadow-xs">
                 <Check className="w-6 h-6 stroke-[3]" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-base sm:text-lg font-extrabold text-[#111827]">
+                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
                     Exam Readiness
                   </h2>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#15803D] text-[11px] font-extrabold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#1673B8] text-[11px] font-extrabold">
                     30 MCQs / Exam
                   </span>
                 </div>
-                <p className="text-xs font-bold text-[#374151] mt-0.5">
+                <p className="text-xs font-bold text-[#5A6C84] mt-0.5">
                   Average Score: {overallAccuracyPct}% •{' '}
                   {savedResults.length + (toolsData.examAttempts?.length || 0)}{' '}
                   Exams Completed
@@ -652,11 +652,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
                   <div className="w-28 sm:w-36 h-2.5 rounded-full bg-[#E5E7EB] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[#16A34A]"
+                      className="h-full rounded-full bg-[#1673B8]"
                       style={{ width: `${overallAccuracyPct}%` }}
                     />
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-[#E3F6EA] text-[#15803D] text-[11px] font-extrabold inline-flex items-center gap-1">
+                  <span className="px-2.5 py-1 rounded-full bg-[#EBF4FC] text-[#1673B8] text-[11px] font-extrabold inline-flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
                     <span>Study Time: {formattedStudyTime}</span>
                   </span>
@@ -689,16 +689,16 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             )}
 
             {/* DIRECT START EXAM CARD (NO CATEGORIES — SIMPLE & DIRECT) */}
-            <div className="bg-white rounded-[24px] p-5 border border-[#E2EFE7] shadow-xs space-y-4">
+            <div className="bg-white rounded-[24px] p-5 border border-[#D2DEEA] shadow-xs space-y-4">
               <div className="flex items-start gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-[#EAF8EF] text-[#169C46] flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center shrink-0">
                   <Award className="w-6 h-6 stroke-[2.2]" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-base sm:text-lg font-extrabold text-[#111827]">
+                  <h3 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
                     Start 30-MCQs Exam Preparation
                   </h3>
-                  <p className="text-xs text-[#4B5563] leading-relaxed">
+                  <p className="text-xs text-[#5A6C84] leading-relaxed">
                     Every exam presents <strong>30 different MCQs</strong> covering
                     Food Science, Food Safety, HACCP, ISO 9001, ISO 22000 &amp; FSSC
                     22000. At the end of the exam, view your complete{' '}
@@ -710,27 +710,27 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               </div>
 
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2.5 rounded-xl bg-[#F4F8F5] border border-[#D5E8DC]">
-                  <div className="text-sm font-extrabold text-[#111827]">
+                <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                  <div className="text-sm font-extrabold text-[#1A2138]">
                     30 MCQs
                   </div>
-                  <div className="text-[10.5px] font-bold text-[#169C46]">
+                  <div className="text-[10.5px] font-bold text-[#1673B8]">
                     Per Exam Attempt
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-[#F4F8F5] border border-[#D5E8DC]">
-                  <div className="text-sm font-extrabold text-[#111827]">
+                <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                  <div className="text-sm font-extrabold text-[#1A2138]">
                     30 Mins
                   </div>
-                  <div className="text-[10.5px] font-bold text-[#4B5563]">
+                  <div className="text-[10.5px] font-bold text-[#5A6C84]">
                     Exam Duration
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-[#F4F8F5] border border-[#D5E8DC]">
-                  <div className="text-sm font-extrabold text-[#111827]">
+                <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                  <div className="text-sm font-extrabold text-[#1A2138]">
                     PDF Report
                   </div>
-                  <div className="text-[10.5px] font-bold text-[#169C46]">
+                  <div className="text-[10.5px] font-bold text-[#1673B8]">
                     Score + Answer Key
                   </div>
                 </div>
@@ -740,7 +740,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               <button
                 type="button"
                 onClick={handleStartNew30McqExam}
-                className="w-full py-4 px-5 rounded-[18px] bg-[#169C46] hover:bg-[#13873C] text-white shadow-md hover:shadow-lg transition-all cursor-pointer flex flex-col items-center justify-center"
+                className="w-full py-4 px-5 rounded-[18px] bg-[#1673B8] hover:bg-[#105E9A] text-white shadow-md hover:shadow-lg transition-all cursor-pointer flex flex-col items-center justify-center"
               >
                 <span className="text-base sm:text-lg font-extrabold leading-tight flex items-center gap-2">
                   <Play className="w-5 h-5 fill-white" />
@@ -750,7 +750,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                       : 'Start Exam Now (30 MCQs)'}
                   </span>
                 </span>
-                <span className="text-[11px] font-semibold text-emerald-100 mt-0.5">
+                <span className="text-[11px] font-semibold text-[#DCE9F6] mt-0.5">
                   • 30 Different Questions Every Attempt • Instant Score &amp; PDF Report
                 </span>
               </button>
@@ -759,14 +759,14 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             {/* PREVIOUS EXAM RESULTS LIST */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-base sm:text-lg font-extrabold text-[#111827]">
+                <h3 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
                   Previous Exam Results
                 </h3>
                 {savedResults.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setScreen('history')}
-                    className="text-xs sm:text-sm font-extrabold text-[#15803D] hover:underline cursor-pointer"
+                    className="text-xs sm:text-sm font-extrabold text-[#1673B8] hover:underline cursor-pointer"
                   >
                     View all ({savedResults.length}) →
                   </button>
@@ -774,11 +774,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               </div>
 
               {savedResults.length === 0 ? (
-                <div className="bg-white rounded-[20px] p-4 border border-[#E5EFE9] text-center space-y-1.5">
-                  <div className="text-xs font-extrabold text-[#111827]">
+                <div className="bg-white rounded-[20px] p-4 border border-[#D2DEEA] text-center space-y-1.5">
+                  <div className="text-xs font-extrabold text-[#1A2138]">
                     No Exam Taken Yet in This Session
                   </div>
-                  <p className="text-[11px] text-[#6B7280]">
+                  <p className="text-[11px] text-[#5A6C84]">
                     Click &ldquo;Start Exam Now (30 MCQs)&rdquo; above to begin your
                     first 30-question exam and generate your PDF score report.
                   </p>
@@ -793,21 +793,21 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                         setScreen('result');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="bg-white rounded-[20px] p-3.5 border border-[#E5EFE9] hover:border-[#16A34A] shadow-xs flex items-center justify-between gap-3 cursor-pointer transition-all"
+                      className="bg-white rounded-[20px] p-3.5 border border-[#D2DEEA] hover:border-[#1673B8] shadow-xs flex items-center justify-between gap-3 cursor-pointer transition-all"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
                           className={`w-11 h-11 rounded-2xl text-white flex items-center justify-center shrink-0 shadow-xs ${
-                            res.status === 'PASS' ? 'bg-[#169C46]' : 'bg-red-600'
+                            res.status === 'PASS' ? 'bg-[#1673B8]' : 'bg-red-600'
                           }`}
                         >
                           <Trophy className="w-5 h-5" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-sm font-extrabold text-[#111827] truncate">
+                          <div className="text-sm font-extrabold text-[#1A2138] truncate">
                             {res.title}
                           </div>
-                          <div className="text-xs font-semibold text-[#4B5563] truncate mt-0.5">
+                          <div className="text-xs font-semibold text-[#5A6C84] truncate mt-0.5">
                             ✓ {res.correct} Correct • ✗ {res.wrong} Wrong •{' '}
                             {res.scorePercent}% ({res.dateFormatted})
                           </div>
@@ -825,7 +825,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                           }
                           download5PageExamReportPdf(user, res, savedResults);
                         }}
-                        className="px-3 py-1.5 rounded-full bg-[#DCFCE7] hover:bg-[#BBF7D0] text-[#15803D] text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer"
+                        className="px-3 py-1.5 rounded-full bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>PDF</span>
@@ -838,11 +838,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           </div>
 
           {/* Clean Bottom Navigation (Home, Results, Profile — No Categories) */}
-          <div className="bg-white border-t border-[#E5EFE9] px-4 py-2.5 grid grid-cols-3 gap-1">
+          <div className="bg-white border-t border-[#D2DEEA] px-4 py-2.5 grid grid-cols-3 gap-1">
             <button
               type="button"
               onClick={() => setScreen('dashboard')}
-              className="flex flex-col items-center justify-center py-1 text-[#169C46] font-extrabold text-xs cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 text-[#1673B8] font-extrabold text-xs cursor-pointer"
             >
               <Home className="w-5 h-5" />
               <span className="mt-0.5">Exam Home</span>
@@ -850,7 +850,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             <button
               type="button"
               onClick={() => setScreen('history')}
-              className="flex flex-col items-center justify-center py-1 text-[#6B7280] hover:text-[#169C46] font-bold text-xs cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 text-[#5A6C84] hover:text-[#1673B8] font-bold text-xs cursor-pointer"
             >
               <CheckCircle2 className="w-5 h-5" />
               <span className="mt-0.5">Results</span>
@@ -858,7 +858,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             <button
               type="button"
               onClick={() => setScreen('profile')}
-              className="flex flex-col items-center justify-center py-1 text-[#6B7280] hover:text-[#169C46] font-bold text-xs cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 text-[#5A6C84] hover:text-[#1673B8] font-bold text-xs cursor-pointer"
             >
               <UserCheck className="w-5 h-5" />
               <span className="mt-0.5">Profile</span>
@@ -871,19 +871,19 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           SCREEN 2: EXAM ATTEMPT SCREEN (30 CLEAN MCQs WITHOUT ANY REFERENCE PREFIX)
          ===================================================================== */}
       {screen === 'attempt' && currentQuestion && (
-        <div className="bg-[#F4F8F5] rounded-[32px] overflow-hidden border border-[#D5E8DC] shadow-md">
-          {/* Top Bar: Back Button + "Exam Attempt" + Green Timer Pill */}
-          <div className="bg-white px-4 sm:px-5 py-4 border-b border-[#E5EFE9] flex items-center justify-between gap-2">
+        <div className="bg-[#F0F6FC] rounded-[32px] overflow-hidden border border-[#D2DEEA] shadow-md">
+          {/* Top Bar: Back Button + "Exam Attempt" + Royal Blue Timer Pill */}
+          <div className="bg-white px-4 sm:px-5 py-4 border-b border-[#D2DEEA] flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={() => setScreen('dashboard')}
-                className="w-9 h-9 rounded-xl bg-[#F4F8F5] hover:bg-[#E5EFE9] flex items-center justify-center text-[#111827] cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] flex items-center justify-center text-[#1A2138] cursor-pointer"
                 title="Back to Exam Home"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <h2 className="text-base sm:text-lg font-extrabold text-[#111827]">
+              <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
                 {activeExamTitle}
               </h2>
             </div>
@@ -892,7 +892,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               className={`px-3.5 py-1.5 rounded-full text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs ${
                 remainingSeconds < 180
                   ? 'bg-red-600 animate-pulse'
-                  : 'bg-[#169C46]'
+                  : 'bg-[#1673B8]'
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
@@ -902,9 +902,9 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
 
           <div className="p-4 sm:p-5 space-y-4">
             {/* Question Progress Card: "Question X of 30" + Flag + Palette + Progress Bar */}
-            <div className="bg-white rounded-[22px] p-4 border border-[#E5EFE9] shadow-xs space-y-3">
+            <div className="bg-white rounded-[22px] p-4 border border-[#D2DEEA] shadow-xs space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm sm:text-base font-extrabold text-[#111827]">
+                <span className="text-sm sm:text-base font-extrabold text-[#1A2138]">
                   Question {currentIndex + 1} of {activeQuestions.length}
                 </span>
 
@@ -917,7 +917,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                         (b) => b.id === currentQuestion.id
                       )
                         ? 'bg-amber-50 border-amber-400 text-amber-800'
-                        : 'bg-[#F9FAFB] border-gray-200 text-gray-600'
+                        : 'bg-[#F4F8FD] border-[#D2DEEA] text-[#5A6C84]'
                     }`}
                     title="Bookmark Question"
                   >
@@ -935,7 +935,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     className={`px-3 py-1.5 rounded-xl border text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer ${
                       flaggedIds[currentQuestion.id]
                         ? 'bg-amber-100 border-amber-400 text-amber-900'
-                        : 'bg-[#F9FAFB] border-gray-200 text-[#374151]'
+                        : 'bg-[#F4F8FD] border-[#D2DEEA] text-[#1A2138]'
                     }`}
                   >
                     <Flag className="w-3.5 h-3.5" />
@@ -947,7 +947,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowQuestionPalette((prev) => !prev)}
-                    className="p-2 rounded-xl bg-[#EAF8EF] text-[#15803D] border border-[#BBF7D0] text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                    className="p-2 rounded-xl bg-[#EBF4FC] text-[#1673B8] border border-[#BBD6EE] text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
                     title="Question Palette (1-30)"
                   >
                     <Grid className="w-4 h-4" />
@@ -955,10 +955,10 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 </div>
               </div>
 
-              {/* Green Progress Bar */}
+              {/* Royal Blue Progress Bar */}
               <div className="w-full h-2.5 rounded-full bg-[#E5E7EB] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-[#169C46] transition-all duration-300"
+                  className="h-full rounded-full bg-[#1673B8] transition-all duration-300"
                   style={{
                     width: `${Math.round(
                       ((currentIndex + 1) / activeQuestions.length) * 100
@@ -969,12 +969,12 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
 
               {/* Collapsible 1-30 Question Palette */}
               {showQuestionPalette && (
-                <div className="pt-2 border-t border-gray-100 space-y-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] font-bold text-gray-600">
+                <div className="pt-2 border-t border-[#E4EDF7] space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] font-bold text-[#5A6C84]">
                     <span>Jump to any question (1–30):</span>
                     <div className="flex items-center gap-2.5">
                       <span className="inline-flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#169C46]" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#1673B8]" />
                         Answered
                       </span>
                       <span className="inline-flex items-center gap-1">
@@ -991,11 +991,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     {activeQuestions.map((q, idx) => {
                       const isAns = Boolean(selectedAnswers[q.id]);
                       const isFlg = Boolean(flaggedIds[q.id]);
-                      let colorCls = 'bg-gray-100 text-gray-700 border-gray-200';
+                      let colorCls = 'bg-[#F4F8FD] text-[#1A2138] border-[#D2DEEA]';
                       if (isFlg) {
                         colorCls = 'bg-amber-500 text-white border-amber-600';
                       } else if (isAns) {
-                        colorCls = 'bg-[#169C46] text-white border-[#15803D]';
+                        colorCls = 'bg-[#1673B8] text-white border-[#105E9A]';
                       }
                       return (
                         <button
@@ -1010,7 +1010,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                           }}
                           className={`h-8 rounded-lg text-xs font-extrabold border cursor-pointer transition-all ${colorCls} ${
                             idx === currentIndex
-                              ? 'ring-2 ring-[#111827] ring-offset-1'
+                              ? 'ring-2 ring-[#1A2138] ring-offset-1'
                               : ''
                           }`}
                         >
@@ -1024,18 +1024,18 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             </div>
 
             {/* MAIN QUESTION CARD (PURE CLEAN QUESTION TEXT — NO REFERENCE AT START) */}
-            <div className="bg-white rounded-[24px] p-5 border border-[#E5EFE9] shadow-sm space-y-4">
+            <div className="bg-white rounded-[24px] p-5 border border-[#D2DEEA] shadow-sm space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-[#169C46]">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-[#1673B8]">
                   QUESTION {currentIndex + 1}
                 </span>
               </div>
 
-              <h3 className="text-base sm:text-lg font-extrabold text-[#111827] leading-snug">
+              <h3 className="text-base sm:text-lg font-extrabold text-[#1A2138] leading-snug">
                 {stripLeadingReference(currentQuestion.questionText)}
               </h3>
 
-              <p className="text-xs text-[#6B7280] font-medium">
+              <p className="text-xs text-[#5A6C84] font-medium">
                 Select the most appropriate answer from the options below.
               </p>
 
@@ -1065,22 +1065,22 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                       }
                       className={`w-full text-left p-3.5 sm:p-4 rounded-[16px] border transition-all flex items-center gap-3 cursor-pointer ${
                         userSelected
-                          ? 'bg-[#E9F9EE] border-2 border-[#169C46] shadow-xs'
-                          : 'bg-[#F9FAFB] border-[#E5E7EB] hover:border-[#169C46]'
+                          ? 'bg-[#EBF4FC] border-2 border-[#1673B8] shadow-xs'
+                          : 'bg-[#F4F8FD] border-[#D2DEEA] hover:border-[#1673B8]'
                       }`}
                     >
                       <span
                         className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
                           userSelected
-                            ? 'border-[5px] border-[#169C46] bg-white'
-                            : 'border-2 border-[#9CA3AF] bg-white'
+                            ? 'border-[5px] border-[#1673B8] bg-white'
+                            : 'border-2 border-[#94A3B8] bg-white'
                         }`}
                       />
                       <span
                         className={`text-xs sm:text-sm leading-snug ${
                           userSelected
-                            ? 'font-extrabold text-[#14532D]'
-                            : 'font-bold text-[#1F2937]'
+                            ? 'font-extrabold text-[#1A2138]'
+                            : 'font-bold text-[#1A2138]'
                         }`}
                       >
                         {letter}. {optionText}
@@ -1091,16 +1091,16 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               </div>
 
               {/* Selected Indicator Footer */}
-              <div className="pt-1 flex items-center justify-between text-xs font-extrabold text-[#15803D]">
+              <div className="pt-1 flex items-center justify-between text-xs font-extrabold text-[#1673B8]">
                 <span className="inline-flex items-center gap-1.5">
-                  <Info className="w-4 h-4 text-[#169C46]" />
+                  <Info className="w-4 h-4 text-[#1673B8]" />
                   <span>
                     {selectedAnswers[currentQuestion.id]
                       ? `Selected: ${selectedAnswers[currentQuestion.id]}`
                       : 'No option selected yet'}
                   </span>
                 </span>
-                <span className="text-[11px] text-[#6B7280] font-semibold">
+                <span className="text-[11px] text-[#5A6C84] font-semibold">
                   {attemptCounts.answered}/{attemptCounts.total} Answered
                 </span>
               </div>
@@ -1121,10 +1121,10 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     }));
                   }
                 }}
-                className={`py-3.5 px-4 rounded-[16px] bg-white border border-[#D1D5DB] text-sm font-extrabold inline-flex items-center justify-center gap-2 ${
+                className={`py-3.5 px-4 rounded-[16px] bg-white border border-[#D2DEEA] text-sm font-extrabold inline-flex items-center justify-center gap-2 ${
                   currentIndex === 0
                     ? 'opacity-40 cursor-not-allowed text-gray-400'
-                    : 'text-[#374151] hover:bg-gray-50 cursor-pointer'
+                    : 'text-[#1A2138] hover:bg-[#F4F8FD] cursor-pointer'
                 }`}
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -1144,7 +1144,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                       }));
                     }
                   }}
-                  className="py-3.5 px-4 rounded-[16px] bg-[#169C46] hover:bg-[#13873C] text-white text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                  className="py-3.5 px-4 rounded-[16px] bg-[#1673B8] hover:bg-[#105E9A] text-white text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                 >
                   <span>Next</span>
                   <ChevronRight className="w-4 h-4" />
@@ -1153,7 +1153,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowSubmitConfirmModal(true)}
-                  className="py-3.5 px-4 rounded-[16px] bg-[#13422B] hover:bg-[#169C46] text-white text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                  className="py-3.5 px-4 rounded-[16px] bg-[#1A2138] hover:bg-[#1673B8] text-white text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Submit Exam</span>
@@ -1166,7 +1166,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSubmitConfirmModal(true)}
-                className="text-xs font-extrabold text-[#15803D] hover:underline cursor-pointer"
+                className="text-xs font-extrabold text-[#1673B8] hover:underline cursor-pointer"
               >
                 Finish &amp; Submit Exam Now ({attemptCounts.answered}/
                 {attemptCounts.total} Answered) →
@@ -1177,16 +1177,16 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           {/* Submit Confirmation Popup Modal */}
           {showSubmitConfirmModal && (
             <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-              <div className="bg-white rounded-[26px] max-w-md w-full p-6 shadow-2xl border border-[#D5E8DC] space-y-4">
+              <div className="bg-white rounded-[26px] max-w-md w-full p-6 shadow-2xl border border-[#D2DEEA] space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-[#EAF8EF] text-[#169C46] flex items-center justify-center shrink-0">
+                  <div className="w-11 h-11 rounded-2xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center shrink-0">
                     <AlertTriangle className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-[#111827]">
+                    <h3 className="text-base font-extrabold text-[#1A2138]">
                       Submit 30-MCQs Exam?
                     </h3>
-                    <p className="text-xs text-[#6B7280]">
+                    <p className="text-xs text-[#5A6C84]">
                       View your score report, Correct vs. Wrong MCQs &amp; PDF
                       report.
                     </p>
@@ -1194,11 +1194,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="p-3 rounded-2xl bg-[#EAF8EF] border border-[#BBF7D0]">
-                    <div className="text-lg font-extrabold text-[#15803D]">
+                  <div className="p-3 rounded-2xl bg-[#EBF4FC] border border-[#BBD6EE]">
+                    <div className="text-lg font-extrabold text-[#1673B8]">
                       {attemptCounts.answered}
                     </div>
-                    <div className="text-[10.5px] font-bold text-[#14532D]">
+                    <div className="text-[10.5px] font-bold text-[#1A2138]">
                       Answered
                     </div>
                   </div>
@@ -1210,11 +1210,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                       Flagged
                     </div>
                   </div>
-                  <div className="p-3 rounded-2xl bg-gray-100 border border-gray-200">
-                    <div className="text-lg font-extrabold text-gray-700">
+                  <div className="p-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA]">
+                    <div className="text-lg font-extrabold text-[#5A6C84]">
                       {attemptCounts.notAnswered}
                     </div>
-                    <div className="text-[10.5px] font-bold text-gray-600">
+                    <div className="text-[10.5px] font-bold text-[#5A6C84]">
                       Not Answered
                     </div>
                   </div>
@@ -1224,14 +1224,14 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowSubmitConfirmModal(false)}
-                    className="flex-1 py-3 rounded-xl border border-gray-300 text-xs font-extrabold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                    className="flex-1 py-3 rounded-xl border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] hover:bg-[#F4F8FD] cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={finalizeAndSubmitExam}
-                    className="flex-1 py-3 rounded-xl bg-[#169C46] hover:bg-[#13873C] text-white text-xs font-extrabold shadow-md cursor-pointer"
+                    className="flex-1 py-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-md cursor-pointer"
                   >
                     Submit Now ✓
                   </button>
@@ -1246,23 +1246,23 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           SCREEN 3: EXAM RESULT & PDF REPORT SCREEN (WITH "GIVE EXAM AGAIN / NEXT EXAM")
          ===================================================================== */}
       {screen === 'result' && activeResult && (
-        <div className="bg-[#F4F8F5] rounded-[32px] overflow-hidden border border-[#D5E8DC] shadow-md">
+        <div className="bg-[#F0F6FC] rounded-[32px] overflow-hidden border border-[#D2DEEA] shadow-md">
           {/* Top Bar: Back + "Exam Result" + Share Icon */}
-          <div className="bg-white px-4 sm:px-5 py-4 border-b border-[#E5EFE9] flex items-center justify-between">
+          <div className="bg-white px-4 sm:px-5 py-4 border-b border-[#D2DEEA] flex items-center justify-between">
             <button
               type="button"
               onClick={() => setScreen('dashboard')}
-              className="w-9 h-9 rounded-xl bg-[#F4F8F5] hover:bg-[#E5EFE9] flex items-center justify-center text-[#111827] cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] flex items-center justify-center text-[#1A2138] cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <h2 className="text-base sm:text-lg font-extrabold text-[#111827]">
+            <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
               Exam Result
             </h2>
             <button
               type="button"
               onClick={() => handleShareResult(activeResult)}
-              className="w-9 h-9 rounded-xl bg-[#F4F8F5] hover:bg-[#E5EFE9] flex items-center justify-center text-[#111827] cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] flex items-center justify-center text-[#1A2138] cursor-pointer"
               title="Share Score"
             >
               <Share2 className="w-4 h-4" />
@@ -1270,11 +1270,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           </div>
 
           <div className="p-4 sm:p-5 space-y-4">
-            {/* BIG HERO RESULT CARD (GREEN IF >= 50% PASS, RED IF < 50% FAIL) */}
+            {/* BIG HERO RESULT CARD (ROYAL BLUE IF >= 50% PASS, RED IF < 50% FAIL) */}
             <div
               className={`rounded-[26px] p-6 text-white text-center shadow-md space-y-2.5 ${
                 activeResult.status === 'PASS'
-                  ? 'bg-gradient-to-br from-[#169C46] via-[#128A3E] to-[#0D6E30]'
+                  ? 'bg-gradient-to-br from-[#1A2138] via-[#105E9A] to-[#1673B8]'
                   : 'bg-gradient-to-br from-red-600 via-red-700 to-red-800'
               }`}
             >
@@ -1290,7 +1290,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 <span
                   className={`inline-block px-5 py-1 rounded-full bg-white text-xs font-black uppercase tracking-wider shadow-xs ${
                     activeResult.status === 'PASS'
-                      ? 'text-[#15803D]'
+                      ? 'text-[#1673B8]'
                       : 'text-red-700'
                   }`}
                 >
@@ -1321,7 +1321,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   download5PageExamReportPdf(user, activeResult, savedResults);
                   showToast('Exam Report PDF downloaded!');
                 }}
-                className="py-3.5 px-4 rounded-2xl bg-[#169C46] hover:bg-[#13873C] text-white text-xs sm:text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                className="py-3.5 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               >
                 {canUsePremium ? (
                   <Download className="w-4 h-4" />
@@ -1334,16 +1334,16 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               <button
                 type="button"
                 onClick={handleStartNew30McqExam}
-                className="py-3.5 px-4 rounded-2xl bg-[#13422B] hover:bg-[#0F291E] text-white text-xs sm:text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                className="py-3.5 px-4 rounded-2xl bg-[#1A2138] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               >
-                <RotateCcw className="w-4 h-4 text-emerald-300" />
+                <RotateCcw className="w-4 h-4 text-[#60A5FA]" />
                 <span>Next Exam / Give Exam Again (30 New MCQs)</span>
               </button>
             </div>
 
             {/* PERFORMANCE OVERVIEW CARD WITH PIE CHART (CORRECT vs WRONG vs SKIPPED) */}
-            <div className="bg-white rounded-[24px] p-4 sm:p-5 border border-[#E5EFE9] shadow-xs space-y-3">
-              <h4 className="text-base font-extrabold text-[#111827]">
+            <div className="bg-white rounded-[24px] p-4 sm:p-5 border border-[#D2DEEA] shadow-xs space-y-3">
+              <h4 className="text-base font-extrabold text-[#1A2138]">
                 Performance Overview (Correct vs. Wrong MCQs)
               </h4>
 
@@ -1353,13 +1353,13 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     viewBox="0 0 42 42"
                     className="w-28 h-28 shrink-0 -rotate-90"
                   >
-                    <circle cx="21" cy="21" r="15.915" fill="#F3F4F6" />
+                    <circle cx="21" cy="21" r="15.915" fill="#F0F6FC" />
                     <circle
                       cx="21"
                       cy="21"
                       r="15.915"
                       fill="transparent"
-                      stroke="#9CA3AF"
+                      stroke="#94A3B8"
                       strokeWidth="10"
                     />
                     <circle
@@ -1380,16 +1380,16 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                       cy="21"
                       r="15.915"
                       fill="transparent"
-                      stroke="#169C46"
+                      stroke="#1673B8"
                       strokeWidth="10"
                       strokeDasharray={`${activeResult.scorePercent} 100`}
                     />
                   </svg>
 
                   <div className="space-y-1.5 text-xs font-extrabold">
-                    <div className="text-[#169C46]">
+                    <div className="text-[#1673B8]">
                       {activeResult.correct}{' '}
-                      <span className="text-[#111827] font-bold">
+                      <span className="text-[#1A2138] font-bold">
                         Correct (Sahi)
                       </span>
                     </div>
@@ -1399,27 +1399,27 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                         Wrong (Ghalat)
                       </span>
                     </div>
-                    <div className="text-[#6B7280]">
+                    <div className="text-[#5A6C84]">
                       {activeResult.skipped}{' '}
-                      <span className="text-[#374151] font-bold">Skipped</span>
+                      <span className="text-[#1A2138] font-bold">Skipped</span>
                     </div>
-                    <div className="text-[11px] text-[#15803D] font-bold">
+                    <div className="text-[11px] text-[#1673B8] font-bold">
                       Total Score: {activeResult.scorePercent}%
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2 text-xs font-bold border-t sm:border-t-0 sm:border-l border-gray-100 pt-3 sm:pt-0 sm:pl-4">
-                  <div className="flex items-center justify-between text-[#111827]">
+                <div className="space-y-2 text-xs font-bold border-t sm:border-t-0 sm:border-l border-[#E4EDF7] pt-3 sm:pt-0 sm:pl-4">
+                  <div className="flex items-center justify-between text-[#1A2138]">
                     <span className="inline-flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#169C46]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#1673B8]" />
                       <span>Correct MCQs</span>
                     </span>
-                    <span className="font-extrabold text-[#169C46]">
+                    <span className="font-extrabold text-[#1673B8]">
                       {activeResult.correct} / {activeResult.totalQuestions}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[#111827]">
+                  <div className="flex items-center justify-between text-[#1A2138]">
                     <span className="inline-flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-[#D97706]" />
                       <span>Wrong MCQs</span>
@@ -1428,12 +1428,12 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                       {activeResult.wrong} / {activeResult.totalQuestions}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[#111827]">
+                  <div className="flex items-center justify-between text-[#1A2138]">
                     <span className="inline-flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#9CA3AF]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#94A3B8]" />
                       <span>Skipped MCQs</span>
                     </span>
-                    <span className="font-extrabold text-[#6B7280]">
+                    <span className="font-extrabold text-[#5A6C84]">
                       {activeResult.skipped} / {activeResult.totalQuestions}
                     </span>
                   </div>
@@ -1444,12 +1444,12 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             {/* ALL 30 QUESTIONS REVIEW (CLEAN — NO REFERENCE PREFIX) */}
             <div className="space-y-3 pt-1">
               <div>
-                <h4 className="text-base font-extrabold text-[#111827]">
+                <h4 className="text-base font-extrabold text-[#1A2138]">
                   All 30 Questions Review
                 </h4>
-                <p className="text-xs text-[#4B5563] font-medium">
+                <p className="text-xs text-[#5A6C84] font-medium">
                   Correct answers shown in{' '}
-                  <span className="text-[#169C46] font-extrabold">green</span>,
+                  <span className="text-[#1673B8] font-extrabold">blue</span>,
                   your answer shown below
                 </p>
               </div>
@@ -1468,37 +1468,37 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   return (
                     <div
                       key={ans.questionId}
-                      className="bg-white rounded-[20px] p-4 border border-[#E5EFE9] shadow-xs space-y-2"
+                      className="bg-white rounded-[20px] p-4 border border-[#D2DEEA] shadow-xs space-y-2"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2.5">
                           <span
                             className={`px-2.5 py-0.5 rounded-lg text-white text-xs font-extrabold shrink-0 mt-0.5 ${
-                              ans.isCorrect ? 'bg-[#65B77E]' : 'bg-[#E59849]'
+                              ans.isCorrect ? 'bg-[#1673B8]' : 'bg-[#E59849]'
                             }`}
                           >
                             Q{ans.questionNumber}
                           </span>
-                          <h5 className="text-xs sm:text-sm font-extrabold text-[#111827] leading-snug">
+                          <h5 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
                             {stripLeadingReference(ans.questionText)}
                           </h5>
                         </div>
                       </div>
 
                       <div className="pl-9 space-y-1 text-xs">
-                        <div className="flex items-start gap-1.5 font-bold text-[#15803D]">
-                          <CheckCircle2 className="w-4 h-4 text-[#169C46] shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-1.5 font-bold text-[#105E9A]">
+                          <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                           <span>
                             Correct Answer: {getOptionText(ans.correctAnswer)}
                           </span>
                         </div>
                         <div
                           className={`flex items-start gap-1.5 font-bold ${
-                            ans.isCorrect ? 'text-[#15803D]' : 'text-[#D97706]'
+                            ans.isCorrect ? 'text-[#1673B8]' : 'text-[#D97706]'
                           }`}
                         >
                           {ans.isCorrect ? (
-                            <CheckCircle2 className="w-4 h-4 text-[#169C46] shrink-0 mt-0.5" />
+                            <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                           ) : (
                             <AlertTriangle className="w-4 h-4 text-[#D97706] shrink-0 mt-0.5" />
                           )}
@@ -1516,14 +1516,14 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                                 [ans.questionId]: !prev[ans.questionId]
                               }))
                             }
-                            className="text-[11px] font-extrabold text-[#15803D] hover:underline cursor-pointer"
+                            className="text-[11px] font-extrabold text-[#1673B8] hover:underline cursor-pointer"
                           >
                             {isExpanded
                               ? 'Hide Explanation ▲'
                               : 'View Explanation ▼'}
                           </button>
                           {isExpanded && (
-                            <div className="mt-1.5 p-2.5 rounded-xl bg-[#F4F8F5] border border-[#D5E8DC] text-[11px] text-[#374151]">
+                            <div className="mt-1.5 p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[11px] text-[#1A2138]">
                               <p>
                                 <strong>Explanation:</strong> {ans.explanation}
                               </p>
@@ -1551,7 +1551,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   download5PageExamReportPdf(user, activeResult, savedResults);
                   showToast('Professional Exam PDF Report downloaded!');
                 }}
-                className="w-full py-4 px-5 rounded-[18px] bg-[#169C46] hover:bg-[#13873C] text-white font-extrabold text-sm sm:text-base shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-4 px-5 rounded-[18px] bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-sm sm:text-base shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
               >
                 {canUsePremium ? (
                   <Download className="w-5 h-5" />
@@ -1564,9 +1564,9 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               <button
                 type="button"
                 onClick={handleStartNew30McqExam}
-                className="w-full py-4 px-5 rounded-[18px] bg-[#13422B] hover:bg-[#0F291E] text-white font-extrabold text-sm sm:text-base shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-4 px-5 rounded-[18px] bg-[#1A2138] hover:bg-[#105E9A] text-white font-extrabold text-sm sm:text-base shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
               >
-                <RotateCcw className="w-5 h-5 text-emerald-300" />
+                <RotateCcw className="w-5 h-5 text-[#60A5FA]" />
                 <span>
                   Give Exam Again / Next Exam (30 New Different MCQs) →
                 </span>
@@ -1582,9 +1582,9 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   setExpandedReviewIds(allOpen);
                   showToast('All 30 question explanations expanded!');
                 }}
-                className="w-full py-3.5 px-5 rounded-[18px] bg-white hover:bg-gray-50 border-2 border-[#169C46] text-[#14532D] font-extrabold text-sm inline-flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 px-5 rounded-[18px] bg-white hover:bg-[#F0F6FC] border-2 border-[#1673B8] text-[#1A2138] font-extrabold text-sm inline-flex items-center justify-center gap-2 cursor-pointer"
               >
-                <FileText className="w-4 h-4 text-[#169C46]" />
+                <FileText className="w-4 h-4 text-[#1673B8]" />
                 <span>Expand All Explanations</span>
               </button>
 
@@ -1619,38 +1619,38 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           SCREEN 4: ALL EXAM RESULTS HISTORY
          ===================================================================== */}
       {screen === 'history' && (
-        <div className="bg-[#F4F8F5] rounded-[32px] overflow-hidden border border-[#D5E8DC] shadow-md">
-          <div className="bg-white px-5 py-4 border-b border-[#E5EFE9] flex items-center justify-between">
+        <div className="bg-[#F0F6FC] rounded-[32px] overflow-hidden border border-[#D2DEEA] shadow-md">
+          <div className="bg-white px-5 py-4 border-b border-[#D2DEEA] flex items-center justify-between">
             <button
               type="button"
               onClick={() => setScreen('dashboard')}
-              className="w-9 h-9 rounded-xl bg-[#F4F8F5] flex items-center justify-center text-[#111827] cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-[#F0F6FC] flex items-center justify-center text-[#1A2138] cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <h2 className="text-base sm:text-lg font-extrabold text-[#111827]">
+            <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
               All Exam Results History
             </h2>
-            <span className="text-xs font-extrabold text-[#169C46]">
+            <span className="text-xs font-extrabold text-[#1673B8]">
               {savedResults.length} Saved
             </span>
           </div>
 
           <div className="p-4 sm:p-5 space-y-3">
             {savedResults.length === 0 ? (
-              <div className="bg-white rounded-2xl p-6 text-center space-y-3 border border-[#E5EFE9]">
-                <Trophy className="w-10 h-10 text-[#169C46] mx-auto" />
-                <div className="text-sm font-extrabold text-[#111827]">
+              <div className="bg-white rounded-2xl p-6 text-center space-y-3 border border-[#D2DEEA]">
+                <Trophy className="w-10 h-10 text-[#1673B8] mx-auto" />
+                <div className="text-sm font-extrabold text-[#1A2138]">
                   No Completed Exam Attempts Yet
                 </div>
-                <p className="text-xs text-[#6B7280]">
+                <p className="text-xs text-[#5A6C84]">
                   Start your 30-Question Exam to see your score history and
                   download your PDF report.
                 </p>
                 <button
                   type="button"
                   onClick={handleStartNew30McqExam}
-                  className="px-5 py-2.5 rounded-xl bg-[#169C46] text-white text-xs font-extrabold cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
                 >
                   Start 30-MCQs Exam Now →
                 </button>
@@ -1659,22 +1659,22 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               savedResults.map((res) => (
                 <div
                   key={res.examId}
-                  className="bg-white rounded-[20px] p-4 border border-[#E5EFE9] shadow-xs space-y-3"
+                  className="bg-white rounded-[20px] p-4 border border-[#D2DEEA] shadow-xs space-y-3"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-xl text-white flex items-center justify-center font-extrabold text-xs ${
-                          res.status === 'PASS' ? 'bg-[#169C46]' : 'bg-red-600'
+                          res.status === 'PASS' ? 'bg-[#1673B8]' : 'bg-red-600'
                         }`}
                       >
                         {res.scorePercent}%
                       </div>
                       <div>
-                        <div className="text-sm font-extrabold text-[#111827]">
+                        <div className="text-sm font-extrabold text-[#1A2138]">
                           {res.title}
                         </div>
-                        <div className="text-xs text-[#6B7280] font-semibold">
+                        <div className="text-xs text-[#5A6C84] font-semibold">
                           ✓ {res.correct} Correct • ✗ {res.wrong} Wrong •{' '}
                           {res.dateFormatted}
                         </div>
@@ -1683,7 +1683,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     <span
                       className={`px-2.5 py-1 rounded-full text-[10.5px] font-extrabold ${
                         res.status === 'PASS'
-                          ? 'bg-[#DCFCE7] text-[#15803D]'
+                          ? 'bg-[#EBF4FC] text-[#1673B8]'
                           : 'bg-red-100 text-red-700'
                       }`}
                     >
@@ -1698,7 +1698,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                         setActiveResult(res);
                         setScreen('result');
                       }}
-                      className="flex-1 py-2 rounded-xl bg-[#EAF8EF] text-[#15803D] text-xs font-extrabold cursor-pointer"
+                      className="flex-1 py-2 rounded-xl bg-[#EBF4FC] text-[#1673B8] text-xs font-extrabold cursor-pointer"
                     >
                       View Result &amp; Answers
                     </button>
@@ -1711,7 +1711,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                         }
                         download5PageExamReportPdf(user, res, savedResults);
                       }}
-                      className="px-3.5 py-2 rounded-xl bg-[#169C46] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                      className="px-3.5 py-2 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download PDF</span>
@@ -1722,11 +1722,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             )}
           </div>
 
-          <div className="bg-white border-t border-[#E5EFE9] px-4 py-2.5 grid grid-cols-3 gap-1">
+          <div className="bg-white border-t border-[#D2DEEA] px-4 py-2.5 grid grid-cols-3 gap-1">
             <button
               type="button"
               onClick={() => setScreen('dashboard')}
-              className="flex flex-col items-center justify-center py-1 text-[#6B7280] font-bold text-xs cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 text-[#5A6C84] font-bold text-xs cursor-pointer"
             >
               <Home className="w-5 h-5" />
               <span className="mt-0.5">Exam Home</span>
@@ -1734,7 +1734,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             <button
               type="button"
               onClick={() => setScreen('history')}
-              className="flex flex-col items-center justify-center py-1 text-[#169C46] font-extrabold text-xs cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 text-[#1673B8] font-extrabold text-xs cursor-pointer"
             >
               <CheckCircle2 className="w-5 h-5" />
               <span className="mt-0.5">Results</span>
@@ -1742,7 +1742,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             <button
               type="button"
               onClick={() => setScreen('profile')}
-              className="flex flex-col items-center justify-center py-1 text-[#6B7280] font-bold text-xs cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 text-[#5A6C84] font-bold text-xs cursor-pointer"
             >
               <UserCheck className="w-5 h-5" />
               <span className="mt-0.5">Profile</span>
@@ -1755,32 +1755,32 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           SCREEN 5: CANDIDATE PROFILE & BOOKMARKS
          ===================================================================== */}
       {screen === 'profile' && (
-        <div className="bg-[#F4F8F5] rounded-[32px] overflow-hidden border border-[#D5E8DC] shadow-md">
-          <div className="bg-white px-5 py-4 border-b border-[#E5EFE9] flex items-center justify-between">
+        <div className="bg-[#F0F6FC] rounded-[32px] overflow-hidden border border-[#D2DEEA] shadow-md">
+          <div className="bg-white px-5 py-4 border-b border-[#D2DEEA] flex items-center justify-between">
             <button
               type="button"
               onClick={() => setScreen('dashboard')}
-              className="w-9 h-9 rounded-xl bg-[#F4F8F5] flex items-center justify-center text-[#111827] cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-[#F0F6FC] flex items-center justify-center text-[#1A2138] cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <h2 className="text-base sm:text-lg font-extrabold text-[#111827]">
+            <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
               Candidate Profile &amp; Leaderboard
             </h2>
-            <UserCheck className="w-5 h-5 text-[#169C46]" />
+            <UserCheck className="w-5 h-5 text-[#1673B8]" />
           </div>
 
           <div className="p-4 sm:p-5 space-y-4">
-            <div className="bg-white rounded-[22px] p-4 border border-[#E5EFE9] flex items-center justify-between gap-3">
+            <div className="bg-white rounded-[22px] p-4 border border-[#D2DEEA] flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#169C46] text-white font-extrabold text-lg flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-[#1673B8] text-white font-extrabold text-lg flex items-center justify-center">
                   {avatarInitial}
                 </div>
                 <div>
-                  <div className="text-sm font-extrabold text-[#111827]">
+                  <div className="text-sm font-extrabold text-[#1A2138]">
                     {user.name || 'Food Safety Specialist'}
                   </div>
-                  <div className="text-xs text-[#6B7280]">
+                  <div className="text-xs text-[#5A6C84]">
                     {user.email || 'Verified Candidate'} • Study Time:{' '}
                     {formattedStudyTime}
                   </div>
@@ -1789,7 +1789,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               <span
                 className={`px-3 py-1 rounded-full text-[10.5px] font-extrabold ${
                   canUsePremium
-                    ? 'bg-[#DCFCE7] text-[#15803D]'
+                    ? 'bg-[#EBF4FC] text-[#1673B8]'
                     : 'bg-amber-100 text-amber-900'
                 }`}
               >
@@ -1798,9 +1798,9 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             </div>
 
             {/* Weekly Top 10 Scorers */}
-            <div className="bg-white rounded-[22px] p-4 border border-[#E5EFE9] space-y-3">
+            <div className="bg-white rounded-[22px] p-4 border border-[#D2DEEA] space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-extrabold text-[#111827] flex items-center gap-1.5">
+                <h3 className="text-sm font-extrabold text-[#1A2138] flex items-center gap-1.5">
                   <Trophy className="w-4 h-4 text-amber-500" />
                   <span>Weekly Top 10 Exam Scorers</span>
                 </h3>
@@ -1809,28 +1809,28 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 {LEADERBOARD_TOP_10_WEEKLY.map((scorer) => (
                   <div
                     key={scorer.rank}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#F9FAFB] border border-gray-100 text-xs"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-xs"
                   >
                     <div className="flex items-center gap-2.5">
                       <span
                         className={`w-6 h-6 rounded-full flex items-center justify-center font-extrabold text-[11px] ${
                           scorer.rank <= 3
-                            ? 'bg-[#169C46] text-white'
+                            ? 'bg-[#1673B8] text-white'
                             : 'bg-gray-200 text-gray-700'
                         }`}
                       >
                         {scorer.rank}
                       </span>
                       <div>
-                        <div className="font-extrabold text-[#111827]">
+                        <div className="font-extrabold text-[#1A2138]">
                           {scorer.name}
                         </div>
-                        <div className="text-[10.5px] text-[#6B7280]">
+                        <div className="text-[10.5px] text-[#5A6C84]">
                           {scorer.role}
                         </div>
                       </div>
                     </div>
-                    <span className="font-extrabold text-[#15803D]">
+                    <span className="font-extrabold text-[#1673B8]">
                       {scorer.scorePct}%
                     </span>
                   </div>
@@ -1839,15 +1839,15 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             </div>
 
             {/* Bookmarked Questions */}
-            <div className="bg-white rounded-[22px] p-4 border border-[#E5EFE9] space-y-2.5">
+            <div className="bg-white rounded-[22px] p-4 border border-[#D2DEEA] space-y-2.5">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-extrabold text-[#111827] flex items-center gap-1.5">
-                  <Bookmark className="w-4 h-4 text-[#169C46]" />
+                <h3 className="text-sm font-extrabold text-[#1A2138] flex items-center gap-1.5">
+                  <Bookmark className="w-4 h-4 text-[#1673B8]" />
                   <span>Bookmarked Questions ({bookmarkedQuestions.length})</span>
                 </h3>
               </div>
               {bookmarkedQuestions.length === 0 ? (
-                <p className="text-xs text-[#6B7280]">
+                <p className="text-xs text-[#5A6C84]">
                   Tap the bookmark icon during any exam attempt to save
                   important questions here for quick revision.
                 </p>
@@ -1856,12 +1856,12 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   {bookmarkedQuestions.map((bq) => (
                     <div
                       key={bq.id}
-                      className="p-3 rounded-xl bg-[#F4F8F5] border border-[#D5E8DC] space-y-1 text-xs"
+                      className="p-3 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-1 text-xs"
                     >
-                      <div className="font-extrabold text-[#111827]">
+                      <div className="font-extrabold text-[#1A2138]">
                         {stripLeadingReference(bq.questionText)}
                       </div>
-                      <div className="text-[#15803D] font-bold">
+                      <div className="text-[#1673B8] font-bold">
                         Correct ({bq.correctAnswer}): {bq.explanation}
                       </div>
                     </div>
@@ -1871,11 +1871,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             </div>
           </div>
 
-          <div className="bg-white border-t border-[#E5EFE9] px-4 py-2.5 grid grid-cols-3 gap-1">
+          <div className="bg-white border-t border-[#D2DEEA] px-4 py-2.5 grid grid-cols-3 gap-1">
             <button
               type="button"
               onClick={() => setScreen('dashboard')}
-              className="flex flex-col items-center justify-center py-1 text-[#6B7280] font-bold text-xs cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 text-[#5A6C84] font-bold text-xs cursor-pointer"
             >
               <Home className="w-5 h-5" />
               <span className="mt-0.5">Exam Home</span>
@@ -1883,7 +1883,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             <button
               type="button"
               onClick={() => setScreen('history')}
-              className="flex flex-col items-center justify-center py-1 text-[#6B7280] font-bold text-xs cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 text-[#5A6C84] font-bold text-xs cursor-pointer"
             >
               <CheckCircle2 className="w-5 h-5" />
               <span className="mt-0.5">Results</span>
@@ -1891,7 +1891,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             <button
               type="button"
               onClick={() => setScreen('profile')}
-              className="flex flex-col items-center justify-center py-1 text-[#169C46] font-extrabold text-xs cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 text-[#1673B8] font-extrabold text-xs cursor-pointer"
             >
               <UserCheck className="w-5 h-5" />
               <span className="mt-0.5">Profile</span>

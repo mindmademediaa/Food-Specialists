@@ -153,8 +153,8 @@ const ConditionFoodIcon: React.FC<{
   iconType: ConditionFoodCard['iconType'];
   isRecommended: boolean;
 }> = ({ iconType, isRecommended }) => {
-  const colorClass = isRecommended ? 'text-[#15803D]' : 'text-[#B91C1C]';
-  const bgClass = isRecommended ? 'bg-[#BBF7D0]/60' : 'bg-[#FECACA]/70';
+  const colorClass = isRecommended ? 'text-[#1673B8]' : 'text-[#B91C1C]';
+  const bgClass = isRecommended ? 'bg-[#D6E8F8]' : 'bg-[#FECACA]/70';
 
   return (
     <div
@@ -361,7 +361,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
     return {
       actionType: 'HEALTHY WEIGHT — MAINTAIN',
-      badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+      badgeBg: 'bg-[#EBF4FC] text-[#1A2138] border-[#BBD6EE]',
       headline: `Great job! Your weight (${profile.weightKg} kg) is in the Healthy Normal BMI range (${indexes.bmi}).`,
       detail:
         diffFromTarget !== 0
@@ -591,17 +591,17 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       {/* =====================================================================
           TOP HEADER BANNER — 1-PAGE BMI, HEALTH TRACKER & AI DIETITIAN CHAT
          ===================================================================== */}
-      <div className="bg-gradient-to-r from-[#13422B] via-[#155E3A] to-[#0E9F6E] rounded-[24px] p-4 sm:p-5 text-white shadow-sm">
+      <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] rounded-[24px] p-4 sm:p-5 text-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-emerald-100 text-[10.5px] font-extrabold uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-[#DCE9F6] text-[10.5px] font-extrabold uppercase tracking-wider">
               <Activity className="w-3.5 h-3.5" />
               1-Page Personal Health Tracker • BMI, Weight Graph &amp; AI Dietitian Chat
             </span>
             <h2 className="text-lg sm:text-xl font-extrabold mt-1">
               Personal Health, BMI Calculator &amp; AI Dietitian Chatbot
             </h2>
-            <p className="text-xs text-emerald-100 mt-0.5">
+            <p className="text-xs text-[#EBF4FC] mt-0.5">
               Enter your details below to calculate your BMI &amp; weight target, check Nutrition Recommendations, and chat with the AI Dietitian.
             </p>
           </div>
@@ -609,9 +609,9 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
           <button
             type="button"
             onClick={handleDownloadNutritionPdfReport}
-            className="px-4 py-2.5 rounded-xl bg-white text-[#13422B] hover:bg-emerald-50 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+            className="px-4 py-2.5 rounded-xl bg-white text-[#1A2138] hover:bg-[#F0F6FC] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
           >
-            <Download className="w-4 h-4 text-[#0E9F6E]" />
+            <Download className="w-4 h-4 text-[#1673B8]" />
             <span>Download Full Nutrition Report (PDF)</span>
           </button>
         </div>
@@ -619,15 +619,15 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
       {/* SAVE CONFIRMATION BANNER */}
       {saveSuccessMsg && (
-        <div className="p-3.5 rounded-2xl bg-[#DCFCE7] border border-[#86EFAC] text-[#14532D] text-xs font-extrabold flex items-center justify-between shadow-2xs">
+        <div className="p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#BBD6EE] text-[#1A2138] text-xs font-extrabold flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#15803D] shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0" />
             <span>{saveSuccessMsg}</span>
           </div>
           <button
             type="button"
             onClick={() => setSaveSuccessMsg(null)}
-            className="text-xs font-bold underline cursor-pointer"
+            className="text-xs font-bold underline cursor-pointer text-[#1673B8]"
           >
             Dismiss
           </button>
@@ -637,17 +637,17 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       {/* =====================================================================
           STEP 1: SMOOTH, RELIABLE BODY DETAILS & HEALTH CALCULATOR INPUTS
          ===================================================================== */}
-      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+      <div className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E4EDF7] pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
+            <div className="w-9 h-9 rounded-xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center font-extrabold text-sm">
               1
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+              <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
                 Step 1: Enter Your Body Details &amp; Health Goal
               </h3>
-              <p className="text-[11px] text-[#5C7267]">
+              <p className="text-[11px] text-[#5A6C84]">
                 Type any number freely — BMI, Ideal Weight &amp; Calories calculate automatically
               </p>
             </div>
@@ -656,7 +656,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
           <button
             type="button"
             onClick={handleSaveHealthTracker}
-            className="px-4 py-2 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <Check className="w-4 h-4" />
             <span>Calculate &amp; Save My Nutrition</span>
@@ -666,7 +666,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
           {/* Full Name */}
           <div>
-            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
               Full Name
             </label>
             <input
@@ -674,13 +674,13 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
               value={fullNameInput}
               onChange={(e) => setFullNameInput(e.target.value)}
               placeholder="Enter your name"
-              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs sm:text-sm font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
             />
           </div>
 
           {/* Age (Years) — Smooth string input */}
           <div>
-            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
               Age (Years)
             </label>
             <input
@@ -692,19 +692,19 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                 setAgeInput(cleaned);
               }}
               placeholder="e.g. 28"
-              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs sm:text-sm font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
             />
           </div>
 
           {/* Gender */}
           <div>
-            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
               Gender
             </label>
             <select
               value={genderInput}
               onChange={(e) => setGenderInput(e.target.value as GenderOption)}
-              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs sm:text-sm font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
             >
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -715,7 +715,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
           {/* Height (cm or feet/inches) — Smooth string input */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[11px] font-extrabold text-[#13422B]">
+              <label className="text-[11px] font-extrabold text-[#1A2138]">
                 Height ({heightUnit === 'cm' ? 'cm' : 'ft / in'})
               </label>
               <button
@@ -723,7 +723,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                 onClick={() =>
                   setHeightUnit((u) => (u === 'cm' ? 'feet' : 'cm'))
                 }
-                className="text-[10px] font-extrabold text-[#0E9F6E] underline cursor-pointer"
+                className="text-[10px] font-extrabold text-[#1673B8] underline cursor-pointer"
               >
                 Switch to {heightUnit === 'cm' ? 'Feet/Inches' : 'cm'}
               </button>
@@ -739,7 +739,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                   setHeightCmInput(cleaned);
                 }}
                 placeholder="e.g. 172"
-                className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                className="w-full px-3 py-2.5 rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs sm:text-sm font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
               />
             ) : (
               <div className="grid grid-cols-2 gap-1.5">
@@ -751,7 +751,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                     setHeightFeetInput(e.target.value.replace(/[^0-9]/g, ''))
                   }
                   placeholder="Feet (e.g. 5)"
-                  className="w-full px-2.5 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                  className="w-full px-2.5 py-2.5 rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                 />
                 <input
                   type="text"
@@ -761,7 +761,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                     setHeightInchesInput(e.target.value.replace(/[^0-9]/g, ''))
                   }
                   placeholder="Inches (e.g. 8)"
-                  className="w-full px-2.5 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                  className="w-full px-2.5 py-2.5 rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                 />
               </div>
             )}
@@ -769,7 +769,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
           {/* Current Weight (kg) — Smooth string input */}
           <div>
-            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
               Current Weight (kg)
             </label>
             <input
@@ -781,13 +781,13 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                 setWeightKgInput(cleaned);
               }}
               placeholder="e.g. 74"
-              className="w-full px-3 py-2.5 rounded-xl border-2 border-[#0E9F6E] bg-[#F4FAF7] text-xs sm:text-sm font-extrabold text-[#0F291E] focus:outline-none"
+              className="w-full px-3 py-2.5 rounded-xl border-2 border-[#1673B8] bg-[#F0F6FC] text-xs sm:text-sm font-extrabold text-[#1A2138] focus:outline-none"
             />
           </div>
 
           {/* Target Weight (kg) — Smooth string input */}
           <div>
-            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
               Target Weight (kg)
             </label>
             <input
@@ -799,13 +799,13 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                 setTargetWeightKgInput(cleaned);
               }}
               placeholder="e.g. 68"
-              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs sm:text-sm font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
             />
           </div>
 
           {/* Activity Level */}
           <div>
-            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
               Activity Level
             </label>
             <select
@@ -813,7 +813,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
               onChange={(e) =>
                 setActivityLevel(e.target.value as ActivityLevelOption)
               }
-              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs sm:text-sm font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
             >
               <option value="Sedentary">Sedentary (Desk Job)</option>
               <option value="Lightly Active">Lightly Active (1–2 days/wk)</option>
@@ -825,13 +825,13 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
           {/* Primary Goal */}
           <div>
-            <label className="block text-[11px] font-extrabold text-[#13422B] mb-1">
+            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
               Your Primary Goal
             </label>
             <select
               value={goal}
               onChange={(e) => setGoal(e.target.value as GoalOption)}
-              className="w-full px-3 py-2.5 rounded-xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs sm:text-sm font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
             >
               <option value="Lose Weight">Lose Weight (Fat Loss)</option>
               <option value="Maintain Weight">Maintain Healthy Weight</option>
@@ -843,16 +843,16 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
         </div>
 
         {/* Daily Water Tracker Row */}
-        <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center">
               <Droplets className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-extrabold text-[#0F291E]">
+              <div className="text-xs font-extrabold text-[#1A2138]">
                 Daily Water Intake Tracker: {waterGlasses} / {profile.dailyWaterGoalGlasses} Glasses ({waterGlasses * 250} ml)
               </div>
-              <div className="text-[11px] text-[#5C7267]">
+              <div className="text-[11px] text-[#5A6C84]">
                 Click +1 Glass whenever you drink water today
               </div>
             </div>
@@ -862,14 +862,14 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
             <button
               type="button"
               onClick={() => setWaterGlasses((w) => Math.max(0, w - 1))}
-              className="px-3 py-1.5 rounded-xl bg-white border border-[#CBE3D6] text-[#0F291E] text-xs font-extrabold cursor-pointer hover:bg-gray-50"
+              className="px-3 py-1.5 rounded-xl bg-white border border-[#D2DEEA] text-[#1A2138] text-xs font-extrabold cursor-pointer hover:bg-[#F4F8FD]"
             >
               - 1 Glass
             </button>
             <button
               type="button"
               onClick={() => setWaterGlasses((w) => Math.min(16, w + 1))}
-              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer"
             >
               + 1 Glass Water
             </button>
@@ -880,16 +880,16 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       {/* =====================================================================
           STEP 2: INSTANT BMI RESULT, WEIGHT GOAL ADVICE & VISUAL GRAPH
          ===================================================================== */}
-      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
-        <div className="flex items-center gap-2.5 border-b border-[#ECF4EF] pb-3">
-          <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
+      <div className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex items-center gap-2.5 border-b border-[#E4EDF7] pb-3">
+          <div className="w-9 h-9 rounded-xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center font-extrabold text-sm">
             2
           </div>
           <div>
-            <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+            <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
               Step 2: Your BMI Score, Weight Advice &amp; Daily Calorie Target
             </h3>
-            <p className="text-[11px] text-[#5C7267]">
+            <p className="text-[11px] text-[#5A6C84]">
               Shows your exact BMI category, whether to gain or reduce weight, and your daily macros
             </p>
           </div>
@@ -897,17 +897,17 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Left: BMI Gauge & Scale Bar */}
-          <div className="p-4 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-3">
+          <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA] space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-bold text-[#5C7267] uppercase">
+                <span className="text-[11px] font-bold text-[#5A6C84] uppercase">
                   Your Body Mass Index (BMI)
                 </span>
                 <div className="flex items-baseline gap-2 mt-0.5">
-                  <span className="text-3xl font-extrabold text-[#0F291E]">
+                  <span className="text-3xl font-extrabold text-[#1A2138]">
                     {indexes.bmi}
                   </span>
-                  <span className="text-xs font-bold text-[#5C7267]">kg/m²</span>
+                  <span className="text-xs font-bold text-[#5A6C84]">kg/m²</span>
                 </div>
               </div>
               <span
@@ -923,18 +923,18 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
             <div className="space-y-1.5 pt-1">
               <div className="relative h-3.5 w-full rounded-full overflow-hidden flex">
-                <div className="w-1/4 bg-blue-500" title="Underweight <18.5" />
-                <div className="w-1/4 bg-emerald-500" title="Normal 18.5–24.9" />
+                <div className="w-1/4 bg-sky-400" title="Underweight <18.5" />
+                <div className="w-1/4 bg-[#1673B8]" title="Normal 18.5–24.9" />
                 <div className="w-1/4 bg-amber-500" title="Overweight 25–29.9" />
                 <div className="w-1/4 bg-red-500" title="Obese 30+" />
                 <div
-                  className="absolute top-0 bottom-0 w-1.5 bg-[#0F291E] border border-white rounded-full shadow-md"
+                  className="absolute top-0 bottom-0 w-1.5 bg-[#1A2138] border border-white rounded-full shadow-md"
                   style={{ left: `calc(${bmiPointerPct}% - 3px)` }}
                 />
               </div>
-              <div className="grid grid-cols-4 text-[10px] font-bold text-[#5C7267] text-center">
+              <div className="grid grid-cols-4 text-[10px] font-bold text-[#5A6C84] text-center">
                 <span>Under (&lt;18.5)</span>
-                <span className="text-[#0E9F6E] font-extrabold">Normal (18.5–24.9)</span>
+                <span className="text-[#1673B8] font-extrabold">Normal (18.5–24.9)</span>
                 <span>Over (25–29.9)</span>
                 <span>Obese (30+)</span>
               </div>
@@ -958,32 +958,32 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
           </div>
 
           {/* Right: Visual Weight Progress & Goal Comparison Graph */}
-          <div className="p-4 rounded-2xl bg-[#F8FCFA] border border-[#CBE3D6] space-y-3 flex flex-col justify-between">
+          <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA] space-y-3 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-xs sm:text-sm font-extrabold text-[#0F291E]">
+                <h4 className="text-xs sm:text-sm font-extrabold text-[#1A2138]">
                   Weight Progress &amp; Ideal Weight Graph
                 </h4>
-                <p className="text-[11px] text-[#5C7267]">
+                <p className="text-[11px] text-[#5A6C84]">
                   Current: <strong>{profile.weightKg} kg</strong> • Ideal Weight:{' '}
                   <strong>{indexes.idealWeightKg} kg</strong> • Target:{' '}
                   <strong>{profile.targetWeightKg} kg</strong>
                 </p>
               </div>
-              <Scale className="w-5 h-5 text-[#0E9F6E]" />
+              <Scale className="w-5 h-5 text-[#1673B8]" />
             </div>
 
             <div className="space-y-2.5 my-auto py-1">
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-[#0F291E]">Current Weight</span>
-                  <span className="text-[#0F291E] font-extrabold">
+                  <span className="text-[#1A2138]">Current Weight</span>
+                  <span className="text-[#1A2138] font-extrabold">
                     {profile.weightKg} kg (BMI {indexes.bmi})
                   </span>
                 </div>
                 <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#13422B]"
+                    className="h-full rounded-full bg-[#1A2138]"
                     style={{
                       width: `${Math.min(100, Math.round((profile.weightKg / 120) * 100))}%`
                     }}
@@ -993,16 +993,16 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-[#0E9F6E]">
+                  <span className="text-[#1673B8]">
                     Healthy Ideal Weight (For {profile.heightCm} cm)
                   </span>
-                  <span className="text-[#0E9F6E] font-extrabold">
+                  <span className="text-[#1673B8] font-extrabold">
                     {indexes.idealWeightKg} kg (BMI 22.0)
                   </span>
                 </div>
                 <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#0E9F6E]"
+                    className="h-full rounded-full bg-[#1673B8]"
                     style={{
                       width: `${Math.min(100, Math.round((indexes.idealWeightKg / 120) * 100))}%`
                     }}
@@ -1028,7 +1028,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
               </div>
             </div>
 
-            <div className="text-[11px] text-[#5C7267] font-semibold pt-1 border-t border-[#E2F2E9] flex items-center justify-between">
+            <div className="text-[11px] text-[#5A6C84] font-semibold pt-1 border-t border-[#D2DEEA] flex items-center justify-between">
               <span>Health Score: {indexes.healthScore}/100 ({indexes.healthScoreLabel})</span>
               <span>Body Fat Est.: {indexes.bodyFatPct}%</span>
             </div>
@@ -1037,62 +1037,62 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
         {/* Daily Calorie & Macro Targets Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          <div className="p-3 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0]">
-            <div className="text-[10px] font-bold text-[#065F46] uppercase">
+          <div className="p-3 rounded-2xl bg-[#EBF4FC] border border-[#BBD6EE]">
+            <div className="text-[10px] font-bold text-[#105E9A] uppercase">
               Daily Calorie Target
             </div>
-            <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+            <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
               {indexes.dailyCaloriesNeeded} kcal
             </div>
-            <div className="text-[10px] font-bold text-[#0E9F6E]">
+            <div className="text-[10px] font-bold text-[#1673B8]">
               For: {profile.goal}
             </div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF]">
-            <div className="text-[10px] font-bold text-[#5C7267] uppercase">
+          <div className="p-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA]">
+            <div className="text-[10px] font-bold text-[#5A6C84] uppercase">
               Daily Protein
             </div>
-            <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+            <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
               {indexes.targetProteinG} g
             </div>
-            <div className="text-[10px] text-[#0E9F6E] font-bold">
+            <div className="text-[10px] text-[#1673B8] font-bold">
               Muscle &amp; Repair
             </div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF]">
-            <div className="text-[10px] font-bold text-[#5C7267] uppercase">
+          <div className="p-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA]">
+            <div className="text-[10px] font-bold text-[#5A6C84] uppercase">
               Daily Carbs
             </div>
-            <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+            <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
               {indexes.targetCarbsG} g
             </div>
-            <div className="text-[10px] text-[#5C7267] font-semibold">
+            <div className="text-[10px] text-[#5A6C84] font-semibold">
               Daily Energy
             </div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF]">
-            <div className="text-[10px] font-bold text-[#5C7267] uppercase">
+          <div className="p-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA]">
+            <div className="text-[10px] font-bold text-[#5A6C84] uppercase">
               Healthy Fats
             </div>
-            <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+            <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
               {indexes.targetFatG} g
             </div>
-            <div className="text-[10px] text-[#5C7267] font-semibold">
+            <div className="text-[10px] text-[#5A6C84] font-semibold">
               Hormone Balance
             </div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] col-span-2 sm:col-span-1">
-            <div className="text-[10px] font-bold text-[#5C7267] uppercase">
+          <div className="p-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA] col-span-2 sm:col-span-1">
+            <div className="text-[10px] font-bold text-[#5A6C84] uppercase">
               BMR / TDEE
             </div>
-            <div className="text-sm font-extrabold text-[#0F291E] mt-1">
+            <div className="text-sm font-extrabold text-[#1A2138] mt-1">
               {indexes.bmrKcal} / {indexes.tdeeKcal} kcal
             </div>
-            <div className="text-[10px] text-[#0E9F6E] font-bold">
+            <div className="text-[10px] text-[#1673B8] font-bold">
               Rest / Active Burn
             </div>
           </div>
@@ -1102,17 +1102,17 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       {/* =====================================================================
           STEP 3: NUTRITION RECOMMENDATION (EXACT REFERENCE IMAGE DESIGN)
          ===================================================================== */}
-      <div className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-[#ECF4EF] pb-3">
+      <div className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-[#E4EDF7] pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center font-extrabold text-sm">
+            <div className="w-9 h-9 rounded-xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center font-extrabold text-sm">
               3
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-extrabold text-[#0F291E]">
+              <h3 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
                 Nutrition Recommendation
               </h3>
-              <p className="text-[11px] text-[#5C7267]">
+              <p className="text-[11px] text-[#5A6C84]">
                 Search any condition below for Personalized Recommendations, Recommended Foods &amp; Foods to Avoid
               </p>
             </div>
@@ -1122,7 +1122,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
         {/* Search Bar + Quick Condition Pills */}
         <div className="space-y-2.5">
           <div className="relative flex items-center">
-            <Search className="w-4 h-4 text-gray-500 absolute left-3.5" />
+            <Search className="w-4 h-4 text-[#5A6C84] absolute left-3.5" />
             <input
               type="text"
               value={conditionQuery}
@@ -1138,13 +1138,13 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                 }
               }}
               placeholder="Search health condition (e.g. Diabetes, High BP, Cholesterol, PCOS, Acidity)..."
-              className="w-full pl-10 pr-10 py-3 rounded-2xl border border-gray-200 bg-[#F3F4F6] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+              className="w-full pl-10 pr-10 py-3 rounded-2xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs sm:text-sm font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
             />
             {conditionQuery && (
               <button
                 type="button"
                 onClick={() => setConditionQuery('')}
-                className="absolute right-3.5 text-gray-500 hover:text-gray-800 cursor-pointer"
+                className="absolute right-3.5 text-[#5A6C84] hover:text-[#1A2138] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1152,11 +1152,11 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap text-xs">
-            <span className="px-3 py-1 rounded-full bg-[#E0F2FE] text-[#1E3A8A] text-[11px] font-extrabold inline-flex items-center gap-1">
+            <span className="px-3 py-1 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold inline-flex items-center gap-1">
               <span>Personalized for {conditionRecommendation.conditionName}</span>
-              <Sparkles className="w-3 h-3 text-blue-600" />
+              <Sparkles className="w-3 h-3 text-[#1673B8]" />
             </span>
-            <span className="text-[11px] font-semibold text-gray-500">
+            <span className="text-[11px] font-semibold text-[#5A6C84]">
               {conditionRecommendation.updatedLabel}
             </span>
           </div>
@@ -1181,8 +1181,8 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                 }}
                 className={`px-3 py-1 rounded-full text-[11px] font-extrabold cursor-pointer transition-colors ${
                   activeCondition.toLowerCase() === cond.toLowerCase()
-                    ? 'bg-[#13422B] text-white'
-                    : 'bg-[#F4FAF7] text-[#13422B] border border-[#CBE3D6] hover:border-[#0E9F6E]'
+                    ? 'bg-[#1673B8] text-white'
+                    : 'bg-[#F0F6FC] text-[#1A2138] border border-[#D2DEEA] hover:border-[#1673B8]'
                 }`}
               >
                 {cond}
@@ -1193,36 +1193,36 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
         {/* Personalized Recommendation Box */}
         <div className="space-y-2">
-          <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+          <h4 className="text-sm sm:text-base font-extrabold text-[#1A2138] flex items-center gap-1.5">
             <span>Personalized Recommendation</span>
-            <Sparkles className="w-4 h-4 text-blue-600" />
+            <Sparkles className="w-4 h-4 text-[#1673B8]" />
           </h4>
-          <div className="p-4 rounded-2xl bg-[#DBEAFE]/75 border border-[#93C5FD] text-xs sm:text-sm font-semibold text-[#1E3A8A] leading-relaxed">
+          <div className="p-4 rounded-2xl bg-[#EBF4FC] border border-[#BBD6EE] text-xs sm:text-sm font-semibold text-[#1A2138] leading-relaxed">
             {conditionRecommendation.summaryAdvice}
           </div>
         </div>
 
-        {/* Recommended Foods Section (Green Cards) */}
+        {/* Recommended Foods Section */}
         <div className="space-y-2.5">
-          <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+          <h4 className="text-sm sm:text-base font-extrabold text-[#1A2138] flex items-center gap-1.5">
             <span>Recommended Foods</span>
-            <Leaf className="w-4 h-4 text-[#16A34A]" />
+            <Leaf className="w-4 h-4 text-[#1673B8]" />
           </h4>
           <div className="space-y-2.5">
             {conditionRecommendation.recommendedFoods.map((f) => (
               <div
                 key={f.name}
-                className="p-3.5 rounded-2xl bg-[#DCFCE7] border border-[#86EFAC] flex items-start gap-3"
+                className="p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#BBD6EE] flex items-start gap-3"
               >
                 <ConditionFoodIcon iconType={f.iconType} isRecommended={true} />
                 <div className="space-y-0.5">
-                  <div className="text-sm sm:text-base font-extrabold text-[#064E3B]">
+                  <div className="text-sm sm:text-base font-extrabold text-[#1A2138]">
                     {f.name}
                   </div>
-                  <div className="text-xs font-bold text-[#14532D]">
+                  <div className="text-xs font-bold text-[#105E9A]">
                     • {f.shortNote}
                   </div>
-                  <div className="text-[11px] text-[#166534]/90 flex items-center gap-1 pt-0.5">
+                  <div className="text-[11px] text-[#5A6C84] flex items-center gap-1 pt-0.5">
                     <Info className="w-3.5 h-3.5 shrink-0" />
                     <span>{DOCTOR_DISCLAIMER_SHORT}</span>
                   </div>
@@ -1234,7 +1234,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
         {/* Foods to Avoid Section (Red/Coral Cards) */}
         <div className="space-y-2.5">
-          <h4 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+          <h4 className="text-sm sm:text-base font-extrabold text-[#1A2138] flex items-center gap-1.5">
             <span>Foods to Avoid</span>
             <AlertTriangle className="w-4 h-4 text-[#DC2626]" />
           </h4>
@@ -1266,18 +1266,18 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
         </div>
 
         {/* Doctor Disclaimer Box */}
-        <div className="p-3.5 rounded-2xl bg-[#DBEAFE]/65 border border-[#93C5FD] text-xs font-bold text-[#1E3A8A] flex items-center gap-2.5">
-          <span className="text-base font-extrabold text-blue-700">➕</span>
+        <div className="p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#BBD6EE] text-xs font-bold text-[#1A2138] flex items-center gap-2.5">
+          <span className="text-base font-extrabold text-[#1673B8]">➕</span>
           <span>{DOCTOR_DISCLAIMER_BANNER}</span>
         </div>
 
-        {/* Big Blue "✨ AI Dietitian — Chat" Button (Matches Reference Image 3) */}
+        {/* Big Royal Blue "✨ AI Dietitian — Chat" Button */}
         <button
           type="button"
           onClick={() =>
             chatSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
           }
-          className="w-full py-3.5 px-5 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-extrabold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
+          className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-sm sm:text-base font-extrabold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
         >
           <Sparkles className="w-5 h-5 text-blue-100" />
           <span>AI Dietitian — Chat</span>
@@ -1289,20 +1289,20 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
          ===================================================================== */}
       <div
         ref={chatSectionRef}
-        className="bg-white border-[1.5px] border-[#BCE3C8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4"
+        className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4"
       >
         {/* Chatbot Header with Prominent CLEAR CHAT Button */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E4EDF7] pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
               <MessageSquare className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E] flex items-center gap-1.5">
+              <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138] flex items-center gap-1.5">
                 <span>AI Dietitian — Chat</span>
-                <Sparkles className="w-4 h-4 text-[#2563EB]" />
+                <Sparkles className="w-4 h-4 text-[#1673B8]" />
               </h3>
-              <p className="text-[11px] text-[#5C7267]">
+              <p className="text-[11px] text-[#5A6C84]">
                 Enter any nutrition issue or question below to get an instant answer
               </p>
             </div>
@@ -1337,7 +1337,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
               key={chip}
               type="button"
               onClick={() => handleSendChatMessage(chip)}
-              className="px-3 py-1.5 rounded-full bg-[#F4FAF7] hover:bg-[#DCFCE7] border border-[#CBE3D6] text-[#13422B] text-[11px] font-extrabold whitespace-nowrap cursor-pointer transition-colors"
+              className="px-3 py-1.5 rounded-full bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] text-[11px] font-extrabold whitespace-nowrap cursor-pointer transition-colors"
             >
               {chip}
             </button>
@@ -1345,7 +1345,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
         </div>
 
         {/* Chat Messages Container */}
-        <div className="bg-[#F8FCFA] border border-[#CBE3D6] rounded-2xl p-3.5 sm:p-4 space-y-3 max-h-96 overflow-y-auto">
+        <div className="bg-[#F4F8FD] border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 space-y-3 max-h-96 overflow-y-auto">
           {chatMessages.map((msg) => (
             <div
               key={msg.id}
@@ -1356,8 +1356,8 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
               <div
                 className={`max-w-[88%] sm:max-w-[80%] rounded-2xl p-3.5 space-y-1.5 ${
                   msg.sender === 'user'
-                    ? 'bg-[#0E9F6E] text-white'
-                    : 'bg-white border border-[#CBE3D6] text-[#0F291E] shadow-2xs'
+                    ? 'bg-[#1673B8] text-white'
+                    : 'bg-white border border-[#D2DEEA] text-[#1A2138] shadow-2xs'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3 text-[10px] font-bold opacity-80">
@@ -1369,8 +1369,8 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
                       </>
                     ) : (
                       <>
-                        <Bot className="w-3.5 h-3.5 text-[#2563EB]" />
-                        <span className="text-[#2563EB] font-extrabold">
+                        <Bot className="w-3.5 h-3.5 text-[#1673B8]" />
+                        <span className="text-[#1673B8] font-extrabold">
                           AI Dietitian
                         </span>
                       </>
@@ -1400,12 +1400,12 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
               }
             }}
             placeholder="Type your nutrition issue or question here (e.g. Diabetes, Acidity, Weight Loss, BP)..."
-            className="flex-1 px-4 py-3 rounded-2xl border border-[#CBE3D6] bg-[#F8FCFA] text-xs sm:text-sm font-bold text-[#0F291E] focus:outline-none focus:border-[#2563EB]"
+            className="flex-1 px-4 py-3 rounded-2xl border border-[#D2DEEA] bg-[#F4F8FD] text-xs sm:text-sm font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
           />
           <button
             type="button"
             onClick={() => handleSendChatMessage()}
-            className="px-4 sm:px-5 py-3 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs sm:text-sm font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+            className="px-4 sm:px-5 py-3 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
           >
             <Send className="w-4 h-4" />
             <span>Send</span>

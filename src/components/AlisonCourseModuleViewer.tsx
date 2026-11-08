@@ -139,7 +139,7 @@ function buildModulePedagogy(
           value: 44,
           unit: '% of Outbreaks',
           barPct: 88,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Slow cooling of cooked batches & holding below 63°C'
         },
         {
@@ -188,7 +188,7 @@ function buildModulePedagogy(
           value: 34,
           unit: '% of Findings',
           barPct: 85,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Flow diagram not verified on night shift or missing rework loops'
         },
         {
@@ -237,7 +237,7 @@ function buildModulePedagogy(
           value: 31,
           unit: '% of v6 Citations',
           barPct: 82,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Swabbing only after cleaning instead of 3–4 hours into production'
         },
         {
@@ -286,7 +286,7 @@ function buildModulePedagogy(
           value: 33,
           unit: '% of Audit NCs',
           barPct: 84,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Using unapproved vendors or missing annual supplier scorecards'
         },
         {
@@ -335,7 +335,7 @@ function buildModulePedagogy(
           value: 35,
           unit: '% of GMP Defects',
           barPct: 86,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Stagnant T-pieces harbor persistent Listeria & biofilm pockets'
         },
         {
@@ -384,7 +384,7 @@ function buildModulePedagogy(
           value: 41,
           unit: '% of Infestations',
           barPct: 88,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Daylight visible under loading bay doors invites rodents'
         },
         {
@@ -433,7 +433,7 @@ function buildModulePedagogy(
           value: 38,
           unit: '% of BRCGS NCs',
           barPct: 88,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Clauses 4.11 (Housekeeping/Hygiene) & 4.4 (Building Fabric)'
         },
         {
@@ -482,7 +482,7 @@ function buildModulePedagogy(
           value: 46,
           unit: '% of Food Spend',
           barPct: 88,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Requires strict AP-to-EP Butcher Yield testing & trim utilization'
         },
         {
@@ -531,7 +531,7 @@ function buildModulePedagogy(
           value: 32,
           unit: '% of Therapeutic Trays',
           barPct: 82,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: '45–60g complex carbohydrate per meal; zero concentrated sweets'
         },
         {
@@ -580,7 +580,7 @@ function buildModulePedagogy(
           value: 58,
           unit: '% of Hotel Revenue',
           barPct: 88,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'High departmental profit margin (70%–78% departmental profit)'
         },
         {
@@ -629,7 +629,7 @@ function buildModulePedagogy(
           value: 36,
           unit: '% of Catering Cases',
           barPct: 86,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Extremely low infective dose (10–100 viral particles); 48h exclusion mandatory'
         },
         {
@@ -678,7 +678,7 @@ function buildModulePedagogy(
           value: 47,
           unit: '% of Class I Recalls',
           barPct: 92,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Prevented by optical barcode scanners + 3-run ELISA changeover validation'
         },
         {
@@ -727,7 +727,7 @@ function buildModulePedagogy(
           value: 48,
           unit: '% of CCP Deviations',
           barPct: 90,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Passes through 5°C–60°C TDZ 2 to 3 times; highest spore germination risk'
         },
         {
@@ -768,7 +768,7 @@ function buildModulePedagogy(
           value: 99,
           unit: '% Reliability (Cpk > 1.67)',
           barPct: 96,
-          colorClass: 'bg-emerald-700',
+          colorClass: 'bg-[#1673B8]',
           note: 'Continuous RTD sensors + fail-safe spring-return diversion valves'
         },
         {
@@ -978,13 +978,13 @@ const ModuleTechnicalPictureSvg: React.FC<{
     course.id.includes('hospitality');
 
   return (
-    <div className="rounded-2xl border-2 border-emerald-900/15 bg-gradient-to-br from-slate-900 via-[#0A2E1D] to-slate-900 text-white p-4 sm:p-5 shadow-md space-y-3">
+    <div className="rounded-2xl border-2 border-[#D2DEEA] bg-gradient-to-br from-[#1A2138] via-[#105E9A] to-[#1A2138] text-white p-4 sm:p-5 shadow-md space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/15 pb-3">
         <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black uppercase tracking-wider">
+          <span className="px-2.5 py-0.5 rounded-md bg-[#1673B8]/30 border border-[#7AB8EB]/40 text-[#DCE9F6] text-[10px] font-black uppercase tracking-wider">
             Visual Technical Diagram · Module {module.moduleNumber}
           </span>
-          <span className="text-xs font-bold text-emerald-100">
+          <span className="text-xs font-bold text-[#EBF4FC]">
             {module.title}
           </span>
         </div>
@@ -1369,7 +1369,7 @@ const ModuleTechnicalPictureSvg: React.FC<{
         )}
       </div>
 
-      <p className="text-[11px] text-emerald-200/90 leading-relaxed">
+      <p className="text-[11px] text-[#DCE9F6]/90 leading-relaxed">
         <strong>Diagram Study Guide:</strong> Memorize the exact numerical thresholds shown in this technical diagram—questions on the 40-MCQ Final Exam test both the standard limit (<span className="text-amber-300 font-semibold">{ccp?.standardLimit}</span>) and the mandatory corrective action when limits are breached.
       </p>
     </div>
@@ -1404,18 +1404,18 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
   return (
     <div className="space-y-6">
       {/* 1. ALISON-STYLE MODULE HEADER & PROGRESSIVE LEARNING LEVEL TABS */}
-      <div className="rounded-2xl border border-emerald-900/15 bg-gradient-to-r from-[#093824] via-[#0D5C3A] to-[#114B31] text-white p-5 sm:p-6 shadow-md space-y-4">
+      <div className="rounded-2xl border border-[#D2DEEA] bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] text-white p-5 sm:p-6 shadow-md space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-3 py-1 rounded-md bg-white/15 border border-white/20 text-amber-300 text-[11px] font-extrabold uppercase tracking-wider">
               Module {module.moduleNumber} of {totalModules} · Comprehensive Study Guide
             </span>
-            <span className="px-2.5 py-1 rounded-md bg-emerald-950/60 text-emerald-200 text-[11px] font-bold">
+            <span className="px-2.5 py-1 rounded-md bg-[#1A2138]/60 text-[#DCE9F6] text-[11px] font-bold">
               ⏱ ~65–90 Mins Deep Study · Auto-Saved Resume Point
             </span>
           </div>
           {isCompleted && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-500 text-slate-950 text-xs font-black">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-white text-[#1673B8] text-xs font-black">
               <CheckCircle2 className="w-4 h-4" /> Module Completed
             </span>
           )}
@@ -1425,7 +1425,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-snug">
             Module {module.moduleNumber}: {module.title}
           </h3>
-          <p className="text-xs sm:text-sm text-emerald-100/95 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#EBF4FC]/95 leading-relaxed">
             {module.overview}
           </p>
         </div>
@@ -1437,7 +1437,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
               <Layers className="w-3.5 h-3.5" />
               Structured 5-Module International Curriculum Architecture (Basic Foundations → Expert Auditing &amp; Law):
             </span>
-            <span className="text-[10.5px] font-bold text-emerald-200">
+            <span className="text-[10.5px] font-bold text-[#DCE9F6]">
               Currently Studying: Stage {module.moduleNumber} of 5
             </span>
           </div>
@@ -1488,7 +1488,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                   </p>
                   <p
                     className={`text-[10.5px] leading-snug mt-0.5 font-semibold ${
-                      isCurrent ? 'text-slate-900' : 'text-emerald-100/90'
+                      isCurrent ? 'text-slate-900' : 'text-[#EBF4FC]/90'
                     }`}
                   >
                     {st.desc}
@@ -1501,7 +1501,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
 
         {/* Learning Depth Filter Pills (Beginner -> Practitioner -> Expert) */}
         <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[11px] font-bold text-emerald-200 flex items-center gap-1.5">
+          <span className="text-[11px] font-bold text-[#DCE9F6] flex items-center gap-1.5">
             <GraduationCap className="w-4 h-4 text-amber-300" />
             Progressive Teaching Method (Fresh Beginner → Expert Auditor):
           </span>
@@ -1535,8 +1535,8 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
 
       {/* 2. ALISON.COM LEARNING OUTCOMES & INTERNATIONAL CLAUSES */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div className="md:col-span-7 rounded-2xl border border-emerald-900/15 bg-emerald-50/50 p-4 sm:p-5 space-y-2.5">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#0D5C3A]">
+        <div className="md:col-span-7 rounded-2xl border border-[#D2DEEA] bg-[#F0F6FC] p-4 sm:p-5 space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#1673B8]">
             <Compass className="w-4 h-4" />
             Module Learning Outcomes (What You Will Master)
           </div>
@@ -1544,18 +1544,18 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
             {pedagogy.learningOutcomes.map((outcome, i) => (
               <li
                 key={i}
-                className="flex items-start gap-2 text-xs sm:text-sm text-slate-800 leading-relaxed"
+                className="flex items-start gap-2 text-xs sm:text-sm text-[#1A2138] leading-relaxed"
               >
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                 <span>{outcome}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="md:col-span-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5 space-y-2.5">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-800">
-            <BookOpen className="w-4 h-4 text-[#0D5C3A]" />
+        <div className="md:col-span-5 rounded-2xl border border-[#D2DEEA] bg-slate-50 p-4 sm:p-5 space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#1A2138]">
+            <BookOpen className="w-4 h-4 text-[#1673B8]" />
             International Regulatory &amp; Standard Clauses
           </div>
           <ul className="space-y-1.5 text-xs text-slate-700 font-semibold">
@@ -1564,7 +1564,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                 key={idx}
                 className="p-2.5 rounded-xl bg-white border border-slate-200 flex items-start gap-2"
               >
-                <span className="px-2 py-0.5 rounded bg-emerald-100 text-[#0D5C3A] text-[10px] font-black shrink-0">
+                <span className="px-2 py-0.5 rounded bg-[#EBF4FC] text-[#1673B8] text-[10px] font-black shrink-0">
                   Clause
                 </span>
                 <span>{cl}</span>
@@ -1579,10 +1579,10 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
 
       {/* 3. LEVEL 1: FRESH BEGINNER FOUNDATION (PLAIN-LANGUAGE TEACHING + ANALOGY + GLOSSARY) */}
       {(activeTierFilter === 'all' || activeTierFilter === 'beginner') && (
-        <div className="rounded-2xl border-2 border-emerald-600/25 bg-white p-5 sm:p-6 shadow-xs space-y-5">
+        <div className="rounded-2xl border-2 border-[#1673B8]/25 bg-white p-5 sm:p-6 shadow-xs space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-lg bg-emerald-100 text-[#0D5C3A] text-xs font-black uppercase tracking-wider">
+              <span className="px-3 py-1 rounded-lg bg-[#EBF4FC] text-[#1673B8] text-xs font-black uppercase tracking-wider">
                 Level 1 · Fresh Beginner Foundation
               </span>
               <span className="text-xs font-bold text-slate-500">
@@ -1592,7 +1592,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-base sm:text-lg font-black text-slate-900">
+            <h4 className="text-base sm:text-lg font-black text-[#1A2138]">
               {pedagogy.beginnerFoundation.headline}
             </h4>
             {pedagogy.beginnerFoundation.paragraphs.map((p, idx) => (
@@ -1607,20 +1607,20 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
 
           {/* Core International Principles Cards */}
           <div className="space-y-2.5">
-            <h5 className="text-xs font-black uppercase tracking-wider text-[#0D5C3A]">
+            <h5 className="text-xs font-black uppercase tracking-wider text-[#1673B8]">
               Core Scientific &amp; Operational Principles Explained
             </h5>
             <div className="grid grid-cols-1 gap-2.5">
               {module.keyPrinciples.map((principle, idx) => (
                 <div
                   key={idx}
-                  className="rounded-xl border border-emerald-900/15 bg-emerald-50/40 p-4 flex items-start gap-3"
+                  className="rounded-xl border border-[#D2DEEA] bg-[#F0F6FC] p-4 flex items-start gap-3"
                 >
-                  <span className="w-6 h-6 rounded-full bg-[#0D5C3A] text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-6 h-6 rounded-full bg-[#1673B8] text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
                     {idx + 1}
                   </span>
                   <div className="space-y-1">
-                    <p className="text-xs sm:text-sm font-bold text-slate-900 leading-relaxed">
+                    <p className="text-xs sm:text-sm font-bold text-[#1A2138] leading-relaxed">
                       {principle}
                     </p>
                   </div>
@@ -1645,7 +1645,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           {/* Key Terms Glossary & Common Beginner Mistakes */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
             <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-2.5">
-              <h5 className="text-xs font-black uppercase tracking-wider text-slate-800">
+              <h5 className="text-xs font-black uppercase tracking-wider text-[#1A2138]">
                 Essential Terminology &amp; Glossary
               </h5>
               <div className="space-y-2">
@@ -1654,7 +1654,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                     key={i}
                     className="p-2.5 rounded-lg bg-white border border-slate-200/80 text-xs"
                   >
-                    <span className="font-black text-[#0D5C3A]">{g.term}: </span>
+                    <span className="font-black text-[#1673B8]">{g.term}: </span>
                     <span className="text-slate-700">{g.definition}</span>
                   </div>
                 ))}
@@ -1689,10 +1689,10 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
 
       {/* 5. LEVEL 2: INTERMEDIATE PRACTITIONER (STEP-BY-STEP SOPs & WORKED CALCULATIONS) */}
       {(activeTierFilter === 'all' || activeTierFilter === 'practitioner') && (
-        <div className="rounded-2xl border-2 border-teal-600/25 bg-white p-5 sm:p-6 shadow-xs space-y-5">
+        <div className="rounded-2xl border-2 border-[#1673B8]/25 bg-white p-5 sm:p-6 shadow-xs space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-lg bg-teal-100 text-teal-900 text-xs font-black uppercase tracking-wider">
+              <span className="px-3 py-1 rounded-lg bg-[#EBF4FC] text-[#105E9A] text-xs font-black uppercase tracking-wider">
                 Level 2 · Intermediate Practitioner Execution
               </span>
               <span className="text-xs font-bold text-slate-500">
@@ -1701,7 +1701,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
             </div>
           </div>
 
-          <h4 className="text-base sm:text-lg font-black text-slate-900">
+          <h4 className="text-base sm:text-lg font-black text-[#1A2138]">
             {pedagogy.practitionerExecution.headline}
           </h4>
 
@@ -1710,9 +1710,9 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
             {pedagogy.practitionerExecution.stepByStepSop.map((step, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-1.5"
+                className="rounded-xl border border-[#D2DEEA] bg-[#F0F6FC] p-4 space-y-1.5"
               >
-                <p className="text-xs font-black text-[#0D5C3A]">
+                <p className="text-xs font-black text-[#1673B8]">
                   {step.stepTitle}
                 </p>
                 <p className="text-xs text-slate-700 leading-relaxed">
@@ -1723,15 +1723,15 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           </div>
 
           {/* Worked Formula & Engineering Calculation Box */}
-          <div className="rounded-2xl border border-emerald-900/20 bg-emerald-950 text-white p-4 sm:p-5 space-y-2.5">
+          <div className="rounded-2xl border border-[#1673B8]/30 bg-[#1A2138] text-white p-4 sm:p-5 space-y-2.5">
             <div className="flex items-center gap-2 text-amber-300 text-xs font-black uppercase tracking-wider">
               <Microscope className="w-4 h-4" />
               {pedagogy.practitionerExecution.formulaOrCalculation.title}
             </div>
-            <div className="p-3 rounded-xl bg-black/40 border border-white/10 font-mono text-xs sm:text-sm text-emerald-300 font-bold overflow-x-auto">
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 font-mono text-xs sm:text-sm text-[#7AB8EB] font-bold overflow-x-auto">
               {pedagogy.practitionerExecution.formulaOrCalculation.equation}
             </div>
-            <p className="text-xs text-emerald-100 leading-relaxed">
+            <p className="text-xs text-[#EBF4FC] leading-relaxed">
               <strong className="text-amber-300">Worked Practical Example: </strong>
               {pedagogy.practitionerExecution.formulaOrCalculation.workedExample}
             </p>
@@ -1739,13 +1739,13 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
 
           {/* Critical Control Parameters Table */}
           <div className="space-y-2">
-            <h5 className="text-xs font-black uppercase tracking-wider text-[#0D5C3A]">
+            <h5 className="text-xs font-black uppercase tracking-wider text-[#1673B8]">
               Mandatory Critical Control Limits &amp; Corrective Action Protocols
             </h5>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-800 font-extrabold">
+                  <tr className="bg-slate-100 text-[#1A2138] font-extrabold">
                     <th className="p-3.5 border-b border-slate-200">
                       Control Parameter
                     </th>
@@ -1760,10 +1760,10 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                 <tbody>
                   {module.criticalControlParameters.map((ccp, i) => (
                     <tr key={i} className="border-b border-slate-100 bg-white">
-                      <td className="p-3.5 font-black text-slate-900">
+                      <td className="p-3.5 font-black text-[#1A2138]">
                         {ccp.parameter}
                       </td>
-                      <td className="p-3.5 font-bold text-[#0D5C3A]">
+                      <td className="p-3.5 font-bold text-[#1673B8]">
                         {ccp.standardLimit}
                       </td>
                       <td className="p-3.5 text-slate-700 leading-relaxed">
@@ -1779,14 +1779,14 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
       )}
 
       {/* 6. STATISTICAL GRAPHS, CHARTS & GLOBAL INDUSTRY BENCHMARKS */}
-      <div className="rounded-2xl border border-emerald-900/15 bg-white p-5 sm:p-6 shadow-xs space-y-5">
+      <div className="rounded-2xl border border-[#D2DEEA] bg-white p-5 sm:p-6 shadow-xs space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div className="space-y-0.5">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#0D5C3A]">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#1673B8]">
               <BarChart3 className="w-4 h-4" />
               Industry Statistics, Quantitative Graphs &amp; Global Benchmarks
             </div>
-            <h4 className="text-base sm:text-lg font-black text-slate-900">
+            <h4 className="text-base sm:text-lg font-black text-[#1A2138]">
               {pedagogy.statisticsReport.chartTitle}
             </h4>
             <p className="text-xs text-slate-500">
@@ -1803,12 +1803,12 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           {pedagogy.statisticsReport.kpiCards.map((kpi, idx) => (
             <div
               key={idx}
-              className="rounded-xl border border-emerald-900/15 bg-emerald-50/50 p-3.5 space-y-1"
+              className="rounded-xl border border-[#D2DEEA] bg-[#F0F6FC] p-3.5 space-y-1"
             >
-              <p className="text-base sm:text-lg font-black text-[#0D5C3A]">
+              <p className="text-base sm:text-lg font-black text-[#1673B8]">
                 {kpi.value}
               </p>
-              <p className="text-xs font-extrabold text-slate-900">
+              <p className="text-xs font-extrabold text-[#1A2138]">
                 {kpi.label}
               </p>
               <p className="text-[10.5px] text-slate-600 leading-snug">
@@ -1823,8 +1823,8 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           {pedagogy.statisticsReport.bars.map((bar, idx) => (
             <div key={idx} className="space-y-1.5">
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="font-bold text-slate-900">{bar.label}</span>
-                <span className="font-mono font-black text-[#0D5C3A]">
+                <span className="font-bold text-[#1A2138]">{bar.label}</span>
+                <span className="font-mono font-black text-[#1673B8]">
                   {bar.value}
                   {bar.unit}
                 </span>
@@ -1842,17 +1842,17 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           ))}
         </div>
 
-        <div className="rounded-xl bg-emerald-50/70 border border-emerald-200 p-3.5 flex items-start gap-2.5 text-xs text-slate-800 leading-relaxed">
-          <TrendingUp className="w-4 h-4 text-[#0D5C3A] shrink-0 mt-0.5" />
+        <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-3.5 flex items-start gap-2.5 text-xs text-[#1A2138] leading-relaxed">
+          <TrendingUp className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
           <span>{pedagogy.statisticsReport.analyticalSummary}</span>
         </div>
       </div>
 
       {/* 6B. CONCRETE PRACTICAL EXAMPLES, 5x5 RISK ASSESSMENT MATRIX, CODEX DECISION TREE & AUDITING/LAW */}
-      <div className="rounded-2xl border-2 border-[#0D5C3A]/30 bg-white p-5 sm:p-6 shadow-xs space-y-6">
+      <div className="rounded-2xl border-2 border-[#1673B8]/30 bg-white p-5 sm:p-6 shadow-xs space-y-6">
         <div className="border-b border-slate-200 pb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <span className="px-3 py-1 rounded-lg bg-emerald-100 text-[#0D5C3A] text-xs font-black uppercase tracking-wider">
+            <span className="px-3 py-1 rounded-lg bg-[#EBF4FC] text-[#105E9A] text-xs font-black uppercase tracking-wider">
               Practical Industry Mastery · Worked Examples, Risk Matrix, Decision Tree &amp; Law
             </span>
             <h4 className="text-base sm:text-lg font-black text-slate-900 mt-1.5">
@@ -1866,7 +1866,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
 
         {/* 3 Concrete Real-World Worked Examples for the Current Module Stage */}
         <div className="space-y-3">
-          <h5 className="text-xs font-black uppercase tracking-wider text-[#0D5C3A] flex items-center gap-1.5">
+          <h5 className="text-xs font-black uppercase tracking-wider text-[#1673B8] flex items-center gap-1.5">
             <Lightbulb className="w-4 h-4 text-amber-600" />
             3 Concrete Step-by-Step Real-World Industry Examples (Stage {module.moduleNumber} Application)
           </h5>
@@ -2008,10 +2008,10 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
             ).map((ex, idx) => (
               <div
                 key={idx}
-                className="rounded-xl border border-emerald-900/15 bg-emerald-50/35 p-4 space-y-2 flex flex-col justify-between"
+                className="rounded-xl border border-[#D2DEEA] bg-[#F0F6FC] p-4 space-y-2 flex flex-col justify-between"
               >
                 <div className="space-y-1.5">
-                  <span className="inline-block px-2.5 py-0.5 rounded-md bg-[#0D5C3A] text-white text-[10px] font-black uppercase tracking-wider">
+                  <span className="inline-block px-2.5 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-black uppercase tracking-wider">
                     {ex.tag}
                   </span>
                   <h6 className="text-xs sm:text-sm font-black text-slate-900 leading-snug">
@@ -2022,8 +2022,8 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                     {ex.scenario}
                   </p>
                 </div>
-                <div className="pt-2 border-t border-emerald-200/70 text-xs text-emerald-950 leading-relaxed">
-                  <strong className="text-[#0D5C3A]">Technical Solution: </strong>
+                <div className="pt-2 border-t border-[#D2DEEA] text-xs text-[#1A2138] leading-relaxed">
+                  <strong className="text-[#1673B8]">Technical Solution: </strong>
                   {ex.solution}
                 </div>
               </div>
@@ -2037,10 +2037,10 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           <div className="lg:col-span-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <h5 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-                <BarChart3 className="w-4 h-4 text-[#0D5C3A]" />
+                <BarChart3 className="w-4 h-4 text-[#1673B8]" />
                 How to Do Hazard Risk Assessment (5×5 Likelihood × Severity Matrix)
               </h5>
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-[#0D5C3A] text-[10px] font-black">
+              <span className="px-2 py-0.5 rounded bg-[#EBF4FC] text-[#105E9A] text-[10px] font-black">
                 Codex / ISO 22000 Cl. 8.5.2
               </span>
             </div>
@@ -2050,7 +2050,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
             <div className="overflow-x-auto rounded-xl border border-slate-300 bg-white">
               <table className="w-full text-center border-collapse text-[10.5px]">
                 <thead>
-                  <tr className="bg-slate-800 text-white font-black">
+                  <tr className="bg-[#1A2138] text-white font-black">
                     <th className="p-2 border border-slate-700 text-left">
                       Severity ↓ \ Likelihood →
                     </th>
@@ -2076,7 +2076,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                     <td className="p-2 border border-slate-200 text-left bg-slate-100 font-black">
                       4 · Major (Hospitalization)
                     </td>
-                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">4 (Low)</td>
+                    <td className="p-1.5 border border-slate-200 bg-[#EBF4FC] text-[#105E9A]">4 (Low)</td>
                     <td className="p-1.5 border border-slate-200 bg-amber-100 text-amber-950">8 (Med)</td>
                     <td className="p-1.5 border border-slate-200 bg-orange-300 text-orange-950">12 (Sig)</td>
                     <td className="p-1.5 border border-slate-200 bg-rose-600 text-white">16 (CCP)</td>
@@ -2086,7 +2086,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                     <td className="p-2 border border-slate-200 text-left bg-slate-100 font-black">
                       3 · Moderate (Medical Care)
                     </td>
-                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">3 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-[#EBF4FC] text-[#105E9A]">3 (PRP)</td>
                     <td className="p-1.5 border border-slate-200 bg-amber-100 text-amber-950">6 (Med)</td>
                     <td className="p-1.5 border border-slate-200 bg-amber-200 text-amber-950">9 (OPRP)</td>
                     <td className="p-1.5 border border-slate-200 bg-orange-300 text-orange-950">12 (Sig)</td>
@@ -2096,8 +2096,8 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                     <td className="p-2 border border-slate-200 text-left bg-slate-100 font-black">
                       2 · Minor (Short Illness)
                     </td>
-                    <td className="p-1.5 border border-slate-200 bg-emerald-50 text-emerald-900">2 (PRP)</td>
-                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">4 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-[#F0F6FC] text-[#1673B8]">2 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-[#EBF4FC] text-[#105E9A]">4 (PRP)</td>
                     <td className="p-1.5 border border-slate-200 bg-amber-100 text-amber-950">6 (Med)</td>
                     <td className="p-1.5 border border-slate-200 bg-amber-200 text-amber-950">8 (OPRP)</td>
                     <td className="p-1.5 border border-slate-200 bg-orange-200 text-orange-950">10 (High)</td>
@@ -2106,17 +2106,17 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                     <td className="p-2 border border-slate-200 text-left bg-slate-100 font-black">
                       1 · Negligible (Discomfort)
                     </td>
-                    <td className="p-1.5 border border-slate-200 bg-emerald-50 text-emerald-900">1 (PRP)</td>
-                    <td className="p-1.5 border border-slate-200 bg-emerald-50 text-emerald-900">2 (PRP)</td>
-                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">3 (PRP)</td>
-                    <td className="p-1.5 border border-slate-200 bg-emerald-100 text-emerald-950">4 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-[#F0F6FC] text-[#1673B8]">1 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-[#F0F6FC] text-[#1673B8]">2 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-[#EBF4FC] text-[#105E9A]">3 (PRP)</td>
+                    <td className="p-1.5 border border-slate-200 bg-[#EBF4FC] text-[#105E9A]">4 (PRP)</td>
                     <td className="p-1.5 border border-slate-200 bg-amber-100 text-amber-950">5 (Med)</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div className="flex flex-wrap gap-2 text-[10.5px] font-bold">
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900">
+              <span className="px-2 py-0.5 rounded bg-[#EBF4FC] text-[#105E9A]">
                 1–4: Low Risk (Manage via PRPs / GMP)
               </span>
               <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-950">
@@ -2132,7 +2132,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           <div className="lg:col-span-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <h5 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-                <Compass className="w-4 h-4 text-[#0D5C3A]" />
+                <Compass className="w-4 h-4 text-[#1673B8]" />
                 Codex Alimentarius 4-Question CCP Decision Tree (Step 7 / Principle 2)
               </h5>
               <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-950 text-[10px] font-black">
@@ -2145,7 +2145,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
             <div className="space-y-2 text-xs">
               <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
                 <p className="font-black text-slate-900">
-                  <span className="text-[#0D5C3A]">Q1: </span>Do preventative control measures exist at this step or across the process for the identified hazard?
+                  <span className="text-[#1673B8]">Q1: </span>Do preventative control measures exist at this step or across the process for the identified hazard?
                 </p>
                 <p className="text-[11px] text-slate-600">
                   • <strong>YES</strong> → Proceed to <strong>Q2</strong>. &nbsp;|&nbsp; • <strong>NO</strong> → Is control at this step necessary for food safety? If YES, modify step/process or product; if NO → <strong>Not a CCP (Stop)</strong>.
@@ -2153,7 +2153,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
               </div>
               <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
                 <p className="font-black text-slate-900">
-                  <span className="text-[#0D5C3A]">Q2: </span>Is this specific process step specifically designed to eliminate or reduce the likely occurrence of the hazard to an acceptable level? (e.g., Cooking, Pasteurization, Retort, Metal Detector)
+                  <span className="text-[#1673B8]">Q2: </span>Is this specific process step specifically designed to eliminate or reduce the likely occurrence of the hazard to an acceptable level? (e.g., Cooking, Pasteurization, Retort, Metal Detector)
                 </p>
                 <p className="text-[11px] text-slate-600">
                   • <strong>YES</strong> → <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white font-black">THIS STEP IS A CCP!</span> &nbsp;|&nbsp; • <strong>NO</strong> → Proceed to <strong>Q3</strong>.
@@ -2161,7 +2161,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
               </div>
               <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
                 <p className="font-black text-slate-900">
-                  <span className="text-[#0D5C3A]">Q3: </span>Could contamination with the identified hazard occur in excess of acceptable levels, or could it increase to unacceptable levels at this step?
+                  <span className="text-[#1673B8]">Q3: </span>Could contamination with the identified hazard occur in excess of acceptable levels, or could it increase to unacceptable levels at this step?
                 </p>
                 <p className="text-[11px] text-slate-600">
                   • <strong>YES</strong> → Proceed to <strong>Q4</strong>. &nbsp;|&nbsp; • <strong>NO</strong> → <strong>Not a CCP (Manage as PRP)</strong>.
@@ -2169,7 +2169,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
               </div>
               <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-1">
                 <p className="font-black text-slate-900">
-                  <span className="text-[#0D5C3A]">Q4: </span>Will a subsequent downstream step eliminate the identified hazard or reduce its likely occurrence to an acceptable level?
+                  <span className="text-[#1673B8]">Q4: </span>Will a subsequent downstream step eliminate the identified hazard or reduce its likely occurrence to an acceptable level?
                 </p>
                 <p className="text-[11px] text-slate-600">
                   • <strong>YES</strong> → <strong>Not a CCP</strong> (Manage via OPRP/PRP; the downstream step will be the CCP). &nbsp;|&nbsp; • <strong>NO</strong> → <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white font-black">THIS STEP IS A CCP!</span>
@@ -2180,9 +2180,9 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
         </div>
 
         {/* How to Audit a HACCP System & Global Food Safety Law Reference Table */}
-        <div className="rounded-2xl border border-emerald-900/20 bg-emerald-50/40 p-4 sm:p-5 space-y-3">
+        <div className="rounded-2xl border border-[#D2DEEA] bg-[#F0F6FC] p-4 sm:p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h5 className="text-xs sm:text-sm font-black uppercase tracking-wider text-[#0D5C3A] flex items-center gap-1.5">
+            <h5 className="text-xs sm:text-sm font-black uppercase tracking-wider text-[#1673B8] flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" />
               How to Audit a HACCP / Food Safety System &amp; Mandatory Food Safety Law Reference
             </h5>
@@ -2190,17 +2190,17 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
               ISO 19011 Auditing + Statutory Compliance
             </span>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-emerald-200 bg-white">
+          <div className="overflow-x-auto rounded-xl border border-[#D2DEEA] bg-white">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-emerald-950 text-white font-black">
-                  <th className="p-3 border-b border-emerald-900">
+                <tr className="bg-[#1A2138] text-white font-black">
+                  <th className="p-3 border-b border-slate-700">
                     Audit Phase / Legal Statute
                   </th>
-                  <th className="p-3 border-b border-emerald-900">
+                  <th className="p-3 border-b border-slate-700">
                     Mandatory Requirement &amp; Legal Clause
                   </th>
-                  <th className="p-3 border-b border-emerald-900">
+                  <th className="p-3 border-b border-slate-700">
                     How the Auditor Verifies Compliance on Site (Objective Evidence)
                   </th>
                 </tr>
@@ -2210,7 +2210,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                   <td className="p-3 font-black text-slate-900">
                     1. Desk-Top HACCP Plan &amp; Hazard Analysis Audit
                   </td>
-                  <td className="p-3 font-bold text-[#0D5C3A]">
+                  <td className="p-3 font-bold text-[#1673B8]">
                     Codex CXC 1-1969 Steps 1–12 &amp; ISO 22000 Clause 8.5
                   </td>
                   <td className="p-3 text-slate-700">
@@ -2221,7 +2221,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                   <td className="p-3 font-black text-slate-900">
                     2. Shop-Floor CCP Witnessing &amp; Traceability Challenge
                   </td>
-                  <td className="p-3 font-bold text-[#0D5C3A]">
+                  <td className="p-3 font-bold text-[#1673B8]">
                     BRCGS Issue 9 Cl. 2.11 / Clause 3.9 (≤4 Hour Mass Balance)
                   </td>
                   <td className="p-3 text-slate-700">
@@ -2232,7 +2232,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                   <td className="p-3 font-black text-slate-900">
                     3. UK &amp; EU Food Safety Law
                   </td>
-                  <td className="p-3 font-bold text-[#0D5C3A]">
+                  <td className="p-3 font-bold text-[#1673B8]">
                     EU Reg (EC) 852/2004 Art. 5 &amp; UK Food Safety Act 1990 Sec. 21
                   </td>
                   <td className="p-3 text-slate-700">
@@ -2243,7 +2243,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                   <td className="p-3 font-black text-slate-900">
                     4. US FDA FSMA &amp; GCC / Middle East Law
                   </td>
-                  <td className="p-3 font-bold text-[#0D5C3A]">
+                  <td className="p-3 font-bold text-[#1673B8]">
                     US 21 CFR Part 117 (HARPC) · Dubai Food Code · SFDA · GSO 1694
                   </td>
                   <td className="p-3 text-slate-700">
@@ -2254,7 +2254,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                   <td className="p-3 font-black text-slate-900">
                     5. Pakistan Food Authorities &amp; PSQCA Law
                   </td>
-                  <td className="p-3 font-bold text-[#0D5C3A]">
+                  <td className="p-3 font-bold text-[#1673B8]">
                     Punjab Food Authority Act 2011 · Sindh / KP / BFA · PSQCA Standards
                   </td>
                   <td className="p-3 text-slate-700">
@@ -2299,7 +2299,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
               <h5 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#0D5C3A]" />
+                <ShieldCheck className="w-4 h-4 text-[#1673B8]" />
                 What Third-Party Lead Auditors Inspect on Site
               </h5>
               <ul className="space-y-2 text-xs text-slate-700">
@@ -2309,7 +2309,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                       key={i}
                       className="p-2.5 rounded-lg bg-white border border-slate-200 flex items-start gap-2"
                     >
-                      <span className="font-black text-[#0D5C3A]">
+                      <span className="font-black text-[#1673B8]">
                         {i + 1}.
                       </span>
                       <span>{item}</span>
@@ -2354,9 +2354,9 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           </div>
 
           {/* Industrial Case Study */}
-          <div className="rounded-2xl border border-emerald-900/20 bg-emerald-50/40 p-4 sm:p-5 space-y-3">
+          <div className="rounded-2xl border border-[#D2DEEA] bg-[#F0F6FC] p-4 sm:p-5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="px-2.5 py-1 rounded-md bg-[#0D5C3A] text-white text-[10.5px] font-black uppercase tracking-wider">
+              <span className="px-2.5 py-1 rounded-md bg-[#1673B8] text-white text-[10.5px] font-black uppercase tracking-wider">
                 Industrial Case Study &amp; 5-Why Root Cause Investigation
               </span>
               <span className="text-xs font-bold text-slate-600">
@@ -2370,8 +2370,8 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
               <strong>Incident Scenario: </strong>
               {pedagogy.caseStudy.incidentDescription}
             </p>
-            <div className="rounded-xl bg-white border border-emerald-200 p-3.5 space-y-1.5">
-              <p className="text-[11px] font-black uppercase tracking-wider text-[#0D5C3A]">
+            <div className="rounded-xl bg-white border border-[#D2DEEA] p-3.5 space-y-1.5">
+              <p className="text-[11px] font-black uppercase tracking-wider text-[#1673B8]">
                 5-Why Root Cause Analysis Progression:
               </p>
               <ul className="space-y-1 text-xs text-slate-700">
@@ -2383,10 +2383,10 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
               </ul>
             </div>
             <p className="text-xs text-slate-800 leading-relaxed">
-              <strong className="text-[#0D5C3A]">CAPA Implemented: </strong>
+              <strong className="text-[#1673B8]">CAPA Implemented: </strong>
               {pedagogy.caseStudy.capaImplemented}
             </p>
-            <p className="text-xs font-bold text-emerald-900 bg-emerald-100/80 px-3 py-2 rounded-lg border border-emerald-300">
+            <p className="text-xs font-bold text-[#105E9A] bg-[#EBF4FC] px-3 py-2 rounded-lg border border-[#D2DEEA]">
               ✓ Verified Result: {pedagogy.caseStudy.measurableResult}
             </p>
           </div>
@@ -2394,7 +2394,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           {/* Practical Audit Verification Checklist */}
           <div className="space-y-2">
             <h5 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-              <FileCheck2 className="w-4 h-4 text-[#0D5C3A]" />
+              <FileCheck2 className="w-4 h-4 text-[#1673B8]" />
               Practical Shop-Floor &amp; Kitchen Audit Verification Checklist
             </h5>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2403,7 +2403,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                   key={i}
                   className="flex items-start gap-2 text-xs text-slate-800 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                   <span>{chk}</span>
                 </div>
               ))}
@@ -2413,9 +2413,9 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
       )}
 
       {/* 8. INTERACTIVE MODULE SELF-CHECK KNOWLEDGE QUIZ (ALISON LESSON SUMMARY CHECK) */}
-      <div className="rounded-2xl border-2 border-[#0D5C3A]/30 bg-emerald-50/60 p-5 space-y-3.5">
+      <div className="rounded-2xl border-2 border-[#1673B8]/30 bg-[#F0F6FC] p-5 space-y-3.5">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#0D5C3A]">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#1673B8]">
             <HelpCircle className="w-4 h-4" />
             Interactive Module {module.moduleNumber} Knowledge Check (Self-Test Before Moving On)
           </div>
@@ -2433,11 +2433,11 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
             const isChosen = selectedQuizOption === idx;
             const isCorrect = idx === pedagogy.selfCheckQuiz.correctIndex;
             let btnStyle =
-              'border-slate-200 bg-white text-slate-800 hover:border-emerald-400';
+              'border-slate-200 bg-white text-slate-800 hover:border-[#1673B8]';
             if (selectedQuizOption !== null) {
               if (isCorrect) {
                 btnStyle =
-                  'border-emerald-600 bg-emerald-100 text-emerald-950 font-bold';
+                  'border-[#1673B8] bg-[#EBF4FC] text-[#1A2138] font-bold';
               } else if (isChosen && !isCorrect) {
                 btnStyle = 'border-rose-500 bg-rose-100 text-rose-950';
               }
@@ -2462,7 +2462,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           <div
             className={`p-3.5 rounded-xl border text-xs leading-relaxed ${
               selectedQuizOption === pedagogy.selfCheckQuiz.correctIndex
-                ? 'bg-emerald-100/90 border-emerald-400 text-emerald-950'
+                ? 'bg-[#EBF4FC] border-[#1673B8] text-[#1A2138]'
                 : 'bg-amber-50 border-amber-300 text-amber-950'
             }`}
           >
@@ -2498,7 +2498,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
           <button
             type="button"
             onClick={onCompleteAndNext}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-bold text-xs shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-sm cursor-pointer"
           >
             Mark Module {module.moduleNumber} Complete &amp; Next Module
             <ChevronRight className="w-4 h-4" />

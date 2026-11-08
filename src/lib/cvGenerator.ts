@@ -84,11 +84,11 @@ export function downloadProfessionalCvPdf(
     : [];
 
   // ==================== HEADER BANNER ====================
-  // Top deep forest green executive banner
-  doc.setFillColor(13, 46, 27); // #0D2E1B
+  // Top deep navy executive banner
+  doc.setFillColor(26, 33, 56); // #1A2138
   doc.rect(0, 0, pageWidth, 44, 'F');
 
-  // Subtle gold/emerald bottom border on header
+  // Subtle gold bottom border on header
   doc.setFillColor(217, 119, 6); // #D97706 Gold accent bar
   doc.rect(0, 44, pageWidth, 1.4, 'F');
 
@@ -102,7 +102,7 @@ export function downloadProfessionalCvPdf(
   const headlineParts = [roleTitle, companyName].filter(Boolean);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11.5);
-  doc.setTextColor(167, 243, 208); // Soft mint emerald
+  doc.setTextColor(186, 230, 253); // Soft ice-blue
   doc.text(headlineParts.join('  |  '), marginX, 25);
 
   // Contact Details Row inside Header
@@ -128,7 +128,7 @@ export function downloadProfessionalCvPdf(
     if (cursorY + neededMm > pageHeight - 16) {
       doc.addPage();
       // Top accent bar on continuation page
-      doc.setFillColor(13, 46, 27);
+      doc.setFillColor(26, 33, 56);
       doc.rect(0, 0, pageWidth, 6, 'F');
       cursorY = 18;
     }
@@ -138,11 +138,11 @@ export function downloadProfessionalCvPdf(
     ensureSpace(14);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.setTextColor(13, 46, 27); // #0D2E1B
+    doc.setTextColor(26, 33, 56); // #1A2138
     doc.text(title.toUpperCase(), marginX, cursorY);
 
-    // Emerald underline with gold leading segment
-    doc.setDrawColor(22, 163, 74); // #16A34A
+    // Royal blue underline with gold leading segment
+    doc.setDrawColor(22, 115, 184); // #1673B8
     doc.setLineWidth(0.6);
     doc.line(marginX, cursorY + 2, pageWidth - marginX, cursorY + 2);
 
@@ -189,7 +189,7 @@ export function downloadProfessionalCvPdf(
       if (dateStr) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9.2);
-        doc.setTextColor(21, 128, 61); // #15803D
+        doc.setTextColor(22, 115, 184); // #15803D
         doc.text(dateStr, pageWidth - marginX, cursorY, { align: 'right' });
       }
       cursorY += 4.6;
@@ -243,7 +243,7 @@ export function downloadProfessionalCvPdf(
       if (years) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9.2);
-        doc.setTextColor(21, 128, 61);
+        doc.setTextColor(22, 115, 184);
         doc.text(years, pageWidth - marginX, cursorY, { align: 'right' });
       }
       cursorY += 4.5;
@@ -287,7 +287,7 @@ export function downloadProfessionalCvPdf(
       if (cert.issueDate) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.setTextColor(21, 128, 61);
+        doc.setTextColor(22, 115, 184);
         doc.text(cert.issueDate, pageWidth - marginX, cursorY, {
           align: 'right'
         });
@@ -326,7 +326,7 @@ export function downloadProfessionalCvPdf(
       if (proj.link?.trim()) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8.5);
-        doc.setTextColor(21, 128, 61);
+        doc.setTextColor(22, 115, 184);
         doc.text(proj.link.trim(), pageWidth - marginX, cursorY, {
           align: 'right'
         });

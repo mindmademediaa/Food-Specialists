@@ -14,7 +14,7 @@ export const PrivacyToggle: React.FC<PrivacyToggleProps> = ({
   onChange
 }) => {
   return (
-    <div className="flex items-center justify-between gap-3 py-2.5 border-b border-emerald-100/70 last:border-b-0">
+    <div className="flex items-center justify-between gap-3 py-2.5 border-b border-[#D2DEEA]/70 last:border-b-0">
       <div>
         <div className="text-xs font-semibold text-gray-900">{label}</div>
         {description && <div className="text-[11px] text-gray-500">{description}</div>}
@@ -25,7 +25,7 @@ export const PrivacyToggle: React.FC<PrivacyToggleProps> = ({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 focus:outline-none ${
-          checked ? 'bg-[#16A34A]' : 'bg-gray-300'
+          checked ? 'bg-[#1673B8]' : 'bg-gray-300'
         }`}
       >
         <span

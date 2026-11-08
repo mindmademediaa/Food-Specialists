@@ -633,15 +633,15 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     <div className="space-y-4 pb-6">
       {/* TOP SAVE / ACTION NOTIFICATION BANNER */}
       {saveBanner && (
-        <div className="p-3.5 rounded-2xl bg-[#13422B] text-white text-xs font-extrabold flex items-center justify-between gap-2 shadow-md border border-emerald-400/30">
+        <div className="p-3.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold flex items-center justify-between gap-2 shadow-md border border-[#1673B8]/40">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#34D399] shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-[#60A5FA] shrink-0" />
             <span>{saveBanner}</span>
           </div>
           <button
             type="button"
             onClick={() => setSaveBanner(null)}
-            className="text-emerald-200 hover:text-white underline text-[11px] shrink-0 cursor-pointer"
+            className="text-[#DCE9F6] hover:text-white underline text-[11px] shrink-0 cursor-pointer"
           >
             OK
           </button>
@@ -689,7 +689,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       {/* FREE USER / EXPIRED USER PAYWALL MODAL WHEN CLICKING ANY TOOL */}
       {showPaywallPrompt && (
         <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border-2 border-[#0E9F6E] rounded-[28px] max-w-md w-full p-5 shadow-2xl space-y-4 animate-fade-in">
+          <div className="bg-white border-2 border-[#1673B8] rounded-[28px] max-w-md w-full p-5 shadow-2xl space-y-4 animate-fade-in">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <div className="w-11 h-11 rounded-2xl bg-amber-100 border border-amber-300 text-[#B45309] flex items-center justify-center shrink-0">
@@ -701,7 +701,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                       ? 'Membership Expired'
                       : 'Paid Premium Member Tool'}
                   </span>
-                  <h3 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-0.5">
+                  <h3 className="text-base sm:text-lg font-extrabold text-[#1A2138] mt-0.5">
                     {hasExpiredPremium
                       ? 'Renew Premium to Unlock Tools'
                       : 'Purchase / Buy Premium Membership'}
@@ -711,24 +711,24 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowPaywallPrompt(false)}
-                className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer"
+                className="p-1.5 rounded-full bg-[#F0F6FC] hover:bg-[#DCE9F6] text-[#1A2138] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#F0FDF4] border border-[#9BCAB0] space-y-2">
-              <div className="text-xs font-extrabold text-[#13422B]">
+            <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#BBD6EE] space-y-2">
+              <div className="text-xs font-extrabold text-[#1A2138]">
                 You clicked: &ldquo;{paywallFeatureTitle}&rdquo;
               </div>
-              <p className="text-xs text-[#334155] leading-relaxed">
+              <p className="text-xs text-[#5A6C84] leading-relaxed">
                 {hasExpiredPremium
                   ? 'Your previous Paid Premium subscription has expired, so access to Specialist Tools, Exam MCQs, and Interview Prep is currently closed.'
                   : 'Free users can preview the Specialist Tools hub, but opening and using the interactive tools requires a Paid Premium Membership:'}
               </p>
-              <ul className="space-y-1.5 text-xs text-[#0F291E] font-medium pt-1">
+              <ul className="space-y-1.5 text-xs text-[#1A2138] font-medium pt-1">
                 <li className="flex items-start gap-1.5">
-                  <Check className="w-4 h-4 text-[#0E9F6E] shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                   <span>
                     <strong>Daily Personal Health &amp; Nutrition App:</strong>{' '}
                     Calorie Counter, Meal Planner, Live BMI Graph (Gain/Reduce
@@ -736,7 +736,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   </span>
                 </li>
                 <li className="flex items-start gap-1.5">
-                  <Check className="w-4 h-4 text-[#0E9F6E] shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                   <span>
                     <strong>
                       Exam Preparation ({TOTAL_EXAM_BANK_SIZE.toLocaleString()}{' '}
@@ -748,7 +748,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   </span>
                 </li>
                 <li className="flex items-start gap-1.5">
-                  <Check className="w-4 h-4 text-[#0E9F6E] shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                   <span>
                     <strong>
                       Interview Preparation (
@@ -763,25 +763,25 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 text-center">
-              <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-gray-200">
-                <div className="text-[11px] font-bold text-gray-500">
+              <div className="p-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA]">
+                <div className="text-[11px] font-bold text-[#5A6C84]">
                   1 Month Plan
                 </div>
-                <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+                <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
                   Rs. {monthlyFeeRs}
                 </div>
-                <div className="text-[10px] font-semibold text-gray-500">
+                <div className="text-[10px] font-semibold text-[#5A6C84]">
                   30 Days Full Access
                 </div>
               </div>
-              <div className="p-3 rounded-2xl bg-[#ECFDF5] border-2 border-[#0E9F6E] relative">
-                <span className="px-2 py-0.5 rounded-full bg-[#0E9F6E] text-white text-[9px] font-extrabold uppercase">
+              <div className="p-3 rounded-2xl bg-[#EBF4FC] border-2 border-[#1673B8] relative">
+                <span className="px-2 py-0.5 rounded-full bg-[#1673B8] text-white text-[9px] font-extrabold uppercase">
                   {yearlyDiscountPct}% Discount
                 </span>
-                <div className="text-lg font-extrabold text-[#0F291E] mt-0.5">
+                <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
                   Rs. {yearlyFeeRs}
                 </div>
-                <div className="text-[10px] font-bold text-[#0E9F6E]">
+                <div className="text-[10px] font-bold text-[#1673B8]">
                   Full Year (365 Days)
                 </div>
               </div>
@@ -794,7 +794,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   setShowPaywallPrompt(false);
                   onOpenPremiumModal();
                 }}
-                className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#15803D] via-[#0E9F6E] to-[#13422B] text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Crown className="w-4 h-4 text-amber-300" />
                 <span>Purchase / Buy Premium Membership Now</span>
@@ -802,7 +802,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowPaywallPrompt(false)}
-                className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer"
+                className="w-full py-2.5 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] text-[#1A2138] text-xs font-bold cursor-pointer"
               >
                 Close Preview
               </button>
@@ -817,7 +817,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveSection('hub')}
-            className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#E2F2E9] border border-[#CBE3D6] text-[#0F291E] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
           >
             <span>← Back to All Tools</span>
           </button>
@@ -848,16 +848,16 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 );
               }
             }}
-            className="bg-white border-[1.5px] border-[#BCE3C8] hover:border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all cursor-pointer space-y-3.5"
+            className="bg-white border-[1.5px] border-[#D2DEEA] hover:border-[#1673B8] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all cursor-pointer space-y-3.5"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center shrink-0">
                   <Activity className="w-6 h-6 stroke-[2.2]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] text-[10px] font-extrabold uppercase">
+                    <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#105E9A] text-[10px] font-extrabold uppercase">
                       Tool 1 • Personal Health &amp; Diet
                     </span>
                     {!isUserPaid && (
@@ -866,10 +866,10 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                       </span>
                     )}
                   </div>
-                  <h2 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-1">
+                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138] mt-1">
                     Complete Nutrition &amp; BMI Calculator, Health Condition Guide &amp; AI Dietitian Agent
                   </h2>
-                  <p className="text-xs text-[#5C7267] leading-relaxed mt-0.5">
+                  <p className="text-xs text-[#5A6C84] leading-relaxed mt-0.5">
                     1-Page BMI Gauge &amp; Weight Goal Graph, BMR, TDEE, Ideal
                     Weight, Daily Calorie &amp; Macro Targets, Water Tracker,
                     Health Condition Food Guide (Recommended vs. Avoid) &amp;
@@ -880,11 +880,11 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-1">
-              <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                <div className="text-[10px] font-bold text-[#5C7267]">
+              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
                   Saved BMI Status
                 </div>
-                <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
+                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
                   {metrics.bmi} kg/m²
                 </div>
                 <div
@@ -894,35 +894,35 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   {metrics.bmiCategory}
                 </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                <div className="text-[10px] font-bold text-[#5C7267]">
+              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
                   Weight &amp; Calories
                 </div>
-                <div className="text-xs font-extrabold text-[#0E9F6E] mt-0.5">
+                <div className="text-xs font-extrabold text-[#1673B8] mt-0.5">
                   BMI &amp; Weight Graph
                 </div>
-                <div className="text-[10px] text-[#5C7267] font-semibold">
+                <div className="text-[10px] text-[#5A6C84] font-semibold">
                   Gain / Reduce Guide
                 </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                <div className="text-[10px] font-bold text-[#5C7267]">
+              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
                   Health Conditions
                 </div>
-                <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
+                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
                   AI Dietitian Agent
                 </div>
-                <div className="text-[10px] text-[#0E9F6E] font-bold">
+                <div className="text-[10px] text-[#1673B8] font-bold">
                   Diabetes, BP, PCOS +
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1 border-t border-[#ECF4EF]">
-              <span className="text-[11px] font-bold text-[#13422B]">
+            <div className="flex items-center justify-between pt-1 border-t border-[#E4EDF7]">
+              <span className="text-[11px] font-bold text-[#1A2138]">
                 Easy 1-Page BMI &amp; Weight Tracker + Health Guide + AI Dietitian Chat
               </span>
-              <span className="px-3.5 py-1.5 rounded-xl bg-[#0E9F6E] text-white text-xs font-extrabold inline-flex items-center gap-1">
+              <span className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1">
                 <span>Open Nutrition Tool</span>
                 <ChevronRight className="w-4 h-4" />
               </span>
@@ -948,16 +948,16 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 );
               }
             }}
-            className="bg-white border-[1.5px] border-[#BCE3C8] hover:border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all cursor-pointer space-y-3.5"
+            className="bg-white border-[1.5px] border-[#D2DEEA] hover:border-[#1673B8] rounded-[24px] p-4 sm:p-5 shadow-sm transition-all cursor-pointer space-y-3.5"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#E2F2E9] text-[#0E9F6E] flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center shrink-0">
                   <Award className="w-6 h-6 stroke-[2.2]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md bg-[#D7EFE2] text-[#0D6845] text-[10px] font-extrabold uppercase">
+                    <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#105E9A] text-[10px] font-extrabold uppercase">
                       Tool 2 • 30 MCQs / Exam • Score Report &amp; PDF
                     </span>
                     {!isUserPaid && (
@@ -966,11 +966,11 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                       </span>
                     )}
                   </div>
-                  <h2 className="text-base sm:text-lg font-extrabold text-[#0F291E] mt-1">
+                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138] mt-1">
                     Food Science &amp; Food Safety Exam Preparation (30 MCQs per
                     Exam)
                   </h2>
-                  <p className="text-xs text-[#5C7267] leading-relaxed mt-0.5">
+                  <p className="text-xs text-[#5A6C84] leading-relaxed mt-0.5">
                     Click to start your <strong>30-MCQs Exam</strong> immediately.
                     Upon completion, view your complete{' '}
                     <strong>Score Report (Correct vs. Wrong MCQs)</strong>,
@@ -984,46 +984,46 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-1">
-              <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                <div className="text-[10px] font-bold text-[#5C7267]">
+              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
                   Each Exam
                 </div>
-                <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
+                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
                   30 MCQs
                 </div>
-                <div className="text-[10px] text-[#0E9F6E] font-bold">
+                <div className="text-[10px] text-[#1673B8] font-bold">
                   30 Mins Timed
                 </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                <div className="text-[10px] font-bold text-[#5C7267]">
+              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
                   Next Exam
                 </div>
-                <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
+                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
                   30 New MCQs
                 </div>
-                <div className="text-[10px] text-[#5C7267] font-semibold">
+                <div className="text-[10px] text-[#5A6C84] font-semibold">
                   Different Every Time
                 </div>
               </div>
-              <div className="p-2.5 rounded-xl bg-[#F4FAF7] border border-[#D4E9DF]">
-                <div className="text-[10px] font-bold text-[#5C7267]">
+              <div className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
                   Score Report
                 </div>
-                <div className="text-sm font-extrabold text-[#0F291E] mt-0.5">
+                <div className="text-sm font-extrabold text-[#1A2138] mt-0.5">
                   PDF Download
                 </div>
-                <div className="text-[10px] text-[#0E9F6E] font-bold">
+                <div className="text-[10px] text-[#1673B8] font-bold">
                   Correct &amp; Wrong Key
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1 border-t border-[#ECF4EF]">
-              <span className="text-[11px] font-bold text-[#13422B]">
+            <div className="flex items-center justify-between pt-1 border-t border-[#E4EDF7]">
+              <span className="text-[11px] font-bold text-[#1A2138]">
                 30 Different MCQs Every Exam + Score Report + PDF Download
               </span>
-              <span className="px-3.5 py-1.5 rounded-xl bg-[#0E9F6E] text-white text-xs font-extrabold inline-flex items-center gap-1">
+              <span className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1">
                 <span>Open Exam Tool</span>
                 <ChevronRight className="w-4 h-4" />
               </span>

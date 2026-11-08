@@ -285,30 +285,30 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F9F5] text-gray-900 flex flex-col items-center justify-center p-4 sm:p-6">
+    <div className="min-h-screen bg-[#F0F6FC] text-[#1A2138] flex flex-col items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-[420px] space-y-4">
         {/* Main Clean Auth Card */}
-        <div className="bg-white rounded-[28px] border border-[#CFE5D6] shadow-[0_16px_50px_rgba(21,128,61,0.08)] p-6 sm:p-7 space-y-5">
+        <div className="bg-white rounded-[28px] border border-[#D2DEEA] shadow-[0_16px_50px_rgba(22,115,184,0.10)] p-6 sm:p-7 space-y-5">
           {/* Top Brand & Icon Header */}
           <div className="flex flex-col items-center text-center space-y-2.5">
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#EBF7EE] border border-[#BDE3C6] text-[#15803D]">
-              <div className="w-8 h-8 rounded-full bg-white border border-emerald-200 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#EBF4FC] border border-[#BBD6EE] text-[#1673B8]">
+              <div className="w-8 h-8 rounded-full bg-white border border-[#D2DEEA] flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
                 <img
                   src={FS_PORTAL_LOGO_DATA_URI}
                   alt="FS Portal"
                   className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
                 />
               </div>
-              <span className="text-[13px] font-extrabold uppercase tracking-wider">
-                FS Portal
+              <span className="text-[13px] font-extrabold uppercase tracking-wider text-[#1A2138]">
+                FS Port<span className="text-[#1673B8] underline decoration-[#1673B8] decoration-2 underline-offset-2">al</span>
               </span>
             </div>
 
             <div>
-              <h1 className="text-2xl font-black text-[#0D2E1B] tracking-tight">
+              <h1 className="text-2xl font-black text-[#1A2138] tracking-tight">
                 {mode === 'signin' ? 'Sign In' : 'Create Account'}
               </h1>
-              <p className="text-xs text-gray-500 font-medium mt-1">
+              <p className="text-xs text-[#5A6C84] font-medium mt-1">
                 {mode === 'signin'
                   ? 'Sign in to access your specialist account'
                   : 'Register to unlock jobs, scholarships & directory'}
@@ -317,14 +317,14 @@ export const AuthScreen: React.FC = () => {
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="grid grid-cols-2 p-1 bg-[#EEF7F0] rounded-2xl border border-[#CCE4D2]">
+          <div className="grid grid-cols-2 p-1 bg-[#F0F6FC] rounded-2xl border border-[#D2DEEA]">
             <button
               type="button"
               onClick={() => switchMode('signin')}
               className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 mode === 'signin'
-                  ? 'bg-white text-[#15803D] shadow-xs font-extrabold'
-                  : 'text-gray-600 hover:text-[#0D2E1B]'
+                  ? 'bg-[#1673B8] text-white shadow-xs font-extrabold'
+                  : 'text-[#5A6C84] hover:text-[#1A2138]'
               }`}
             >
               Sign In
@@ -334,8 +334,8 @@ export const AuthScreen: React.FC = () => {
               onClick={() => switchMode('signup')}
               className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 mode === 'signup'
-                  ? 'bg-white text-[#15803D] shadow-xs font-extrabold'
-                  : 'text-gray-600 hover:text-[#0D2E1B]'
+                  ? 'bg-[#1673B8] text-white shadow-xs font-extrabold'
+                  : 'text-[#5A6C84] hover:text-[#1A2138]'
               }`}
             >
               Sign Up
@@ -364,7 +364,7 @@ export const AuthScreen: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleCopyDomain}
-                      className="px-2.5 py-1 rounded-lg bg-[#15803D] text-white font-bold text-[10.5px] shrink-0 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-[#1673B8] text-white font-bold text-[10.5px] shrink-0 cursor-pointer"
                     >
                       {copiedDomain ? 'Copied!' : 'Copy Domain'}
                     </button>
@@ -384,7 +384,7 @@ export const AuthScreen: React.FC = () => {
 
           {/* Reset Password Success Box */}
           {resetSuccessMessage && (
-            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-[#0D2E1B] text-xs font-semibold">
+            <div className="p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#BBD6EE] text-[#1A2138] text-xs font-semibold">
               {resetSuccessMessage}
             </div>
           )}
@@ -396,11 +396,11 @@ export const AuthScreen: React.FC = () => {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isGoogleSubmitting || isSubmitting}
-              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 disabled:opacity-60 text-gray-800 font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] disabled:opacity-60 text-[#1A2138] font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer"
             >
               {isGoogleSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 text-[#15803D] animate-spin" />
+                  <Loader2 className="w-4 h-4 text-[#1673B8] animate-spin" />
                   <span>Connecting to Google...</span>
                 </>
               ) : (
@@ -417,11 +417,11 @@ export const AuthScreen: React.FC = () => {
 
             {/* Divider */}
             <div className="relative flex items-center justify-center py-0.5">
-              <div className="border-t border-gray-200 w-full" />
-              <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 shrink-0">
+              <div className="border-t border-[#D2DEEA] w-full" />
+              <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-[#5A6C84] shrink-0">
                 or continue with email
               </span>
-              <div className="border-t border-gray-200 w-full" />
+              <div className="border-t border-[#D2DEEA] w-full" />
             </div>
 
             {/* Full Name (Sign Up only) */}
@@ -429,12 +429,12 @@ export const AuthScreen: React.FC = () => {
               <div className="space-y-1.5">
                 <label
                   htmlFor="auth-fullname"
-                  className="block text-xs font-bold text-[#0D2E1B]"
+                  className="block text-xs font-bold text-[#1A2138]"
                 >
                   Full Name
                 </label>
                 <div className="relative">
-                  <UserIcon className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <UserIcon className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     id="auth-fullname"
                     type="text"
@@ -443,7 +443,7 @@ export const AuthScreen: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g., Muneeb Khan"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F8FAF8] border border-[#CFE0D3] text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#15803D] transition-colors"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#1673B8] transition-colors"
                   />
                 </div>
               </div>
@@ -453,12 +453,12 @@ export const AuthScreen: React.FC = () => {
             <div className="space-y-1.5">
               <label
                 htmlFor="auth-email"
-                className="block text-xs font-bold text-[#0D2E1B]"
+                className="block text-xs font-bold text-[#1A2138]"
               >
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   id="auth-email"
                   type="email"
@@ -467,7 +467,7 @@ export const AuthScreen: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="specialist@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F8FAF8] border border-[#CFE0D3] text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#15803D] transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#1673B8] transition-colors"
                 />
               </div>
             </div>
@@ -477,7 +477,7 @@ export const AuthScreen: React.FC = () => {
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="auth-password"
-                  className="block text-xs font-bold text-[#0D2E1B]"
+                  className="block text-xs font-bold text-[#1A2138]"
                 >
                   Password
                 </label>
@@ -485,14 +485,14 @@ export const AuthScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleForgotPassword}
-                    className="text-[11px] font-extrabold text-[#15803D] hover:underline cursor-pointer"
+                    className="text-[11px] font-extrabold text-[#1673B8] hover:underline cursor-pointer"
                   >
                     Forgot Password?
                   </button>
                 )}
               </div>
               <div className="relative">
-                <Lock className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   id="auth-password"
                   type={showPassword ? 'text' : 'password'}
@@ -503,13 +503,13 @@ export const AuthScreen: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Minimum 6 characters"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F8FAF8] border border-[#CFE0D3] text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#15803D] transition-colors"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#1673B8] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#0D2E1B] p-1 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A6C84] hover:text-[#1A2138] p-1 cursor-pointer"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -525,12 +525,12 @@ export const AuthScreen: React.FC = () => {
               <div className="space-y-1.5">
                 <label
                   htmlFor="auth-confirm-password"
-                  className="block text-xs font-bold text-[#0D2E1B]"
+                  className="block text-xs font-bold text-[#1A2138]"
                 >
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-[#15803D] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     id="auth-confirm-password"
                     type={showConfirmPassword ? 'text' : 'password'}
@@ -539,7 +539,7 @@ export const AuthScreen: React.FC = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter your password"
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F8FAF8] border border-[#CFE0D3] text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#15803D] transition-colors"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#1673B8] transition-colors"
                   />
                   <button
                     type="button"
@@ -549,7 +549,7 @@ export const AuthScreen: React.FC = () => {
                         ? 'Hide confirm password'
                         : 'Show confirm password'
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#0D2E1B] p-1 cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A6C84] hover:text-[#1A2138] p-1 cursor-pointer"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -565,7 +565,7 @@ export const AuthScreen: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting || isGoogleSubmitting}
-              className="w-full py-3 px-5 rounded-xl bg-[#15803D] hover:bg-[#166534] disabled:opacity-65 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+              className="w-full py-3 px-5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-65 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -587,25 +587,25 @@ export const AuthScreen: React.FC = () => {
             </button>
 
             {/* Toggle Mode Footer */}
-            <div className="pt-2 border-t border-gray-100 text-center">
+            <div className="pt-2 border-t border-[#E4EDF7] text-center">
               {mode === 'signin' ? (
-                <p className="text-xs text-gray-600 font-medium">
+                <p className="text-xs text-[#5A6C84] font-medium">
                   Don&apos;t have an account yet?{' '}
                   <button
                     type="button"
                     onClick={() => switchMode('signup')}
-                    className="font-extrabold text-[#15803D] hover:underline cursor-pointer"
+                    className="font-extrabold text-[#1673B8] hover:underline cursor-pointer"
                   >
                     Sign Up Now
                   </button>
                 </p>
               ) : (
-                <p className="text-xs text-gray-600 font-medium">
+                <p className="text-xs text-[#5A6C84] font-medium">
                   Already have a registered account?{' '}
                   <button
                     type="button"
                     onClick={() => switchMode('signin')}
-                    className="font-extrabold text-[#15803D] hover:underline cursor-pointer"
+                    className="font-extrabold text-[#1673B8] hover:underline cursor-pointer"
                   >
                     Sign In
                   </button>
@@ -615,9 +615,9 @@ export const AuthScreen: React.FC = () => {
           </form>
         </div>
 
-        {/* Footer Branding & Legal Links (Google Play, AdSense & AdMob Compliant) */}
+        {/* Footer Legal Links (Google Play, AdSense & AdMob Compliant) */}
         <div className="text-center space-y-1.5">
-          <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] font-bold text-[#0E9F6E]">
+          <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] font-bold text-[#1673B8]">
             <button
               type="button"
               onClick={() => setLegalModalTab('privacy')}
@@ -625,7 +625,7 @@ export const AuthScreen: React.FC = () => {
             >
               Privacy Policy
             </button>
-            <span className="text-gray-300">•</span>
+            <span className="text-[#94A3B8]">•</span>
             <button
               type="button"
               onClick={() => setLegalModalTab('terms')}
@@ -633,26 +633,23 @@ export const AuthScreen: React.FC = () => {
             >
               Terms of Use
             </button>
-            <span className="text-gray-300">•</span>
+            <span className="text-[#94A3B8]">•</span>
             <button
               type="button"
               onClick={() => setLegalModalTab('ads')}
               className="hover:underline cursor-pointer"
             >
-              AdSense &amp; AdMob Policy
+              AdMob Policy
             </button>
-            <span className="text-gray-300">•</span>
+            <span className="text-[#94A3B8]">•</span>
             <button
               type="button"
               onClick={() => setLegalModalTab('deletion')}
               className="hover:underline cursor-pointer"
             >
-              Account Deletion
+              Data Deletion
             </button>
           </div>
-          <p className="text-[11px] font-semibold text-[#14532D]">
-            Developed by Food Specialist
-          </p>
         </div>
       </div>
 

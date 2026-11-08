@@ -1079,58 +1079,58 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
 
               {/* GRAPH 2: JOBS, SCHOLARSHIPS & TRAININGS DISTRIBUTION GRAPH */}
-              <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-[#ECF4EF] pb-3">
+              <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-[#D2DEEA] pb-3">
                   <div>
-                    <h2 className="text-base font-extrabold text-[#0F291E] flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-[#0E9F6E]" />
+                    <h2 className="text-base font-extrabold text-[#1A2138] flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-[#1673B8]" />
                       <span>App Content &amp; Categories Graph</span>
                     </h2>
-                    <p className="text-xs text-[#5C7267] font-medium">
+                    <p className="text-xs text-[#4A5568] font-medium">
                       Live distribution across Jobs, Scholarships &amp; Trainings
                     </p>
                   </div>
-                  <span className="px-3 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-xs font-extrabold">
+                  <span className="px-3 py-1 rounded-full bg-[#EBF4FC] text-[#105E9A] text-xs font-extrabold">
                     {jobs.length + scholarships.length + trainings.length} Active Items
                   </span>
                 </div>
 
                 {/* Jobs Breakdown */}
-                <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] space-y-2.5">
+                <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+                    <span className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider">
                       Jobs by Category ({jobs.length})
                     </span>
                     <button
                       type="button"
                       onClick={() => setActiveTab('jobs')}
-                      className="text-xs font-extrabold text-[#0E9F6E] hover:underline cursor-pointer"
+                      className="text-xs font-extrabold text-[#1673B8] hover:underline cursor-pointer"
                     >
                       + Post / Manage Jobs →
                     </button>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-white rounded-xl p-2.5 border border-[#D4E9DF]">
-                      <div className="text-lg font-extrabold text-[#0F291E]">
+                    <div className="bg-white rounded-xl p-2.5 border border-[#D2DEEA]">
+                      <div className="text-lg font-extrabold text-[#1A2138]">
                         {stats.qaJobs}
                       </div>
-                      <div className="text-[11px] font-bold text-[#0D6845]">
+                      <div className="text-[11px] font-bold text-[#105E9A]">
                         Quality &amp; Safety
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl p-2.5 border border-[#D4E9DF]">
-                      <div className="text-lg font-extrabold text-[#0F291E]">
+                    <div className="bg-white rounded-xl p-2.5 border border-[#D2DEEA]">
+                      <div className="text-lg font-extrabold text-[#1A2138]">
                         {stats.rdJobs}
                       </div>
-                      <div className="text-[11px] font-bold text-[#0D6845]">
+                      <div className="text-[11px] font-bold text-[#105E9A]">
                         R&amp;D Lab
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl p-2.5 border border-[#D4E9DF]">
-                      <div className="text-lg font-extrabold text-[#0F291E]">
+                    <div className="bg-white rounded-xl p-2.5 border border-[#D2DEEA]">
+                      <div className="text-lg font-extrabold text-[#1A2138]">
                         {stats.prodJobs}
                       </div>
-                      <div className="text-[11px] font-bold text-[#0D6845]">
+                      <div className="text-[11px] font-bold text-[#105E9A]">
                         Production
                       </div>
                     </div>
@@ -1138,41 +1138,41 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
 
                 {/* Scholarships Breakdown */}
-                <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] space-y-2.5">
+                <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+                    <span className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider">
                       Scholarships by Category ({scholarships.length})
                     </span>
                     <button
                       type="button"
                       onClick={() => setActiveTab('scholarships')}
-                      className="text-xs font-extrabold text-[#0E9F6E] hover:underline cursor-pointer"
+                      className="text-xs font-extrabold text-[#1673B8] hover:underline cursor-pointer"
                     >
                       + Post / Manage Scholarships →
                     </button>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-white rounded-xl p-2.5 border border-[#D4E9DF]">
-                      <div className="text-lg font-extrabold text-[#0F291E]">
+                    <div className="bg-white rounded-xl p-2.5 border border-[#D2DEEA]">
+                      <div className="text-lg font-extrabold text-[#1A2138]">
                         {stats.fellowSch}
                       </div>
-                      <div className="text-[11px] font-bold text-[#0D6845]">
+                      <div className="text-[11px] font-bold text-[#105E9A]">
                         Fellowships
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl p-2.5 border border-[#D4E9DF]">
-                      <div className="text-lg font-extrabold text-[#0F291E]">
+                    <div className="bg-white rounded-xl p-2.5 border border-[#D2DEEA]">
+                      <div className="text-lg font-extrabold text-[#1A2138]">
                         {stats.intlSch}
                       </div>
-                      <div className="text-[11px] font-bold text-[#0D6845]">
+                      <div className="text-[11px] font-bold text-[#105E9A]">
                         International
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl p-2.5 border border-[#D4E9DF]">
-                      <div className="text-lg font-extrabold text-[#0F291E]">
+                    <div className="bg-white rounded-xl p-2.5 border border-[#D2DEEA]">
+                      <div className="text-lg font-extrabold text-[#1A2138]">
                         {stats.grantSch}
                       </div>
-                      <div className="text-[11px] font-bold text-[#0D6845]">
+                      <div className="text-[11px] font-bold text-[#105E9A]">
                         Grants
                       </div>
                     </div>
@@ -1180,41 +1180,41 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
 
                 {/* Trainings Breakdown */}
-                <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] space-y-2.5">
+                <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+                    <span className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider">
                       Trainings &amp; Courses ({trainings.length})
                     </span>
                     <button
                       type="button"
                       onClick={() => setActiveTab('trainings')}
-                      className="text-xs font-extrabold text-[#0E9F6E] hover:underline cursor-pointer"
+                      className="text-xs font-extrabold text-[#1673B8] hover:underline cursor-pointer"
                     >
                       Edit Prices / Add Training →
                     </button>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-white rounded-xl p-2.5 border border-[#D4E9DF]">
-                      <div className="text-lg font-extrabold text-[#0F291E]">
+                    <div className="bg-white rounded-xl p-2.5 border border-[#D2DEEA]">
+                      <div className="text-lg font-extrabold text-[#1A2138]">
                         {stats.hfTrainings}
                       </div>
-                      <div className="text-[11px] font-bold text-[#0D6845]">
+                      <div className="text-[11px] font-bold text-[#105E9A]">
                         Highfield UK
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl p-2.5 border border-[#D4E9DF]">
-                      <div className="text-lg font-extrabold text-[#0F291E]">
+                    <div className="bg-white rounded-xl p-2.5 border border-[#D2DEEA]">
+                      <div className="text-lg font-extrabold text-[#1A2138]">
                         {stats.ircaTrainings}
                       </div>
-                      <div className="text-[11px] font-bold text-[#0D6845]">
+                      <div className="text-[11px] font-bold text-[#105E9A]">
                         1. IRCA CQI
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl p-2.5 border border-[#D4E9DF]">
-                      <div className="text-lg font-extrabold text-[#0F291E]">
+                    <div className="bg-white rounded-xl p-2.5 border border-[#D2DEEA]">
+                      <div className="text-lg font-extrabold text-[#1A2138]">
                         {stats.egTrainings}
                       </div>
-                      <div className="text-[11px] font-bold text-[#0D6845]">
+                      <div className="text-[11px] font-bold text-[#105E9A]">
                         2. Exemplar Global
                       </div>
                     </div>
@@ -1224,21 +1224,21 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             </div>
 
             {/* QUICK ACTION SHORTCUTS */}
-            <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs">
-              <h3 className="text-sm font-extrabold text-[#0F291E] mb-3">
+            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs">
+              <h3 className="text-sm font-extrabold text-[#1A2138] mb-3">
                 Quick Admin Controls (Instant Live Sync)
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
                   type="button"
                   onClick={() => setActiveTab('users')}
-                  className="p-3.5 rounded-2xl bg-[#F4FAF7] hover:bg-[#D7EFE2] border border-[#CBE4D6] text-left transition-colors cursor-pointer space-y-1"
+                  className="p-3.5 rounded-2xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-left transition-colors cursor-pointer space-y-1"
                 >
-                  <UserCheck className="w-5 h-5 text-[#0E9F6E]" />
-                  <div className="text-xs font-extrabold text-[#0F291E]">
+                  <UserCheck className="w-5 h-5 text-[#1673B8]" />
+                  <div className="text-xs font-extrabold text-[#1A2138]">
                     Accept / Reject Users
                   </div>
-                  <div className="text-[11px] text-[#5C7267]">
+                  <div className="text-[11px] text-[#4A5568]">
                     Monitor profiles &amp; slips
                   </div>
                 </button>
@@ -1246,13 +1246,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('jobs')}
-                  className="p-3.5 rounded-2xl bg-[#F4FAF7] hover:bg-[#D7EFE2] border border-[#CBE4D6] text-left transition-colors cursor-pointer space-y-1"
+                  className="p-3.5 rounded-2xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-left transition-colors cursor-pointer space-y-1"
                 >
-                  <Briefcase className="w-5 h-5 text-[#0E9F6E]" />
-                  <div className="text-xs font-extrabold text-[#0F291E]">
+                  <Briefcase className="w-5 h-5 text-[#1673B8]" />
+                  <div className="text-xs font-extrabold text-[#1A2138]">
                     1-Box Paste Job
                   </div>
-                  <div className="text-[11px] text-[#5C7267]">
+                  <div className="text-[11px] text-[#4A5568]">
                     Paste &amp; select category
                   </div>
                 </button>
@@ -1260,13 +1260,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('scholarships')}
-                  className="p-3.5 rounded-2xl bg-[#F4FAF7] hover:bg-[#D7EFE2] border border-[#CBE4D6] text-left transition-colors cursor-pointer space-y-1"
+                  className="p-3.5 rounded-2xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-left transition-colors cursor-pointer space-y-1"
                 >
-                  <GraduationCap className="w-5 h-5 text-[#0E9F6E]" />
-                  <div className="text-xs font-extrabold text-[#0F291E]">
+                  <GraduationCap className="w-5 h-5 text-[#1673B8]" />
+                  <div className="text-xs font-extrabold text-[#1A2138]">
                     1-Box Paste Scholarship
                   </div>
-                  <div className="text-[11px] text-[#5C7267]">
+                  <div className="text-[11px] text-[#4A5568]">
                     Paste &amp; select category
                   </div>
                 </button>
@@ -1274,13 +1274,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('trainings')}
-                  className="p-3.5 rounded-2xl bg-[#F4FAF7] hover:bg-[#D7EFE2] border border-[#CBE4D6] text-left transition-colors cursor-pointer space-y-1"
+                  className="p-3.5 rounded-2xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-left transition-colors cursor-pointer space-y-1"
                 >
-                  <DollarSign className="w-5 h-5 text-[#0E9F6E]" />
-                  <div className="text-xs font-extrabold text-[#0F291E]">
+                  <DollarSign className="w-5 h-5 text-[#1673B8]" />
+                  <div className="text-xs font-extrabold text-[#1A2138]">
                     Change Training Prices
                   </div>
-                  <div className="text-[11px] text-[#5C7267]">
+                  <div className="text-[11px] text-[#4A5568]">
                     Add/remove or update fees
                   </div>
                 </button>
@@ -1290,18 +1290,18 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             {/* QUICK PREMIUM MEMBERSHIP PACKAGE PRICE & AUTO-DISCOUNT CALCULATOR (OVERVIEW TAB) */}
             <form
               onSubmit={onSaveStorageConfig}
-              className="bg-white border-2 border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5"
+              className="bg-white border-2 border-[#1673B8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D97706] to-[#B45309] text-white flex items-center justify-center shrink-0 shadow-2xs">
                     <Crown className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+                    <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
                       Premium Membership Package Price &amp; Auto-Discount Control
                     </h3>
-                    <p className="text-[11.5px] text-[#5C7267] font-medium">
+                    <p className="text-[11.5px] text-[#4A5568] font-medium">
                       Change the Monthly or Yearly package price here — the discount percentage calculates automatically and updates everywhere across the app when saved.
                     </p>
                   </div>
@@ -1313,7 +1313,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Monthly Fee (Rs.)
                   </label>
                   <input
@@ -1359,12 +1359,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         }
                       });
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-extrabold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Yearly Fee (Rs.) — ({liveYearlyDiscountPct}% OFF)
                   </label>
                   <input
@@ -1409,28 +1409,28 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         }
                       });
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-extrabold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-colors h-[38px]"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-colors h-[38px]"
                 >
                   <Check className="w-4 h-4 stroke-[2.5]" />
                   <span>Save Package Price Live</span>
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs">
-                <div className="font-bold text-[#0F291E]">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs">
+                <div className="font-bold text-[#1A2138]">
                   Live Calculation: 12 Months ={' '}
                   <strong>Rs. {fullYearBaseFee.toLocaleString()}</strong> → Yearly Package ={' '}
-                  <strong className="text-[#0E9F6E]">
+                  <strong className="text-[#1673B8]">
                     Rs. {liveYearlyFee.toLocaleString()} ({liveYearlyDiscountPct}% OFF • Saves Rs. {liveYearlySavingsRs.toLocaleString()})
                   </strong>
                 </div>
-                <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#0D6845] cursor-pointer select-none">
+                <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#105E9A] cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={autoApply25PctYearly}
@@ -1475,7 +1475,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         });
                       }
                     }}
-                    className="w-3.5 h-3.5 accent-[#0E9F6E] rounded cursor-pointer"
+                    className="w-3.5 h-3.5 accent-[#1673B8] rounded cursor-pointer"
                   />
                   <span>Auto 25% OFF on Yearly</span>
                 </label>
@@ -1485,30 +1485,30 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             {/* OFFICIAL WHATSAPP CHANNEL BUTTON & LINK CONTROL (HOME SCREEN) */}
             <form
               onSubmit={onSaveStorageConfig}
-              className="bg-white border-2 border-[#0E9F6E] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5"
+              className="bg-white border-2 border-[#1673B8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-2xs">
                     <MessageSquare className="w-5 h-5 stroke-[2.3]" />
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-extrabold text-[#0F291E]">
+                    <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
                       Home Screen WhatsApp Channel Button &amp; Link Control
                     </h3>
-                    <p className="text-[11.5px] text-[#5C7267] font-medium">
+                    <p className="text-[11.5px] text-[#4A5568] font-medium">
                       Edit or amend the official WhatsApp Channel URL and button text shown on the Home front page.
                     </p>
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-extrabold">
+                <span className="px-2.5 py-1 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
                   Live on Home Screen
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Official WhatsApp Channel Link (URL)
                   </label>
                   <input
@@ -1524,12 +1524,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       })
                     }
                     placeholder="https://whatsapp.com/channel/..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-semibold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Button Text on Home Page
                   </label>
                   <input
@@ -1545,7 +1545,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       })
                     }
                     placeholder="Follow WhatsApp Channel"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-semibold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                   />
                 </div>
               </div>
@@ -1570,7 +1570,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3.5 py-2 rounded-xl bg-[#E3F3EA] hover:bg-[#CFEAD9] text-[#0D6845] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-2 rounded-xl bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#105E9A] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Test Current Channel Link</span>
@@ -1578,7 +1578,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                 <button
                   type="submit"
-                  className="px-4 py-2.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                  className="px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
                 >
                   <Check className="w-4 h-4 stroke-[2.5]" />
                   <span>Save WhatsApp Channel Link</span>
@@ -1594,17 +1594,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         {activeTab === 'users' && (
           <div className="space-y-5">
             {/* SECTION A: PAYMENT SLIPS & MEMBERSHIP REQUESTS (ACCEPT / REJECT) */}
-            <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#0F291E] flex items-center gap-2">
+                  <h2 className="text-lg font-extrabold text-[#1A2138] flex items-center gap-2">
                     <Crown className="w-5 h-5 text-[#D97706]" />
                     <span>
                       Membership Payment Slips — Accept or Reject (
                       {sortedPaymentRequests.length})
                     </span>
                   </h2>
-                  <p className="text-xs text-[#5C7267] font-medium">
+                  <p className="text-xs text-[#4A5568] font-medium">
                     When a user submits a Rs. {liveMonthlyFee.toLocaleString()} (1 Month) or Rs. {liveYearlyFee.toLocaleString()} (1 Year
                     — {liveYearlyDiscountPct}% OFF) payment screenshot, accept it here to unlock
                     their Premium Membership immediately.
@@ -1616,7 +1616,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
 
               {sortedPaymentRequests.length === 0 ? (
-                <div className="p-6 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] text-center text-xs text-[#5C7267] font-semibold">
+                <div className="p-6 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-center text-xs text-[#4A5568] font-semibold">
                   No payment requests submitted yet. You can also directly
                   Accept/Activate or Reject any user from the Users Directory
                   below.
@@ -1629,19 +1629,19 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       className={`p-4 rounded-2xl border space-y-3 ${
                         req.status === 'pending'
                           ? 'bg-[#FFFDF5] border-2 border-[#F59E0B]'
-                          : 'bg-[#F4FAF7] border-[#D4E9DF]'
+                          : 'bg-[#F0F6FC] border-[#D2DEEA]'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <div className="text-sm font-extrabold text-[#0F291E]">
+                          <div className="text-sm font-extrabold text-[#1A2138]">
                             {req.userName}
                           </div>
-                          <div className="text-xs text-[#5C7267] font-medium">
+                          <div className="text-xs text-[#4A5568] font-medium">
                             {req.userEmail}
                             {req.userPhone ? ` • ${req.userPhone}` : ''}
                           </div>
-                          <div className="text-xs font-extrabold text-[#0E9F6E] mt-1">
+                          <div className="text-xs font-extrabold text-[#1673B8] mt-1">
                             {req.paymentMethod} •{' '}
                             {req.amount || 'Rs. 100 (1 Month)'} • TID:{' '}
                             {req.transactionId}
@@ -1668,7 +1668,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
                               req.status === 'verified'
-                                ? 'bg-[#D7EFE2] text-[#0D6845]'
+                                ? 'bg-[#EBF4FC] text-[#105E9A]'
                                 : req.status === 'rejected'
                                 ? 'bg-red-100 text-red-800'
                                 : 'bg-amber-200 text-amber-950'
@@ -1690,14 +1690,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       </div>
 
                       {req.receiptImageUrl && (
-                        <div className="rounded-xl overflow-hidden border border-[#CBE4D6] bg-white p-2 space-y-1.5">
+                        <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2 space-y-1.5">
                           <div className="text-[10.5px] font-bold text-gray-500 flex items-center justify-between px-1">
                             <span>Payment Screenshot</span>
                             <a
                               href={req.receiptImageUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[#0E9F6E] underline font-extrabold"
+                              className="text-[#1673B8] underline font-extrabold"
                             >
                               Open Full Slip ↗
                             </a>
@@ -1714,7 +1714,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         <button
                           type="button"
                           onClick={() => onVerifyPayment(req, 'verified')}
-                          className="py-2.5 px-3 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                          className="py-2.5 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs"
                         >
                           <Check className="w-4 h-4 stroke-[2.5]" />
                           <span>
@@ -1750,16 +1750,16 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             </div>
 
             {/* SECTION B: ALL REGISTERED USERS & ACTIVITY MONITOR */}
-            <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#ECF4EF] pb-3">
+            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#D2DEEA] pb-3">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#0F291E] flex items-center gap-2">
-                    <Users className="w-5 h-5 text-[#0E9F6E]" />
+                  <h2 className="text-lg font-extrabold text-[#1A2138] flex items-center gap-2">
+                    <Users className="w-5 h-5 text-[#1673B8]" />
                     <span>
                       All Users &amp; Activity Monitor ({filteredUsersList.length})
                     </span>
                   </h2>
-                  <p className="text-xs text-[#5C7267] font-medium">
+                  <p className="text-xs text-[#4A5568] font-medium">
                     Monitor user profiles, CVs, visibility settings, and
                     Accept/Premium, Reject/Free, or Remove any user.
                   </p>
@@ -1767,13 +1767,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                 {/* Search Box */}
                 <div className="relative w-full sm:w-64">
-                  <Search className="w-4 h-4 text-[#5C7267] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-[#4A5568] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
                     placeholder="Search name, email, city, role..."
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                   />
                 </div>
               </div>
@@ -1804,8 +1804,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     onClick={() => setUserFilter(f.id)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 cursor-pointer transition-colors ${
                       userFilter === f.id
-                        ? 'bg-[#0E9F6E] text-white'
-                        : 'bg-[#E3F3EA] text-[#0F291E] hover:bg-[#CFEAD9]'
+                        ? 'bg-[#1673B8] text-white'
+                        : 'bg-[#EBF4FC] text-[#1A2138] hover:bg-[#DCE9F6]'
                     }`}
                   >
                     {f.label}
@@ -1815,7 +1815,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
               {/* Users List */}
               {filteredUsersList.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-[#F4FAF7] border border-[#D4E9DF] text-center text-xs text-[#5C7267] font-semibold">
+                <div className="p-8 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-center text-xs text-[#4A5568] font-semibold">
                   No users match the current filter.
                 </div>
               ) : (
@@ -1842,11 +1842,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     return (
                       <div
                         key={u.uid}
-                        className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] hover:border-[#0E9F6E] transition-all space-y-3"
+                        className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] transition-all space-y-3"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-[#13422B] text-white font-extrabold text-base flex items-center justify-center shrink-0 overflow-hidden border border-emerald-200">
+                            <div className="w-12 h-12 rounded-2xl bg-[#1A2138] text-white font-extrabold text-base flex items-center justify-center shrink-0 overflow-hidden border border-[#D2DEEA]">
                               {u.profilePicUrl || u.profilePhotoUrl ? (
                                 <img
                                   src={u.profilePicUrl || u.profilePhotoUrl}
@@ -1860,13 +1860,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                             <div className="space-y-0.5">
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <h3 className="text-sm font-extrabold text-[#0F291E]">
+                                <h3 className="text-sm font-extrabold text-[#1A2138]">
                                   {u.name}
                                 </h3>
                                 <span
                                   className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                                     isPremium
-                                      ? 'bg-[#D7EFE2] text-[#0D6845]'
+                                      ? 'bg-[#EBF4FC] text-[#105E9A]'
                                       : 'bg-gray-200 text-gray-700'
                                   }`}
                                 >
@@ -1884,14 +1884,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                 )}
                               </div>
 
-                              <p className="text-xs font-bold text-[#0E9F6E]">
+                              <p className="text-xs font-bold text-[#1673B8]">
                                 {u.title ||
                                   u.currentRole ||
                                   'Food Safety & Quality Specialist'}
                                 {u.company ? ` • ${u.company}` : ''}
                               </p>
 
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#5C7267] font-medium">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#4A5568] font-medium">
                                 {u.email && <span>✉ {u.email}</span>}
                                 {u.phone && <span>📞 {u.phone}</span>}
                                 {u.location && <span>📍 {u.location}</span>}
@@ -1905,7 +1905,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onToggleUserPremium(u, true)}
-                                className="px-3 py-1.5 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                               >
                                 <UserCheck className="w-3.5 h-3.5" />
                                 <span>Accept / Make Premium</span>
@@ -1926,7 +1926,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               onClick={() =>
                                 setExpandedUserUid(isExpanded ? null : u.uid)
                               }
-                              className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#E3F3EA] border border-[#CBE4D6] text-[#0F291E] text-xs font-extrabold cursor-pointer"
+                              className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] text-xs font-extrabold cursor-pointer"
                             >
                               {isExpanded ? 'Hide Activity' : 'View Activity'}
                             </button>
@@ -1966,21 +1966,21 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         </div>
 
                         {/* Activity Pills Row */}
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#E2F2E9] text-[11px] font-bold">
-                          <span className="px-2.5 py-0.5 rounded-md bg-white border border-[#D4E9DF] text-[#0F291E]">
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#D2DEEA] text-[11px] font-bold">
+                          <span className="px-2.5 py-0.5 rounded-md bg-white border border-[#D2DEEA] text-[#1A2138]">
                             Education: {eduCount}
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-md bg-white border border-[#D4E9DF] text-[#0F291E]">
+                          <span className="px-2.5 py-0.5 rounded-md bg-white border border-[#D2DEEA] text-[#1A2138]">
                             Experience: {expCount}
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-md bg-white border border-[#D4E9DF] text-[#0F291E]">
+                          <span className="px-2.5 py-0.5 rounded-md bg-white border border-[#D2DEEA] text-[#1A2138]">
                             Trainings: {certCount}
                           </span>
                           <span
                             className={`px-2.5 py-0.5 rounded-md ${
                               u.hireMe
-                                ? 'bg-[#D7EFE2] text-[#0D6845]'
-                                : 'bg-white border border-[#D4E9DF] text-gray-500'
+                                ? 'bg-[#EBF4FC] text-[#105E9A]'
+                                : 'bg-white border border-[#D2DEEA] text-gray-500'
                             }`}
                           >
                             Hire Me: {u.hireMe ? 'ON' : 'OFF'}
@@ -1991,7 +1991,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               download={u.cvFileName || `${u.name}_CV.pdf`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-2.5 py-0.5 rounded-md bg-[#0E9F6E] text-white inline-flex items-center gap-1"
+                              className="px-2.5 py-0.5 rounded-md bg-[#1673B8] text-white inline-flex items-center gap-1"
                             >
                               <FileText className="w-3 h-3" />
                               <span>View / Download CV</span>
@@ -2015,8 +2015,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                         {/* Expanded User Activity & Full Profile Details */}
                         {isExpanded && (
-                          <div className="p-3.5 rounded-xl bg-white border border-[#CBE4D6] space-y-2 text-xs">
-                            <div className="font-extrabold text-[#0F291E]">
+                          <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA] space-y-2 text-xs">
+                            <div className="font-extrabold text-[#1A2138]">
                               Full User Activity &amp; Profile Details
                             </div>
                             {u.bio && (
@@ -2065,17 +2065,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             {/* 1-BOX JOB PASTE FORM */}
             <form
               onSubmit={handleSubmitQuickJob}
-              className="bg-white border-2 border-[#0E9F6E] rounded-[26px] p-5 shadow-sm space-y-4"
+              className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-4"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-extrabold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
                     Simple 1-Box Job Publisher
                   </span>
-                  <h2 className="text-lg font-extrabold text-[#0F291E] mt-1">
+                  <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
                     Paste Full Job Post &amp; Select Category
                   </h2>
-                  <p className="text-xs text-[#5C7267] font-medium">
+                  <p className="text-xs text-[#4A5568] font-medium">
                     No separate fields needed! Just choose the category, paste
                     the complete job details in one box below, and click Share.
                     It will automatically publish with today&apos;s date (
@@ -2085,12 +2085,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
 
               {/* STEP 1: DYNAMIC JOB TAGS (Auto-Create from Job Title OR Create Custom Tag OR Pick Tag) */}
-              <div className="space-y-3 p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6]">
+              <div className="space-y-3 p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <label className="block text-xs font-extrabold text-[#0F291E]">
+                  <label className="block text-xs font-extrabold text-[#1A2138]">
                     1. Job Tag / Category (Auto-Created from Job Title or Create Custom Tag):
                   </label>
-                  <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#0D6845] cursor-pointer select-none">
+                  <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#105E9A] cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={useAutoTitleTag}
@@ -2101,7 +2101,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           setJobCategory(autoDetectedJobTitleTag);
                         }
                       }}
-                      className="w-3.5 h-3.5 accent-[#0E9F6E] rounded cursor-pointer"
+                      className="w-3.5 h-3.5 accent-[#1673B8] rounded cursor-pointer"
                     />
                     <span>Auto-Create Tag from Job Title</span>
                   </label>
@@ -2109,10 +2109,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                 {/* Live Auto-Detected Job Title Tag Preview */}
                 {autoDetectedJobTitleTag && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#D7EFE2] border border-[#0E9F6E]/40 text-xs">
-                    <div className="font-bold text-[#0F291E]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#EBF4FC] border border-[#1673B8]/40 text-xs">
+                    <div className="font-bold text-[#1A2138]">
                       Auto-Detected Tag from Job Title:{' '}
-                      <span className="px-2 py-0.5 rounded-lg bg-[#0E9F6E] text-white font-extrabold">
+                      <span className="px-2 py-0.5 rounded-lg bg-[#1673B8] text-white font-extrabold">
                         {autoDetectedJobTitleTag}
                       </span>
                     </div>
@@ -2123,7 +2123,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         setCustomJobTagInput('');
                         setJobCategory(autoDetectedJobTitleTag);
                       }}
-                      className="text-[11px] font-extrabold text-[#0D6845] underline cursor-pointer"
+                      className="text-[11px] font-extrabold text-[#105E9A] underline cursor-pointer"
                     >
                       {useAutoTitleTag && !customJobTagInput.trim()
                         ? 'Active ✓'
@@ -2145,7 +2145,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       }
                     }}
                     placeholder="Or type / create any new custom tag (e.g. Dairy QA, Regulatory Affairs, Supply Chain)..."
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E] focus:outline-none focus:border-[#0E9F6E]"
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                   />
                   <button
                     type="button"
@@ -2160,7 +2160,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       setCustomJobTagInput('');
                       onSetBanner(`Custom Tag "${clean}" created and selected!`);
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-[#13422B] hover:bg-[#0E9F6E] text-white text-xs font-extrabold shrink-0 cursor-pointer transition-colors flex items-center justify-center gap-1"
+                    className="px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold shrink-0 cursor-pointer transition-colors flex items-center justify-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Create Tag</span>
@@ -2169,9 +2169,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                 {/* Selectable Tag Pills (Existing + Custom + Auto-Detected) */}
                 <div className="space-y-1">
-                  <span className="block text-[10.5px] font-bold text-[#5C7267]">
+                  <span className="block text-[10.5px] font-bold text-[#4A5568]">
                     Or click any tag below (Selected:{' '}
-                    <strong className="text-[#0E9F6E]">
+                    <strong className="text-[#1673B8]">
                       {customJobTagInput.trim() ||
                         (useAutoTitleTag && autoDetectedJobTitleTag
                           ? autoDetectedJobTitleTag
@@ -2198,8 +2198,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           }}
                           className={`py-1.5 px-3 rounded-xl text-xs font-extrabold border cursor-pointer transition-all ${
                             isSelected
-                              ? 'bg-[#0E9F6E] text-white border-[#0E9F6E] shadow-xs'
-                              : 'bg-white text-[#0F291E] border-[#CBE4D6] hover:bg-[#E3F3EA]'
+                              ? 'bg-[#1673B8] text-white border-[#1673B8] shadow-xs'
+                              : 'bg-white text-[#1A2138] border-[#D2DEEA] hover:bg-[#EBF4FC]'
                           }`}
                         >
                           {cat}
@@ -2213,11 +2213,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               {/* STEP 2: SINGLE BOX TO PASTE FULL JOB */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-extrabold text-[#0F291E]">
+                  <label className="block text-xs font-extrabold text-[#1A2138]">
                     2. Paste Complete Job Announcement Here (1st line becomes
                     Headline &amp; Auto-Creates Tag):
                   </label>
-                  <span className="text-[11px] font-bold text-[#0E9F6E]">
+                  <span className="text-[11px] font-bold text-[#1673B8]">
                     Auto-Date: {todayFormatted}
                   </span>
                 </div>
@@ -2236,14 +2236,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     }
                   }}
                   placeholder={`Paste the full job post here...\nExample:\nQA / Food Safety Officer — Engro Foods (Lahore, Pakistan)\nRequirement: BS Food Science & Technology, 2+ Years HACCP / ISO 22000 experience.\nSend CV to: careers@company.com or WhatsApp +92 300 1234567`}
-                  className="w-full p-4 rounded-2xl bg-[#F4FAF7] border-[1.5px] border-[#9BCAB0] focus:border-[#0E9F6E] focus:bg-white text-xs sm:text-sm font-medium text-[#0F291E] leading-relaxed focus:outline-none"
+                  className="w-full p-4 rounded-2xl bg-[#F0F6FC] border-[1.5px] border-[#94B8D7] focus:border-[#1673B8] focus:bg-white text-xs sm:text-sm font-medium text-[#1A2138] leading-relaxed focus:outline-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isPostingJob || !jobPasteText.trim()}
-                className="w-full py-3.5 px-5 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] disabled:opacity-50 text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>
@@ -2260,13 +2260,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             </form>
 
             {/* MANAGE / REMOVE EXISTING JOBS */}
-            <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div>
-                  <h3 className="text-base font-extrabold text-[#0F291E]">
+                  <h3 className="text-base font-extrabold text-[#1A2138]">
                     Live Posted Jobs ({filteredAdminJobs.length})
                   </h3>
-                  <p className="text-xs text-[#5C7267]">
+                  <p className="text-xs text-[#4A5568]">
                     Click Remove on any job to delete it immediately from the
                     frontend app.
                   </p>
@@ -2288,8 +2288,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       onClick={() => setJobFilterCat(c)}
                       className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer ${
                         jobFilterCat === c
-                          ? 'bg-[#0E9F6E] text-white'
-                          : 'bg-[#E3F3EA] text-[#0F291E]'
+                          ? 'bg-[#1673B8] text-white'
+                          : 'bg-[#EBF4FC] text-[#1A2138]'
                       }`}
                     >
                       {c}
@@ -2307,26 +2307,26 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   {filteredAdminJobs.map((job) => (
                     <div
                       key={job.id}
-                      className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] flex items-start justify-between gap-3"
+                      className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start justify-between gap-3"
                     >
                       <div className="space-y-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[10.5px] font-extrabold">
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
                             {job.category || job.specialization}
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#CBE4D6] text-[#5C7267] text-[10.5px] font-bold">
+                          <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10.5px] font-bold">
                             Posted: {job.postedAt || todayFormatted}
                           </span>
                           {job.country && (
-                            <span className="text-[11px] font-bold text-[#0E9F6E]">
+                            <span className="text-[11px] font-bold text-[#1673B8]">
                               • {job.country}
                             </span>
                           )}
                         </div>
-                        <h4 className="text-sm font-extrabold text-[#0F291E] leading-snug">
+                        <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug">
                           {job.title}
                         </h4>
-                        <p className="text-xs text-[#5C7267] line-clamp-2 whitespace-pre-line">
+                        <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line">
                           {job.description}
                         </p>
                       </div>
@@ -2355,17 +2355,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             {/* 1-BOX SCHOLARSHIP PASTE FORM */}
             <form
               onSubmit={handleSubmitQuickScholarship}
-              className="bg-white border-2 border-[#0E9F6E] rounded-[26px] p-5 shadow-sm space-y-4"
+              className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-4"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-extrabold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
                     Simple 1-Box Scholarship Publisher
                   </span>
-                  <h2 className="text-lg font-extrabold text-[#0F291E] mt-1">
+                  <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
                     Paste Full Scholarship Post &amp; Select Category
                   </h2>
-                  <p className="text-xs text-[#5C7267] font-medium">
+                  <p className="text-xs text-[#4A5568] font-medium">
                     Choose the scholarship category, paste the entire
                     scholarship announcement in one box below, and click Share.
                     It publishes immediately with today&apos;s date (
@@ -2376,7 +2376,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
               {/* STEP 1: CHOOSE SCHOLARSHIP CATEGORY */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-extrabold text-[#0F291E]">
+                <label className="block text-xs font-extrabold text-[#1A2138]">
                   1. Select Scholarship Category:
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -2388,8 +2388,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         onClick={() => setSchCategory(cat)}
                         className={`py-2.5 px-3 rounded-xl text-xs font-extrabold border cursor-pointer transition-all ${
                           schCategory === cat
-                            ? 'bg-[#0E9F6E] text-white border-[#0E9F6E] shadow-xs'
-                            : 'bg-[#F4FAF7] text-[#0F291E] border-[#CBE4D6] hover:bg-[#E3F3EA]'
+                            ? 'bg-[#1673B8] text-white border-[#1673B8] shadow-xs'
+                            : 'bg-[#F0F6FC] text-[#1A2138] border-[#D2DEEA] hover:bg-[#EBF4FC]'
                         }`}
                       >
                         {cat}
@@ -2402,11 +2402,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               {/* STEP 2: SINGLE BOX TO PASTE FULL SCHOLARSHIP */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-extrabold text-[#0F291E]">
+                  <label className="block text-xs font-extrabold text-[#1A2138]">
                     2. Paste Complete Scholarship Details Here (1st line becomes
                     Headline):
                   </label>
-                  <span className="text-[11px] font-bold text-[#0E9F6E]">
+                  <span className="text-[11px] font-bold text-[#1673B8]">
                     Auto-Date: {todayFormatted}
                   </span>
                 </div>
@@ -2416,14 +2416,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   value={schPasteText}
                   onChange={(e) => setSchPasteText(e.target.value)}
                   placeholder={`Paste the full scholarship details here...\nExample:\nErasmus Mundus MSc Food Innovation Scholarship (Europe)\nFully funded fellowship for BS Food Science & Technology graduates.\nApply online at: https://example.org or email admissions@university.edu`}
-                  className="w-full p-4 rounded-2xl bg-[#F4FAF7] border-[1.5px] border-[#9BCAB0] focus:border-[#0E9F6E] focus:bg-white text-xs sm:text-sm font-medium text-[#0F291E] leading-relaxed focus:outline-none"
+                  className="w-full p-4 rounded-2xl bg-[#F0F6FC] border-[1.5px] border-[#94B8D7] focus:border-[#1673B8] focus:bg-white text-xs sm:text-sm font-medium text-[#1A2138] leading-relaxed focus:outline-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isPostingSch || !schPasteText.trim()}
-                className="w-full py-3.5 px-5 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] disabled:opacity-50 text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>
@@ -2435,13 +2435,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             </form>
 
             {/* MANAGE / REMOVE EXISTING SCHOLARSHIPS */}
-            <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div>
-                  <h3 className="text-base font-extrabold text-[#0F291E]">
+                  <h3 className="text-base font-extrabold text-[#1A2138]">
                     Live Posted Scholarships ({filteredAdminScholarships.length})
                   </h3>
-                  <p className="text-xs text-[#5C7267]">
+                  <p className="text-xs text-[#4A5568]">
                     Click Remove on any scholarship to delete it immediately
                     from the frontend app.
                   </p>
@@ -2456,8 +2456,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         onClick={() => setSchFilterCat(c)}
                         className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer ${
                           schFilterCat === c
-                            ? 'bg-[#0E9F6E] text-white'
-                            : 'bg-[#E3F3EA] text-[#0F291E]'
+                            ? 'bg-[#1673B8] text-white'
+                            : 'bg-[#EBF4FC] text-[#1A2138]'
                         }`}
                       >
                         {c}
@@ -2477,26 +2477,26 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   {filteredAdminScholarships.map((sch) => (
                     <div
                       key={sch.id}
-                      className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] flex items-start justify-between gap-3"
+                      className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start justify-between gap-3"
                     >
                       <div className="space-y-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[10.5px] font-extrabold">
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
                             {sch.fundingType}
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#CBE4D6] text-[#5C7267] text-[10.5px] font-bold">
+                          <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10.5px] font-bold">
                             Date: {sch.deadline || todayFormatted}
                           </span>
                           {sch.country && (
-                            <span className="text-[11px] font-bold text-[#0E9F6E]">
+                            <span className="text-[11px] font-bold text-[#1673B8]">
                               • {sch.country}
                             </span>
                           )}
                         </div>
-                        <h4 className="text-sm font-extrabold text-[#0F291E] leading-snug">
+                        <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug">
                           {sch.title}
                         </h4>
-                        <p className="text-xs text-[#5C7267] line-clamp-2 whitespace-pre-line">
+                        <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line">
                           {sch.description}
                         </p>
                       </div>
@@ -2525,18 +2525,18 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             {/* ADMIN DIRECT PORTRAIT CERTIFICATE GENERATOR (WITHOUT EXAM / WITHOUT MODULE STUDY — ANY COURSE OR CUSTOM TOPIC) */}
             <form
               onSubmit={handleAdminDirectGenerateAndIssue}
-              className="bg-white border-2 border-[#0D5C3A] rounded-[26px] p-5 sm:p-6 shadow-md space-y-4"
+              className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 sm:p-6 shadow-md space-y-4"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div>
-                  <span className="px-3 py-1 rounded-full bg-[#0D5C3A] text-amber-300 text-[11px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5" />
+                  <span className="px-3 py-1 rounded-full bg-[#1673B8] text-white text-[11px] font-black uppercase tracking-wider inline-flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-amber-300" />
                     Direct Portrait PDF Certificate Generator (Without Exam / Study)
                   </span>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-[#0F291E] mt-1.5">
-                    Issue Instant Portrait Certificate (Highfield / SGS / Bureau Veritas Style) on Any Course or Custom Topic
+                  <h2 className="text-lg sm:text-xl font-extrabold text-[#1A2138] mt-1.5">
+                    Issue Instant Portrait Certificate (Official Certificate of Achievement Pattern) on Any Course or Custom Topic
                   </h2>
-                  <p className="text-xs text-[#5C7267] font-medium leading-relaxed">
+                  <p className="text-xs text-[#4A5568] font-medium leading-relaxed">
                     Admin kisi bhi candidate ya member ko bina exam diye aur bina modules parhay 14 Accredited Courses may say kisi par bhi—ya kisi bhi Custom Topic par—<strong>Portrait A4 PDF Certificate</strong> bana kar day sakta hy. Certificate foran PDF may download hoga aur Online Verification Portal par live verify hoga.
                   </p>
                 </div>
@@ -2545,13 +2545,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               {/* Row 1: Optional Existing Member Picker + Recipient Full Name + Recipient Email */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Auto-Fill from Existing Member (Optional)
                   </label>
                   <select
                     value={directSelectedUserUid}
                     onChange={(e) => handleSelectExistingMemberForCert(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                   >
                     <option value="">-- External Candidate / Type Manually --</option>
                     {users.map((u) => (
@@ -2563,7 +2563,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Recipient Full Name (Printed on Certificate) *
                   </label>
                   <input
@@ -2572,12 +2572,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     value={directRecipientName}
                     onChange={(e) => setDirectRecipientName(e.target.value)}
                     placeholder="e.g., Muhammad Bilal Khan"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Recipient Email (Optional · For Account &amp; Portal Search)
                   </label>
                   <input
@@ -2585,15 +2585,15 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     value={directRecipientEmail}
                     onChange={(e) => setDirectRecipientEmail(e.target.value)}
                     placeholder="e.g., candidate@company.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                   />
                 </div>
               </div>
 
               {/* Row 2: Mode Selector (Select from 14 Courses vs. Any Custom Topic) */}
-              <div className="p-3.5 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
+              <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-extrabold text-[#0F291E]">
+                  <span className="text-xs font-extrabold text-[#1A2138]">
                     Select Certification Topic Mode:
                   </span>
                   <div className="flex flex-wrap gap-2">
@@ -2602,8 +2602,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       onClick={() => setDirectTopicMode('catalog')}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition ${
                         directTopicMode === 'catalog'
-                          ? 'bg-[#0D5C3A] text-white shadow-xs'
-                          : 'bg-white text-[#0F291E] border border-[#CBE4D6]'
+                          ? 'bg-[#1673B8] text-white shadow-xs'
+                          : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
                       }`}
                     >
                       Choose from 14 Accredited Courses
@@ -2613,8 +2613,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       onClick={() => setDirectTopicMode('custom')}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition ${
                         directTopicMode === 'custom'
-                          ? 'bg-[#0D5C3A] text-white shadow-xs'
-                          : 'bg-white text-[#0F291E] border border-[#CBE4D6]'
+                          ? 'bg-[#1673B8] text-white shadow-xs'
+                          : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
                       }`}
                     >
                       Enter Any Custom Topic / Qualification Title
@@ -2625,7 +2625,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 {directTopicMode === 'catalog' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                         Select Accredited Course (14 International Trainings) *
                       </label>
                       <select
@@ -2639,7 +2639,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                             setDirectAccreditationStd(found.accreditationStandard);
                           }
                         }}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                       >
                         {INTERNATIONAL_TRAINING_COURSES.map((c) => (
                           <option key={c.id} value={c.id}>
@@ -2649,21 +2649,21 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                         Accreditation Standard / Benchmark (Printed on Certificate)
                       </label>
                       <input
                         type="text"
                         value={directAccreditationStd}
                         onChange={(e) => setDirectAccreditationStd(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                       />
                     </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                         Custom Certificate Topic / Qualification Title *
                       </label>
                       <input
@@ -2672,11 +2672,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         value={directCustomTopicTitle}
                         onChange={(e) => setDirectCustomTopicTitle(e.target.value)}
                         placeholder="e.g., ISO 22000:2018 Lead Auditor / Halal Food Standards"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                         Custom Qualification Code
                       </label>
                       <input
@@ -2684,11 +2684,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         value={directCustomCourseCode}
                         onChange={(e) => setDirectCustomCourseCode(e.target.value)}
                         placeholder="e.g., FS-ISO22K-LA"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                         Accreditation Benchmark
                       </label>
                       <input
@@ -2696,7 +2696,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         value={directAccreditationStd}
                         onChange={(e) => setDirectAccreditationStd(e.target.value)}
                         placeholder="e.g., ISO 19011 & GFSI International Standard"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                       />
                     </div>
                   </div>
@@ -2706,7 +2706,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               {/* Row 3: Score / Standing, Issue Date, Optional Custom Certificate ID */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Score % &amp; Standing (60–74% Pass · 75–100% Distinction)
                   </label>
                   <div className="flex items-center gap-2">
@@ -2716,13 +2716,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       max={100}
                       value={directScorePct}
                       onChange={(e) => setDirectScorePct(Number(e.target.value))}
-                      className="w-24 px-3 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-black text-[#0F291E]"
+                      className="w-24 px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-black text-[#1A2138]"
                     />
                     <span
                       className={`px-2.5 py-1.5 rounded-xl text-[11px] font-black ${
                         directScorePct >= 75
                           ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                          : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                          : 'bg-[#EBF4FC] text-[#105E9A] border border-[#D2DEEA]'
                       }`}
                     >
                       {directScorePct >= 75
@@ -2733,7 +2733,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Certificate Issue Date
                   </label>
                   <input
@@ -2741,12 +2741,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     value={directIssueDate}
                     onChange={(e) => setDirectIssueDate(e.target.value)}
                     placeholder="e.g., 07 Nov 2026"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-bold text-[#0F291E]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Certificate ID (Leave blank to Auto-Generate)
                   </label>
                   <input
@@ -2754,7 +2754,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     value={directCustomCertNumber}
                     onChange={(e) => setDirectCustomCertNumber(e.target.value)}
                     placeholder="Auto: FSP-XXXX-123456"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#9BCAB0] text-xs font-mono font-bold text-[#0F291E]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-mono font-bold text-[#1A2138]"
                   />
                 </div>
               </div>
@@ -2762,7 +2762,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               <button
                 type="submit"
                 disabled={isIssuingDirectCert}
-                className="w-full py-3.5 px-5 rounded-2xl bg-[#0D5C3A] hover:bg-emerald-950 disabled:opacity-50 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 cursor-pointer shadow-sm transition"
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 cursor-pointer shadow-sm transition"
               >
                 <Download className="w-4 h-4 text-amber-300" />
                 <span>
@@ -2774,12 +2774,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
               {/* Live List of All Issued Certificates in Registry with Re-Download & Revoke */}
               {certificates.length > 0 && (
-                <div className="pt-3 border-t border-[#ECF4EF] space-y-2.5">
+                <div className="pt-3 border-t border-[#D2DEEA] space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-[#0F291E]">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-[#1A2138]">
                       Issued &amp; Live Verifiable Certificates Registry ({certificates.length})
                     </h3>
-                    <span className="text-[11px] font-bold text-[#0E9F6E]">
+                    <span className="text-[11px] font-bold text-[#1673B8]">
                       Instant Portrait PDF Re-Download &amp; Verification Control
                     </span>
                   </div>
@@ -2795,25 +2795,25 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       return (
                         <div
                           key={cert.id}
-                          className="p-3 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] flex flex-wrap items-center justify-between gap-2 text-xs"
+                          className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex flex-wrap items-center justify-between gap-2 text-xs"
                         >
                           <div className="space-y-0.5">
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="font-mono font-black text-[#0D5C3A] bg-white px-2 py-0.5 rounded border border-[#CBE4D6]">
+                              <span className="font-mono font-black text-[#1673B8] bg-white px-2 py-0.5 rounded border border-[#D2DEEA]">
                                 {cert.certificateNumber}
                               </span>
-                              <span className="font-extrabold text-[#0F291E]">
+                              <span className="font-extrabold text-[#1A2138]">
                                 {cert.recipientName}
                               </span>
                               {cert.recipientEmail && (
-                                <span className="text-[#5C7267]">
+                                <span className="text-[#4A5568]">
                                   ({cert.recipientEmail})
                                 </span>
                               )}
                             </div>
-                            <p className="font-bold text-[#0D6845]">
+                            <p className="font-bold text-[#105E9A]">
                               {cert.trainingTitle}{' '}
-                              <span className="text-[#5C7267] font-medium">
+                              <span className="text-[#4A5568] font-medium">
                                 • {scoreVal}% ({isDist ? 'Distinction' : 'Pass'}) • Issued: {cert.issueDate}
                               </span>
                             </p>
@@ -2842,7 +2842,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                   issuedByMode: 'admin_direct'
                                 })
                               }
-                              className="px-3 py-1.5 rounded-xl bg-[#0D5C3A] hover:bg-emerald-900 text-white font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                              className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold inline-flex items-center gap-1 cursor-pointer"
                             >
                               <Download className="w-3.5 h-3.5" />
                               <span>Portrait PDF</span>
@@ -2868,15 +2868,15 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
             {/* CERTIFICATE DOWNLOAD APPROVAL REQUESTS (Rs. 1,000 PER CERTIFICATE) */}
             <div className="bg-white border-2 border-amber-500 rounded-[26px] p-5 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div>
                   <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold">
                     Rs. 1,000 Certificate Download &amp; Live Verification Requests
                   </span>
-                  <h2 className="text-lg font-extrabold text-[#0F291E] mt-1">
+                  <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
                     Approve / Allow User Certificate Downloads
                   </h2>
-                  <p className="text-xs text-[#5C7267] font-medium">
+                  <p className="text-xs text-[#4A5568] font-medium">
                     Jab user 40-MCQ exam pass kar k Rs. 1,000 certificate fee submit karta hy, uski request yahan ati hy. Jab ap payment confirm kar k <strong>Allow Certificate Download</strong> par click karengay, tab user ka PDF Certificate download unlock hoga aur website portal par live verify hoga.
                   </p>
                 </div>
@@ -2888,7 +2888,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   r.subscriptionPlan === 'certificate_unlock' ||
                   r.amount?.toLowerCase().includes('certificate')
               ).length === 0 ? (
-                <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold text-[#5C7267] text-center">
+                <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold text-[#4A5568] text-center">
                   Abhi koi Rs. 1,000 Certificate Download request pending nahi hy.
                 </div>
               ) : (
@@ -2906,15 +2906,15 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         className={`p-4 rounded-2xl border space-y-2.5 ${
                           req.status === 'pending'
                             ? 'bg-[#FFFDF5] border-2 border-[#F59E0B]'
-                            : 'bg-[#F4FAF7] border-[#CBE4D6]'
+                            : 'bg-[#F0F6FC] border-[#D2DEEA]'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <div className="text-sm font-extrabold text-[#0F291E]">
+                            <div className="text-sm font-extrabold text-[#1A2138]">
                               {req.userName} ({req.userEmail})
                             </div>
-                            <div className="text-xs font-extrabold text-[#0D6845] mt-0.5">
+                            <div className="text-xs font-extrabold text-[#105E9A] mt-0.5">
                               Course: {req.certificateCourseTitle || req.notes}
                             </div>
                             {req.certificateNumber && (
@@ -2922,14 +2922,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                 Certificate ID: {req.certificateNumber}
                               </div>
                             )}
-                            <div className="text-xs text-[#5C7267] mt-0.5">
+                            <div className="text-xs text-[#4A5568] mt-0.5">
                               {req.paymentMethod} • {req.amount} • TID: {req.transactionId}
                             </div>
                           </div>
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
                               req.status === 'verified'
-                                ? 'bg-[#D7EFE2] text-[#0D6845]'
+                                ? 'bg-[#EBF4FC] text-[#105E9A]'
                                 : req.status === 'rejected'
                                 ? 'bg-red-100 text-red-800'
                                 : 'bg-amber-200 text-amber-950'
@@ -2942,7 +2942,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         </div>
 
                         {req.receiptImageUrl && (
-                          <div className="rounded-xl overflow-hidden border border-[#CBE4D6] bg-white p-2">
+                          <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2">
                             <img
                               src={req.receiptImageUrl}
                               alt="Certificate Fee Receipt"
@@ -2955,7 +2955,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           <button
                             type="button"
                             onClick={() => onVerifyPayment(req, 'verified')}
-                            className="py-2 px-3 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="py-2 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <Check className="w-4 h-4" />
                             <span>Allow Certificate Download</span>
@@ -2978,23 +2978,23 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             {/* ADD NEW TRAINING FORM */}
             <form
               onSubmit={handleCreateNewTraining}
-              className="bg-white border-2 border-[#0E9F6E] rounded-[26px] p-5 shadow-sm space-y-4"
+              className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-4"
             >
-              <div className="border-b border-[#ECF4EF] pb-3">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-extrabold">
+              <div className="border-b border-[#D2DEEA] pb-3">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
                   Add New Accredited Training Course
                 </span>
-                <h2 className="text-lg font-extrabold text-[#0F291E] mt-1">
+                <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
                   Add International Training &amp; Set Course Details
                 </h2>
-                <p className="text-xs text-[#5C7267] font-medium">
+                <p className="text-xs text-[#4A5568] font-medium">
                   Add a new training to the International Certification catalog or manage all 14 courses below.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Training Title *
                   </label>
                   <input
@@ -3003,12 +3003,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     value={trTitle}
                     onChange={(e) => setTrTitle(e.target.value)}
                     placeholder="e.g. Food Safety Certified / HACCP Level 4"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Certificate / Course Fee *
                   </label>
                   <input
@@ -3017,12 +3017,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     value={trFees}
                     onChange={(e) => setTrFees(e.target.value)}
                     placeholder="Free Study & Exam · Rs. 1,000 Certificate"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Duration &amp; Modules
                   </label>
                   <input
@@ -3030,7 +3030,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     value={trDuration}
                     onChange={(e) => setTrDuration(e.target.value)}
                     placeholder="e.g. 14 Guided Hours · 5 Modules"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold"
                   />
                 </div>
               </div>
@@ -3040,13 +3040,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 value={trDesc}
                 onChange={(e) => setTrDesc(e.target.value)}
                 placeholder="Course overview, syllabus highlights & international certification details..."
-                className="w-full p-3.5 rounded-xl bg-[#F4FAF7] border border-[#CBE4D6] text-xs font-semibold"
+                className="w-full p-3.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold"
               />
 
               <button
                 type="submit"
                 disabled={isSavingTraining || !trTitle.trim()}
-                className="w-full py-3 px-5 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                className="w-full py-3 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>Add Training to Live App</span>
@@ -3054,12 +3054,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             </form>
 
             {/* EDIT TRAINING PRICES, TOGGLE VISIBILITY OR REMOVE TRAININGS */}
-            <div className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs space-y-4">
-              <div className="border-b border-[#ECF4EF] pb-3">
-                <h3 className="text-base font-extrabold text-[#0F291E]">
+            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+              <div className="border-b border-[#D2DEEA] pb-3">
+                <h3 className="text-base font-extrabold text-[#1A2138]">
                   All 14+ Live Trainings — Control Visibility, Edit Prices or Remove ({trainings.length})
                 </h3>
-                <p className="text-xs text-[#5C7267]">
+                <p className="text-xs text-[#4A5568]">
                   Manage every training course from here: edit its fee/duration, toggle Active/Hidden on the frontend app, or remove it.
                 </p>
               </div>
@@ -3078,38 +3078,38 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   return (
                     <div
                       key={tr.id}
-                      className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3"
+                      className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[10.5px] font-extrabold">
+                            <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
                               {tr.category}
                             </span>
                             {tr.standardCode && (
-                              <span className="px-2 py-0.5 rounded-full bg-emerald-900 text-white text-[10px] font-mono font-bold">
+                              <span className="px-2 py-0.5 rounded-full bg-[#1A2138] text-white text-[10px] font-mono font-bold">
                                 {tr.standardCode}
                               </span>
                             )}
                             {tr.subType && (
-                              <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#CBE4D6] text-[#0F291E] text-[10.5px] font-bold">
+                              <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#1A2138] text-[10.5px] font-bold">
                                 {tr.subType}
                               </span>
                             )}
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                                 tr.isActive !== false
-                                  ? 'bg-emerald-100 text-emerald-800'
+                                  ? 'bg-[#EBF4FC] text-[#105E9A]'
                                   : 'bg-slate-200 text-slate-600'
                               }`}
                             >
                               {tr.isActive !== false ? 'ACTIVE ON APP' : 'HIDDEN'}
                             </span>
                           </div>
-                          <h4 className="text-sm font-extrabold text-[#0F291E] mt-1">
+                          <h4 className="text-sm font-extrabold text-[#1A2138] mt-1">
                             {tr.title}
                           </h4>
-                          <p className="text-xs text-[#5C7267] line-clamp-2 mt-0.5">
+                          <p className="text-xs text-[#4A5568] line-clamp-2 mt-0.5">
                             {tr.description}
                           </p>
                         </div>
@@ -3123,7 +3123,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                 isActive: tr.isActive === false ? true : false
                               })
                             }
-                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-[#0F291E] border border-[#CBE4D6] text-xs font-extrabold cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#EBF4FC] text-[#1A2138] border border-[#D2DEEA] text-xs font-extrabold cursor-pointer"
                           >
                             {tr.isActive === false ? 'Show on App' : 'Hide'}
                           </button>
@@ -3139,9 +3139,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       </div>
 
                       {/* INLINE PRICE & DURATION EDITOR */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#E2F2E9] items-end">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#D2DEEA] items-end">
                         <div>
-                          <label className="block text-[11px] font-extrabold text-[#0F291E] mb-1">
+                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                             Course Fee / Price (Live)
                           </label>
                           <input
@@ -3156,12 +3156,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                 }
                               }))
                             }
-                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E]"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-extrabold text-[#0F291E] mb-1">
+                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                             Duration
                           </label>
                           <input
@@ -3176,14 +3176,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                 }
                               }))
                             }
-                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                           />
                         </div>
 
                         <button
                           type="button"
                           onClick={() => handleUpdateCoursePrice(tr)}
-                          className="py-2 px-4 rounded-xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors h-[36px]"
+                          className="py-2 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors h-[36px]"
                         >
                           <Check className="w-4 h-4 stroke-[2.5]" />
                           <span>Save Price &amp; Update Live</span>
@@ -3204,17 +3204,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
           <div className="space-y-5">
             <form
               onSubmit={onSaveStorageConfig}
-              className="bg-white border-2 border-[#0E9F6E] rounded-[26px] p-5 shadow-sm space-y-5"
+              className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-5"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ECF4EF] pb-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3.5">
                 <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#D7EFE2] text-[#0D6845] text-[11px] font-extrabold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
                     Live Payment Gateway Configuration
                   </span>
-                  <h2 className="text-lg font-extrabold text-[#0F291E] mt-1">
+                  <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
                     Modify EasyPaisa, JazzCash, Bank Transfer &amp; Subscription Fees
                   </h2>
-                  <p className="text-xs text-[#5C7267] font-medium">
+                  <p className="text-xs text-[#4A5568] font-medium">
                     Any changes saved here immediately update the payment
                     details shown to all users when purchasing Premium
                     Membership.
@@ -3226,13 +3226,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
 
               {/* SUBSCRIPTION PLAN FEES (Monthly Rs. 100 & Yearly Rs. 900 with Auto-Calculated Discount %) */}
-              <div className="p-4 rounded-2xl bg-[#F4FAF7] border-2 border-[#0E9F6E] space-y-3.5">
+              <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] space-y-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider flex items-center gap-1.5">
                     <Crown className="w-4 h-4 text-[#D97706]" />
                     <span>Premium Package Prices &amp; Auto-Discount Calculator (PKR)</span>
                   </div>
-                  <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#0D6845] cursor-pointer select-none">
+                  <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#105E9A] cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={autoApply25PctYearly}
@@ -3278,7 +3278,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           });
                         }
                       }}
-                      className="w-3.5 h-3.5 accent-[#0E9F6E] rounded cursor-pointer"
+                      className="w-3.5 h-3.5 accent-[#1673B8] rounded cursor-pointer"
                     />
                     <span>Auto-Apply 25% OFF on Yearly When Monthly Changes</span>
                   </label>
@@ -3286,7 +3286,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                       1-Month Subscription Fee (Rs.)
                     </label>
                     <input
@@ -3332,12 +3332,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           }
                         });
                       }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-extrabold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                       Full Year (12 Months) Fee — ({liveYearlyDiscountPct}% Discount) (Rs.)
                     </label>
                     <input
@@ -3382,24 +3382,24 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           }
                         });
                       }}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-extrabold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
                     />
                   </div>
                 </div>
 
                 {/* Live Auto-Calculated Discount Percentage & App Sync Preview */}
-                <div className="p-3.5 rounded-xl bg-white border border-[#9BCAB0] flex flex-wrap items-center justify-between gap-3">
+                <div className="p-3.5 rounded-xl bg-white border border-[#94B8D7] flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-0.5">
-                    <div className="text-xs font-extrabold text-[#0F291E] flex items-center gap-2 flex-wrap">
+                    <div className="text-xs font-extrabold text-[#1A2138] flex items-center gap-2 flex-wrap">
                       <span>Auto-Calculated Yearly Discount:</span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#0E9F6E] text-white text-xs font-extrabold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#1673B8] text-white text-xs font-extrabold">
                         {liveYearlyDiscountPct}% OFF
                       </span>
-                      <span className="text-[#0D6845]">
+                      <span className="text-[#105E9A]">
                         (User Saves Rs. {liveYearlySavingsRs.toLocaleString()} / Year)
                       </span>
                     </div>
-                    <p className="text-[11px] font-semibold text-[#5C7267]">
+                    <p className="text-[11px] font-semibold text-[#4A5568]">
                       Regular 12-Month Cost: Rs. {fullYearBaseFee.toLocaleString()} • Discounted Yearly Price: Rs. {liveYearlyFee.toLocaleString()} • Updates everywhere in the app automatically when saved!
                     </p>
                   </div>
@@ -3451,13 +3451,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
 
               {/* 1. JAZZCASH DETAILS */}
-              <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
-                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+              <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+                <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider">
                   1. JazzCash Account Details
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       JazzCash Account Title
                     </label>
                     <input
@@ -3500,11 +3500,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="e.g. Muneeb Khan"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       JazzCash Account Number
                     </label>
                     <input
@@ -3547,20 +3547,20 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="e.g. 0324-0906384"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* 2. EASYPAISA DETAILS */}
-              <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
-                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+              <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+                <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider">
                   2. EasyPaisa Account Details
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       EasyPaisa Account Title
                     </label>
                     <input
@@ -3603,11 +3603,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="e.g. Muneeb Khan"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       EasyPaisa Account Number
                     </label>
                     <input
@@ -3650,20 +3650,20 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="e.g. 0324-0906384"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* 3. BANK TRANSFER DETAILS */}
-              <div className="p-4 rounded-2xl bg-[#F4FAF7] border border-[#CBE4D6] space-y-3">
-                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider">
+              <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+                <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider">
                   3. Bank Transfer Details
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       Bank Account Title
                     </label>
                     <input
@@ -3705,11 +3705,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="e.g. Muneeb Khan"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       Bank Name
                     </label>
                     <input
@@ -3752,11 +3752,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="e.g. Meezan Bank / Allied Bank"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       Account Number / IBAN
                     </label>
                     <input
@@ -3799,11 +3799,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="e.g. PK36 MEZN 0000 ..."
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       WhatsApp / Contact Number
                     </label>
                     <input
@@ -3846,21 +3846,21 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="e.g. +92 324 0906384"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* 4. OFFICIAL WHATSAPP CHANNEL BUTTON & LINK CONTROL (HOME SCREEN) */}
-              <div className="p-4 rounded-2xl bg-[#F4FAF7] border-2 border-[#0E9F6E] space-y-3">
-                <div className="text-xs font-extrabold text-[#0F291E] uppercase tracking-wider flex items-center gap-1.5">
-                  <MessageSquare className="w-4 h-4 text-[#0E9F6E]" />
+              <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] space-y-3">
+                <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider flex items-center gap-1.5">
+                  <MessageSquare className="w-4 h-4 text-[#1673B8]" />
                   <span>4. Home Screen WhatsApp Channel Link &amp; Button</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       Official WhatsApp Channel URL
                     </label>
                     <input
@@ -3876,11 +3876,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="https://whatsapp.com/channel/..."
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#0F291E] mb-1">
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
                       WhatsApp Button Label on Home Page
                     </label>
                     <input
@@ -3896,7 +3896,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         })
                       }
                       placeholder="Follow WhatsApp Channel"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#9BCAB0] text-xs font-semibold text-[#0F291E]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
                 </div>
@@ -3904,7 +3904,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3.5 px-5 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
               >
                 <Check className="w-4 h-4 stroke-[2.5]" />
                 <span>
@@ -3922,14 +3922,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
           <div className="space-y-4">
             <form
               onSubmit={onSaveStorageConfig}
-              className="bg-white border border-[#CBE4D6] rounded-[24px] p-5 shadow-xs space-y-4"
+              className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#0F291E]">
+                  <h2 className="text-base font-extrabold text-[#1A2138]">
                     Cloud Media Storage &amp; Database Backup
                   </h2>
-                  <p className="text-xs text-[#5C7267]">
+                  <p className="text-xs text-[#4A5568]">
                     Configure how user avatars, CVs, and payment screenshots are
                     stored.
                   </p>
@@ -3937,7 +3937,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 <button
                   type="button"
                   onClick={onExportBackup}
-                  className="px-3.5 py-2 rounded-xl bg-[#13422B] text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download Full JSON Backup</span>
@@ -3954,14 +3954,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   }
                   className={`block p-3.5 rounded-2xl border cursor-pointer ${
                     storageConfig.provider === 'smart-firestore'
-                      ? 'bg-[#F4FAF7] border-2 border-[#0E9F6E]'
+                      ? 'bg-[#F0F6FC] border-2 border-[#1673B8]'
                       : 'bg-white border-gray-200'
                   }`}
                 >
-                  <div className="text-xs font-extrabold text-[#0F291E]">
+                  <div className="text-xs font-extrabold text-[#1A2138]">
                     Tier 1: Smart WebP Compression + Firebase Firestore Vault
                   </div>
-                  <p className="text-[11px] text-[#5C7267] mt-0.5">
+                  <p className="text-[11px] text-[#4A5568] mt-0.5">
                     Automatically compresses images &amp; receipts before
                     storing directly in Firestore.
                   </p>
@@ -3976,14 +3976,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   }
                   className={`block p-3.5 rounded-2xl border cursor-pointer ${
                     storageConfig.provider === 'cloudinary'
-                      ? 'bg-[#F4FAF7] border-2 border-[#0E9F6E]'
+                      ? 'bg-[#F0F6FC] border-2 border-[#1673B8]'
                       : 'bg-white border-gray-200'
                   }`}
                 >
-                  <div className="text-xs font-extrabold text-[#0F291E]">
+                  <div className="text-xs font-extrabold text-[#1A2138]">
                     Tier 2: Cloudinary 25 GB Free Global CDN
                   </div>
-                  <p className="text-[11px] text-[#5C7267] mt-0.5">
+                  <p className="text-[11px] text-[#4A5568] mt-0.5">
                     Uploads media to Cloudinary CDN and stores HTTPS links in
                     Firestore.
                   </p>
@@ -3992,7 +3992,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 rounded-2xl bg-[#0E9F6E] hover:bg-[#059669] text-white text-xs font-extrabold cursor-pointer"
+                className="w-full py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors"
               >
                 Save Cloud Storage Settings
               </button>
@@ -4003,14 +4003,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       </main>
 
       {/* CONSTANT BOTTOM FOOTER IN ADMIN CONTROL PANEL */}
-      <footer className="shrink-0 z-40 bg-white border-t border-[#CBE3D6] px-4 py-2 shadow-[0_-6px_24px_rgba(19,66,43,0.08)]">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5 text-center">
-          <div className="flex items-center gap-3 text-[11px] font-bold text-[#0F291E]">
+      <footer className="shrink-0 z-40 bg-white border-t border-[#D2DEEA] px-4 py-2 shadow-[0_-6px_24px_rgba(22,115,184,0.08)]">
+        <div className="max-w-5xl mx-auto flex items-center justify-center gap-1.5 text-center">
+          <div className="flex items-center gap-3 text-[11px] font-bold text-[#1A2138]">
             <button
               type="button"
               onClick={() => setActiveTab('overview')}
               className={`cursor-pointer ${
-                activeTab === 'overview' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+                activeTab === 'overview' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
               }`}
             >
               Dashboard
@@ -4020,7 +4020,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               type="button"
               onClick={() => setActiveTab('users')}
               className={`cursor-pointer ${
-                activeTab === 'users' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+                activeTab === 'users' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
               }`}
             >
               Users ({stats.totalUsers})
@@ -4030,7 +4030,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               type="button"
               onClick={() => setActiveTab('jobs')}
               className={`cursor-pointer ${
-                activeTab === 'jobs' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+                activeTab === 'jobs' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
               }`}
             >
               Jobs ({jobs.length})
@@ -4040,7 +4040,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               type="button"
               onClick={() => setActiveTab('scholarships')}
               className={`cursor-pointer ${
-                activeTab === 'scholarships' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+                activeTab === 'scholarships' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
               }`}
             >
               Scholarships ({scholarships.length})
@@ -4050,16 +4050,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               type="button"
               onClick={() => setActiveTab('payments')}
               className={`cursor-pointer ${
-                activeTab === 'payments' ? 'text-[#0E9F6E] underline' : 'text-[#5C7267]'
+                activeTab === 'payments' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
               }`}
             >
               Payments
             </button>
           </div>
-          <p className="text-[10.5px] font-medium text-[#5C7267] leading-tight">
-            Developed by{' '}
-            <span className="font-bold text-[#13422B]">Food Specialist</span>
-          </p>
         </div>
       </footer>
     </div>
