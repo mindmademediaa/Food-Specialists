@@ -956,6 +956,7 @@ export default function App() {
               !t.id.startsWith('tr-hf-') &&
               !t.id.startsWith('tr-la-') &&
               !t.id.startsWith('tr-intl-') &&
+              !t.id.startsWith('tr-haccp-level-4') &&
               !t.id.startsWith('course-') &&
               t.category !== 'Highfield' &&
               t.category !== 'Lead Auditor'

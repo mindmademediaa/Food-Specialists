@@ -8,7 +8,6 @@ import {
   HubCommunityThread
 } from '../types/hub';
 import { INITIAL_INTERNATIONAL_TRAININGS } from './internationalTrainingsData';
-import { HACCP_LEVEL_4_HUB_TRAINING } from './haccpLevel4CourseData';
 
 export function makeAvatarSvg(initials: string, bg = '#E2F5E7', text = '#14532D'): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(`
@@ -736,6 +735,6 @@ export const INITIAL_SCHOLARSHIPS: HubScholarship[] = [
   }
 ];
 
-export const INITIAL_TRAININGS: HubTraining[] = [HACCP_LEVEL_4_HUB_TRAINING];
+export const INITIAL_TRAININGS: HubTraining[] = [];
 
 

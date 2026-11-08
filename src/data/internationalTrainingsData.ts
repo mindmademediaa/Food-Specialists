@@ -1,8 +1,4 @@
 import { HubTraining } from '../types/hub';
-import {
-  HACCP_LEVEL_4_MANAGERIAL_COURSE,
-  HACCP_L4_45_EXAM_QUESTIONS
-} from './haccpLevel4CourseData';
 
 export interface CourseStudyModule {
   id: string;
@@ -2115,9 +2111,7 @@ const MODULE_STAGE_PREFIXES = [
   'Module 5 (Corrective Actions, Validation, System Auditing & Regulatory Law)'
 ];
 
-export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = [
-  HACCP_LEVEL_4_MANAGERIAL_COURSE,
-  ...COMPACT_COURSES.map((c) => ({
+export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = COMPACT_COURSES.map((c) => ({
     id: c.id,
     code: c.code,
     title: c.title,
@@ -2177,16 +2171,12 @@ export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = [
       };
     }),
     coreExamPool: c.questions
-  }))
-];
+  }));
 
 /**
- * Generates a full course-specific international examination (45 questions for HACCP Level 4, 40 questions for other courses).
+ * Generates a full 40-question course-specific international examination.
  */
 export function get40CourseExamQuestions(courseId: string): CourseExamMCQ[] {
-  if (courseId === HACCP_LEVEL_4_MANAGERIAL_COURSE.id) {
-    return HACCP_L4_45_EXAM_QUESTIONS;
-  }
 
   const course =
     INTERNATIONAL_TRAINING_COURSES.find((c) => c.id === courseId) ||
