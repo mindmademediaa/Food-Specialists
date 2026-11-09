@@ -69,6 +69,9 @@ import {
   auth,
   signOut,
   onAuthStateChanged,
+  savePersistedAuthUser,
+  loadPersistedAuthUser,
+  clearPersistedAuthUser,
   type User,
   OperationType,
   handleFirestoreError
@@ -397,19 +400,23 @@ const buildSanitizedPublicUser = (fullProfile: HubUser): HubUser => {
 
 export default function App() {
   // 0.5-second (500ms) Startup Splash Screen with FS Portal Logo
-  const [showSplashLogo, setShowSplashLogo] = useState<boolean>(true);
+  const [showSplashLogo, setShowSplashLogo] = useState<boolean>(
+    () => !(auth.currentUser || loadPersistedAuthUser())
+  );
 
   useEffect(() => {
     const splashTimer = setTimeout(() => {
       setShowSplashLogo(false);
-    }, 500);
+    }, 450);
     return () => clearTimeout(splashTimer);
   }, []);
 
-  // Firebase Authentication State (Instant Check — No Slow Blocking Screen)
-  const [authUser, setAuthUser] = useState<User | null>(() => auth.currentUser);
+  // Firebase Authentication State (Persisted across tab switches & reloads)
+  const [authUser, setAuthUser] = useState<User | null>(
+    () => auth.currentUser || loadPersistedAuthUser()
+  );
   const [authLoading, setAuthLoading] = useState<boolean>(
-    () => !auth.currentUser
+    () => !(auth.currentUser || loadPersistedAuthUser())
   );
 
   // Navigation & Route Stack (auto-routes to Trainings Verification Portal if QR code ?verify= is scanned)
@@ -585,9 +592,13 @@ export default function App() {
     // Fast fallback timer so the loading screen never hangs on slow mobile connections
     const fastFallback = setTimeout(() => {
       setAuthLoading(false);
-    }, 400);
+    }, 1200);
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (rawFirebaseUser) => {
+      if (rawFirebaseUser) {
+        savePersistedAuthUser(rawFirebaseUser);
+      }
+      const firebaseUser = rawFirebaseUser || loadPersistedAuthUser();
       setAuthUser(firebaseUser);
       // Clear auth loading IMMEDIATELY so the user enters the app right away without waiting for Firestore network calls
       setAuthLoading(false);
@@ -790,6 +801,8 @@ export default function App() {
   const [legalModalTab, setLegalModalTab] = useState<LegalTabType | null>(null);
 
   const handleSignOut = async () => {
+    clearPersistedAuthUser();
+    setAuthUser(null);
     try {
       await signOut(auth);
       setRoute({ name: 'home' });
@@ -800,7 +813,11 @@ export default function App() {
 
   const handleDeleteOwnAccount = async () => {
     const uid = authUser?.uid || myProfile.uid;
-    if (!uid) return;
+    clearPersistedAuthUser();
+    if (!uid) {
+      setAuthUser(null);
+      return;
+    }
 
     try {
       // 1. Delete user's own payment verification requests if any
@@ -818,10 +835,12 @@ export default function App() {
       if (auth.currentUser) {
         await auth.currentUser.delete().catch(() => {});
       }
+      setAuthUser(null);
       await signOut(auth).catch(() => {});
       setRoute({ name: 'home' });
     } catch (err) {
       console.error('Account deletion error:', err);
+      setAuthUser(null);
       await signOut(auth).catch(() => {});
       setRoute({ name: 'home' });
     }
@@ -3120,7 +3139,9 @@ export default function App() {
         {/* TOP HEADER — CONSTANT */}
         <Header
           showBack={route.name !== 'home'}
-          hideSearchBar={route.name === 'communities'}
+          hideSearchBar={
+            route.name === 'communities' || route.name === 'profile'
+          }
           onBack={() => {
             if (route.name === 'job-detail') setRoute({ name: 'jobs' });
             else if (route.name === 'scholarship-detail')

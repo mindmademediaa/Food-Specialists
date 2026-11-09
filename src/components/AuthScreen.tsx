@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ShieldCheck,
   Mail,
   Lock,
   User as UserIcon,
@@ -19,7 +18,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
-  updateProfile
+  updateProfile,
+  savePersistedAuthUser
 } from '../lib/firebase';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import {
@@ -64,7 +64,7 @@ function getFriendlyFirebaseAuthError(err: unknown): string {
     code === 'auth/cancelled-popup-request' ||
     raw.includes('auth/cancelled-popup-request')
   ) {
-    return 'Sign-in popup request was cancelled. Please click Sign in with Google again.';
+    return 'Sign-in popup request was cancelled. Please click Login with Google again.';
   }
   if (code === 'auth/popup-blocked' || raw.includes('auth/popup-blocked')) {
     return 'Popup was blocked by your browser. Redirecting to Google Sign-In...';
@@ -73,7 +73,7 @@ function getFriendlyFirebaseAuthError(err: unknown): string {
     code === 'auth/unauthorized-domain' ||
     raw.includes('auth/unauthorized-domain')
   ) {
-    return 'Domain authorization pending in Firebase Console (mindmademediaa.github.io). Please use Email/Password or authorize the domain in Firebase Auth settings.';
+    return 'Domain authorization pending in Firebase Console. Please use Email/Password or authorize the domain in Firebase Auth settings.';
   }
   if (
     code === 'auth/invalid-credential' ||
@@ -138,19 +138,25 @@ export const AuthScreen: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    getRedirectResult(auth).catch((err) => {
-      if (active && err) {
-        const code = (err as { code?: string })?.code || '';
-        const raw = err instanceof Error ? err.message : String(err);
-        if (
-          code === 'auth/unauthorized-domain' ||
-          raw.includes('auth/unauthorized-domain')
-        ) {
-          setIsUnauthorizedDomainError(true);
+    getRedirectResult(auth)
+      .then((res) => {
+        if (res?.user) {
+          savePersistedAuthUser(res.user);
         }
-        setErrorMessage(getFriendlyFirebaseAuthError(err));
-      }
-    });
+      })
+      .catch((err) => {
+        if (active && err) {
+          const code = (err as { code?: string })?.code || '';
+          const raw = err instanceof Error ? err.message : String(err);
+          if (
+            code === 'auth/unauthorized-domain' ||
+            raw.includes('auth/unauthorized-domain')
+          ) {
+            setIsUnauthorizedDomainError(true);
+          }
+          setErrorMessage(getFriendlyFirebaseAuthError(err));
+        }
+      });
     return () => {
       active = false;
     };
@@ -159,6 +165,7 @@ export const AuthScreen: React.FC = () => {
   const switchMode = (nextMode: 'signin' | 'signup') => {
     setMode(nextMode);
     setErrorMessage(null);
+    setResetSuccessMessage(null);
     setIsUnauthorizedDomainError(false);
   };
 
@@ -176,14 +183,14 @@ export const AuthScreen: React.FC = () => {
     const trimmedEmail = email.trim();
     if (!EMAIL_REGEX.test(trimmedEmail)) {
       setErrorMessage(
-        'Please enter your Email Address above first, then click "Forgot Password?".'
+        'Please enter your Email Address first, then tap "Forgot Password?".'
       );
       return;
     }
     try {
       await sendPasswordResetEmail(auth, trimmedEmail);
       setResetSuccessMessage(
-        `Password reset link has been sent to ${trimmedEmail}. Please check your Gmail Inbox / Spam folder.`
+        `Password reset link sent to ${trimmedEmail}. Please check your inbox.`
       );
     } catch (err) {
       setErrorMessage(getFriendlyFirebaseAuthError(err));
@@ -195,7 +202,10 @@ export const AuthScreen: React.FC = () => {
     setIsUnauthorizedDomainError(false);
     setIsGoogleSubmitting(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const cred = await signInWithPopup(auth, googleProvider);
+      if (cred?.user) {
+        savePersistedAuthUser(cred.user);
+      }
     } catch (err) {
       const code = (err as { code?: string })?.code || '';
       const raw = err instanceof Error ? err.message : String(err);
@@ -274,8 +284,20 @@ export const AuthScreen: React.FC = () => {
         await updateProfile(userCredential.user, {
           displayName: trimmedName
         });
+        savePersistedAuthUser({
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          displayName: trimmedName,
+          photoURL: userCredential.user.photoURL,
+          emailVerified: userCredential.user.emailVerified
+        });
       } else {
-        await signInWithEmailAndPassword(auth, trimmedEmail, password);
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          trimmedEmail,
+          password
+        );
+        savePersistedAuthUser(userCredential.user);
       }
     } catch (err) {
       setErrorMessage(getFriendlyFirebaseAuthError(err));
@@ -285,78 +307,51 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F6FC] text-[#1A2138] flex flex-col items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-[420px] space-y-4">
-        {/* Main Clean Auth Card */}
-        <div className="bg-white rounded-[28px] border border-[#D2DEEA] shadow-[0_16px_50px_rgba(22,115,184,0.10)] p-6 sm:p-7 space-y-5">
-          {/* Top Brand & Icon Header */}
-          <div className="flex flex-col items-center text-center space-y-2.5">
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#EBF4FC] border border-[#BBD6EE] text-[#1673B8]">
-              <div className="w-8 h-8 rounded-full bg-white border border-[#D2DEEA] flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
-                <img
-                  src={FS_PORTAL_LOGO_DATA_URI}
-                  alt="FS Portal"
-                  className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
-                />
-              </div>
-              <span className="text-[13px] font-extrabold uppercase tracking-wider text-[#1A2138]">
-                FS Port<span className="text-[#1673B8] underline decoration-[#1673B8] decoration-2 underline-offset-2">al</span>
-              </span>
-            </div>
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#091326] via-[#0F2547] to-[#1673B8] text-[#1A2138] flex flex-col items-center justify-center px-4 py-8">
+      {/* Subtle Ambient Glow Orbs */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-28 left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full bg-[#38BDF8]/20 blur-[110px]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-0 right-0 w-[320px] h-[320px] rounded-full bg-[#1673B8]/30 blur-[100px]"
+      />
 
-            <div>
-              <h1 className="text-2xl font-black text-[#1A2138] tracking-tight">
-                {mode === 'signin' ? 'Sign In' : 'Create Account'}
-              </h1>
-              <p className="text-xs text-[#5A6C84] font-medium mt-1">
-                {mode === 'signin'
-                  ? 'Sign in to access your specialist account'
-                  : 'Register to unlock jobs, scholarships & directory'}
-              </p>
-            </div>
+      <div className="relative z-10 w-full max-w-[390px] flex flex-col items-center">
+        {/* Top-Mid Centered Brand Logo & Title */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="w-20 h-20 rounded-[26px] bg-white p-1.5 shadow-[0_14px_38px_rgba(0,0,0,0.32)] ring-4 ring-white/15 flex items-center justify-center overflow-hidden mb-3.5">
+            <img
+              src={FS_PORTAL_LOGO_DATA_URI}
+              alt="FS Portal"
+              className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
+            />
           </div>
+          <h1 className="text-[26px] font-black tracking-tight text-white leading-none">
+            FS Port<span className="text-[#38BDF8]">al</span>
+          </h1>
+          <p className="text-xs font-medium text-sky-100/80 mt-1.5">
+            {mode === 'signin'
+              ? 'Welcome back! Sign in to continue'
+              : 'Create your specialist account'}
+          </p>
+        </div>
 
-          {/* Mode Switcher Tabs */}
-          <div className="grid grid-cols-2 p-1 bg-[#F0F6FC] rounded-2xl border border-[#D2DEEA]">
-            <button
-              type="button"
-              onClick={() => switchMode('signin')}
-              className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                mode === 'signin'
-                  ? 'bg-[#1673B8] text-white shadow-xs font-extrabold'
-                  : 'text-[#5A6C84] hover:text-[#1A2138]'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode('signup')}
-              className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                mode === 'signup'
-                  ? 'bg-[#1673B8] text-white shadow-xs font-extrabold'
-                  : 'text-[#5A6C84] hover:text-[#1A2138]'
-              }`}
-            >
-              Sign Up
-            </button>
-          </div>
-
+        {/* Sleek Minimal Auth Card */}
+        <div className="w-full bg-white/95 backdrop-blur-xl rounded-[28px] border border-white/40 shadow-[0_24px_60px_rgba(5,15,35,0.45)] p-6 sm:p-7 space-y-4">
           {/* Error Message Box */}
           {errorMessage && (
             <div
               role="alert"
-              className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold space-y-2.5"
+              className="p-3 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold space-y-2"
             >
-              <div className="flex items-start gap-2.5">
+              <div className="flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                 <span>{errorMessage}</span>
               </div>
               {isUnauthorizedDomainError && (
                 <div className="pt-2 border-t border-red-200/80 space-y-2 text-[11px] text-red-900">
-                  <p className="font-bold">
-                    1-Minute Fix in Firebase Console (One-Time Only):
-                  </p>
                   <div className="flex items-center justify-between gap-2 bg-white px-2.5 py-1.5 rounded-xl border border-red-200">
                     <code className="font-mono font-bold text-gray-800 truncate">
                       {currentDomain}
@@ -366,17 +361,9 @@ export const AuthScreen: React.FC = () => {
                       onClick={handleCopyDomain}
                       className="px-2.5 py-1 rounded-lg bg-[#1673B8] text-white font-bold text-[10.5px] shrink-0 cursor-pointer"
                     >
-                      {copiedDomain ? 'Copied!' : 'Copy Domain'}
+                      {copiedDomain ? 'Copied!' : 'Copy'}
                     </button>
                   </div>
-                  <a
-                    href="https://console.firebase.google.com/project/food-specialist-3e294/authentication/settings"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full text-center py-2 px-3 rounded-xl bg-red-100 hover:bg-red-200/80 text-red-900 font-extrabold underline"
-                  >
-                    Open Firebase Auth Settings &rarr; Add Domain
-                  </a>
                 </div>
               )}
             </div>
@@ -384,113 +371,44 @@ export const AuthScreen: React.FC = () => {
 
           {/* Reset Password Success Box */}
           {resetSuccessMessage && (
-            <div className="p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#BBD6EE] text-[#1A2138] text-xs font-semibold">
+            <div className="p-3 rounded-2xl bg-[#EBF4FC] border border-[#BBD6EE] text-[#1A2138] text-xs font-semibold">
               {resetSuccessMessage}
             </div>
           )}
 
-          {/* Sign In / Sign Up Form */}
-          <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            {/* Google Sign In Button */}
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={isGoogleSubmitting || isSubmitting}
-              className="w-full py-3 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] disabled:opacity-60 text-[#1A2138] font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-xs transition-all cursor-pointer"
-            >
-              {isGoogleSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 text-[#1673B8] animate-spin" />
-                  <span>Connecting to Google...</span>
-                </>
-              ) : (
-                <>
-                  <GoogleLogoIcon />
-                  <span>
-                    {mode === 'signin'
-                      ? 'Sign in with Google'
-                      : 'Sign up with Google'}
-                  </span>
-                </>
-              )}
-            </button>
-
-            {/* Divider */}
-            <div className="relative flex items-center justify-center py-0.5">
-              <div className="border-t border-[#D2DEEA] w-full" />
-              <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-[#5A6C84] shrink-0">
-                or continue with email
-              </span>
-              <div className="border-t border-[#D2DEEA] w-full" />
-            </div>
-
-            {/* Full Name (Sign Up only) */}
+          {/* 1. Email & Password Form First */}
+          <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
             {mode === 'signup' && (
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="auth-fullname"
-                  className="block text-xs font-bold text-[#1A2138]"
-                >
-                  Full Name
-                </label>
-                <div className="relative">
-                  <UserIcon className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    id="auth-fullname"
-                    type="text"
-                    autoComplete="name"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g., Muneeb Khan"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#1673B8] transition-colors"
-                  />
-                </div>
+              <div className="relative">
+                <UserIcon className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  id="auth-fullname"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Full Name"
+                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#1673B8] focus:ring-2 focus:ring-[#1673B8]/15 transition-all"
+                />
               </div>
             )}
 
-            {/* Email Address */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="auth-email"
-                className="block text-xs font-bold text-[#1A2138]"
-              >
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  id="auth-email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="specialist@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#1673B8] transition-colors"
-                />
-              </div>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                id="auth-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#1673B8] focus:ring-2 focus:ring-[#1673B8]/15 transition-all"
+              />
             </div>
 
-            {/* Password */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="auth-password"
-                  className="block text-xs font-bold text-[#1A2138]"
-                >
-                  Password
-                </label>
-                {mode === 'signin' && (
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    className="text-[11px] font-extrabold text-[#1673B8] hover:underline cursor-pointer"
-                  >
-                    Forgot Password?
-                  </button>
-                )}
-              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -502,8 +420,8 @@ export const AuthScreen: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#1673B8] transition-colors"
+                  placeholder="Password"
+                  className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#1673B8] focus:ring-2 focus:ring-[#1673B8]/15 transition-all"
                 />
                 <button
                   type="button"
@@ -518,134 +436,165 @@ export const AuthScreen: React.FC = () => {
                   )}
                 </button>
               </div>
-            </div>
 
-            {/* Confirm Password (Sign Up only) */}
-            {mode === 'signup' && (
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="auth-confirm-password"
-                  className="block text-xs font-bold text-[#1A2138]"
-                >
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    id="auth-confirm-password"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Re-enter your password"
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#1673B8] transition-colors"
-                  />
+              {mode === 'signin' && (
+                <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    aria-label={
-                      showConfirmPassword
-                        ? 'Hide confirm password'
-                        : 'Show confirm password'
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A6C84] hover:text-[#1A2138] p-1 cursor-pointer"
+                    onClick={handleForgotPassword}
+                    className="text-[11.5px] font-bold text-[#1673B8] hover:underline cursor-pointer"
                   >
-                    {showConfirmPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
+                    Forgot Password?
                   </button>
                 </div>
+              )}
+            </div>
+
+            {mode === 'signup' && (
+              <div className="relative">
+                <Lock className="w-4 h-4 text-[#1673B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  id="auth-confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm password"
+                  className="w-full pl-10 pr-10 py-3 rounded-2xl bg-[#F4F8FD] border border-[#D2DEEA] text-sm font-medium text-[#1A2138] placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#1673B8] focus:ring-2 focus:ring-[#1673B8]/15 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  aria-label={
+                    showConfirmPassword
+                      ? 'Hide confirm password'
+                      : 'Show confirm password'
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A6C84] hover:text-[#1A2138] p-1 cursor-pointer"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             )}
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isSubmitting || isGoogleSubmitting}
-              className="w-full py-3 px-5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-65 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+              className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-[#1673B8] to-[#0F4C81] hover:from-[#12629E] hover:to-[#0B3B66] disabled:opacity-65 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(22,115,184,0.32)] transition-all cursor-pointer"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>
-                    {mode === 'signin'
-                      ? 'Signing In...'
-                      : 'Creating Specialist Account...'}
+                    {mode === 'signin' ? 'Signing In...' : 'Creating Account...'}
                   </span>
                 </>
               ) : (
                 <>
-                  <span>
-                    {mode === 'signin' ? 'Sign In with Email' : 'Create Account'}
-                  </span>
+                  <span>{mode === 'signin' ? 'Login' : 'Sign Up'}</span>
                   <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                 </>
               )}
             </button>
-
-            {/* Toggle Mode Footer */}
-            <div className="pt-2 border-t border-[#E4EDF7] text-center">
-              {mode === 'signin' ? (
-                <p className="text-xs text-[#5A6C84] font-medium">
-                  Don&apos;t have an account yet?{' '}
-                  <button
-                    type="button"
-                    onClick={() => switchMode('signup')}
-                    className="font-extrabold text-[#1673B8] hover:underline cursor-pointer"
-                  >
-                    Sign Up Now
-                  </button>
-                </p>
-              ) : (
-                <p className="text-xs text-[#5A6C84] font-medium">
-                  Already have a registered account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => switchMode('signin')}
-                    className="font-extrabold text-[#1673B8] hover:underline cursor-pointer"
-                  >
-                    Sign In
-                  </button>
-                </p>
-              )}
-            </div>
           </form>
+
+          {/* Subtle Divider */}
+          <div className="relative flex items-center justify-center py-0.5">
+            <div className="border-t border-[#E2ECF5] w-full" />
+            <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
+              or
+            </span>
+            <div className="border-t border-[#E2ECF5] w-full" />
+          </div>
+
+          {/* 2. Login with Google Option Below */}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleSubmitting || isSubmitting}
+            className="w-full py-3 px-4 rounded-2xl bg-[#F8FAFC] hover:bg-[#EBF4FC] border border-[#D2DEEA] hover:border-[#1673B8] disabled:opacity-60 text-[#1A2138] font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+          >
+            {isGoogleSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 text-[#1673B8] animate-spin" />
+                <span>Connecting to Google...</span>
+              </>
+            ) : (
+              <>
+                <GoogleLogoIcon />
+                <span>
+                  {mode === 'signin'
+                    ? 'Login with Google'
+                    : 'Sign up with Google'}
+                </span>
+              </>
+            )}
+          </button>
+
+          {/* 3. Small Sign Up / Sign In Option at the Bottom */}
+          <div className="pt-2 border-t border-[#EEF4FA] text-center">
+            {mode === 'signin' ? (
+              <p className="text-xs text-[#5A6C84] font-medium">
+                Don&apos;t have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchMode('signup')}
+                  className="font-extrabold text-[#1673B8] hover:underline cursor-pointer ml-0.5"
+                >
+                  Sign Up
+                </button>
+              </p>
+            ) : (
+              <p className="text-xs text-[#5A6C84] font-medium">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchMode('signin')}
+                  className="font-extrabold text-[#1673B8] hover:underline cursor-pointer ml-0.5"
+                >
+                  Login
+                </button>
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Footer Legal Links (Google Play, AdSense & AdMob Compliant) */}
-        <div className="text-center space-y-1.5">
-          <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] font-bold text-[#1673B8]">
+        {/* Subtle Legal Links Footer */}
+        <div className="mt-5 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] font-semibold text-sky-200/75">
             <button
               type="button"
               onClick={() => setLegalModalTab('privacy')}
-              className="hover:underline cursor-pointer"
+              className="hover:text-white hover:underline cursor-pointer"
             >
               Privacy Policy
             </button>
-            <span className="text-[#94A3B8]">•</span>
+            <span className="text-sky-300/40">•</span>
             <button
               type="button"
               onClick={() => setLegalModalTab('terms')}
-              className="hover:underline cursor-pointer"
+              className="hover:text-white hover:underline cursor-pointer"
             >
               Terms of Use
             </button>
-            <span className="text-[#94A3B8]">•</span>
+            <span className="text-sky-300/40">•</span>
             <button
               type="button"
               onClick={() => setLegalModalTab('ads')}
-              className="hover:underline cursor-pointer"
+              className="hover:text-white hover:underline cursor-pointer"
             >
               AdMob Policy
             </button>
-            <span className="text-[#94A3B8]">•</span>
+            <span className="text-sky-300/40">•</span>
             <button
               type="button"
               onClick={() => setLegalModalTab('deletion')}
-              className="hover:underline cursor-pointer"
+              className="hover:text-white hover:underline cursor-pointer"
             >
               Data Deletion
             </button>

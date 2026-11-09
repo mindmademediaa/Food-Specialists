@@ -3,6 +3,9 @@ import { initializeApp } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 import {
   getAuth,
+  setPersistence,
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
@@ -54,6 +57,61 @@ export const analytics =
 
 export const auth = getAuth(app);
 
+// Explicitly enforce local persistence across browser tabs, mobile backgrounding, and reloads
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch(() => {
+    setPersistence(auth, indexedDBLocalPersistence).catch(() => {});
+  });
+}
+
+const PERSISTED_AUTH_SESSION_KEY = 'fs_portal_persisted_auth_session_v1';
+
+export interface PersistedAuthSession {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  emailVerified?: boolean;
+}
+
+export function savePersistedAuthUser(user: User | PersistedAuthSession | null): void {
+  if (typeof window === 'undefined' || !user || !user.uid) return;
+  try {
+    const payload: PersistedAuthSession = {
+      uid: user.uid,
+      email: user.email || null,
+      displayName: user.displayName || null,
+      photoURL: user.photoURL || null,
+      emailVerified: Boolean(user.emailVerified)
+    };
+    window.localStorage.setItem(PERSISTED_AUTH_SESSION_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export function loadPersistedAuthUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(PERSISTED_AUTH_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedAuthSession;
+    if (!parsed || !parsed.uid) return null;
+    return parsed as unknown as User;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPersistedAuthUser(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(PERSISTED_AUTH_SESSION_KEY);
+  } catch {
+    // Ignore
+  }
+}
+
 // Connect explicitly to the provisioned named Firestore database using HTTP long-polling
 // to avoid WebChannel streaming 10s timeouts inside iframes / mobile proxies
 function createFirestoreInstance(): Firestore {
@@ -72,9 +130,6 @@ function createFirestoreInstance(): Firestore {
 
 export const db = createFirestoreInstance();
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
 
 // Validate connection to Firestore at startup without crashing on transient offline states
 async function testConnection() {

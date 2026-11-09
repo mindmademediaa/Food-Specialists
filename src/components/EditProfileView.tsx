@@ -471,21 +471,12 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           </button>
         </div>
 
-        {/* Quick Public Profile Preview + Toggle Legend */}
-        <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-[#D2DEEA] rounded-2xl px-3.5 py-2.5 shadow-2xs">
-          <div className="text-[11px] font-semibold text-gray-600 flex items-center gap-1.5 flex-wrap">
-            <span>Toggle next to any field:</span>
-            <span className="px-2 py-0.5 rounded-full bg-[#1673B8] text-white font-extrabold text-[10px]">
-              ON = Show in Community
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-gray-300 text-gray-700 font-extrabold text-[10px]">
-              OFF = Hidden
-            </span>
-          </div>
+        {/* Quick Public Profile Preview */}
+        <div className="flex items-center justify-end">
           <button
             type="button"
             onClick={onPreviewPublicProfile}
-            className="px-3 py-1 rounded-full bg-[#EBF4FC] hover:bg-[#D2DEEA] text-[#1673B8] text-[11.5px] font-extrabold inline-flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 rounded-full bg-[#EBF4FC] hover:bg-[#D2DEEA] border border-[#BBD6EE] text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>View Public Profile</span>
@@ -807,10 +798,6 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
                 <span>{cvError}</span>
               </div>
             )}
-
-            <p className="text-[11px] font-semibold text-[#105E9A] leading-snug">
-              Turn the toggle button ON to show your CV in the Community section, or OFF to keep it hidden
-            </p>
           </div>
         </div>
 
