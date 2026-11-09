@@ -1826,13 +1826,27 @@ export default function App() {
 
   const myLatestApplication = myPaymentApplications[0] || null;
 
+  const [deletedPaymentReqIds, setDeletedPaymentReqIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('fsp_deleted_payment_reqs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // All payment requests for Admin (combines /paymentRequests collection + any /users doc with paymentStatus/receiptImageUrl)
   const adminAllPaymentRequests = useMemo<HubPaymentRequest[]>(() => {
+    const deletedSet = new Set(deletedPaymentReqIds);
     const map = new Map<string, HubPaymentRequest>();
     paymentRequests.forEach((req) => {
-      map.set(req.id, req);
+      if (!deletedSet.has(req.id) && !deletedSet.has(`user-pay-${req.uid}`)) {
+        map.set(req.id, req);
+      }
     });
     users.forEach((u) => {
+      const fallbackId = `user-pay-${u.uid}`;
+      if (deletedSet.has(fallbackId)) return;
       if (
         (u.paymentStatus && u.paymentStatus !== 'none') ||
         Boolean(u.receiptImageUrl)
@@ -1841,7 +1855,6 @@ export default function App() {
           (r) => r.uid === u.uid
         );
         if (!hasExistingForUid) {
-          const fallbackId = `user-pay-${u.uid}`;
           map.set(fallbackId, {
             id: fallbackId,
             uid: u.uid,
@@ -1873,7 +1886,7 @@ export default function App() {
       if (a.status !== 'pending' && b.status === 'pending') return 1;
       return (b.submittedAt || '').localeCompare(a.submittedAt || '');
     });
-  }, [paymentRequests, users]);
+  }, [paymentRequests, users, deletedPaymentReqIds]);
 
   const pendingPaymentRequestsCount = useMemo(
     () =>
@@ -2031,26 +2044,24 @@ export default function App() {
       );
 
       if (isCertRequest) {
-        await setDoc(
-          doc(db, 'paymentRequests', req.id),
-          {
-            ...req,
-            status: decision,
-            approvedAt: decision === 'verified' ? nowIso : ''
-          },
-          { merge: true }
-        );
-        setPaymentRequests((prev) =>
-          prev.map((r) =>
-            r.id === req.id
-              ? {
-                  ...r,
-                  status: decision,
-                  approvedAt: decision === 'verified' ? nowIso : ''
-                }
-              : r
-          )
-        );
+        const updatedReqObj: HubPaymentRequest = {
+          ...req,
+          status: decision,
+          approvedAt: decision === 'verified' ? nowIso : ''
+        };
+        setPaymentRequests((prev) => {
+          const exists = prev.some((r) => r.id === req.id);
+          if (exists) {
+            return prev.map((r) => (r.id === req.id ? updatedReqObj : r));
+          }
+          return [updatedReqObj, ...prev];
+        });
+
+        try {
+          await setDoc(doc(db, 'paymentRequests', req.id), updatedReqObj, {
+            merge: true
+          });
+        } catch {}
 
         const userSnap = await getDoc(doc(db, 'users', req.uid));
         const baseUser = userSnap.exists()
@@ -2111,6 +2122,10 @@ export default function App() {
             }
           }
         };
+
+        setUsers((prev) =>
+          prev.map((u) => (u.uid === req.uid ? updatedUser : u))
+        );
 
         await Promise.all([
           setDoc(doc(db, 'users', req.uid), updatedUser, { merge: true }),
@@ -2181,17 +2196,28 @@ export default function App() {
       );
       const expiresIso = expiresDate.toISOString().slice(0, 19) + 'Z';
 
-      await setDoc(
-        doc(db, 'paymentRequests', req.id),
-        {
-          ...req,
-          status: decision,
-          subscriptionPlan: req.subscriptionPlan || planLabel,
-          approvedAt: decision === 'verified' ? nowIso : '',
-          premiumExpiresAt: decision === 'verified' ? expiresIso : ''
-        },
-        { merge: true }
-      );
+      const updatedReqObj: HubPaymentRequest = {
+        ...req,
+        status: decision,
+        subscriptionPlan: req.subscriptionPlan || planLabel,
+        approvedAt: decision === 'verified' ? nowIso : '',
+        premiumExpiresAt: decision === 'verified' ? expiresIso : ''
+      };
+
+      setPaymentRequests((prev) => {
+        const exists = prev.some((r) => r.id === req.id);
+        if (exists) {
+          return prev.map((r) => (r.id === req.id ? updatedReqObj : r));
+        }
+        return [updatedReqObj, ...prev];
+      });
+
+      try {
+        await setDoc(doc(db, 'paymentRequests', req.id), updatedReqObj, {
+          merge: true
+        });
+      } catch {}
+
       const userSnap = await getDoc(doc(db, 'users', req.uid));
       const baseUser = userSnap.exists()
         ? (userSnap.data() as HubUser)
@@ -2219,6 +2245,10 @@ export default function App() {
         premiumExpiresAt:
           decision === 'verified' ? expiresIso : baseUser.premiumExpiresAt || ''
       };
+
+      setUsers((prev) =>
+        prev.map((u) => (u.uid === req.uid ? updatedUser : u))
+      );
 
       await Promise.all([
         setDoc(doc(db, 'users', req.uid), updatedUser, { merge: true }),
@@ -2249,11 +2279,66 @@ export default function App() {
 
   const handleDeletePaymentRequest = async (reqId: string) => {
     try {
-      if (!reqId.startsWith('user-pay-')) {
-        await deleteDoc(doc(db, 'paymentRequests', reqId));
+      const targetReq = adminAllPaymentRequests.find((r) => r.id === reqId);
+      const targetUid =
+        targetReq?.uid ||
+        (reqId.startsWith('user-pay-') ? reqId.replace('user-pay-', '') : '');
+
+      const idsToSuppress = [reqId];
+      if (targetUid) {
+        idsToSuppress.push(`user-pay-${targetUid}`);
       }
-      setPaymentRequests((prev) => prev.filter((r) => r.id !== reqId));
-      setAdminStatusBanner('Payment request record removed.');
+
+      setDeletedPaymentReqIds((prev) => {
+        const next = Array.from(new Set([...prev, ...idsToSuppress]));
+        try {
+          localStorage.setItem('fsp_deleted_payment_reqs', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      setPaymentRequests((prev) =>
+        prev.filter((r) => r.id !== reqId && (!targetUid || r.uid !== targetUid || r.id !== reqId))
+      );
+
+      if (!reqId.startsWith('user-pay-')) {
+        try {
+          await deleteDoc(doc(db, 'paymentRequests', reqId));
+        } catch {}
+      }
+
+      if (targetUid) {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.uid === targetUid
+              ? { ...u, paymentStatus: 'none', receiptImageUrl: '' }
+              : u
+          )
+        );
+        try {
+          const userSnap = await getDoc(doc(db, 'users', targetUid));
+          if (userSnap.exists()) {
+            const existingUser = userSnap.data() as HubUser;
+            const cleanedUser: HubUser = {
+              ...existingUser,
+              uid: targetUid,
+              paymentStatus: 'none',
+              receiptImageUrl: ''
+            };
+            await Promise.all([
+              setDoc(doc(db, 'users', targetUid), cleanedUser, { merge: true }),
+              setDoc(doc(db, 'users', targetUid, 'private', 'profile'), cleanedUser, {
+                merge: true
+              }),
+              setDoc(doc(db, 'users', targetUid, 'profile', 'main'), cleanedUser, {
+                merge: true
+              })
+            ]);
+          }
+        } catch {}
+      }
+
+      setAdminStatusBanner('Approval request record permanently deleted.');
       setTimeout(() => setAdminStatusBanner(null), 3500);
     } catch {}
   };
@@ -2589,14 +2674,16 @@ export default function App() {
         title: training.title.slice(0, 195),
         category: training.category,
         subType: training.subType || null,
-        duration: (training.duration || '5 Days').slice(0, 110),
-        fees: (training.fees || 'PKR 25,000').slice(0, 110),
+        duration: (training.duration || 'Self-Paced').slice(0, 110),
+        fees: (training.fees || 'Free Study & Exam · Rs. 1,000 Certificate').slice(0, 110),
         description: (training.description || '').slice(0, 7800),
         enrollLink: (training.enrollLink || 'https://wa.me/923240906384').slice(
           0,
           480
         ),
-        isActive: true
+        isActive: training.isActive !== false,
+        customModules: training.customModules || [],
+        customMcqs: training.customMcqs || []
       };
       await setDoc(doc(db, 'trainings', payload.id), payload, { merge: true });
       setTrainings((prev) => {
@@ -2607,7 +2694,7 @@ export default function App() {
         return [payload, ...prev];
       });
       setAdminStatusBanner(
-        `Saved training "${payload.title}" (Fee: ${payload.fees}) — Live on App!`
+        `Saved training "${payload.title}" (${payload.customModules?.length || 0} Modules, ${payload.customMcqs?.length || 0} MCQs) — Live on App!`
       );
       setTimeout(() => setAdminStatusBanner(null), 4000);
     } catch {}

@@ -365,6 +365,20 @@ export interface HubScholarship {
   isActive: boolean;
 }
 
+export interface CustomTrainingModule {
+  id: string;
+  subject: string;
+  description: string;
+}
+
+export interface CustomTrainingMCQ {
+  id: string;
+  question: string;
+  options: [string, string, string, string];
+  correctIndex: number;
+  explanation?: string;
+}
+
 export interface HubTraining {
   id: string;
   category: 'Highfield' | 'Lead Auditor' | 'International Certification';
@@ -376,6 +390,8 @@ export interface HubTraining {
   fees: string;
   enrollLink: string;
   isActive: boolean;
+  customModules?: CustomTrainingModule[];
+  customMcqs?: CustomTrainingMCQ[];
 }
 
 export type NavTab = 'home' | 'search' | 'communities' | 'trainings' | 'tools' | 'profile';

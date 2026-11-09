@@ -27,6 +27,7 @@ import {
 } from '../types/hub';
 import {
   CourseExamMCQ,
+  CourseStudyModule,
   DEFAULT_COURSE_TEMPLATE,
   INTERNATIONAL_TRAINING_COURSES,
   InternationalTrainingCourse,
@@ -153,6 +154,48 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
           b.title.trim().toLowerCase() === customTr.title.trim().toLowerCase()
       );
       const fallbackTemplate = baseMatch || DEFAULT_COURSE_TEMPLATE;
+      const mappedCustomModules: CourseStudyModule[] =
+        customTr.customModules && customTr.customModules.length > 0
+          ? customTr.customModules.map((m, idx) => {
+              const paragraphs = (m.description || '')
+                .split(/\n+/)
+                .map((p) => p.trim())
+                .filter(Boolean);
+              return {
+                id: m.id || `mod-${idx + 1}`,
+                moduleNumber: idx + 1,
+                title: m.subject || `Module ${idx + 1}`,
+                estimatedMinutes: 30,
+                overview:
+                  m.description ||
+                  `Core curriculum for ${m.subject || `Module ${idx + 1}`}.`,
+                internationalClauses: [
+                  `${customTr.title} — Module ${idx + 1}: ${m.subject}`
+                ],
+                keyPrinciples:
+                  paragraphs.length > 0
+                    ? paragraphs
+                    : [
+                        m.description ||
+                          `Core principles and operational requirements for ${m.subject}.`
+                      ],
+                criticalControlParameters: [
+                  {
+                    parameter: m.subject || `Module ${idx + 1}`,
+                    standardLimit: 'Full Compliance Required',
+                    correctiveProtocol:
+                      m.description ||
+                      'Review module study material and verify operational controls.'
+                  }
+                ],
+                practicalChecklist:
+                  paragraphs.length > 0
+                    ? paragraphs
+                    : [`Complete study and review of ${m.subject}`]
+              };
+            })
+          : fallbackTemplate.modules;
+
       result.push({
         ...fallbackTemplate,
         id: customTr.id,
@@ -160,10 +203,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         title: customTr.title,
         levelBadge: customTr.subType || baseMatch?.levelBadge || 'International Certification',
         description: customTr.description || baseMatch?.description || '',
+        modules: mappedCustomModules,
         duration:
           customTr.duration ||
           baseMatch?.duration ||
-          `Self-Paced · ${fallbackTemplate.modules.length} Modules`
+          `Self-Paced · ${mappedCustomModules.length} Modules`
       });
     }
 
@@ -352,9 +396,23 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   };
 
   const handleStart40McqExam = (course: InternationalTrainingCourse) => {
-    const questions = get40CourseExamQuestions(course.id);
+    const matchedTr = trainings.find((t) => t.id === course.id);
+    const customQuestions: CourseExamMCQ[] =
+      matchedTr?.customMcqs && matchedTr.customMcqs.length > 0
+        ? matchedTr.customMcqs.map((q, idx) => ({
+            id: q.id || `mcq-${idx + 1}`,
+            questionNumber: idx + 1,
+            question: q.question,
+            options: q.options,
+            correctIndex: q.correctIndex,
+            explanation:
+              q.explanation ||
+              `Correct Answer: ${q.options[q.correctIndex] || `Option ${q.correctIndex + 1}`}`
+          }))
+        : get40CourseExamQuestions(course.id);
+
     setSelectedCourseId(course.id);
-    setExamQuestions(questions);
+    setExamQuestions(customQuestions);
     setExamAnswers({});
     setLastExamResult(null);
     setViewMode('exam');

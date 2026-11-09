@@ -219,7 +219,9 @@ service cloud.firestore {
         (!('description' in data) || (data.description is string && data.description.size() <= 8000)) &&
         (!('duration' in data) || (data.duration is string && data.duration.size() <= 120)) &&
         (!('fees' in data) || (data.fees is string && data.fees.size() <= 120)) &&
-        (!('enrollLink' in data) || (data.enrollLink is string && data.enrollLink.size() <= 500));
+        (!('enrollLink' in data) || (data.enrollLink is string && data.enrollLink.size() <= 500)) &&
+        (!('customModules' in data) || (data.customModules is list && data.customModules.size() <= 60)) &&
+        (!('customMcqs' in data) || (data.customMcqs is list && data.customMcqs.size() <= 200));
     }
 
     // Strict Per-User Profile & Community Visibility Rules:
@@ -327,7 +329,7 @@ service cloud.firestore {
     match /paymentRequests/{requestId} {
       allow get, list: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
       allow create: if isSignedIn() &&
-        request.resource.data.uid == request.auth.uid &&
+        (isAdmin() || request.resource.data.uid == request.auth.uid) &&
         isValidId(requestId) &&
         isValidPaymentRequest(request.resource.data);
       allow update: if (isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid && request.resource.data.status == resource.data.status)) &&

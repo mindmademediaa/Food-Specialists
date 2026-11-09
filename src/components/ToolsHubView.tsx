@@ -2,8 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   Activity,
   Award,
+  Beaker,
   BookOpen,
   Briefcase,
+  Calculator,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -11,12 +13,16 @@ import {
   Clock,
   Crown,
   Download,
+  Factory,
   FileText,
   Flame,
+  FlaskConical,
   Heart,
   Lock,
+  Mail,
   Plus,
   RotateCcw,
+  Scale,
   Search,
   ShieldCheck,
   Sparkles,
@@ -60,8 +66,30 @@ import {
 } from '../lib/toolsPdfGenerator';
 import { NutritionSuiteTool } from './NutritionSuiteTool';
 import { ExamSuiteTool } from './ExamSuiteTool';
+import {
+  LabFormulaCalculatorTool,
+  PearsonSquareBatchTool,
+  LabSolutionMolarityTool,
+  MoistureAshYieldTool,
+  ProductionFloorWorkersTool,
+  ENumbersInstantFinderTool,
+  JobEmailCoverLetterTool,
+  CitationReferenceGeneratorTool
+} from './SpecialistExtraTools';
 
-export type ActiveToolSection = 'hub' | 'nutrition' | 'exam' | 'interview';
+export type ActiveToolSection =
+  | 'hub'
+  | 'nutrition'
+  | 'exam'
+  | 'interview'
+  | 'lab-formula'
+  | 'pearson-square'
+  | 'molarity-normality'
+  | 'moisture-ash'
+  | 'production-floor'
+  | 'e-numbers'
+  | 'job-cover-letter'
+  | 'citation-generator';
 
 interface ToolsHubViewProps {
   user: HubUser;
@@ -122,11 +150,9 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     };
   }, [user.toolsData]);
 
-  // Allow opening 'nutrition' or 'exam' (which have built-in Free vs Premium limits) or any tool if isUserPaid
+  // Allow opening any specialist tool if !hasExpiredPremium or isUserPaid
   const [activeSection, setActiveSection] = useState<ActiveToolSection>(() =>
-    isUserPaid ||
-    ((initialSection === 'nutrition' || initialSection === 'exam') &&
-      !hasExpiredPremium)
+    isUserPaid || (initialSection !== 'hub' && !hasExpiredPremium)
       ? initialSection
       : 'hub'
   );
@@ -140,16 +166,10 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   useEffect(() => {
     if (
       initialSection &&
-      (isUserPaid ||
-        ((initialSection === 'nutrition' || initialSection === 'exam') &&
-          !hasExpiredPremium))
+      (isUserPaid || (initialSection !== 'hub' && !hasExpiredPremium))
     ) {
       setActiveSection(initialSection);
-    } else if (
-      !isUserPaid &&
-      initialSection !== 'nutrition' &&
-      initialSection !== 'exam'
-    ) {
+    } else if (!isUserPaid && hasExpiredPremium) {
       setActiveSection('hub');
     }
   }, [initialSection, isUserPaid, hasExpiredPremium]);
@@ -229,11 +249,8 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     featureName: string,
     afterUnlock?: () => void
   ) => {
-    // Nutrition & Exam tools allow Free non-expired users to enter and use the Free tier (1 Exam/Day, 1 BMI calc, etc.)
-    if (
-      (targetSection === 'nutrition' || targetSection === 'exam') &&
-      !hasExpiredPremium
-    ) {
+    // Specialist tools allow non-expired users to enter directly
+    if (targetSection !== 'interview' && !hasExpiredPremium) {
       setActiveSection(targetSection);
       if (afterUnlock) afterUnlock();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -835,8 +852,8 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             </h1>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
-            {/* TOOL 1: HEALTH & NUTRITION TOOL (ICON + NAME ONLY) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
+            {/* TOOL 1: HEALTH & NUTRITION TOOL */}
             <button
               type="button"
               onClick={() =>
@@ -845,17 +862,17 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   'Daily Personal Health & Nutrition Tracker'
                 )
               }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-5 sm:p-6 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
             >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Activity className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2]" />
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Activity className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
               </div>
               <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
                 Health &amp; Nutrition Tool
               </span>
             </button>
 
-            {/* TOOL 2: EXAM PREPARATION (ICON + NAME ONLY) */}
+            {/* TOOL 2: EXAM PREPARATION */}
             <button
               type="button"
               onClick={() =>
@@ -864,13 +881,165 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   'Food Science Exam Preparation (30 MCQs)'
                 )
               }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-5 sm:p-6 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
             >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Award className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2]" />
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Award className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
               </div>
               <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
                 Exam Preparation
+              </span>
+            </button>
+
+            {/* TOOL 3: LAB & FORMULA CALCULATOR */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'lab-formula',
+                  'Lab & Formula Calculator'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Calculator className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Lab &amp; Formula Calculator
+              </span>
+            </button>
+
+            {/* TOOL 4: PEARSON SQUARE & BATCH STANDARDIZATION */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'pearson-square',
+                  'Pearson Square & Batch Standardization Calculator'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Scale className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Pearson Square Calculator
+              </span>
+            </button>
+
+            {/* TOOL 5: LAB SOLUTION & MOLARITY / NORMALITY CALCULATOR */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'molarity-normality',
+                  'Lab Solution & Molarity / Normality Calculator'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <FlaskConical className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Lab Solution &amp; Molarity / Normality
+              </span>
+            </button>
+
+            {/* TOOL 6: MOISTURE, ASH & YIELD % CALCULATOR */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'moisture-ash',
+                  'Moisture, Ash & Proximate Analysis % Calculator'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Beaker className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Moisture, Ash &amp; Yield % Calculator
+              </span>
+            </button>
+
+            {/* TOOL 7: PRODUCTION FLOOR, YIELD & WORKERS TOOL */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'production-floor',
+                  'Production Floor, Yield & Line Workers Calculator'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Factory className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Production Yield &amp; Workers Tool
+              </span>
+            </button>
+
+            {/* TOOL 8: E-NUMBERS & FOOD ADDITIVES INSTANT FINDER */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'e-numbers',
+                  'E-Numbers & Food Additives Instant Finder'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                E-Numbers &amp; Additives Finder
+              </span>
+            </button>
+
+            {/* TOOL 9: JOB APPLICATION EMAIL & COVER LETTER GENERATOR */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'job-cover-letter',
+                  'Job Application Email & Cover Letter Generator'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Mail className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Job Email &amp; Cover Letter Generator
+              </span>
+            </button>
+
+            {/* TOOL 10: CITATION & REFERENCE GENERATOR */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'citation-generator',
+                  'Citation & Reference Generator (HEC & International Journals)'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Citation &amp; Reference Generator
               </span>
             </button>
           </div>
@@ -903,6 +1072,50 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           onSaveToolsData={onSaveToolsData}
           onOpenPremiumModal={onOpenPremiumModal}
         />
+      )}
+
+      {/* =====================================================================
+          VIEW 3: LAB & FORMULA CALCULATOR
+         ===================================================================== */}
+      {activeSection === 'lab-formula' && <LabFormulaCalculatorTool />}
+
+      {/* =====================================================================
+          VIEW 4: PEARSON SQUARE & BATCH STANDARDIZATION CALCULATOR
+         ===================================================================== */}
+      {activeSection === 'pearson-square' && <PearsonSquareBatchTool />}
+
+      {/* =====================================================================
+          VIEW 5: LAB SOLUTION & MOLARITY / NORMALITY CALCULATOR
+         ===================================================================== */}
+      {activeSection === 'molarity-normality' && <LabSolutionMolarityTool />}
+
+      {/* =====================================================================
+          VIEW 6: MOISTURE, ASH & YIELD % CALCULATOR
+         ===================================================================== */}
+      {activeSection === 'moisture-ash' && <MoistureAshYieldTool />}
+
+      {/* =====================================================================
+          VIEW 7: PRODUCTION FLOOR, YIELD & WORKERS CALCULATOR
+         ===================================================================== */}
+      {activeSection === 'production-floor' && <ProductionFloorWorkersTool />}
+
+      {/* =====================================================================
+          VIEW 8: E-NUMBERS & FOOD ADDITIVES INSTANT FINDER
+         ===================================================================== */}
+      {activeSection === 'e-numbers' && <ENumbersInstantFinderTool />}
+
+      {/* =====================================================================
+          VIEW 9: JOB APPLICATION EMAIL & COVER LETTER GENERATOR
+         ===================================================================== */}
+      {activeSection === 'job-cover-letter' && (
+        <JobEmailCoverLetterTool user={user} />
+      )}
+
+      {/* =====================================================================
+          VIEW 10: CITATION & REFERENCE GENERATOR
+         ===================================================================== */}
+      {activeSection === 'citation-generator' && (
+        <CitationReferenceGeneratorTool />
       )}
     </div>
   );

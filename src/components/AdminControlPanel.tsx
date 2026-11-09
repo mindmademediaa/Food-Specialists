@@ -19,6 +19,7 @@ import {
   Mail,
   MapPin,
   MessageSquare,
+  MoreVertical,
   Plus,
   RefreshCw,
   Search,
@@ -34,6 +35,8 @@ import {
 } from 'lucide-react';
 import {
   CloudStorageConfig,
+  CustomTrainingMCQ,
+  CustomTrainingModule,
   HubCertificate,
   HubJob,
   HubPaymentRequest,
@@ -97,7 +100,6 @@ interface AdminControlPanelProps {
 }
 
 export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
-  adminEmail,
   users,
   paymentRequests,
   jobs,
@@ -222,23 +224,49 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const [schFilterCat, setSchFilterCat] = useState<string>('All');
   const [isPostingSch, setIsPostingSch] = useState(false);
 
-  // Trainings & Price Editor State
+  // Header 3-Dots Menu State
+  const [showAdminHeaderMenu, setShowAdminHeaderMenu] = useState(false);
+
+  // Trainings & Price Editor State (Manual Modules + Manual MCQs)
   const [trCategory, setTrCategory] = useState<
     'International Certification' | 'Highfield' | 'Lead Auditor'
   >('International Certification');
   const [trSubType, setTrSubType] = useState<string>(
-    'International Foundation & Practitioner'
+    'International Certification'
   );
   const [trTitle, setTrTitle] = useState('');
-  const [trFees, setTrFees] = useState(
-    'Free Study & Exam · Rs. 1,000 Certificate Download'
-  );
-  const [trDuration, setTrDuration] = useState('14 Guided Hours · 5 Modules');
+  const [trFees, setTrFees] = useState('');
+  const [trDuration, setTrDuration] = useState('');
   const [trEnrollLink, setTrEnrollLink] = useState(
     'https://wa.me/923240906384'
   );
   const [trDesc, setTrDesc] = useState('');
   const [isSavingTraining, setIsSavingTraining] = useState(false);
+
+  // New Training — Manual Modules Builder State (Subject + Description)
+  const [trModulesList, setTrModulesList] = useState<CustomTrainingModule[]>([]);
+  const [modSubjectInput, setModSubjectInput] = useState('');
+  const [modDescInput, setModDescInput] = useState('');
+
+  // New Training — Manual MCQs Builder State (Question + 4 Options + 1 Correct Answer)
+  const [trMcqsList, setTrMcqsList] = useState<CustomTrainingMCQ[]>([]);
+  const [mcqQuestionInput, setMcqQuestionInput] = useState('');
+  const [mcqOptA, setMcqOptA] = useState('');
+  const [mcqOptB, setMcqOptB] = useState('');
+  const [mcqOptC, setMcqOptC] = useState('');
+  const [mcqOptD, setMcqOptD] = useState('');
+  const [mcqCorrectIdx, setMcqCorrectIdx] = useState<number>(0);
+
+  // Existing Training Card — Expandable Modules & MCQs Manager State
+  const [expandedTrIdForBuilder, setExpandedTrIdForBuilder] = useState<string | null>(null);
+  const [cardModSubject, setCardModSubject] = useState('');
+  const [cardModDesc, setCardModDesc] = useState('');
+  const [cardMcqQuestion, setCardMcqQuestion] = useState('');
+  const [cardMcqOptA, setCardMcqOptA] = useState('');
+  const [cardMcqOptB, setCardMcqOptB] = useState('');
+  const [cardMcqOptC, setCardMcqOptC] = useState('');
+  const [cardMcqOptD, setCardMcqOptD] = useState('');
+  const [cardMcqCorrectIdx, setCardMcqCorrectIdx] = useState<number>(0);
 
   // Inline Training Price & Duration Edits Map: { [trainingId]: { fees, duration } }
   const [priceEdits, setPriceEdits] = useState<
@@ -249,9 +277,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const [directRecipientName, setDirectRecipientName] = useState('');
   const [directRecipientEmail, setDirectRecipientEmail] = useState('');
   const [directSelectedUserUid, setDirectSelectedUserUid] = useState('');
-  const [directTopicMode, setDirectTopicMode] = useState<'catalog' | 'custom'>('custom');
+  const [directTopicMode, setDirectTopicMode] = useState<'catalog' | 'custom'>('catalog');
   const [directCatalogCourseId, setDirectCatalogCourseId] = useState(
-    INTERNATIONAL_TRAINING_COURSES[0]?.id || trainings[0]?.id || ''
+    trainings[0]?.id || ''
   );
   const [directCustomTopicTitle, setDirectCustomTopicTitle] = useState('');
   const [directCustomCourseCode, setDirectCustomCourseCode] = useState('FS-EXEC-400');
@@ -287,10 +315,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       return;
     }
 
+    const activeTrMatch =
+      trainings.find((t) => t.id === directCatalogCourseId) || trainings[0];
     const catalogCourse = INTERNATIONAL_TRAINING_COURSES.find(
       (c) => c.id === directCatalogCourseId
     );
-    const activeTrMatch = trainings.find((t) => t.id === directCatalogCourseId);
+
+    if (directTopicMode === 'catalog' && !activeTrMatch && !directCustomTopicTitle.trim()) {
+      onSetBanner('No training selected in dropdown. Please add a training first or switch to Custom Topic.');
+      return;
+    }
+
     const finalCourseTitle =
       directTopicMode === 'custom' && directCustomTopicTitle.trim()
         ? directCustomTopicTitle.trim()
@@ -314,9 +349,19 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
     const clampedScore = Math.min(100, Math.max(60, Number(directScorePct) || 85));
     const isDistinction = clampedScore >= 75;
-    const correctOutOf40 = Math.round((clampedScore / 100) * 40);
+    const totalQs =
+      directTopicMode === 'catalog' && activeTrMatch?.customMcqs?.length
+        ? activeTrMatch.customMcqs.length
+        : 40;
+    const correctOutOfTotal = Math.round((clampedScore / 100) * totalQs);
     const syllabusList =
-      directTopicMode === 'catalog' && catalogCourse
+      directTopicMode === 'catalog' &&
+      activeTrMatch?.customModules &&
+      activeTrMatch.customModules.length > 0
+        ? activeTrMatch.customModules.map(
+            (m, idx) => `Module ${idx + 1}: ${m.subject}`
+          )
+        : directTopicMode === 'catalog' && catalogCourse
         ? catalogCourse.modules.map((m) => m.title)
         : [
             `Module 1 (Basics & Foundations): Core Principles & Scientific Fundamentals of ${finalCourseTitle}`,
@@ -335,8 +380,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         recipientName: cleanName,
         recipientEmail: directRecipientEmail.trim(),
         courseId:
-          directTopicMode === 'catalog' && catalogCourse
-            ? catalogCourse.id
+          directTopicMode === 'catalog' && activeTrMatch
+            ? activeTrMatch.id
             : `custom-${cleanCodeSlug.toLowerCase()}`,
         trainingTitle: finalCourseTitle,
         accreditationBody: finalAccreditation,
@@ -357,7 +402,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         await onAdminDirectIssueCertificate(certRecord);
       }
 
-      // Immediately generate and download the Portrait A4 PDF Certificate (Highfield / SGS / Bureau Veritas Style)
+      // Immediately generate and download the Portrait A4 PDF Certificate
       downloadOfficialCourseCertificatePdf({
         certificateNumber: generatedCertNo,
         recipientName: cleanName,
@@ -366,8 +411,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         courseCode: finalCourseCode,
         accreditationStandard: finalAccreditation,
         scorePercentage: clampedScore,
-        correctCount: correctOutOf40,
-        totalQuestions: 40,
+        correctCount: correctOutOfTotal,
+        totalQuestions: totalQs,
         distinction: isDistinction,
         issueDate: certRecord.issueDate,
         verificationPortalUrl: window.location.origin,
@@ -571,11 +616,91 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     }
   };
 
+  const handleAddModuleToNewTraining = () => {
+    const cleanSubj = modSubjectInput.trim();
+    if (!cleanSubj) {
+      onSetBanner('Please enter a Module Subject before clicking + Add Module.');
+      return;
+    }
+    const newMod: CustomTrainingModule = {
+      id: `mod-${Date.now()}-${trModulesList.length + 1}`,
+      subject: cleanSubj,
+      description: modDescInput.trim()
+    };
+    setTrModulesList((prev) => [...prev, newMod]);
+    setModSubjectInput('');
+    setModDescInput('');
+  };
+
+  const handleRemoveModuleFromNewTraining = (modId: string) => {
+    setTrModulesList((prev) => prev.filter((m) => m.id !== modId));
+  };
+
+  const handleAddMcqToNewTraining = () => {
+    const cleanQ = mcqQuestionInput.trim();
+    const cleanA = mcqOptA.trim();
+    const cleanB = mcqOptB.trim();
+    const cleanC = mcqOptC.trim();
+    const cleanD = mcqOptD.trim();
+    if (!cleanQ || !cleanA || !cleanB || !cleanC || !cleanD) {
+      onSetBanner('Please enter the MCQ Question and all 4 Options (A, B, C, D).');
+      return;
+    }
+    const newMcq: CustomTrainingMCQ = {
+      id: `mcq-${Date.now()}-${trMcqsList.length + 1}`,
+      question: cleanQ,
+      options: [cleanA, cleanB, cleanC, cleanD],
+      correctIndex: mcqCorrectIdx
+    };
+    setTrMcqsList((prev) => [...prev, newMcq]);
+    setMcqQuestionInput('');
+    setMcqOptA('');
+    setMcqOptB('');
+    setMcqOptC('');
+    setMcqOptD('');
+    setMcqCorrectIdx(0);
+  };
+
+  const handleRemoveMcqFromNewTraining = (mcqId: string) => {
+    setTrMcqsList((prev) => prev.filter((q) => q.id !== mcqId));
+  };
+
   const handleCreateNewTraining = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!trTitle.trim()) return;
     setIsSavingTraining(true);
     try {
+      // Include any pending module or MCQ currently typed into the input fields
+      const finalModules = [...trModulesList];
+      if (modSubjectInput.trim()) {
+        finalModules.push({
+          id: `mod-${Date.now()}-${finalModules.length + 1}`,
+          subject: modSubjectInput.trim(),
+          description: modDescInput.trim()
+        });
+      }
+
+      const finalMcqs = [...trMcqsList];
+      if (
+        mcqQuestionInput.trim() &&
+        mcqOptA.trim() &&
+        mcqOptB.trim() &&
+        mcqOptC.trim() &&
+        mcqOptD.trim()
+      ) {
+        finalMcqs.push({
+          id: `mcq-${Date.now()}-${finalMcqs.length + 1}`,
+          question: mcqQuestionInput.trim(),
+          options: [
+            mcqOptA.trim(),
+            mcqOptB.trim(),
+            mcqOptC.trim(),
+            mcqOptD.trim()
+          ],
+          correctIndex: mcqCorrectIdx
+        });
+      }
+
       const id = `tr-custom-${Date.now()}`;
       const newTr: HubTraining = {
         id,
@@ -587,20 +712,114 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         title: trTitle.trim(),
         description:
           trDesc.trim() ||
-          `Official ${trTitle.trim()} international certification with 5 modules and 40-MCQ final exam.`,
-        duration: trDuration.trim() || '14 Guided Hours · 5 Modules',
+          `${trTitle.trim()} (${finalModules.length} Modules · ${finalMcqs.length} MCQs)`,
+        duration:
+          trDuration.trim() ||
+          `Self-Paced · ${finalModules.length || 1} Modules`,
         fees:
           trFees.trim() ||
-          'Free Study & Exam · Rs. 1,000 Certificate Download',
+          'Free Study & Exam · Rs. 1,000 Certificate',
         enrollLink: trEnrollLink.trim() || 'https://wa.me/923240906384',
-        isActive: true
+        isActive: true,
+        customModules: finalModules,
+        customMcqs: finalMcqs
       };
       await onSaveTraining(newTr);
+      setDirectCatalogCourseId(id);
       setTrTitle('');
+      setTrFees('');
+      setTrDuration('');
       setTrDesc('');
+      setTrModulesList([]);
+      setModSubjectInput('');
+      setModDescInput('');
+      setTrMcqsList([]);
+      setMcqQuestionInput('');
+      setMcqOptA('');
+      setMcqOptB('');
+      setMcqOptC('');
+      setMcqOptD('');
+      setMcqCorrectIdx(0);
     } finally {
       setIsSavingTraining(false);
     }
+  };
+
+  const handleAddModuleToExistingTraining = async (tr: HubTraining) => {
+    const cleanSubj = cardModSubject.trim();
+    if (!cleanSubj) {
+      onSetBanner('Please enter a Module Subject.');
+      return;
+    }
+    const existingMods = tr.customModules || [];
+    const nextMods: CustomTrainingModule[] = [
+      ...existingMods,
+      {
+        id: `mod-${Date.now()}-${existingMods.length + 1}`,
+        subject: cleanSubj,
+        description: cardModDesc.trim()
+      }
+    ];
+    await onSaveTraining({
+      ...tr,
+      customModules: nextMods
+    });
+    setCardModSubject('');
+    setCardModDesc('');
+  };
+
+  const handleDeleteModuleFromExistingTraining = async (
+    tr: HubTraining,
+    modId: string
+  ) => {
+    const nextMods = (tr.customModules || []).filter((m) => m.id !== modId);
+    await onSaveTraining({
+      ...tr,
+      customModules: nextMods
+    });
+  };
+
+  const handleAddMcqToExistingTraining = async (tr: HubTraining) => {
+    const cleanQ = cardMcqQuestion.trim();
+    const cleanA = cardMcqOptA.trim();
+    const cleanB = cardMcqOptB.trim();
+    const cleanC = cardMcqOptC.trim();
+    const cleanD = cardMcqOptD.trim();
+    if (!cleanQ || !cleanA || !cleanB || !cleanC || !cleanD) {
+      onSetBanner('Please fill in Question and all 4 Options (A, B, C, D).');
+      return;
+    }
+    const existingMcqs = tr.customMcqs || [];
+    const nextMcqs: CustomTrainingMCQ[] = [
+      ...existingMcqs,
+      {
+        id: `mcq-${Date.now()}-${existingMcqs.length + 1}`,
+        question: cleanQ,
+        options: [cleanA, cleanB, cleanC, cleanD],
+        correctIndex: cardMcqCorrectIdx
+      }
+    ];
+    await onSaveTraining({
+      ...tr,
+      customMcqs: nextMcqs
+    });
+    setCardMcqQuestion('');
+    setCardMcqOptA('');
+    setCardMcqOptB('');
+    setCardMcqOptC('');
+    setCardMcqOptD('');
+    setCardMcqCorrectIdx(0);
+  };
+
+  const handleDeleteMcqFromExistingTraining = async (
+    tr: HubTraining,
+    mcqId: string
+  ) => {
+    const nextMcqs = (tr.customMcqs || []).filter((q) => q.id !== mcqId);
+    await onSaveTraining({
+      ...tr,
+      customMcqs: nextMcqs
+    });
   };
 
   const handleUpdateCoursePrice = async (tr: HubTraining) => {
@@ -624,15 +843,15 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
   return (
     <div className="h-[100dvh] bg-[#F0F6FC] text-[#1A2138] flex flex-col overflow-hidden">
-      {/* TOP DEDICATED ADMIN COMMAND HEADER (CONSTANT — ROYAL BLUE & DEEP NAVY THEME) */}
+      {/* TOP DEDICATED ADMIN COMMAND HEADER (CLEAN — NO EMAIL/EXTRA TEXT, 3-DOTS MENU WITH SIGN OUT) */}
       <header className="shrink-0 z-40 bg-[#1A2138] text-white shadow-md border-b border-[#1673B8]/50">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
               onClick={() => setActiveTab('menu')}
               title="Admin Control Panel Home"
-              className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-[#D2DEEA] cursor-pointer"
+              className="w-9 h-9 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-[#D2DEEA] cursor-pointer"
             >
               <img
                 src={FS_PORTAL_LOGO_DATA_URI}
@@ -640,24 +859,19 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
               />
             </button>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-[18px] sm:text-[20px] font-extrabold tracking-tight leading-none text-white truncate">
-                  FS Portal
-                </h1>
-                <span className="px-2 py-0.5 rounded-full bg-[#1673B8] text-white text-[10px] font-extrabold uppercase tracking-wider">
-                  Admin Control Panel
-                </span>
-              </div>
-              <p className="text-[11px] text-sky-200 font-medium mt-0.5 truncate">
-                {adminEmail} • Full Platform Control
-              </p>
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-none text-white truncate">
+                FS Portal
+              </h1>
+              <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold uppercase tracking-wider shrink-0">
+                Admin
+              </span>
             </div>
           </div>
 
-          {/* Integrated Quick Search Bar + View App + Backup + Sign Out */}
+          {/* Integrated Quick Search Bar + All Pages + View App + 3-Dots Menu (Sign Out inside) */}
           <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
-            <div className="relative flex-1 sm:w-56 max-w-xs">
+            <div className="relative flex-1 sm:w-52 max-w-[200px]">
               <Search className="w-3.5 h-3.5 text-[#1673B8] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -666,8 +880,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   setUserSearch(e.target.value);
                   if (activeTab !== 'users') setActiveTab('users');
                 }}
-                placeholder="Search users, email, role..."
-                className="w-full h-9 pl-8 pr-3 rounded-xl bg-[#F0F6FC] text-[#1A2138] placeholder:text-slate-500 text-xs font-semibold focus:outline-none border border-[#D2DEEA]"
+                placeholder="Search users..."
+                className="w-full h-8.5 pl-8 pr-3 rounded-xl bg-[#F0F6FC] text-[#1A2138] placeholder:text-slate-500 text-xs font-semibold focus:outline-none border border-[#D2DEEA]"
               />
             </div>
 
@@ -675,39 +889,83 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('menu')}
-                className="px-3 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-xs"
+                className="px-2.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center gap-1 cursor-pointer transition-colors shrink-0 shadow-xs"
               >
-                <span>All Admin Pages</span>
+                <span>Pages</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={onPreviewUserApp}
-              className="px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
+              className="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
               title="Preview how the user app looks right now"
             >
               <Eye className="w-3.5 h-3.5" />
               <span className="hidden md:inline">View App</span>
             </button>
 
-            <button
-              type="button"
-              onClick={onExportBackup}
-              className="px-3 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold hidden sm:flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs shrink-0"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">Backup</span>
-            </button>
+            {/* 3-Dots Menu (Contains Backup, View App, and Sign Out — matching frontend Header) */}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAdminHeaderMenu((prev) => !prev)}
+                className="w-8.5 h-8.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Admin Menu & Sign Out"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
 
-            <button
-              type="button"
-              onClick={onSignOut}
-              className="px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/35 border border-red-400/30 text-red-100 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
-            </button>
+              {showAdminHeaderMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowAdminHeaderMenu(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white text-[#1A2138] shadow-2xl border border-[#D2DEEA] py-2 z-50 overflow-hidden">
+                    <div className="px-3.5 py-2 border-b border-[#D2DEEA] bg-[#F0F6FC]">
+                      <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8]">
+                        Admin Controls
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAdminHeaderMenu(false);
+                        onPreviewUserApp();
+                      }}
+                      className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer"
+                    >
+                      <Eye className="w-4 h-4 text-[#1673B8] shrink-0" />
+                      <span>Preview User App</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAdminHeaderMenu(false);
+                        onExportBackup();
+                      }}
+                      className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 text-[#1673B8] shrink-0" />
+                      <span>Export JSON Backup</span>
+                    </button>
+                    <div className="my-1 border-t border-[#D2DEEA]" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAdminHeaderMenu(false);
+                        onSignOut();
+                      }}
+                      className="w-full px-3.5 py-2.5 text-left text-xs font-extrabold text-red-600 hover:bg-red-50 flex items-center gap-2.5 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 text-red-600 shrink-0" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -1781,7 +2039,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="grid grid-cols-3 gap-2 pt-1">
                         <button
                           type="button"
                           onClick={() => onVerifyPayment(req, 'verified')}
@@ -1791,7 +2049,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           <span>
                             {req.certificateCourseId ||
                             req.subscriptionPlan === 'certificate_unlock'
-                              ? 'Allow Certificate Download'
+                              ? 'Accept Cert'
                               : `Accept (${
                                   req.subscriptionPlan
                                     ?.toLowerCase()
@@ -1800,18 +2058,26 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                   req.amount?.includes('900') ||
                                   req.amount?.includes('1800') ||
                                   req.amount?.includes('1,800')
-                                    ? '1 Year'
-                                    : '1 Month'
+                                    ? '1 Yr'
+                                    : '1 Mo'
                                 })`}
                           </span>
                         </button>
                         <button
                           type="button"
                           onClick={() => onVerifyPayment(req, 'rejected')}
-                          className="py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                          className="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                         >
                           <X className="w-4 h-4 stroke-[2.5]" />
-                          <span>Reject Request</span>
+                          <span>Reject</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeletePaymentRequest(req.id)}
+                          className="py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
                         </button>
                       </div>
                     </div>
@@ -2610,7 +2876,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     Issue Instant Portrait Certificate (Official Certificate of Achievement Pattern) on Any Course or Custom Topic
                   </h2>
                   <p className="text-xs text-[#4A5568] font-medium leading-relaxed">
-                    Admin kisi bhi candidate ya member ko bina exam diye aur bina modules parhay 14 Accredited Courses may say kisi par bhi—ya kisi bhi Custom Topic par—<strong>Portrait A4 PDF Certificate</strong> bana kar day sakta hy. Certificate foran PDF may download hoga aur Online Verification Portal par live verify hoga.
+                    Admin kisi bhi candidate ya member ko bina exam diye aur bina modules parhay Published Trainings may say kisi par bhi—ya kisi bhi Custom Topic par—<strong>Portrait A4 PDF Certificate</strong> bana kar day sakta hy. Certificate foran PDF may download hoga aur Online Verification Portal par live verify hoga.
                   </p>
                 </div>
               </div>
@@ -2663,7 +2929,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
               </div>
 
-              {/* Row 2: Mode Selector (Select from 14 Courses vs. Any Custom Topic) */}
+              {/* Row 2: Mode Selector (Select from Published Trainings Dropdown vs. Any Custom Topic) */}
               <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-extrabold text-[#1A2138]">
@@ -2679,7 +2945,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
                       }`}
                     >
-                      Choose from Published Trainings ({trainings.length})
+                      Select from Trainings Dropdown ({trainings.length})
                     </button>
                     <button
                       type="button"
@@ -2695,30 +2961,28 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </div>
                 </div>
 
-                {directTopicMode === 'catalog' && trainings.length > 0 ? (
+                {directTopicMode === 'catalog' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-                        Select Published Training Course *
+                        Select Training Course (Added in Trainings Section) *
                       </label>
                       <select
                         value={directCatalogCourseId}
-                        onChange={(e) => {
-                          setDirectCatalogCourseId(e.target.value);
-                          const found = INTERNATIONAL_TRAINING_COURSES.find(
-                            (c) => c.id === e.target.value
-                          );
-                          if (found) {
-                            setDirectAccreditationStd(found.accreditationStandard);
-                          }
-                        }}
+                        onChange={(e) => setDirectCatalogCourseId(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                       >
-                        {trainings.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.title} ({t.standardCode || 'FS-CERT'})
+                        {trainings.length === 0 ? (
+                          <option value="">
+                            -- No trainings added yet (Add a training in Trainings section) --
                           </option>
-                        ))}
+                        ) : (
+                          trainings.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.title}
+                            </option>
+                          ))
+                        )}
                       </select>
                     </div>
                     <div>
@@ -2858,6 +3122,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </div>
                   <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
                     {certificates.map((cert) => {
+                      const matchedTr = trainings.find(
+                        (t) =>
+                          t.id === cert.courseId ||
+                          t.title.trim().toLowerCase() === cert.trainingTitle.trim().toLowerCase()
+                      );
                       const matchedCourse = INTERNATIONAL_TRAINING_COURSES.find(
                         (c) =>
                           c.id === cert.courseId ||
@@ -2865,6 +3134,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       );
                       const scoreVal = cert.scorePercentage || 85;
                       const isDist = Boolean(cert.distinction || scoreVal >= 75);
+                      const certModulesList =
+                        matchedTr?.customModules && matchedTr.customModules.length > 0
+                          ? matchedTr.customModules.map(
+                              (m, idx) => `Module ${idx + 1}: ${m.subject}`
+                            )
+                          : matchedCourse?.modules.map((m) => m.title);
                       return (
                         <div
                           key={cert.id}
@@ -2900,7 +3175,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                   recipientName: cert.recipientName,
                                   recipientEmail: cert.recipientEmail || '',
                                   courseTitle: cert.trainingTitle,
-                                  courseCode: matchedCourse?.code || 'FS-CERT-INTL',
+                                  courseCode:
+                                    matchedTr?.standardCode ||
+                                    matchedCourse?.code ||
+                                    'FS-CERT-INTL',
                                   accreditationStandard:
                                     cert.accreditationBody ||
                                     matchedCourse?.accreditationStandard ||
@@ -2911,7 +3189,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                   distinction: isDist,
                                   issueDate: cert.issueDate,
                                   verificationPortalUrl: window.location.origin,
-                                  syllabusModules: matchedCourse?.modules.map((m) => m.title),
+                                  syllabusModules: certModulesList,
                                   issuedByMode: 'admin_direct'
                                 })
                               }
@@ -2950,7 +3228,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     Approve / Allow User Certificate Downloads
                   </h2>
                   <p className="text-xs text-[#4A5568] font-medium">
-                    Jab user 40-MCQ exam pass kar k Rs. 1,000 certificate fee submit karta hy, uski request yahan ati hy. Jab ap payment confirm kar k <strong>Allow Certificate Download</strong> par click karengay, tab user ka PDF Certificate download unlock hoga aur website portal par live verify hoga.
+                    Jab user exam pass kar k Rs. 1,000 certificate fee submit karta hy, uski request yahan ati hy. Jab ap payment confirm kar k <strong>Allow Certificate Download</strong> par click karengay, tab user ka PDF Certificate download unlock hoga aur website portal par live verify hoga.
                   </p>
                 </div>
               </div>
@@ -2999,19 +3277,29 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               {req.paymentMethod} • {req.amount} • TID: {req.transactionId}
                             </div>
                           </div>
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                              req.status === 'verified'
-                                ? 'bg-[#EBF4FC] text-[#105E9A]'
-                                : req.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-amber-200 text-amber-950'
-                            }`}
-                          >
-                            {req.status === 'verified'
-                              ? 'APPROVED & LIVE'
-                              : req.status.toUpperCase()}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                req.status === 'verified'
+                                  ? 'bg-[#EBF4FC] text-[#105E9A]'
+                                  : req.status === 'rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-amber-200 text-amber-950'
+                              }`}
+                            >
+                              {req.status === 'verified'
+                                ? 'APPROVED & LIVE'
+                                : req.status.toUpperCase()}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => onDeletePaymentRequest(req.id)}
+                              className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
+                              title="Delete this request record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
                         {req.receiptImageUrl && (
@@ -3024,22 +3312,30 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="grid grid-cols-3 gap-2 pt-1">
                           <button
                             type="button"
                             onClick={() => onVerifyPayment(req, 'verified')}
-                            className="py-2 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="py-2 px-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1 cursor-pointer"
                           >
-                            <Check className="w-4 h-4" />
-                            <span>Allow Certificate Download</span>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Accept</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => onVerifyPayment(req, 'rejected')}
-                            className="py-2 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-extrabold flex items-center justify-center gap-1 cursor-pointer"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3.5 h-3.5" />
                             <span>Reject</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeletePaymentRequest(req.id)}
+                            className="py-2 px-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </div>
@@ -3052,225 +3348,730 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
             {activeTab === 'trainings' && (
               <>
-                {/* ADD NEW TRAINING FORM */}
+                {/* ADD NEW INTERNATIONAL CERTIFICATION TRAINING FORM (WITH MANUAL MODULES + MANUAL MCQS) */}
                 <form
                   onSubmit={handleCreateNewTraining}
-              className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-4"
-            >
-              <div className="border-b border-[#D2DEEA] pb-3">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
-                  Add New Accredited Training Course
-                </span>
-                <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
-                  Add International Training &amp; Set Course Details
-                </h2>
-                <p className="text-xs text-[#4A5568] font-medium">
-                  Add a new training to the International Certification catalog or manage all 14 courses below.
-                </p>
-              </div>
+                  className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-5"
+                >
+                  <div className="border-b border-[#D2DEEA] pb-3">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
+                      International Certification Builder
+                    </span>
+                    <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
+                      Add International Training — Title, Fee, Duration, Modules &amp; Manual MCQs
+                    </h2>
+                    <p className="text-xs text-[#4A5568] font-medium">
+                      Create a new training course manually with its Title, Fee, Duration, Modules (Subject + Description), and Course MCQs (4 Options + 1 Correct Answer). Every training added here automatically appears in the Certificate Generator dropdown as well.
+                    </p>
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-                    Training Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={trTitle}
-                    onChange={(e) => setTrTitle(e.target.value)}
-                    placeholder="e.g. Food Safety Certified / HACCP Level 4"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold"
-                  />
-                </div>
+                  {/* Row 1: Training Title, Fee, Duration */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        Training Title *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={trTitle}
+                        onChange={(e) => setTrTitle(e.target.value)}
+                        placeholder="e.g., HACCP Level 3 / ISO 22000"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-                    Certificate / Course Fee *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={trFees}
-                    onChange={(e) => setTrFees(e.target.value)}
-                    placeholder="Free Study & Exam · Rs. 1,000 Certificate"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        Fee *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={trFees}
+                        onChange={(e) => setTrFees(e.target.value)}
+                        placeholder="e.g., Rs. 1,000 Certificate"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-                    Duration &amp; Modules
-                  </label>
-                  <input
-                    type="text"
-                    value={trDuration}
-                    onChange={(e) => setTrDuration(e.target.value)}
-                    placeholder="e.g. 14 Guided Hours · 5 Modules"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold"
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        Duration *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={trDuration}
+                        onChange={(e) => setTrDuration(e.target.value)}
+                        placeholder="e.g., 10 Hours / 5 Days"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                      />
+                    </div>
+                  </div>
 
-              <textarea
-                rows={3}
-                value={trDesc}
-                onChange={(e) => setTrDesc(e.target.value)}
-                placeholder="Course overview, syllabus highlights & international certification details..."
-                className="w-full p-3.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold"
-              />
+                  {/* Course Short Overview (Optional) */}
+                  <div>
+                    <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                      Course Overview / Summary (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={trDesc}
+                      onChange={(e) => setTrDesc(e.target.value)}
+                      placeholder="Short course overview or certification description..."
+                      className="w-full p-3 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                disabled={isSavingTraining || !trTitle.trim()}
-                className="w-full py-3 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors"
-              >
-                <Plus className="w-4 h-4 stroke-[2.5]" />
-                <span>Add Training to Live App</span>
-              </button>
-            </form>
+                  {/* =================================================================
+                      MODULES SECTION (MODULE SUBJECT + DESCRIPTION TAB + ADD BUTTON)
+                     ================================================================= */}
+                  <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#D2DEEA] space-y-3.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-lg bg-[#1673B8] text-white text-[11px] font-extrabold">
+                          Modules Section ({trModulesList.length} Added)
+                        </span>
+                        <span className="text-xs font-extrabold text-[#1A2138]">
+                          Module Subject + Description
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddModuleToNewTraining}
+                        className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>+ Add Module</span>
+                      </button>
+                    </div>
 
-            {/* EDIT TRAINING PRICES, TOGGLE VISIBILITY OR REMOVE TRAININGS */}
-            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
-              <div className="border-b border-[#D2DEEA] pb-3">
-                <h3 className="text-base font-extrabold text-[#1A2138]">
-                  Published Trainings — Control Visibility, Edit Prices or Remove ({trainings.length})
-                </h3>
-                <p className="text-xs text-[#4A5568]">
-                  Manage every training course from here: edit its fee/duration, toggle Active/Hidden on the frontend app, or remove it.
-                </p>
-              </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-start">
+                      <div className="sm:col-span-4">
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Module Subject (Title)
+                        </label>
+                        <input
+                          type="text"
+                          value={modSubjectInput}
+                          onChange={(e) => setModSubjectInput(e.target.value)}
+                          placeholder={`e.g., Module ${trModulesList.length + 1}: Food Safety Principles`}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                        />
+                      </div>
+                      <div className="sm:col-span-6">
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Module Description / Study Content
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={modDescInput}
+                          onChange={(e) => setModDescInput(e.target.value)}
+                          placeholder="Enter complete module description, key topics, and study notes..."
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-medium text-[#1A2138]"
+                        />
+                      </div>
+                      <div className="sm:col-span-2 sm:pt-5">
+                        <button
+                          type="button"
+                          onClick={handleAddModuleToNewTraining}
+                          className="w-full py-2.5 px-3 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Add</span>
+                        </button>
+                      </div>
+                    </div>
 
-              <div className="space-y-3">
-                {trainings.map((tr) => {
-                  const currentFeeVal =
-                    priceEdits[tr.id]?.fees !== undefined
-                      ? priceEdits[tr.id].fees
-                      : tr.fees;
-                  const currentDurVal =
-                    priceEdits[tr.id]?.duration !== undefined
-                      ? priceEdits[tr.id].duration
-                      : tr.duration;
-
-                  return (
-                    <div
-                      key={tr.id}
-                      className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
-                              {tr.category}
-                            </span>
-                            {tr.standardCode && (
-                              <span className="px-2 py-0.5 rounded-full bg-[#1A2138] text-white text-[10px] font-mono font-bold">
-                                {tr.standardCode}
-                              </span>
-                            )}
-                            {tr.subType && (
-                              <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#1A2138] text-[10.5px] font-bold">
-                                {tr.subType}
-                              </span>
-                            )}
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                tr.isActive !== false
-                                  ? 'bg-[#EBF4FC] text-[#105E9A]'
-                                  : 'bg-slate-200 text-slate-600'
-                              }`}
-                            >
-                              {tr.isActive !== false ? 'ACTIVE ON APP' : 'HIDDEN'}
-                            </span>
-                          </div>
-                          <h4 className="text-sm font-extrabold text-[#1A2138] mt-1">
-                            {tr.title}
-                          </h4>
-                          <p className="text-xs text-[#4A5568] line-clamp-2 mt-0.5">
-                            {tr.description}
-                          </p>
+                    {trModulesList.length > 0 && (
+                      <div className="space-y-2 pt-1">
+                        <div className="text-[11px] font-extrabold text-[#105E9A]">
+                          Added Modules Sequence (Will appear on Course &amp; Certificate):
                         </div>
+                        {trModulesList.map((mod, idx) => (
+                          <div
+                            key={mod.id}
+                            className="p-3 rounded-xl bg-white border border-[#D2DEEA] flex items-start justify-between gap-2.5 text-xs"
+                          >
+                            <div className="space-y-0.5 min-w-0">
+                              <div className="font-extrabold text-[#1A2138]">
+                                {idx + 1}. {mod.subject}
+                              </div>
+                              {mod.description && (
+                                <p className="text-[#4A5568] text-[11px] whitespace-pre-line">
+                                  {mod.description}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveModuleFromNewTraining(mod.id)}
+                              className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-extrabold shrink-0 cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onSaveTraining({
-                                ...tr,
-                                isActive: tr.isActive === false ? true : false
-                              })
-                            }
-                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#EBF4FC] text-[#1A2138] border border-[#D2DEEA] text-xs font-extrabold cursor-pointer"
-                          >
-                            {tr.isActive === false ? 'Show on App' : 'Hide'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onDeleteTraining(tr)}
-                            className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shrink-0"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Remove</span>
-                          </button>
+                  {/* =================================================================
+                      MANUAL MCQS SECTION (QUESTION + 4 OPTIONS + 1 CORRECT ANSWER)
+                     ================================================================= */}
+                  <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#D2DEEA] space-y-3.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-lg bg-[#1A2138] text-white text-[11px] font-extrabold">
+                          Course MCQs Section ({trMcqsList.length} Added)
+                        </span>
+                        <span className="text-xs font-extrabold text-[#1A2138]">
+                          Add Manual MCQs (4 Options + 1 Correct Answer)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddMcqToNewTraining}
+                        className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>+ Add MCQ</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          MCQ Question
+                        </label>
+                        <input
+                          type="text"
+                          value={mcqQuestionInput}
+                          onChange={(e) => setMcqQuestionInput(e.target.value)}
+                          placeholder={`e.g., Q${trMcqsList.length + 1}: What is the minimum safe hot-holding temperature for high-risk foods?`}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                            Option A
+                          </label>
+                          <input
+                            type="text"
+                            value={mcqOptA}
+                            onChange={(e) => setMcqOptA(e.target.value)}
+                            placeholder="Enter Option A"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                            Option B
+                          </label>
+                          <input
+                            type="text"
+                            value={mcqOptB}
+                            onChange={(e) => setMcqOptB(e.target.value)}
+                            placeholder="Enter Option B"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                            Option C
+                          </label>
+                          <input
+                            type="text"
+                            value={mcqOptC}
+                            onChange={(e) => setMcqOptC(e.target.value)}
+                            placeholder="Enter Option C"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                            Option D
+                          </label>
+                          <input
+                            type="text"
+                            value={mcqOptD}
+                            onChange={(e) => setMcqOptD(e.target.value)}
+                            placeholder="Enter Option D"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                          />
                         </div>
                       </div>
 
-                      {/* INLINE PRICE & DURATION EDITOR */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#D2DEEA] items-end">
-                        <div>
-                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                            Course Fee / Price (Live)
+                      <div className="flex flex-wrap items-end justify-between gap-2.5 pt-1">
+                        <div className="w-full sm:w-64">
+                          <label className="block text-[11px] font-extrabold text-[#105E9A] mb-1">
+                            Select Correct Answer (1 Correct Option) *
                           </label>
-                          <input
-                            type="text"
-                            value={currentFeeVal}
-                            onChange={(e) =>
-                              setPriceEdits((prev) => ({
-                                ...prev,
-                                [tr.id]: {
-                                  fees: e.target.value,
-                                  duration: currentDurVal
-                                }
-                              }))
-                            }
-                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                            Duration
-                          </label>
-                          <input
-                            type="text"
-                            value={currentDurVal}
-                            onChange={(e) =>
-                              setPriceEdits((prev) => ({
-                                ...prev,
-                                [tr.id]: {
-                                  fees: currentFeeVal,
-                                  duration: e.target.value
-                                }
-                              }))
-                            }
-                            className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
-                          />
+                          <select
+                            value={mcqCorrectIdx}
+                            onChange={(e) => setMcqCorrectIdx(Number(e.target.value))}
+                            className="w-full px-3 py-2 rounded-xl bg-white border-2 border-[#1673B8] text-xs font-extrabold text-[#1A2138]"
+                          >
+                            <option value={0}>Option A is Correct</option>
+                            <option value={1}>Option B is Correct</option>
+                            <option value={2}>Option C is Correct</option>
+                            <option value={3}>Option D is Correct</option>
+                          </select>
                         </div>
 
                         <button
                           type="button"
-                          onClick={() => handleUpdateCoursePrice(tr)}
-                          className="py-2 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors h-[36px]"
+                          onClick={handleAddMcqToNewTraining}
+                          className="py-2 px-4 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-colors"
                         >
-                          <Check className="w-4 h-4 stroke-[2.5]" />
-                          <span>Save Price &amp; Update Live</span>
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>+ Add This MCQ to Course</span>
                         </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+
+                    {trMcqsList.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-[#D2DEEA]">
+                        <div className="text-[11px] font-extrabold text-[#105E9A]">
+                          Added MCQs for This Course ({trMcqsList.length}):
+                        </div>
+                        <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                          {trMcqsList.map((q, qIdx) => (
+                            <div
+                              key={q.id}
+                              className="p-3 rounded-xl bg-white border border-[#D2DEEA] flex items-start justify-between gap-2.5 text-xs"
+                            >
+                              <div className="space-y-1 min-w-0">
+                                <div className="font-extrabold text-[#1A2138]">
+                                  Q{qIdx + 1}. {q.question}
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px]">
+                                  {q.options.map((opt, oIdx) => (
+                                    <span
+                                      key={oIdx}
+                                      className={`px-2 py-0.5 rounded ${
+                                        q.correctIndex === oIdx
+                                          ? 'bg-[#EBF4FC] text-[#105E9A] font-extrabold border border-[#1673B8]/40'
+                                          : 'text-[#4A5568]'
+                                      }`}
+                                    >
+                                      {['A', 'B', 'C', 'D'][oIdx]}: {opt}{' '}
+                                      {q.correctIndex === oIdx ? '✓ (Correct)' : ''}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMcqFromNewTraining(q.id)}
+                                className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-extrabold shrink-0 cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingTraining || !trTitle.trim()}
+                    className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+                  >
+                    <Plus className="w-4 h-4 stroke-[2.5]" />
+                    <span>
+                      {isSavingTraining
+                        ? 'Saving Training...'
+                        : 'Save & Publish Training (With Modules & MCQs) to Live App'}
+                    </span>
+                  </button>
+                </form>
+
+                {/* PUBLISHED TRAININGS — EDIT PRICES, MODULES, MCQS, VISIBILITY OR REMOVE */}
+                <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+                  <div className="border-b border-[#D2DEEA] pb-3">
+                    <h3 className="text-base font-extrabold text-[#1A2138]">
+                      Published Trainings — Manage Modules, MCQs, Prices or Remove ({trainings.length})
+                    </h3>
+                    <p className="text-xs text-[#4A5568]">
+                      Manage every training course below: add or edit its Modules (Subject + Description) and Manual MCQs (4 Options + 1 Correct Answer), update fee/duration, or remove it.
+                    </p>
+                  </div>
+
+                  {trainings.length === 0 ? (
+                    <div className="p-6 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-center text-xs font-semibold text-[#4A5568]">
+                      Abhi koi training add nahi ki gayi. Upar form say apni pehli International Certification training (Modules aur MCQs k sath) add karein.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {trainings.map((tr) => {
+                        const currentFeeVal =
+                          priceEdits[tr.id]?.fees !== undefined
+                            ? priceEdits[tr.id].fees
+                            : tr.fees;
+                        const currentDurVal =
+                          priceEdits[tr.id]?.duration !== undefined
+                            ? priceEdits[tr.id].duration
+                            : tr.duration;
+                        const isBuilderOpen = expandedTrIdForBuilder === tr.id;
+                        const trMods = tr.customModules || [];
+                        const trMcqs = tr.customMcqs || [];
+
+                        return (
+                          <div
+                            key={tr.id}
+                            className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3.5"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
+                                    {tr.category}
+                                  </span>
+                                  <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#1673B8] text-[10.5px] font-extrabold">
+                                    {trMods.length} Modules
+                                  </span>
+                                  <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#1A2138] text-[10.5px] font-extrabold">
+                                    {trMcqs.length} MCQs
+                                  </span>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                      tr.isActive !== false
+                                        ? 'bg-[#EBF4FC] text-[#105E9A]'
+                                        : 'bg-slate-200 text-slate-600'
+                                    }`}
+                                  >
+                                    {tr.isActive !== false ? 'ACTIVE ON APP' : 'HIDDEN'}
+                                  </span>
+                                </div>
+                                <h4 className="text-sm font-extrabold text-[#1A2138] mt-1">
+                                  {tr.title}
+                                </h4>
+                                <p className="text-xs text-[#4A5568] line-clamp-2 mt-0.5">
+                                  {tr.description}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedTrIdForBuilder(
+                                      isBuilderOpen ? null : tr.id
+                                    )
+                                  }
+                                  className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer"
+                                >
+                                  {isBuilderOpen
+                                    ? 'Close Modules & MCQs'
+                                    : `+ Modules (${trMods.length}) & MCQs (${trMcqs.length})`}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    onSaveTraining({
+                                      ...tr,
+                                      isActive: tr.isActive === false ? true : false
+                                    })
+                                  }
+                                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#EBF4FC] text-[#1A2138] border border-[#D2DEEA] text-xs font-extrabold cursor-pointer"
+                                >
+                                  {tr.isActive === false ? 'Show on App' : 'Hide'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onDeleteTraining(tr)}
+                                  className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shrink-0"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Remove</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* INLINE PRICE & DURATION EDITOR */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#D2DEEA] items-end">
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Course Fee / Price (Live)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={currentFeeVal}
+                                  onChange={(e) =>
+                                    setPriceEdits((prev) => ({
+                                      ...prev,
+                                      [tr.id]: {
+                                        fees: e.target.value,
+                                        duration: currentDurVal
+                                      }
+                                    }))
+                                  }
+                                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Duration
+                                </label>
+                                <input
+                                  type="text"
+                                  value={currentDurVal}
+                                  onChange={(e) =>
+                                    setPriceEdits((prev) => ({
+                                      ...prev,
+                                      [tr.id]: {
+                                        fees: currentFeeVal,
+                                        duration: e.target.value
+                                      }
+                                    }))
+                                  }
+                                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateCoursePrice(tr)}
+                                className="py-2 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors h-[36px]"
+                              >
+                                <Check className="w-4 h-4 stroke-[2.5]" />
+                                <span>Save Price &amp; Update Live</span>
+                              </button>
+                            </div>
+
+                            {/* EXPANDABLE MODULES & MCQS MANAGER FOR THIS EXISTING TRAINING */}
+                            {isBuilderOpen && (
+                              <div className="pt-3 border-t-2 border-[#1673B8]/30 space-y-4">
+                                {/* 1. Manage Modules for this Course */}
+                                <div className="p-3.5 rounded-2xl bg-white border border-[#D2DEEA] space-y-3">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="text-xs font-extrabold text-[#1A2138]">
+                                      Course Modules ({trMods.length}) — Add Module Subject + Description
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleAddModuleToExistingTraining(tr)
+                                      }
+                                      className="px-3 py-1 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>+ Add Module</span>
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-start">
+                                    <div className="sm:col-span-4">
+                                      <input
+                                        type="text"
+                                        value={cardModSubject}
+                                        onChange={(e) =>
+                                          setCardModSubject(e.target.value)
+                                        }
+                                        placeholder="Module Subject..."
+                                        className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-6">
+                                      <textarea
+                                        rows={2}
+                                        value={cardModDesc}
+                                        onChange={(e) =>
+                                          setCardModDesc(e.target.value)
+                                        }
+                                        placeholder="Module Description & study details..."
+                                        className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-medium text-[#1A2138]"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleAddModuleToExistingTraining(tr)
+                                        }
+                                        className="w-full py-2 px-3 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                                      >
+                                        + Add
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {trMods.length > 0 && (
+                                    <div className="space-y-1.5">
+                                      {trMods.map((m, idx) => (
+                                        <div
+                                          key={m.id}
+                                          className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start justify-between gap-2 text-xs"
+                                        >
+                                          <div>
+                                            <span className="font-extrabold text-[#1A2138]">
+                                              {idx + 1}. {m.subject}
+                                            </span>
+                                            {m.description && (
+                                              <p className="text-[11px] text-[#4A5568] mt-0.5 whitespace-pre-line">
+                                                {m.description}
+                                              </p>
+                                            )}
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleDeleteModuleFromExistingTraining(
+                                                tr,
+                                                m.id
+                                              )
+                                            }
+                                            className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-extrabold shrink-0 cursor-pointer"
+                                          >
+                                            Delete
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* 2. Manage Manual MCQs for this Course */}
+                                <div className="p-3.5 rounded-2xl bg-white border border-[#D2DEEA] space-y-3">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="text-xs font-extrabold text-[#1A2138]">
+                                      Course Final Exam MCQs ({trMcqs.length}) — 4 Options + 1 Correct Answer
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleAddMcqToExistingTraining(tr)
+                                      }
+                                      className="px-3 py-1 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>+ Add MCQ</span>
+                                    </button>
+                                  </div>
+
+                                  <input
+                                    type="text"
+                                    value={cardMcqQuestion}
+                                    onChange={(e) =>
+                                      setCardMcqQuestion(e.target.value)
+                                    }
+                                    placeholder="Enter MCQ Question..."
+                                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                                  />
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <input
+                                      type="text"
+                                      value={cardMcqOptA}
+                                      onChange={(e) =>
+                                        setCardMcqOptA(e.target.value)
+                                      }
+                                      placeholder="Option A"
+                                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={cardMcqOptB}
+                                      onChange={(e) =>
+                                        setCardMcqOptB(e.target.value)
+                                      }
+                                      placeholder="Option B"
+                                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={cardMcqOptC}
+                                      onChange={(e) =>
+                                        setCardMcqOptC(e.target.value)
+                                      }
+                                      placeholder="Option C"
+                                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={cardMcqOptD}
+                                      onChange={(e) =>
+                                        setCardMcqOptD(e.target.value)
+                                      }
+                                      placeholder="Option D"
+                                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                    />
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <select
+                                      value={cardMcqCorrectIdx}
+                                      onChange={(e) =>
+                                        setCardMcqCorrectIdx(
+                                          Number(e.target.value)
+                                        )
+                                      }
+                                      className="px-3 py-2 rounded-xl bg-[#F0F6FC] border-2 border-[#1673B8] text-xs font-extrabold text-[#1A2138]"
+                                    >
+                                      <option value={0}>Option A is Correct</option>
+                                      <option value={1}>Option B is Correct</option>
+                                      <option value={2}>Option C is Correct</option>
+                                      <option value={3}>Option D is Correct</option>
+                                    </select>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleAddMcqToExistingTraining(tr)
+                                      }
+                                      className="py-2 px-4 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                                    >
+                                      + Save MCQ to Course
+                                    </button>
+                                  </div>
+
+                                  {trMcqs.length > 0 && (
+                                    <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                                      {trMcqs.map((q, qIdx) => (
+                                        <div
+                                          key={q.id}
+                                          className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start justify-between gap-2 text-xs"
+                                        >
+                                          <div className="space-y-0.5">
+                                            <div className="font-extrabold text-[#1A2138]">
+                                              Q{qIdx + 1}. {q.question}
+                                            </div>
+                                            <div className="text-[11px] text-[#105E9A] font-bold">
+                                              Correct: {['A', 'B', 'C', 'D'][q.correctIndex]} ({q.options[q.correctIndex]})
+                                            </div>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleDeleteMcqFromExistingTraining(
+                                                tr,
+                                                q.id
+                                              )
+                                            }
+                                            className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-extrabold shrink-0 cursor-pointer"
+                                          >
+                                            Delete
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>
