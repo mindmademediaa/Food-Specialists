@@ -105,26 +105,26 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onHomeClick}
-            aria-label="Foodifyy Home"
-            title="Foodifyy"
-            className="relative w-9 h-9 rounded-xl bg-white border border-[#1673B8]/30 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs cursor-pointer"
+            aria-label="Food Science Portal Home"
+            title="Food Science Portal"
+            className="relative w-9 h-9 rounded-xl bg-white border border-[#1673B8]/30 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs cursor-pointer"
           >
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
-              alt="Foodifyy"
-              className="w-full h-full object-cover select-none"
+              alt="Food Science Portal"
+              className="w-full h-full object-contain select-none"
             />
           </button>
 
-          {/* Foodifyy Brand Title */}
+          {/* Food Science Portal Brand Title */}
           <button
             type="button"
             onClick={onHomeClick}
-            className="text-[18px] sm:text-[20px] font-black tracking-tight leading-none flex items-baseline shrink-0 cursor-pointer"
+            className="text-[16px] sm:text-[19px] font-black tracking-tight leading-none flex items-baseline gap-1 shrink-0 cursor-pointer"
           >
-            <span className="text-[#1A2138]">Foodi</span>
+            <span className="text-[#0C182D]">Food Science</span>
             <span className="text-[#1673B8] border-b-[2.5px] border-[#1673B8] pb-0.5 leading-none">
-              fyy
+              Portal
             </span>
           </button>
         </div>

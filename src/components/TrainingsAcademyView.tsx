@@ -610,7 +610,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             courseTitle: prog.courseTitle,
             courseCode: courseObj?.code || 'FS-CERT-INTL',
             accreditationBody:
-              courseObj?.accreditationStandard || 'Foodifyy International Academy',
+              courseObj?.accreditationStandard || 'Food Science Portal International Academy',
             issueDate: prog.certificateUnlockedAt
               ? new Date(prog.certificateUnlockedAt).toLocaleDateString('en-GB', {
                   day: '2-digit',
@@ -776,13 +776,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
             {/* Top Section: Brand Logo, Rosette Seal, Title, User & Training Info */}
             <div className="space-y-4 relative z-10">
-              {/* Top Row: Foodifyy Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
+              {/* Top Row: Food Science Portal Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-2xl sm:text-3xl font-black tracking-tight text-[#1A2138] flex items-baseline">
-                    <span>Foodi</span>
+                  <div className="text-xl sm:text-2xl font-black tracking-tight text-[#0C182D] flex items-baseline gap-1.5">
+                    <span>Food Science</span>
                     <span className="text-[#1673B8] border-b-[3px] border-[#1673B8] pb-0.5 leading-none">
-                      fyy
+                      Portal
                     </span>
                   </div>
                   <p className="text-[11px] font-semibold text-slate-600 mt-1">
@@ -810,11 +810,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       y="38"
                       textAnchor="middle"
                       fill="#236B9E"
-                      fontSize="6.5"
+                      fontSize="5.2"
                       fontWeight="800"
-                      letterSpacing="0.8"
+                      letterSpacing="0.5"
                     >
-                      FOODIFYY
+                      FOOD SCIENCE
                     </text>
                     <rect x="39" y="51" width="4" height="4" fill="#1673B8" />
                     <rect x="77" y="51" width="4" height="4" fill="#1673B8" />
@@ -823,10 +823,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       y="59"
                       textAnchor="middle"
                       fill="#1673B8"
-                      fontSize="19"
+                      fontSize="16"
                       fontWeight="900"
                     >
-                      FD
+                      FSP
                     </text>
                     <rect x="50" y="62" width="20" height="2.6" fill="#1673B8" />
                     <text
@@ -936,24 +936,24 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   </svg>
                   <div className="border-t border-[#D2DEEA] pt-1">
                     <p className="text-[10.5px] text-slate-700">
-                      Signed on behalf of Foodifyy
+                      Signed on behalf of Food Science Portal
                     </p>
                   </div>
                 </div>
 
-                {/* 7. Endorsed by Foodifyy Badge */}
+                {/* 7. Endorsed by Food Science Portal Badge */}
                 <div className="flex items-start gap-2.5">
                   <div className="w-10 h-11 rounded-lg border border-[#1673B8] bg-[#F0F7FF] flex flex-col items-center justify-center p-1 text-[#1673B8] shrink-0">
-                    <span className="text-xs font-black leading-none">FD</span>
-                    <span className="text-[5.5px] font-black uppercase mt-0.5">FOODIFYY</span>
+                    <span className="text-xs font-black leading-none">FSP</span>
+                    <span className="text-[5.5px] font-black uppercase mt-0.5">PORTAL</span>
                   </div>
                   <div className="space-y-1">
                     <div className="leading-tight text-[#1A2138]">
                       <p className="text-[11px] font-medium text-slate-600">Endorsed by</p>
-                      <p className="text-sm font-black text-[#1673B8]">Foodifyy</p>
+                      <p className="text-sm font-black text-[#1673B8]">Food Science Portal</p>
                     </div>
                     <div className="px-2.5 py-0.5 rounded bg-[#1673B8] text-white text-[7.5px] font-black uppercase tracking-wider text-center">
-                      ENDORSED BY FOODIFYY
+                      ENDORSED BY FOOD SCIENCE PORTAL
                     </div>
                   </div>
                 </div>
@@ -1305,7 +1305,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           Certificate Verification Paused — Holder’s Paid Membership Expired
                         </div>
                         <p className="text-xs text-amber-800 leading-relaxed">
-                          Certificate ID <span className="font-mono font-bold">{rec.certificateNumber}</span> system may registered hy, magar is member ki <strong>Paid Premium Membership</strong> is waqt expire ho chuki hy. Foodifyy policy k mutabiq certificate ki online verification aur details sirf active Paid Membership k doran show hoti hain. Jab member apni Paid Premium Membership dobara purchase/renew karega, tamam certificates ki verification details khud ba khud dobara live show ho jayengi.
+                          Certificate ID <span className="font-mono font-bold">{rec.certificateNumber}</span> system may registered hy, magar is member ki <strong>Paid Premium Membership</strong> is waqt expire ho chuki hy. Food Science Portal policy k mutabiq certificate ki online verification aur details sirf active Paid Membership k doran show hoti hain. Jab member apni Paid Premium Membership dobara purchase/renew karega, tamam certificates ki verification details khud ba khud dobara live show ho jayengi.
                         </p>
                       </div>
                     );

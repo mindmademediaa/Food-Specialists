@@ -321,15 +321,15 @@ export const AuthScreen: React.FC = () => {
       <div className="relative z-10 w-full max-w-[390px] flex flex-col items-center">
         {/* Top-Mid Centered Brand Logo & Title */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-24 h-24 rounded-[28px] bg-white shadow-[0_14px_38px_rgba(0,0,0,0.32)] ring-4 ring-white/15 flex items-center justify-center overflow-hidden mb-3.5">
+          <div className="w-24 h-24 rounded-[28px] bg-white p-1 shadow-[0_14px_38px_rgba(0,0,0,0.32)] ring-4 ring-white/20 flex items-center justify-center overflow-hidden mb-3.5">
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
-              alt="Foodifyy Logo"
-              className="w-full h-full object-cover select-none"
+              alt="Food Science Portal Logo"
+              className="w-full h-full object-contain select-none"
             />
           </div>
-          <h1 className="text-[26px] font-black tracking-tight text-white leading-none">
-            Foodi<span className="text-[#38BDF8]">fyy</span>
+          <h1 className="text-[24px] sm:text-[26px] font-black tracking-tight text-white leading-none">
+            Food Science <span className="text-[#38BDF8]">Portal</span>
           </h1>
           <p className="text-xs font-medium text-sky-100/80 mt-1.5">
             {mode === 'signin'

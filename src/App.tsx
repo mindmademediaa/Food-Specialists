@@ -598,7 +598,7 @@ export default function App() {
     null
   );
   const [contactCustomMsg, setContactCustomMsg] = useState<string>(
-    'Assalam-o-Alaikum, I saw your Verified Specialist profile on Foodifyy and would like to connect regarding a Food Science / QA opportunity.'
+    'Assalam-o-Alaikum, I saw your Verified Specialist profile on Food Science Portal and would like to connect regarding a Food Science / QA opportunity.'
   );
   const [contactSentBanner, setContactSentBanner] = useState<string | null>(
     null
@@ -1314,8 +1314,8 @@ export default function App() {
   ) => {
     const currentUrl = url || window.location.href;
     const shareData = {
-      title: `${title} | Foodifyy`,
-      text: `${title}\n${subtitle}\n\nShared via Foodifyy:`,
+      title: `${title} | Food Science Portal`,
+      text: `${title}\n${subtitle}\n\nShared via Food Science Portal:`,
       url: currentUrl
     };
 
@@ -2230,9 +2230,9 @@ export default function App() {
               'International Certification',
             accreditationBody:
               matchedCourse?.accreditationStandard ||
-              'Foodifyy International Academy',
+              'Food Science Portal International Academy',
             issueDate: nowIso.slice(0, 10),
-            issuedBy: 'Foodifyy International Academy',
+            issuedBy: 'Food Science Portal International Academy',
             verificationStatus: 'valid',
             createdAt: nowIso,
             scorePercentage: updatedCourseProg.bestExamPercentage,
@@ -2817,7 +2817,7 @@ export default function App() {
         75
       ),
       issuedBy: (
-        cert.issuedBy || 'Foodifyy Administration (Direct Executive Issuance)'
+        cert.issuedBy || 'Food Science Portal Administration (Direct Executive Issuance)'
       ).slice(0, 195),
       verificationStatus: 'valid',
       createdAt: new Date().toISOString(),
@@ -2969,21 +2969,21 @@ export default function App() {
 
   const userInitial = firstName.charAt(0).toUpperCase() || 'G';
 
-  // 0. 0.5-Second (500ms) Startup Splash Screen with Foodifyy WebP Logo
+  // 0. 0.5-Second (500ms) Startup Splash Screen with Food Science Portal WebP Logo
   if (showSplashLogo) {
     return (
       <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-fade-in">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white shadow-[0_12px_40px_rgba(26,33,56,0.12)] border border-[#D2DEEA] flex items-center justify-center overflow-hidden">
+          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white p-1.5 shadow-[0_12px_40px_rgba(26,33,56,0.12)] border border-[#D2DEEA] flex items-center justify-center overflow-hidden">
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
-              alt="Foodifyy"
-              className="w-full h-full object-cover select-none"
+              alt="Food Science Portal"
+              className="w-full h-full object-contain select-none"
             />
           </div>
           <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A2138] tracking-tight">
-              Foodifyy
+            <h1 className="text-2xl sm:text-3xl font-black text-[#0C182D] tracking-tight">
+              Food Science <span className="text-[#1673B8]">Portal</span>
             </h1>
             <p className="text-xs font-bold text-[#1673B8] uppercase tracking-widest">
               Food Safety &amp; Quality Specialists
@@ -2999,15 +2999,15 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#F0F6FC] flex flex-col items-center justify-center p-4">
         <div className="bg-white border-[1.5px] border-[#BBD6EE] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-xs w-full">
-          <div className="w-24 h-24 rounded-2xl bg-white border border-[#D2DEEA] shadow-xs flex items-center justify-center overflow-hidden">
+          <div className="w-24 h-24 rounded-2xl bg-white p-1 border border-[#D2DEEA] shadow-xs flex items-center justify-center overflow-hidden">
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
-              alt="Foodifyy"
-              className="w-full h-full object-cover select-none"
+              alt="Food Science Portal"
+              className="w-full h-full object-contain select-none"
             />
           </div>
-          <h2 className="text-base font-extrabold text-[#1A2138]">
-            Foodifyy
+          <h2 className="text-base font-black text-[#0C182D]">
+            Food Science <span className="text-[#1673B8]">Portal</span>
           </h2>
           <p className="text-xs font-medium text-gray-500">
             Verifying your authentication session...
@@ -3061,7 +3061,7 @@ export default function App() {
                   Official QR Verified Certificate
                 </span>
                 <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-[#1673B8] text-[11px] font-extrabold">
-                  Endorsed by Foodifyy
+                  Endorsed by Food Science Portal
                 </span>
               </div>
               <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
@@ -3120,7 +3120,7 @@ export default function App() {
             </div>
 
             <p className="text-[11px] text-[#1A2138] bg-[#F0F6FC] border border-[#D2DEEA] rounded-xl p-3 font-medium">
-              This Certificate of Achievement has been verified via the official Foodifyy Online Verification Registry. Sign in below to access the full Foodifyy Verification Search &amp; Training Academy.
+              This Certificate of Achievement has been verified via the official Food Science Portal Online Verification Registry. Sign in below to access the full Food Science Portal Verification Search &amp; Training Academy.
             </p>
           </div>
 
@@ -5438,7 +5438,7 @@ export default function App() {
                     href={`mailto:${
                       contactModalMember.email
                     }?subject=${encodeURIComponent(
-                      'Hiring / Networking Inquiry via Foodifyy'
+                      'Hiring / Networking Inquiry via Food Science Portal'
                     )}&body=${encodeURIComponent(contactCustomMsg)}`}
                     className="w-full py-3 px-4 rounded-2xl bg-[#EBF4FC] hover:bg-[#D2DEEA] text-[#1A2138] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
                   >

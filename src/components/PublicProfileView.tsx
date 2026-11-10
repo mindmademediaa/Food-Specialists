@@ -386,7 +386,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
             </div>
           )}
 
-          {/* Location • Foodifyy • 500+ connections + [✦ Premium Member] Pill */}
+          {/* Location • Food Science Portal • 500+ connections + [✦ Premium Member] Pill */}
           <div className="flex items-center justify-center gap-1.5 flex-wrap text-[12.5px] font-medium text-gray-600 pt-0.5">
             {canSeeLocation && member.location && (
               <span className="inline-flex items-center gap-1">
@@ -395,7 +395,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 <span>•</span>
               </span>
             )}
-            <span>Foodifyy</span>
+            <span>Food Science Portal</span>
             <span>•</span>
             <span>500+ connections</span>
 

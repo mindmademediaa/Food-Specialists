@@ -362,7 +362,7 @@ export function downloadProfessionalCvPdf(
     doc.setFontSize(8);
     doc.setTextColor(107, 114, 128);
     doc.text(
-      `${fullName} — Curriculum Vitae • Generated via Foodifyy`,
+      `${fullName} — Curriculum Vitae • Generated via Food Science Portal`,
       marginX,
       pageHeight - 6.8
     );

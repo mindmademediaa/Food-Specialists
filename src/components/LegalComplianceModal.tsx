@@ -67,7 +67,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                 Google Play Store Policies, Privacy &amp; App Closure
               </h2>
               <p className="text-[11px] text-sky-100 font-medium truncate">
-                Foodifyy • Google Play Developer Program, AdMob &amp; Data Safety Compliant
+                Food Science Portal • Google Play Developer Program, AdMob &amp; Data Safety Compliant
               </p>
             </div>
           </div>
@@ -121,7 +121,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                 <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                 <div>
                   <div className="font-extrabold text-[#1A2138]">
-                    Official Privacy Policy — Foodifyy (Google Play Store Compliant)
+                    Official Privacy Policy — Food Science Portal (Google Play Store Compliant)
                   </div>
                   <div className="text-[11px] text-slate-600 font-semibold">
                     Complies with Google Play Developer Program Policies, Data Safety Section, GDPR &amp; CCPA
@@ -134,7 +134,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                   1. Information We Collect (Google Play Data Safety Disclosure)
                 </h3>
                 <p>
-                  When you register or use <strong>Foodifyy</strong>, we collect only the minimum information voluntarily provided by you to deliver app functionality:
+                  When you register or use <strong>Food Science Portal</strong>, we collect only the minimum information voluntarily provided by you to deliver app functionality:
                 </p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>
@@ -195,7 +195,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                   1. Mobile App (Google AdMob) &amp; Web (Google AdSense) Advertising
                 </h3>
                 <p>
-                  Foodifyy uses <strong>Google AdMob</strong> within the mobile application and <strong>Google AdSense</strong> on the web portal to display non-intrusive banner, native, interstitial, or rewarded advertisements that support free educational and career content.
+                  Food Science Portal uses <strong>Google AdMob</strong> within the mobile application and <strong>Google AdSense</strong> on the web portal to display non-intrusive banner, native, interstitial, or rewarded advertisements that support free educational and career content.
                 </p>
               </section>
 
@@ -243,7 +243,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                   Terms &amp; Conditions of Use (Google Play App Publishing Standard)
                 </div>
                 <div className="text-[11px] text-slate-600 font-semibold">
-                  Governing use of Foodifyy Jobs, Scholarships, International Trainings &amp; Community Directory
+                  Governing use of Food Science Portal Jobs, Scholarships, International Trainings &amp; Community Directory
                 </div>
               </div>
 
@@ -261,7 +261,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                   2. External Job &amp; Scholarship Verification Disclaimer
                 </h3>
                 <p>
-                  Foodifyy curates food industry job openings, fellowships, and international scholarships from reputable organizations. Applicants must independently verify employer details and scholarship terms before applying. Foodifyy never charges candidates recruitment or job-application fees.
+                  Food Science Portal curates food industry job openings, fellowships, and international scholarships from reputable organizations. Applicants must independently verify employer details and scholarship terms before applying. Food Science Portal never charges candidates recruitment or job-application fees.
                 </p>
               </section>
 
@@ -317,7 +317,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                   3. Request Data Deletion Without Re-Installing the App
                 </h3>
                 <p>
-                  If you have uninstalled the app and wish to delete your account and data without logging in, send an email from your registered address to <strong>mindmademedia9@gmail.com</strong> with the subject <strong>&ldquo;Account &amp; Data Deletion Request — Foodifyy&rdquo;</strong>. All associated data is permanently purged within 48 hours.
+                  If you have uninstalled the app and wish to delete your account and data without logging in, send an email from your registered address to <strong>mindmademedia9@gmail.com</strong> with the subject <strong>&ldquo;Account &amp; Data Deletion Request — Food Science Portal&rdquo;</strong>. All associated data is permanently purged within 48 hours.
                 </p>
               </section>
 
@@ -353,7 +353,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                   1. Clean App Closure &amp; Zero Unauthorized Background Processes
                 </h3>
                 <p>
-                  In accordance with Google Play Store Mobile App Quality and Device Resource guidelines, closing or exiting <strong>Foodifyy</strong> immediately suspends all active cloud listeners, UI timers, and network requests. The app does not run hidden background services, location trackers, or battery-draining wake locks when closed.
+                  In accordance with Google Play Store Mobile App Quality and Device Resource guidelines, closing or exiting <strong>Food Science Portal</strong> immediately suspends all active cloud listeners, UI timers, and network requests. The app does not run hidden background services, location trackers, or battery-draining wake locks when closed.
                 </p>
               </section>
 
@@ -395,7 +395,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
         {/* Modal Footer */}
         <div className="bg-[#F0F6FC] border-t border-[#D2DEEA] px-4 py-2.5 flex items-center justify-between gap-2 shrink-0">
           <span className="text-[11px] font-semibold text-slate-600">
-            Foodifyy • Official Google Play Compliant Policy Center
+            Food Science Portal • Official Google Play Compliant Policy Center
           </span>
           <button
             type="button"
