@@ -26,7 +26,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   ];
 
   return (
-    <footer className="shrink-0 z-30 bg-white border-t border-[#D2DEEA] px-1.5 py-1.5">
+    <footer className="shrink-0 z-30 bg-white border-t border-[#D2DEEA] px-1.5 py-1.5 md:hidden">
       <nav
         aria-label="Bottom Navigation"
         className="grid grid-cols-5 items-stretch gap-1"

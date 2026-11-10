@@ -52,7 +52,9 @@ import {
   CreditCard,
   Image as ImageIcon,
   Wrench,
-  Activity
+  Activity,
+  Smartphone,
+  Users
 } from 'lucide-react';
 import {
   collection,
@@ -105,7 +107,7 @@ import {
   uploadMediaFile,
   formatFileSizeLabel
 } from './lib/storage';
-import { Header } from './components/Header';
+import { Header, WebsiteNavSection } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { JobCard } from './components/JobCard';
 import { MemberCard, canViewerSeeField } from './components/MemberCard';
@@ -1194,6 +1196,70 @@ export default function App() {
     };
   }, [authUser]);
 
+  // PWA Mobile App Install State & Standalone Detection
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  const [isStandaloneApp, setIsStandaloneApp] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
+    );
+  });
+  const [showInstallAppModal, setShowInstallAppModal] = useState(false);
+  const [installStatusMessage, setInstallStatusMessage] = useState<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+    };
+    const handleAppInstalled = () => {
+      setIsStandaloneApp(true);
+      setDeferredInstallPrompt(null);
+      setInstallStatusMessage(
+        'Food Science Portal App installed! You can now launch it anytime from your phone home screen.'
+      );
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt
+      );
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleTriggerNativeAppInstall = async () => {
+    if (deferredInstallPrompt) {
+      try {
+        deferredInstallPrompt.prompt();
+        const choiceResult = await deferredInstallPrompt.userChoice;
+        if (choiceResult?.outcome === 'accepted') {
+          setInstallStatusMessage(
+            'Installing Food Science Portal on your device...'
+          );
+          setDeferredInstallPrompt(null);
+        }
+      } catch {
+        // Fallback to instructions inside modal
+      }
+    } else {
+      setShowInstallAppModal(true);
+    }
+  };
+
+  // Dynamic Time-of-Day Greeting (Morning / Afternoon / Evening)
+  const timeOfDayGreeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
   // Determine active BottomNav tab from current route
   const activeBottomTab: NavTab = useMemo(() => {
     switch (route.name) {
@@ -1219,6 +1285,45 @@ export default function App() {
         return 'profile';
     }
   }, [route.name]);
+
+  // Determine active Website Top Nav section from current route
+  const activeWebsiteNav: WebsiteNavSection = useMemo(() => {
+    switch (route.name) {
+      case 'home':
+      case 'search':
+        return 'home';
+      case 'jobs':
+      case 'job-detail':
+        return 'jobs';
+      case 'scholarships':
+      case 'scholarship-detail':
+        return 'scholarships';
+      case 'tools':
+        return 'tools';
+      case 'communities':
+      case 'community-member':
+        return 'communities';
+      case 'trainings':
+      case 'trainings-highfield':
+      case 'trainings-lead-auditor-hub':
+      case 'training-detail':
+        return 'trainings';
+      case 'profile':
+      case 'admin':
+        return 'profile';
+    }
+  }, [route.name]);
+
+  const handleNavigateWebsiteSection = (section: WebsiteNavSection) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (section === 'home') setRoute({ name: 'home' });
+    if (section === 'jobs') navigateToJobs('All');
+    if (section === 'scholarships') navigateToScholarships('All');
+    if (section === 'tools') setRoute({ name: 'tools', initialSection: 'hub' });
+    if (section === 'communities') setRoute({ name: 'communities' });
+    if (section === 'trainings') setRoute({ name: 'trainings' });
+    if (section === 'profile') setRoute({ name: 'profile' });
+  };
 
   const handleSelectBottomTab = (tab: NavTab) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3177,10 +3282,10 @@ export default function App() {
     <div className="h-[100dvh] bg-[#F0F6FC] text-[#1A2138] flex flex-col items-center justify-start py-0 sm:py-2.5 px-0 sm:px-4 overflow-hidden">
       {/* If Admin is previewing the user-facing app, show a top bar to return to Admin Control Panel */}
       {isUserAdmin && adminPreviewUserMode && (
-        <div className="w-full max-w-[480px] shrink-0 mb-1.5 px-3 py-2 bg-[#1A2138] text-white sm:rounded-2xl flex items-center justify-between gap-2 shadow-md">
+        <div className="w-full max-w-[480px] md:max-w-5xl lg:max-w-6xl shrink-0 mb-1.5 px-3 py-2 bg-[#1A2138] text-white sm:rounded-2xl flex items-center justify-between gap-2 shadow-md">
           <div className="text-xs font-extrabold flex items-center gap-1.5">
             <Shield className="w-4 h-4 text-sky-300" />
-            <span>Previewing User App Mode</span>
+            <span>Previewing User Website &amp; App Mode</span>
           </div>
           <button
             type="button"
@@ -3192,9 +3297,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Mobile-First App Container — Certificate Royal Blue & Ice-Blue Scheme */}
-      <div className="w-full max-w-[480px] flex-1 min-h-0 bg-[#F4F8FD] sm:rounded-[28px] sm:border sm:border-[#D2DEEA] sm:shadow-2xl flex flex-col relative overflow-hidden">
-        {/* TOP HEADER — CONSTANT */}
+      {/* Responsive Hybrid Website + Mobile App Container — Certificate Royal Blue & Ice-Blue Scheme */}
+      <div className="w-full max-w-[480px] md:max-w-5xl lg:max-w-6xl flex-1 min-h-0 bg-[#F4F8FD] sm:rounded-[28px] sm:border sm:border-[#D2DEEA] sm:shadow-2xl flex flex-col relative overflow-hidden">
+        {/* TOP HEADER — CONSTANT (Includes Horizontal Website Nav on Desktop + Install App Button) */}
         <Header
           showBack={route.name !== 'home'}
           hideSearchBar={
@@ -3242,10 +3347,14 @@ export default function App() {
           userAvatarUrl={
             myProfile.profilePicUrl || authUser.photoURL || undefined
           }
+          activeWebsiteNav={activeWebsiteNav}
+          onNavigateWebsiteSection={handleNavigateWebsiteSection}
+          isStandaloneApp={isStandaloneApp}
+          onInstallAppClick={() => setShowInstallAppModal(true)}
         />
 
         {/* MIDDLE SCROLLABLE PAGE CONTENT AREA */}
-        <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 pb-5 space-y-3">
+        <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 pb-6 space-y-3.5">
           {/* LAST 5 DAYS PREMIUM EXPIRY COUNTDOWN BANNER */}
           {globalPremiumCountdown && (
             <div className="rounded-2xl bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] text-white p-3 shadow-sm border border-[#D2DEEA] flex items-center justify-between gap-2.5">
@@ -3277,17 +3386,30 @@ export default function App() {
             </div>
           )}
 
-          {/* ==================== 1. HOME SCREEN (/) — COMPACT PHONE-COMPATIBLE LAYOUT & CERTIFICATE BLUE THEME ==================== */}
+          {/* ==================== 1. HOME SCREEN (/) — RESPONSIVE WEBSITE + MOBILE APP DASHBOARD ==================== */}
           {route.name === 'home' && (
-            <div className="space-y-3 px-0.5">
-              {/* Compact Greeting Row Compatible with All Phone Screens */}
-              <div className="space-y-0.5">
-                <h1 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] tracking-tight leading-snug break-words">
-                  Good morning, {firstName}
-                </h1>
-                <p className="text-[11.5px] sm:text-[12.5px] font-medium text-slate-600">
-                  Find your next opportunity today
-                </p>
+            <div className="space-y-3.5 px-0.5">
+              {/* Dynamic Greeting Row + Live Sync Badge */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="space-y-0.5">
+                  <h1 className="text-[16px] sm:text-[20px] font-extrabold text-[#1A2138] tracking-tight leading-snug break-words">
+                    {timeOfDayGreeting}, {firstName}
+                  </h1>
+                  <p className="text-[11.5px] sm:text-[13px] font-medium text-slate-600">
+                    Explore verified food science jobs, global scholarships, specialist tools &amp; trainings
+                  </p>
+                </div>
+
+                {!isStandaloneApp && (
+                  <button
+                    type="button"
+                    onClick={() => setShowInstallAppModal(true)}
+                    className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-[#EBF4FC] hover:bg-[#D2DEEA] border border-[#1673B8]/30 text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Smartphone className="w-3.5 h-3.5 text-[#1673B8]" />
+                    <span>Get Mobile App</span>
+                  </button>
+                )}
               </div>
 
               {/* ADMIN QUICK BANNER FOR PENDING PAYMENT APPROVALS */}
@@ -3318,158 +3440,272 @@ export default function App() {
                 </div>
               )}
 
-              {/* CARD 1 - JOBS (Compact Phone-Compatible Sizing & Certificate Blue Theme) */}
-              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all space-y-2.5">
-                <div className="flex items-start gap-3">
-                  {/* Left Royal Blue Rounded Icon Box */}
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                    <Briefcase className="w-5 h-5 stroke-[2.2]" />
-                  </div>
-
-                  {/* Right Content: Title + Unclickable Tags + Verified Roles Count */}
-                  <div className="space-y-1.5 min-w-0 flex-1">
-                    <h2 className="text-[15.5px] sm:text-[17px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
-                      Jobs
-                    </h2>
-
-                    {/* 3 Strictly Unclickable Tags */}
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex flex-wrap items-center gap-1 select-none cursor-default pointer-events-none"
-                    >
-                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                        Production
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                        R&amp;D Lab
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                        Quality &amp; Safety
-                      </span>
+              {/* RESPONSIVE 2-COLUMN GRID FOR JOBS & SCHOLARSHIPS ON TABLET/DESKTOP, STACKED ON MOBILE */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {/* CARD 1 - JOBS */}
+                <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all flex flex-col justify-between space-y-2.5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                      <Briefcase className="w-5 h-5 stroke-[2.2]" />
                     </div>
 
-                    <div className="text-[11.5px] sm:text-[12px] font-medium text-slate-600">
-                      {activeJobs.length} Verified Roles Available
-                    </div>
-                  </div>
-                </div>
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <h2 className="text-[15.5px] sm:text-[17px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
+                        Jobs
+                      </h2>
 
-                {/* Full-Width Royal Blue Button */}
-                <button
-                  type="button"
-                  onClick={() => navigateToJobs('All')}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[12.5px] sm:text-[13.5px] font-bold text-center shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
-                >
-                  Browse Jobs
-                </button>
-              </div>
-
-              {/* CARD 2 - SCHOLARSHIPS (Compact Phone-Compatible Sizing & Certificate Blue Theme) */}
-              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all space-y-2.5">
-                <div className="flex items-start gap-3">
-                  {/* Left Royal Blue Rounded Icon Box */}
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                    <GraduationCap className="w-5 h-5 stroke-[2.2]" />
-                  </div>
-
-                  {/* Right Content: Title + Unclickable Tags + Global Programs Count */}
-                  <div className="space-y-1.5 min-w-0 flex-1">
-                    <h2 className="text-[15.5px] sm:text-[17px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
-                      Scholarships
-                    </h2>
-
-                    {/* Strictly Unclickable Tags */}
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex flex-wrap items-center gap-1 select-none cursor-default pointer-events-none"
-                    >
-                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                        Fellowships
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                        International Grants
-                      </span>
-                    </div>
-
-                    <div className="text-[11.5px] sm:text-[12px] font-medium text-slate-600">
-                      {activeScholarships.length} Global Programs Open
-                    </div>
-                  </div>
-                </div>
-
-                {/* Full-Width Outlined Royal Blue Button */}
-                <button
-                  type="button"
-                  onClick={() => navigateToScholarships('All')}
-                  className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border-[1.5px] border-[#1673B8] text-[#1673B8] text-[12.5px] sm:text-[13.5px] font-bold text-center transition-colors cursor-pointer whitespace-nowrap"
-                >
-                  Explore Grants
-                </button>
-              </div>
-
-              {/* OFFICIAL WHATSAPP CHANNEL CARD ON HOME FRONT PAGE (Certificate Blue & Navy Theme) */}
-              {(() => {
-                const rawWaUrl = (
-                  storageConfig.whatsappChannelUrl ||
-                  'https://whatsapp.com/channel/0029VaFoodSpecialists'
-                ).trim();
-                const waHref = rawWaUrl
-                  ? /^https?:\/\//i.test(rawWaUrl)
-                    ? rawWaUrl
-                    : `https://${rawWaUrl}`
-                  : 'https://whatsapp.com/channel/0029VaFoodSpecialists';
-                const waButtonLabel =
-                  storageConfig.whatsappChannelButtonText?.trim() ||
-                  'Follow WhatsApp Channel';
-
-                return (
-                  <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] border border-[#1673B8]/40 rounded-2xl p-3.5 shadow-sm text-white space-y-2.5">
-                    <div className="flex items-start gap-2.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/25 text-white flex items-center justify-center shrink-0">
-                        <MessageSquare className="w-4 h-4 stroke-[2.2]" />
+                      {/* 3 Strictly Unclickable Tags */}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex flex-wrap items-center gap-1 select-none cursor-default pointer-events-none"
+                      >
+                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
+                          Production
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
+                          R&amp;D Lab
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
+                          Quality &amp; Safety
+                        </span>
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-sky-200 block">
-                          Official Community Updates
+                      <div className="text-[11.5px] sm:text-[12px] font-medium text-slate-600">
+                        {activeJobs.length} Verified Roles Available
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigateToJobs('All')}
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[12.5px] sm:text-[13.5px] font-bold text-center shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    Browse Jobs
+                  </button>
+                </div>
+
+                {/* CARD 2 - SCHOLARSHIPS */}
+                <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all flex flex-col justify-between space-y-2.5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-5 h-5 stroke-[2.2]" />
+                    </div>
+
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <h2 className="text-[15.5px] sm:text-[17px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
+                        Scholarships
+                      </h2>
+
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex flex-wrap items-center gap-1 select-none cursor-default pointer-events-none"
+                      >
+                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
+                          Fellowships
                         </span>
-                        <h2 className="text-[13.5px] sm:text-[14.5px] font-extrabold text-white leading-snug break-words">
-                          Food Specialists WhatsApp Channel
+                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
+                          International Grants
+                        </span>
+                      </div>
+
+                      <div className="text-[11.5px] sm:text-[12px] font-medium text-slate-600">
+                        {activeScholarships.length} Global Programs Open
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigateToScholarships('All')}
+                    className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border-[1.5px] border-[#1673B8] text-[#1673B8] text-[12.5px] sm:text-[13.5px] font-bold text-center transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    Explore Grants
+                  </button>
+                </div>
+              </div>
+
+              {/* DYNAMIC PORTAL ECOSYSTEM QUICK-ACCESS GRID (2x2 on Mobile, 4 Columns on Desktop) */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRoute({ name: 'tools', initialSection: 'hub' })
+                  }
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-2.5"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                    <Wrench className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
+                      Tools
+                    </p>
+                    <p className="text-[10.5px] font-semibold text-slate-500 leading-tight mt-0.5">
+                      Exam Prep, E-Numbers &amp; Calculators
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRoute({ name: 'trainings' })}
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-2.5"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                    <BookOpen className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
+                      Trainings Academy
+                    </p>
+                    <p className="text-[10.5px] font-semibold text-slate-500 leading-tight mt-0.5">
+                      {INTERNATIONAL_TRAINING_COURSES.length} Accredited Courses
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRoute({ name: 'communities' })}
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-2.5"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                    <Users className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
+                      Community
+                    </p>
+                    <p className="text-[10.5px] font-semibold text-slate-500 leading-tight mt-0.5">
+                      {paidCommunityMembers.length} Verified Specialists
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRoute({ name: 'profile' })}
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-2.5"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                    <Award className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
+                      Profile &amp; CV Builder
+                    </p>
+                    <p className="text-[10.5px] font-semibold text-slate-500 leading-tight mt-0.5">
+                      ATS CV &amp; Certificates ({certificates.length})
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              {/* OFFICIAL WHATSAPP CHANNEL + INSTALL MOBILE APP ROW */}
+              <div
+                className={`grid grid-cols-1 ${
+                  !isStandaloneApp ? 'lg:grid-cols-2' : ''
+                } gap-3.5`}
+              >
+                {(() => {
+                  const rawWaUrl = (
+                    storageConfig.whatsappChannelUrl ||
+                    'https://whatsapp.com/channel/0029VaFoodSpecialists'
+                  ).trim();
+                  const waHref = rawWaUrl
+                    ? /^https?:\/\//i.test(rawWaUrl)
+                      ? rawWaUrl
+                      : `https://${rawWaUrl}`
+                    : 'https://whatsapp.com/channel/0029VaFoodSpecialists';
+                  const waButtonLabel =
+                    storageConfig.whatsappChannelButtonText?.trim() ||
+                    'Follow WhatsApp Channel';
+
+                  return (
+                    <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] border border-[#1673B8]/40 rounded-2xl p-3.5 sm:p-4 shadow-sm text-white flex flex-col justify-between space-y-2.5">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/25 text-white flex items-center justify-center shrink-0">
+                          <MessageSquare className="w-4 h-4 stroke-[2.2]" />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-sky-200 block">
+                            Official Community Updates
+                          </span>
+                          <h2 className="text-[13.5px] sm:text-[15px] font-extrabold text-white leading-snug break-words">
+                            Food Science Portal WhatsApp Channel
+                          </h2>
+                          <p className="text-[11px] text-sky-100/90 font-medium mt-0.5 leading-snug break-words">
+                            Daily food industry jobs, global scholarships &amp; training alerts.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <a
+                          href={waHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full sm:w-auto flex-1 py-2 px-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#1A2138] font-extrabold text-[11.5px] sm:text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.3] shrink-0" />
+                          <span>{waButtonLabel}</span>
+                          <ExternalLink className="w-3 h-3 text-[#1673B8] stroke-[2.4] shrink-0" />
+                        </a>
+
+                        {isUserAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdminPreviewUserMode(false);
+                              setRoute({ name: 'admin' });
+                            }}
+                            className="px-2.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[10.5px] font-extrabold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
+                          >
+                            Edit Link
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* INSTALL MOBILE APP CARD ON WEBSITE HOME PAGE */}
+                {!isStandaloneApp && (
+                  <div className="bg-white border border-[#1673B8]/35 rounded-2xl p-3.5 sm:p-4 shadow-2xs flex flex-col justify-between space-y-2.5">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] border border-[#1673B8]/30 p-1 flex items-center justify-center shrink-0">
+                        <img
+                          src={FS_PORTAL_LOGO_DATA_URI}
+                          alt="Food Science Portal App"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                          Website + Mobile App Synced
+                        </span>
+                        <h2 className="text-[13.5px] sm:text-[15px] font-extrabold text-[#1A2138] leading-snug">
+                          Install Food Science Portal App
                         </h2>
-                        <p className="text-[11px] text-sky-100/90 font-medium mt-0.5 leading-snug break-words">
-                          Daily food industry jobs, global scholarships &amp; training alerts.
+                        <p className="text-[11px] text-slate-600 font-medium mt-0.5 leading-snug">
+                          Download the app on your Android or iPhone for instant 1-tap access with full cloud sync.
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <a
-                        href={waHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full sm:w-auto flex-1 py-2 px-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#1A2138] font-extrabold text-[11.5px] sm:text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.3] shrink-0" />
-                        <span>{waButtonLabel}</span>
-                        <ExternalLink className="w-3 h-3 text-[#1673B8] stroke-[2.4] shrink-0" />
-                      </a>
-
-                      {isUserAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAdminPreviewUserMode(false);
-                            setRoute({ name: 'admin' });
-                          }}
-                          className="px-2.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[10.5px] font-extrabold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
-                        >
-                          Edit Link
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowInstallAppModal(true)}
+                      className="w-full py-2 px-3.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-[11.5px] sm:text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      <Download className="w-3.5 h-3.5 stroke-[2.3] shrink-0" />
+                      <span>Download &amp; Install Mobile App</span>
+                    </button>
                   </div>
-                );
-              })()}
+                )}
+              </div>
             </div>
           )}
 
@@ -3540,10 +3776,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Jobs Card List (All Jobs accessible to everyone) */}
-              <div className="space-y-3.5 pt-1">
+              {/* Jobs Card List (Responsive 2-column grid on desktop, 1-column on mobile) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
                 {visibleJobs.length === 0 ? (
-                  <div className="bg-white border border-[#D2DEEA] rounded-[22px] p-8 text-center text-gray-500 font-medium">
+                  <div className="md:col-span-2 bg-white border border-[#D2DEEA] rounded-[22px] p-8 text-center text-gray-500 font-medium">
                     No jobs match the selected filters.
                   </div>
                 ) : (
@@ -3926,10 +4162,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Scholarships Card List (Certificate Royal Blue Theme) */}
-              <div className="space-y-3 pt-0.5">
+              {/* Scholarships Card List (Responsive 2-column grid on desktop, 1-column on mobile) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-0.5">
                 {visibleScholarships.length === 0 ? (
-                  <div className="bg-white border border-[#D2DEEA] rounded-2xl p-6 text-center text-slate-500 font-medium text-xs">
+                  <div className="md:col-span-2 bg-white border border-[#D2DEEA] rounded-2xl p-6 text-center text-slate-500 font-medium text-xs">
                     No scholarships match the selected filters.
                   </div>
                 ) : (
@@ -4670,7 +4906,7 @@ export default function App() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2.5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {filteredMembers.map((member) => (
                         <MemberCard
                           key={member.uid}
@@ -5062,16 +5298,17 @@ export default function App() {
                         Premium Subscription Requests ({adminAllPaymentRequests.length})
                       </h2>
                       <p className="text-[11px] text-gray-600">
-                        Verify Rs. 100 payment screenshots and approve to activate 1-Month Premium Membership
+                        Verify Rs. {liveGateway.monthlyFeeRs.toLocaleString()} / Rs.{' '}
+                        {liveGateway.yearlyFeeRs.toLocaleString()} payment screenshots and approve to activate Premium Membership
                       </p>
                     </div>
                     <span className="px-2.5 py-1 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold shrink-0">
-                      Rs. 100 / 1 Month
+                      Rs. {liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month
                     </span>
                   </div>
                   {adminAllPaymentRequests.length === 0 ? (
                     <p className="text-xs text-gray-500 py-4 text-center">
-                      No payment requests submitted yet. When users click &ldquo;Become a Premium Member&rdquo; and upload their Rs. 100 payment screenshot, it appears here.
+                      No payment requests submitted yet. When users click &ldquo;Become a Premium Member&rdquo; and upload their payment screenshot, it appears here.
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -5090,8 +5327,10 @@ export default function App() {
                                 {req.userPhone ? ` • ${req.userPhone}` : ''}
                               </div>
                               <div className="text-xs font-extrabold text-[#1673B8] mt-0.5">
-                                {req.paymentMethod} • {req.amount || 'Rs. 100 (1 Month)'} • TID:{' '}
-                                {req.transactionId}
+                                {req.paymentMethod} •{' '}
+                                {req.amount ||
+                                  `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (1 Month)`}{' '}
+                                • TID: {req.transactionId}
                               </div>
                               {req.submittedAt && (
                                 <div className="text-[10.5px] text-gray-500 mt-0.5">
@@ -6195,7 +6434,117 @@ export default function App() {
           </div>
         )}
 
-        {/* 4-TAB BOTTOM NAVIGATION BAR (Home, Communities, Trainings, Profile) */}
+        {/* INSTALL MOBILE APP MODAL (1-Click PWA Install + Android/iOS Instructions + Sync Info) */}
+        {showInstallAppModal && (
+          <div className="fixed inset-0 z-50 bg-[#0C182D]/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-md bg-white border border-[#D2DEEA] rounded-[28px] p-5 sm:p-6 shadow-2xl space-y-4 my-auto">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#F0F6FC] border border-[#1673B8]/30 p-1.5 flex items-center justify-center shrink-0">
+                    <img
+                      src={FS_PORTAL_LOGO_DATA_URI}
+                      alt="Food Science Portal"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div>
+                    <span className="inline-block px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10px] font-extrabold uppercase tracking-wider">
+                      Official Mobile App
+                    </span>
+                    <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138] leading-snug mt-0.5">
+                      Install Food Science Portal
+                    </h2>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowInstallAppModal(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Install <strong>Food Science Portal</strong> directly onto your mobile phone home screen. Your account, jobs, scholarships, tools, certificates, and notifications stay <strong>100% synchronized</strong> between the Website and Mobile App.
+              </p>
+
+              {installStatusMessage && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{installStatusMessage}</span>
+                </div>
+              )}
+
+              {/* Direct 1-Click Install Button (When Browser Supports Native Prompt) */}
+              {deferredInstallPrompt && (
+                <button
+                  type="button"
+                  onClick={handleTriggerNativeAppInstall}
+                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] hover:from-[#105E9A] hover:to-[#1673B8] text-white text-xs sm:text-sm font-extrabold shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
+                >
+                  <Download className="w-4 h-4 text-sky-200 shrink-0" />
+                  <span>Install App Now (1-Click)</span>
+                </button>
+              )}
+
+              {/* Step-by-Step Guide for Android & iPhone */}
+              <div className="space-y-2.5 bg-[#F4F8FD] border border-[#D2DEEA] rounded-2xl p-3.5 text-xs">
+                <div className="space-y-1">
+                  <p className="font-extrabold text-[#1A2138] flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-[#1673B8]" />
+                    <span>On Android (Chrome / Samsung Internet):</span>
+                  </p>
+                  <p className="text-slate-600 text-[11.5px] leading-relaxed pl-5">
+                    Tap the browser menu <strong>(⋮)</strong> at the top-right and select <strong>&ldquo;Install App&rdquo;</strong> or <strong>&ldquo;Add to Home screen&rdquo;</strong>.
+                  </p>
+                </div>
+
+                <div className="border-t border-[#D2DEEA] pt-2.5 space-y-1">
+                  <p className="font-extrabold text-[#1A2138] flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-[#1673B8]" />
+                    <span>On iPhone / iPad (Safari):</span>
+                  </p>
+                  <p className="text-slate-600 text-[11.5px] leading-relaxed pl-5">
+                    Tap the <strong>Share</strong> button at the bottom of Safari and select <strong>&ldquo;Add to Home Screen&rdquo;</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Copy Website/App Link to Open on Phone */}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleCopyText(window.location.href, 'install-app-link')
+                  }
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#1673B8]/40 text-[#1673B8] text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  {copiedId === 'install-app-link' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Portal Link Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy Link for Mobile</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInstallAppModal(false)}
+                  className="py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 5-TAB BOTTOM NAVIGATION BAR (Shown on Mobile < 768px) */}
         <BottomNav
           activeTab={activeBottomTab}
           onSelectTab={handleSelectBottomTab}

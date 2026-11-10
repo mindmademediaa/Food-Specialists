@@ -141,11 +141,11 @@ export const AlertsTasksModule: React.FC<AlertsTasksModuleProps> = ({
     if (typeof window !== 'undefined' && 'Notification' in window) {
       try {
         if (Notification.permission === 'granted') {
-          new Notification('Food Specialists — Task Alert', { body: summaryText });
+          new Notification('Food Science Portal — Task Alert', { body: summaryText });
         } else if (Notification.permission !== 'denied') {
           const perm = await Notification.requestPermission();
           if (perm === 'granted') {
-            new Notification('Food Specialists — Task Alert', { body: summaryText });
+            new Notification('Food Science Portal — Task Alert', { body: summaryText });
           }
         }
       } catch {

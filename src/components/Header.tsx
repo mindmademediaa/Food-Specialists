@@ -14,11 +14,28 @@ import {
   Briefcase,
   MapPin,
   CheckCheck,
-  ChevronRight
+  ChevronRight,
+  Home,
+  GraduationCap,
+  Wrench,
+  Users,
+  BookOpen,
+  User,
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { LegalTabType } from './LegalComplianceModal';
 import { HubJob } from '../types/hub';
+
+export type WebsiteNavSection =
+  | 'home'
+  | 'jobs'
+  | 'scholarships'
+  | 'tools'
+  | 'communities'
+  | 'trainings'
+  | 'profile';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -41,6 +58,10 @@ interface HeaderProps {
   readJobIds?: string[];
   onSelectJobNotification?: (jobId: string) => void;
   onMarkAllNotificationsRead?: () => void;
+  activeWebsiteNav?: WebsiteNavSection;
+  onNavigateWebsiteSection?: (section: WebsiteNavSection) => void;
+  isStandaloneApp?: boolean;
+  onInstallAppClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -58,7 +79,11 @@ export const Header: React.FC<HeaderProps> = ({
   jobNotifications = [],
   readJobIds = [],
   onSelectJobNotification,
-  onMarkAllNotificationsRead
+  onMarkAllNotificationsRead,
+  activeWebsiteNav = 'home',
+  onNavigateWebsiteSection,
+  isStandaloneApp = false,
+  onInstallAppClick
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -85,10 +110,24 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, [menuOpen, notifOpen]);
 
+  const desktopNavItems: {
+    id: WebsiteNavSection;
+    label: string;
+    icon: React.FC<{ className?: string }>;
+  }[] = [
+    { id: 'home', label: 'Home', icon: Home },
+    { id: 'jobs', label: 'Jobs', icon: Briefcase },
+    { id: 'scholarships', label: 'Scholarships', icon: GraduationCap },
+    { id: 'tools', label: 'Tools', icon: Wrench },
+    { id: 'communities', label: 'Communities', icon: Users },
+    { id: 'trainings', label: 'Trainings', icon: BookOpen },
+    { id: 'profile', label: 'Profile', icon: User }
+  ];
+
   return (
     <header className="shrink-0 z-30 bg-white border-b border-[#D2DEEA]">
-      {/* Main Header Row: Logo + FS Portal + Bell Notifications + 3-Dots Policy Menu */}
-      <div className="px-3.5 sm:px-4 py-2.5 flex items-center justify-between gap-2">
+      {/* Main Header Row: Logo + Food Science Portal + Desktop Nav + Install App + Bell Notifications + 3-Dots Policy Menu */}
+      <div className="px-3.5 sm:px-5 py-2.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {showBack && onBack && (
             <button
@@ -107,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onHomeClick}
             aria-label="Food Science Portal Home"
             title="Food Science Portal"
-            className="relative w-9 h-9 rounded-xl bg-white border border-[#1673B8]/30 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs cursor-pointer"
+            className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white border border-[#1673B8]/30 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs cursor-pointer"
           >
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
@@ -120,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onHomeClick}
-            className="text-[16px] sm:text-[19px] font-black tracking-tight leading-none flex items-baseline gap-1 shrink-0 cursor-pointer"
+            className="text-[15.5px] sm:text-[18.5px] font-black tracking-tight leading-none flex items-baseline gap-1 shrink-0 cursor-pointer"
           >
             <span className="text-[#0C182D]">Food Science</span>
             <span className="text-[#1673B8] border-b-[2.5px] border-[#1673B8] pb-0.5 leading-none">
@@ -129,8 +168,54 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Right Actions: Admin (if admin), Bell Notifications Dropdown, 3-Dots Menu */}
+        {/* Desktop & Tablet Horizontal Website Navigation (Visible on md+ screens) */}
+        {onNavigateWebsiteSection && (
+          <nav
+            aria-label="Website Main Navigation"
+            className="hidden lg:flex items-center gap-1 bg-[#F4F8FD] border border-[#D2DEEA] rounded-2xl p-1"
+          >
+            {desktopNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeWebsiteNav === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onNavigateWebsiteSection(item.id)}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'bg-[#1673B8] text-white shadow-2xs'
+                      : 'text-[#1A2138] hover:bg-[#EBF4FC] hover:text-[#1673B8]'
+                  }`}
+                >
+                  <Icon
+                    className={`w-3.5 h-3.5 shrink-0 ${
+                      isActive ? 'text-white stroke-[2.3]' : 'text-[#1673B8] stroke-[2]'
+                    }`}
+                  />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
+
+        {/* Right Actions: Install App Button, Admin (if admin), Bell Notifications Dropdown, 3-Dots Menu */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Install Mobile App Button (Shown on Website when not already running as installed standalone app) */}
+          {!isStandaloneApp && onInstallAppClick && (
+            <button
+              type="button"
+              onClick={onInstallAppClick}
+              title="Download & Install Food Science Portal Mobile App"
+              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] hover:from-[#105E9A] hover:to-[#1673B8] text-white text-[10.5px] sm:text-xs font-extrabold flex items-center gap-1 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Download className="w-3.5 h-3.5 text-sky-200 shrink-0" />
+              <span className="hidden xs:inline sm:inline">Install App</span>
+              <span className="inline xs:hidden sm:hidden">App</span>
+            </button>
+          )}
+
           {isAdmin && onAdminClick && (
             <button
               type="button"
@@ -312,17 +397,31 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white border border-[#D2DEEA] shadow-xl py-1.5 z-50 text-left">
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#D2DEEA] shadow-xl py-1.5 z-50 text-left">
                 <div className="px-3.5 py-2 border-b border-slate-100">
                   <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8]">
-                    Google Play &amp; App Policies
+                    Google Play &amp; Portal Options
                   </p>
                   <p className="text-[11px] font-semibold text-slate-600">
-                    Official Compliance &amp; Session Controls
+                    Official Compliance, App Install &amp; Session
                   </p>
                 </div>
 
                 <div className="py-1">
+                  {onInstallAppClick && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onInstallAppClick();
+                      }}
+                      className="w-full px-3.5 py-2 text-xs font-extrabold text-[#1673B8] bg-[#F0F6FC]/70 hover:bg-[#E1EEF9] flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                      <span>Download / Install Mobile App</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => {
@@ -405,9 +504,38 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
+      {/* Medium Tablet Navigation Bar (Visible on md screens where lg top bar is compact) */}
+      {onNavigateWebsiteSection && (
+        <div className="hidden md:flex lg:hidden items-center justify-between gap-1 px-4 py-1.5 bg-[#F4F8FD] border-t border-[#D2DEEA] overflow-x-auto">
+          {desktopNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeWebsiteNav === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onNavigateWebsiteSection(item.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#1673B8] text-white shadow-2xs'
+                    : 'text-[#1A2138] hover:bg-[#EBF4FC] hover:text-[#1673B8]'
+                }`}
+              >
+                <Icon
+                  className={`w-3.5 h-3.5 shrink-0 ${
+                    isActive ? 'text-white stroke-[2.3]' : 'text-[#1673B8] stroke-[2]'
+                  }`}
+                />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Compact Responsive Search Bar Row (Hidden when hideSearchBar is true) */}
       {!hideSearchBar && (
-        <div className="px-3.5 sm:px-4 py-2 bg-[#F8FAFC]">
+        <div className="px-3.5 sm:px-5 py-2 bg-[#F8FAFC] border-t border-[#E6EEF6]">
           <button
             type="button"
             onClick={onSearchClick}
