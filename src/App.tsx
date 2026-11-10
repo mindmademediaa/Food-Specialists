@@ -3279,27 +3279,29 @@ export default function App() {
   }
 
   return (
-    <div className="h-[100dvh] bg-[#F0F6FC] text-[#1A2138] flex flex-col items-center justify-start py-0 sm:py-2.5 px-0 sm:px-4 overflow-hidden">
+    <div className="h-[100dvh] w-full bg-[#F4F8FD] text-[#1A2138] flex flex-col overflow-hidden">
       {/* If Admin is previewing the user-facing app, show a top bar to return to Admin Control Panel */}
       {isUserAdmin && adminPreviewUserMode && (
-        <div className="w-full max-w-[480px] md:max-w-5xl lg:max-w-6xl shrink-0 mb-1.5 px-3 py-2 bg-[#1A2138] text-white sm:rounded-2xl flex items-center justify-between gap-2 shadow-md">
-          <div className="text-xs font-extrabold flex items-center gap-1.5">
-            <Shield className="w-4 h-4 text-sky-300" />
-            <span>Previewing User Website &amp; App Mode</span>
+        <div className="w-full shrink-0 px-4 sm:px-6 lg:px-10 py-2 bg-[#0C182D] text-white border-b border-white/15 flex items-center justify-between gap-2 shadow-sm z-40">
+          <div className="max-w-[1440px] mx-auto w-full flex items-center justify-between gap-2">
+            <div className="text-xs font-extrabold flex items-center gap-1.5">
+              <Shield className="w-4 h-4 text-sky-300" />
+              <span>Previewing Live User Website &amp; Mobile App Mode</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAdminPreviewUserMode(false)}
+              className="px-3 py-1 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap"
+            >
+              ← Back to Admin Panel
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setAdminPreviewUserMode(false)}
-            className="px-3 py-1 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap"
-          >
-            ← Back to Admin Panel
-          </button>
         </div>
       )}
 
-      {/* Responsive Hybrid Website + Mobile App Container — Certificate Royal Blue & Ice-Blue Scheme */}
-      <div className="w-full max-w-[480px] md:max-w-5xl lg:max-w-6xl flex-1 min-h-0 bg-[#F4F8FD] sm:rounded-[28px] sm:border sm:border-[#D2DEEA] sm:shadow-2xl flex flex-col relative overflow-hidden">
-        {/* TOP HEADER — CONSTANT (Includes Horizontal Website Nav on Desktop + Install App Button) */}
+      {/* Full-Viewport Responsive Website + Mobile App Shell */}
+      <div className="w-full flex-1 min-h-0 bg-[#F4F8FD] flex flex-col relative overflow-hidden">
+        {/* TOP HEADER — FULL-WIDTH EDGE-TO-EDGE */}
         <Header
           showBack={route.name !== 'home'}
           hideSearchBar={
@@ -3353,8 +3355,9 @@ export default function App() {
           onInstallAppClick={() => setShowInstallAppModal(true)}
         />
 
-        {/* MIDDLE SCROLLABLE PAGE CONTENT AREA */}
-        <main className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 pb-6 space-y-3.5">
+        {/* MIDDLE SCROLLABLE PAGE CONTENT AREA — FULL SCREEN WITH CENTERED 1440PX WEBSITE CONTAINER */}
+        <main className="flex-1 overflow-y-auto overscroll-contain w-full flex flex-col justify-between">
+          <div className="max-w-[1440px] mx-auto w-full p-3 sm:p-6 lg:px-10 lg:py-7 space-y-4 sm:space-y-6">
           {/* LAST 5 DAYS PREMIUM EXPIRY COUNTDOWN BANNER */}
           {globalPremiumCountdown && (
             <div className="rounded-2xl bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] text-white p-3 shadow-sm border border-[#D2DEEA] flex items-center justify-between gap-2.5">
@@ -3386,45 +3389,198 @@ export default function App() {
             </div>
           )}
 
-          {/* ==================== 1. HOME SCREEN (/) — RESPONSIVE WEBSITE + MOBILE APP DASHBOARD ==================== */}
+          {/* ==================== 1. HOME SCREEN (/) — FULL-FLEDGED WEBSITE + MOBILE APP DASHBOARD ==================== */}
           {route.name === 'home' && (
-            <div className="space-y-3.5 px-0.5">
-              {/* Dynamic Greeting Row + Live Sync Badge */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="space-y-0.5">
-                  <h1 className="text-[16px] sm:text-[20px] font-extrabold text-[#1A2138] tracking-tight leading-snug break-words">
-                    {timeOfDayGreeting}, {firstName}
-                  </h1>
-                  <p className="text-[11.5px] sm:text-[13px] font-medium text-slate-600">
-                    Explore verified food science jobs, global scholarships, specialist tools &amp; trainings
-                  </p>
-                </div>
+            <div className="space-y-4 sm:space-y-6">
+              {/* SECTION A: EXECUTIVE HERO & COMMAND BANNER */}
+              <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#0C182D] via-[#123159] to-[#1673B8] text-white p-4 sm:p-6 lg:p-8 shadow-md border border-[#1673B8]/40 relative overflow-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-center">
+                  {/* Left 7 Columns: Greeting, Value Prop, Website Search Bar & Quick Filter Tags */}
+                  <div className="lg:col-span-7 space-y-3.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 border border-white/20 text-sky-200 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider">
+                        <Sparkles className="w-3 h-3 text-amber-300 shrink-0" />
+                        <span>Global Food Science &amp; Safety Portal</span>
+                      </span>
+                      {isCurrentUserPaid && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-300 text-[#0C182D] text-[10px] sm:text-[11px] font-extrabold">
+                          <Crown className="w-3 h-3 shrink-0" />
+                          <span>Premium Specialist</span>
+                        </span>
+                      )}
+                    </div>
 
-                {!isStandaloneApp && (
-                  <button
-                    type="button"
-                    onClick={() => setShowInstallAppModal(true)}
-                    className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-[#EBF4FC] hover:bg-[#D2DEEA] border border-[#1673B8]/30 text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                  >
-                    <Smartphone className="w-3.5 h-3.5 text-[#1673B8]" />
-                    <span>Get Mobile App</span>
-                  </button>
-                )}
+                    <div className="space-y-1">
+                      <h1 className="text-[19px] sm:text-[26px] lg:text-[32px] font-black text-white tracking-tight leading-tight break-words">
+                        {timeOfDayGreeting}, {firstName}
+                      </h1>
+                      <p className="text-xs sm:text-sm text-sky-100/90 font-medium max-w-2xl leading-relaxed">
+                        Your unified platform for verified Food Safety &amp; QA/QC jobs, international scholarships, Halal E-Number lookup, laboratory calculators, and accredited trainings.
+                      </p>
+                    </div>
+
+                    {/* Desktop & Tablet Integrated Hero Search Bar */}
+                    <div className="hidden md:flex items-center gap-2 bg-white rounded-2xl p-1.5 shadow-lg max-w-2xl">
+                      <div className="flex items-center gap-2.5 flex-1 pl-3">
+                        <Search className="w-4 h-4 text-[#1673B8] stroke-[2.4] shrink-0" />
+                        <input
+                          type="text"
+                          value={globalSearchQuery}
+                          onChange={(e) => setGlobalSearchQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setRoute({ name: 'search' });
+                            }
+                          }}
+                          placeholder="Search jobs, scholarships, E-numbers, trainings or specialists..."
+                          className="w-full py-2 text-xs sm:text-sm font-medium text-[#1A2138] placeholder:text-slate-400 focus:outline-none bg-transparent"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRoute({ name: 'search' })}
+                        className="px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold transition-colors cursor-pointer shrink-0"
+                      >
+                        Search Portal
+                      </button>
+                    </div>
+
+                    {/* Quick Action Pills */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => navigateToJobs('All')}
+                        className="px-3 py-1.5 rounded-xl bg-white text-[#0C182D] hover:bg-sky-50 text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <Briefcase className="w-3.5 h-3.5 text-[#1673B8]" />
+                        <span>Browse Jobs ({activeJobs.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigateToScholarships('All')}
+                        className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <GraduationCap className="w-3.5 h-3.5 text-sky-200" />
+                        <span>Scholarships ({activeScholarships.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveToolSection('hub');
+                          setRoute({ name: 'tools', initialSection: 'hub' });
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Wrench className="w-3.5 h-3.5 text-sky-200" />
+                        <span>Open Tools</span>
+                      </button>
+                      {!isStandaloneApp && (
+                        <button
+                          type="button"
+                          onClick={() => setShowInstallAppModal(true)}
+                          className="px-3 py-1.5 rounded-xl bg-amber-300 hover:bg-amber-200 text-[#0C182D] text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                        >
+                          <Smartphone className="w-3.5 h-3.5 text-[#0C182D]" />
+                          <span>Install Mobile App</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right 5 Columns (Visible on Desktop lg+): Live Portal Stats & Ecosystem Matrix */}
+                  <div className="hidden lg:grid lg:col-span-5 grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => navigateToJobs('All')}
+                      className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-left transition-all cursor-pointer space-y-1"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-sky-200">
+                        <Briefcase className="w-4 h-4" />
+                      </div>
+                      <p className="text-2xl font-black text-white tabular-nums pt-1">
+                        {activeJobs.length}
+                      </p>
+                      <p className="text-xs font-extrabold text-sky-100">
+                        Verified Job Roles
+                      </p>
+                      <p className="text-[10.5px] text-sky-200/80">
+                        Production, QA/QC &amp; R&amp;D
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigateToScholarships('All')}
+                      className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-left transition-all cursor-pointer space-y-1"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-sky-200">
+                        <GraduationCap className="w-4 h-4" />
+                      </div>
+                      <p className="text-2xl font-black text-white tabular-nums pt-1">
+                        {activeScholarships.length}
+                      </p>
+                      <p className="text-xs font-extrabold text-sky-100">
+                        Global Scholarships
+                      </p>
+                      <p className="text-[10.5px] text-sky-200/80">
+                        MSc, PhD &amp; Fellowships
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRoute({ name: 'communities' })}
+                      className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-left transition-all cursor-pointer space-y-1"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-sky-200">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <p className="text-2xl font-black text-white tabular-nums pt-1">
+                        {paidCommunityMembers.length}
+                      </p>
+                      <p className="text-xs font-extrabold text-sky-100">
+                        Verified Specialists
+                      </p>
+                      <p className="text-[10.5px] text-sky-200/80">
+                        Premium Directory &amp; CVs
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRoute({ name: 'trainings' })}
+                      className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-left transition-all cursor-pointer space-y-1"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-sky-200">
+                        <Award className="w-4 h-4" />
+                      </div>
+                      <p className="text-2xl font-black text-white tabular-nums pt-1">
+                        {certificates.length}
+                      </p>
+                      <p className="text-xs font-extrabold text-sky-100">
+                        Certificates &amp; Courses
+                      </p>
+                      <p className="text-[10.5px] text-sky-200/80">
+                        Online QR Registry
+                      </p>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* ADMIN QUICK BANNER FOR PENDING PAYMENT APPROVALS */}
               {isUserAdmin && (
-                <div className="bg-[#F0F6FC] border border-[#1673B8]/40 rounded-2xl p-3 shadow-2xs flex items-center justify-between gap-2.5">
+                <div className="bg-[#F0F6FC] border border-[#1673B8]/40 rounded-2xl p-3.5 shadow-2xs flex items-center justify-between gap-2.5">
                   <div className="space-y-0.5 min-w-0">
-                    <div className="text-[11px] font-extrabold text-[#1A2138] flex items-center gap-1.5">
-                      <Shield className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                    <div className="text-xs font-extrabold text-[#1A2138] flex items-center gap-1.5">
+                      <Shield className="w-4 h-4 text-[#1673B8] shrink-0" />
                       <span className="truncate">
-                        Admin • {pendingPaymentRequestsCount} Pending{' '}
+                        Admin Control • {pendingPaymentRequestsCount} Pending{' '}
                         {pendingPaymentRequestsCount === 1 ? 'Request' : 'Requests'}
                       </span>
                     </div>
-                    <p className="text-[10.5px] text-slate-600 font-medium leading-snug">
-                      Review payment slips &amp; approve memberships.
+                    <p className="text-[11px] text-slate-600 font-medium leading-snug">
+                      Review payment slips, post new jobs/scholarships &amp; issue certificates.
                     </p>
                   </div>
                   <button
@@ -3433,134 +3589,386 @@ export default function App() {
                       setAdminTab('receipts');
                       setRoute({ name: 'admin' });
                     }}
-                    className="px-2.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[10.5px] font-extrabold shrink-0 cursor-pointer transition-colors whitespace-nowrap"
+                    className="px-3 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shrink-0 cursor-pointer transition-colors whitespace-nowrap"
                   >
                     Receipts ({adminAllPaymentRequests.length}) →
                   </button>
                 </div>
               )}
 
-              {/* RESPONSIVE 2-COLUMN GRID FOR JOBS & SCHOLARSHIPS ON TABLET/DESKTOP, STACKED ON MOBILE */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* SECTION B: PRIMARY OPPORTUNITY HUB (JOBS & SCHOLARSHIPS — 2 COLUMNS ON DESKTOP) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                 {/* CARD 1 - JOBS */}
-                <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all flex flex-col justify-between space-y-2.5">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                      <Briefcase className="w-5 h-5 stroke-[2.2]" />
-                    </div>
+                <div className="bg-white border border-[#D2DEEA] hover:border-[#1673B8]/60 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs transition-all flex flex-col justify-between space-y-3.5">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                          <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+                        </div>
 
-                    <div className="space-y-1.5 min-w-0 flex-1">
-                      <h2 className="text-[15.5px] sm:text-[17px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
-                        Jobs
-                      </h2>
-
-                      {/* 3 Strictly Unclickable Tags */}
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex flex-wrap items-center gap-1 select-none cursor-default pointer-events-none"
-                      >
-                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                          Production
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                          R&amp;D Lab
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                          Quality &amp; Safety
-                        </span>
-                      </div>
-
-                      <div className="text-[11.5px] sm:text-[12px] font-medium text-slate-600">
-                        {activeJobs.length} Verified Roles Available
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
+                              Jobs &amp; Career Openings
+                            </h2>
+                            <span className="px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#1673B8] text-[10.5px] font-extrabold">
+                              {activeJobs.length} Active
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium">
+                            Verified QA/QC, Food Safety, Production &amp; R&amp;D roles
+                          </p>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Specialization Tags */}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none"
+                    >
+                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
+                        Production
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
+                        R&amp;D Lab
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
+                        Quality &amp; Safety
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
+                        HACCP / ISO 22000
+                      </span>
+                    </div>
+
+                    {/* Live Preview of Recent Jobs (If Available) */}
+                    {activeJobs.length > 0 ? (
+                      <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                        <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                          Latest Posted Roles
+                        </p>
+                        {activeJobs.slice(0, 2).map((j) => (
+                          <button
+                            key={j.id}
+                            type="button"
+                            onClick={() => {
+                              setRoute({ name: 'job-detail', jobId: j.id });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="w-full p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F0F6FC] border border-[#E2ECF5] flex items-center justify-between gap-2 text-left transition-colors cursor-pointer"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-xs font-extrabold text-[#1A2138] truncate">
+                                {j.title}
+                              </p>
+                              <p className="text-[11px] font-medium text-slate-500 truncate">
+                                {j.company} • {j.location || j.country}
+                              </p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2ECF5] flex items-center justify-between gap-2">
+                        <div className="text-xs text-slate-600 font-medium">
+                          Instant bell notifications enabled whenever new industry jobs are posted.
+                        </div>
+                        <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10px] font-extrabold shrink-0">
+                          Live Alerts
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => navigateToJobs('All')}
-                    className="w-full py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[12.5px] sm:text-[13.5px] font-bold text-center shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
+                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-[13.5px] font-extrabold text-center shadow-2xs transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
                   >
-                    Browse Jobs
+                    <span>Browse Jobs</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* CARD 2 - SCHOLARSHIPS */}
-                <div className="bg-white border border-[#D2DEEA] rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all flex flex-col justify-between space-y-2.5">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                      <GraduationCap className="w-5 h-5 stroke-[2.2]" />
-                    </div>
+                <div className="bg-white border border-[#D2DEEA] hover:border-[#1673B8]/60 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs transition-all flex flex-col justify-between space-y-3.5">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                          <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+                        </div>
 
-                    <div className="space-y-1.5 min-w-0 flex-1">
-                      <h2 className="text-[15.5px] sm:text-[17px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
-                        Scholarships
-                      </h2>
-
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex flex-wrap items-center gap-1 select-none cursor-default pointer-events-none"
-                      >
-                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                          Fellowships
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] sm:text-[10.5px] font-semibold">
-                          International Grants
-                        </span>
-                      </div>
-
-                      <div className="text-[11.5px] sm:text-[12px] font-medium text-slate-600">
-                        {activeScholarships.length} Global Programs Open
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
+                              Global Scholarships &amp; Grants
+                            </h2>
+                            <span className="px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#1673B8] text-[10.5px] font-extrabold">
+                              {activeScholarships.length} Open
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium">
+                            International MSc, PhD fellowships &amp; research funding
+                          </p>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Funding Tags */}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none"
+                    >
+                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
+                        Fellowships
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
+                        International Grants
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
+                        MSc &amp; PhD Food Science
+                      </span>
+                    </div>
+
+                    {/* Live Preview of Recent Scholarships (If Available) */}
+                    {activeScholarships.length > 0 ? (
+                      <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                        <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                          Featured Programs
+                        </p>
+                        {activeScholarships.slice(0, 2).map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              setRoute({
+                                name: 'scholarship-detail',
+                                scholarshipId: s.id
+                              });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="w-full p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F0F6FC] border border-[#E2ECF5] flex items-center justify-between gap-2 text-left transition-colors cursor-pointer"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-xs font-extrabold text-[#1A2138] truncate">
+                                {s.title}
+                              </p>
+                              <p className="text-[11px] font-medium text-slate-500 truncate">
+                                {s.organization} • {s.country}
+                              </p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2ECF5] flex items-center justify-between gap-2">
+                        <div className="text-xs text-slate-600 font-medium">
+                          Verified international fellowships, Erasmus+ &amp; food research grants updated regularly.
+                        </div>
+                        <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10px] font-extrabold shrink-0">
+                          Global
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => navigateToScholarships('All')}
-                    className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border-[1.5px] border-[#1673B8] text-[#1673B8] text-[12.5px] sm:text-[13.5px] font-bold text-center transition-colors cursor-pointer whitespace-nowrap"
+                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border-[1.5px] border-[#1673B8] text-[#1673B8] text-xs sm:text-[13.5px] font-extrabold text-center transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
                   >
-                    Explore Grants
+                    <span>Explore Grants</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              {/* DYNAMIC PORTAL ECOSYSTEM QUICK-ACCESS GRID (2x2 on Mobile, 4 Columns on Desktop) */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setRoute({ name: 'tools', initialSection: 'hub' })
-                  }
-                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-2.5"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                    <Wrench className="w-4 h-4 stroke-[2.2]" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
-                      Tools
-                    </p>
-                    <p className="text-[10.5px] font-semibold text-slate-500 leading-tight mt-0.5">
-                      Exam Prep, E-Numbers &amp; Calculators
+              {/* SECTION C: SPECIALIST TOOLS SUITE (4 INTERACTIVE CARDS ON DESKTOP, 2x2 ON MOBILE) */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between px-0.5">
+                  <div>
+                    <h2 className="text-sm sm:text-base font-extrabold text-[#1A2138] tracking-tight">
+                      Food Science Tools &amp; Lab Calculators
+                    </h2>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
+                      Direct access to exam preparation, E-number safety lookup, laboratory formulas &amp; compliance planners
                     </p>
                   </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveToolSection('hub');
+                      setRoute({ name: 'tools', initialSection: 'hub' });
+                    }}
+                    className="text-xs font-extrabold text-[#1673B8] hover:underline inline-flex items-center gap-1 cursor-pointer shrink-0"
+                  >
+                    <span>All Tools</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {/* Tool 1: Exam Prep & 5-Page PDF Notes */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveToolSection('exam');
+                      setRoute({ name: 'tools', initialSection: 'exam' });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
+                  >
+                    <div className="space-y-2">
+                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
+                        <BookOpen className="w-5 h-5 stroke-[2.2]" />
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                          PPSC / FPSC / Global
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug mt-0.5">
+                          Exam Prep &amp; PDF Notes
+                        </h3>
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1 hidden sm:block">
+                          Subject-wise Food Science MCQs, mock tests &amp; 5-page revision PDF generator.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
+                      <span>Start Prep</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+
+                  {/* Tool 2: E-Numbers & Halal Additive Finder */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveToolSection('e-numbers');
+                      setRoute({ name: 'tools', initialSection: 'e-numbers' });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
+                  >
+                    <div className="space-y-2">
+                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
+                        <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                          Codex &amp; Halal Status
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug mt-0.5">
+                          E-Numbers &amp; Additives
+                        </h3>
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1 hidden sm:block">
+                          Instant INS/E-code search with Halal status, ADI limits &amp; regulatory safety notes.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
+                      <span>Search E-Codes</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+
+                  {/* Tool 3: Food Lab & Process Calculators */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveToolSection('lab-formula');
+                      setRoute({
+                        name: 'tools',
+                        initialSection: 'lab-formula'
+                      });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
+                  >
+                    <div className="space-y-2">
+                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
+                        <FlaskConical className="w-5 h-5 stroke-[2.2]" />
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                          QA/QC Lab Suite
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug mt-0.5">
+                          Food Lab Calculators
+                        </h3>
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1 hidden sm:block">
+                          Dilution, Pearson Square, molarity, moisture &amp; batch formulation calculators.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
+                      <span>Open Calculators</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+
+                  {/* Tool 4: Clinical Nutrition & Diet Suite */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveToolSection('nutrition');
+                      setRoute({
+                        name: 'tools',
+                        initialSection: 'nutrition'
+                      });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
+                  >
+                    <div className="space-y-2">
+                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
+                        <Activity className="w-5 h-5 stroke-[2.2]" />
+                      </div>
+                      <div>
+                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                          Dietetics &amp; Macros
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug mt-0.5">
+                          Nutrition &amp; Diet Planner
+                        </h3>
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1 hidden sm:block">
+                          BMR, TDEE, BMI, daily meal planner &amp; clinical macro tracker.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
+                      <span>Open Nutrition</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* SECTION D: ACADEMY, CERTIFICATE VERIFICATION & SPECIALIST DIRECTORY (3 COLUMNS ON DESKTOP) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
                 <button
                   type="button"
                   onClick={() => setRoute({ name: 'trainings' })}
-                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-2.5"
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-3.5"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                    <BookOpen className="w-4 h-4 stroke-[2.2]" />
+                  <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                    <Award className="w-5 h-5 stroke-[2.2]" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
-                      Trainings Academy
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                      Accredited Learning &amp; QR Registry
+                    </span>
+                    <p className="text-sm font-extrabold text-[#1A2138] mt-0.5">
+                      Trainings &amp; Certificate Portal
                     </p>
-                    <p className="text-[10.5px] font-semibold text-slate-500 leading-tight mt-0.5">
-                      {INTERNATIONAL_TRAINING_COURSES.length} Accredited Courses
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
+                      {trainings.length > 0
+                        ? `${trainings.length} Accredited Courses • ${certificates.length} Verified Certificates Issued`
+                        : `Study Food Safety modules & verify ${certificates.length} official QR certificates`}
                     </p>
                   </div>
                 </button>
@@ -3568,17 +3976,20 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setRoute({ name: 'communities' })}
-                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-2.5"
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-3.5"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                    <Users className="w-4 h-4 stroke-[2.2]" />
+                  <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                    <Users className="w-5 h-5 stroke-[2.2]" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
-                      Community
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                      Professional Network
+                    </span>
+                    <p className="text-sm font-extrabold text-[#1A2138] mt-0.5">
+                      Specialist Community ({paidCommunityMembers.length})
                     </p>
-                    <p className="text-[10.5px] font-semibold text-slate-500 leading-tight mt-0.5">
-                      {paidCommunityMembers.length} Verified Specialists
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
+                      Connect with verified Food Technologists, QA Managers &amp; R&amp;D Specialists.
                     </p>
                   </div>
                 </button>
@@ -3586,27 +3997,30 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setRoute({ name: 'profile' })}
-                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-2.5"
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-3.5"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                    <Award className="w-4 h-4 stroke-[2.2]" />
+                  <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                    <FileText className="w-5 h-5 stroke-[2.2]" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-[13px] font-extrabold text-[#1A2138] truncate">
-                      Profile &amp; CV Builder
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                      Career Portfolio
+                    </span>
+                    <p className="text-sm font-extrabold text-[#1A2138] mt-0.5">
+                      ATS CV Builder &amp; Profile
                     </p>
-                    <p className="text-[10.5px] font-semibold text-slate-500 leading-tight mt-0.5">
-                      ATS CV &amp; Certificates ({certificates.length})
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
+                      Generate executive ATS-ready Food Science CVs and manage privacy settings.
                     </p>
                   </div>
                 </button>
               </div>
 
-              {/* OFFICIAL WHATSAPP CHANNEL + INSTALL MOBILE APP ROW */}
+              {/* SECTION E: OFFICIAL WHATSAPP CHANNEL + INSTALL MOBILE APP ROW */}
               <div
                 className={`grid grid-cols-1 ${
                   !isStandaloneApp ? 'lg:grid-cols-2' : ''
-                } gap-3.5`}
+                } gap-4`}
               >
                 {(() => {
                   const rawWaUrl = (
@@ -3623,21 +4037,21 @@ export default function App() {
                     'Follow WhatsApp Channel';
 
                   return (
-                    <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] border border-[#1673B8]/40 rounded-2xl p-3.5 sm:p-4 shadow-sm text-white flex flex-col justify-between space-y-2.5">
-                      <div className="flex items-start gap-2.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/25 text-white flex items-center justify-center shrink-0">
-                          <MessageSquare className="w-4 h-4 stroke-[2.2]" />
+                    <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] border border-[#1673B8]/40 rounded-2xl p-4 sm:p-5 shadow-sm text-white flex flex-col justify-between space-y-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/25 text-white flex items-center justify-center shrink-0">
+                          <MessageSquare className="w-5 h-5 stroke-[2.2]" />
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-sky-200 block">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-200 block">
                             Official Community Updates
                           </span>
-                          <h2 className="text-[13.5px] sm:text-[15px] font-extrabold text-white leading-snug break-words">
+                          <h2 className="text-sm sm:text-base font-extrabold text-white leading-snug break-words">
                             Food Science Portal WhatsApp Channel
                           </h2>
-                          <p className="text-[11px] text-sky-100/90 font-medium mt-0.5 leading-snug break-words">
-                            Daily food industry jobs, global scholarships &amp; training alerts.
+                          <p className="text-xs text-sky-100/90 font-medium mt-0.5 leading-snug break-words">
+                            Receive instant alerts for daily food industry jobs, global scholarships &amp; training announcements.
                           </p>
                         </div>
                       </div>
@@ -3647,11 +4061,11 @@ export default function App() {
                           href={waHref}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="w-full sm:w-auto flex-1 py-2 px-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#1A2138] font-extrabold text-[11.5px] sm:text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                          className="w-full sm:w-auto flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-sky-50 text-[#1A2138] font-extrabold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
                         >
                           <MessageSquare className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.3] shrink-0" />
                           <span>{waButtonLabel}</span>
-                          <ExternalLink className="w-3 h-3 text-[#1673B8] stroke-[2.4] shrink-0" />
+                          <ExternalLink className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.4] shrink-0" />
                         </a>
 
                         {isUserAdmin && (
@@ -3661,7 +4075,7 @@ export default function App() {
                               setAdminPreviewUserMode(false);
                               setRoute({ name: 'admin' });
                             }}
-                            className="px-2.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[10.5px] font-extrabold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
+                            className="px-3 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-extrabold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
                           >
                             Edit Link
                           </button>
@@ -3673,9 +4087,9 @@ export default function App() {
 
                 {/* INSTALL MOBILE APP CARD ON WEBSITE HOME PAGE */}
                 {!isStandaloneApp && (
-                  <div className="bg-white border border-[#1673B8]/35 rounded-2xl p-3.5 sm:p-4 shadow-2xs flex flex-col justify-between space-y-2.5">
+                  <div className="bg-white border border-[#1673B8]/35 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between space-y-3">
                     <div className="flex items-start gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] border border-[#1673B8]/30 p-1 flex items-center justify-center shrink-0">
+                      <div className="w-11 h-11 rounded-xl bg-[#F0F6FC] border border-[#1673B8]/30 p-1 flex items-center justify-center shrink-0">
                         <img
                           src={FS_PORTAL_LOGO_DATA_URI}
                           alt="Food Science Portal App"
@@ -3683,14 +4097,14 @@ export default function App() {
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
                           Website + Mobile App Synced
                         </span>
-                        <h2 className="text-[13.5px] sm:text-[15px] font-extrabold text-[#1A2138] leading-snug">
-                          Install Food Science Portal App
+                        <h2 className="text-sm sm:text-base font-extrabold text-[#1A2138] leading-snug">
+                          Install Food Science Portal Mobile App
                         </h2>
-                        <p className="text-[11px] text-slate-600 font-medium mt-0.5 leading-snug">
-                          Download the app on your Android or iPhone for instant 1-tap access with full cloud sync.
+                        <p className="text-xs text-slate-600 font-medium mt-0.5 leading-snug">
+                          Download the app on your Android or iPhone for instant 1-tap access with real-time cloud synchronization.
                         </p>
                       </div>
                     </div>
@@ -3698,9 +4112,9 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setShowInstallAppModal(true)}
-                      className="w-full py-2 px-3.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-[11.5px] sm:text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                     >
-                      <Download className="w-3.5 h-3.5 stroke-[2.3] shrink-0" />
+                      <Download className="w-4 h-4 stroke-[2.3] shrink-0" />
                       <span>Download &amp; Install Mobile App</span>
                     </button>
                   </div>
@@ -5579,6 +5993,231 @@ export default function App() {
               )}
             </div>
           )}
+          </div>
+
+          {/* FULL-WIDTH DESKTOP & TABLET WEBSITE FOOTER (Visible on md+ screens) */}
+          <footer className="hidden md:block w-full bg-[#0C182D] text-white border-t border-[#1C3257] mt-10 shrink-0">
+            <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-8 lg:py-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-8 border-b border-white/10">
+                {/* Col 1: Brand & Mission */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-white p-0.5 flex items-center justify-center shrink-0">
+                      <img
+                        src={FS_PORTAL_LOGO_DATA_URI}
+                        alt="Food Science Portal"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <span className="text-lg font-black tracking-tight text-white">
+                      Food Science <span className="text-sky-400">Portal</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Dedicated career ecosystem, international training academy, Halal &amp; Codex additive database, and laboratory calculator suite for Food Safety, QA/QC, and Food Science professionals.
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-sky-300 text-[10.5px] font-bold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Cloud Synced Website &amp; Mobile App</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Col 2: Portal Navigation */}
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
+                    Portal Sections
+                  </h3>
+                  <ul className="space-y-2 text-xs font-semibold text-slate-300">
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigateWebsiteSection('home')}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        Home Dashboard
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigateWebsiteSection('jobs')}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        Browse Food Industry Jobs ({activeJobs.length})
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleNavigateWebsiteSection('scholarships')
+                        }
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        Global Scholarships &amp; Grants ({activeScholarships.length})
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleNavigateWebsiteSection('communities')
+                        }
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        Specialist Community Directory ({paidCommunityMembers.length})
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigateWebsiteSection('profile')}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        ATS CV Builder &amp; Profile
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Col 3: Specialist Tools & Academy */}
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
+                    Tools &amp; Academy
+                  </h3>
+                  <ul className="space-y-2 text-xs font-semibold text-slate-300">
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveToolSection('exam');
+                          setRoute({
+                            name: 'tools',
+                            initialSection: 'exam'
+                          });
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        Food Science Exam Prep &amp; PDF Notes
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveToolSection('e-numbers');
+                          setRoute({
+                            name: 'tools',
+                            initialSection: 'e-numbers'
+                          });
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        E-Numbers &amp; Halal Additive Finder
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveToolSection('lab-formula');
+                          setRoute({
+                            name: 'tools',
+                            initialSection: 'lab-formula'
+                          });
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        QA/QC Food Lab Calculators
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleNavigateWebsiteSection('trainings')
+                        }
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        International Trainings &amp; QR Verification
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Col 4: Legal Compliance & Mobile App */}
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
+                    Policies &amp; Mobile App
+                  </h3>
+                  <ul className="space-y-2 text-xs font-semibold text-slate-300">
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => setLegalModalTab('privacy')}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        Privacy Policy
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => setLegalModalTab('terms')}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        Terms &amp; Conditions
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => setLegalModalTab('ads')}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        AdMob &amp; Ads Compliance Policy
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => setLegalModalTab('deletion')}
+                        className="hover:text-white transition-colors cursor-pointer"
+                      >
+                        Data &amp; Account Deletion Policy
+                      </button>
+                    </li>
+                  </ul>
+                  {!isStandaloneApp && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowInstallAppModal(true)}
+                        className="w-full py-2.5 px-3.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Smartphone className="w-4 h-4 text-sky-200" />
+                        <span>Install Mobile App</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400 font-medium">
+                <p>
+                  © {new Date().getFullYear()} Food Science Portal. All rights reserved.
+                </p>
+                <p>
+                  Synchronized Web Portal &amp; Google Play Store Compatible PWA
+                </p>
+              </div>
+            </div>
+          </footer>
         </main>
 
         {/* ==================== HIRE / CONTACT MEMBER MODAL ==================== */}

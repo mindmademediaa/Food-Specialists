@@ -70,10 +70,13 @@ export const Header: React.FC<HeaderProps> = ({
   onHomeClick,
   onSearchClick,
   onBellClick,
+  onProfileClick,
   onSignOutClick,
   onOpenLegal,
   onAdminClick,
   isAdmin = false,
+  userInitial = 'U',
+  userAvatarUrl,
   pendingAdminCount = 0,
   hideSearchBar = false,
   jobNotifications = [],
@@ -125,16 +128,17 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="shrink-0 z-30 bg-white border-b border-[#D2DEEA]">
-      {/* Main Header Row: Logo + Food Science Portal + Desktop Nav + Install App + Bell Notifications + 3-Dots Policy Menu */}
-      <div className="px-3.5 sm:px-5 py-2.5 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+    <header className="shrink-0 z-30 bg-white border-b border-[#D2DEEA] shadow-2xs">
+      {/* Main Header Container — Full-Width Edge-to-Edge with Centered 1440px Website Alignment */}
+      <div className="max-w-[1440px] mx-auto px-3.5 sm:px-6 lg:px-10 py-2.5 md:py-3 flex items-center justify-between gap-3">
+        {/* Left: Back Button + Brand Emblem + Brand Name */}
+        <div className="flex items-center gap-2.5 min-w-0">
           {showBack && onBack && (
             <button
               type="button"
               onClick={onBack}
               aria-label="Go Back"
-              className="w-8 h-8 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+              className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 text-[#1A2138]" />
             </button>
@@ -146,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onHomeClick}
             aria-label="Food Science Portal Home"
             title="Food Science Portal"
-            className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white border border-[#1673B8]/30 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs cursor-pointer"
+            className="relative w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white border border-[#1673B8]/30 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs cursor-pointer"
           >
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
@@ -156,19 +160,24 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Food Science Portal Brand Title */}
-          <button
-            type="button"
-            onClick={onHomeClick}
-            className="text-[15.5px] sm:text-[18.5px] font-black tracking-tight leading-none flex items-baseline gap-1 shrink-0 cursor-pointer"
-          >
-            <span className="text-[#0C182D]">Food Science</span>
-            <span className="text-[#1673B8] border-b-[2.5px] border-[#1673B8] pb-0.5 leading-none">
-              Portal
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={onHomeClick}
+              className="text-[15.5px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight leading-none flex items-baseline gap-1 shrink-0 cursor-pointer text-left"
+            >
+              <span className="text-[#0C182D]">Food Science</span>
+              <span className="text-[#1673B8] border-b-[2.5px] border-[#1673B8] pb-0.5 leading-none">
+                Portal
+              </span>
+            </button>
+            <span className="hidden xl:block text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+              Global Food Safety, QA/QC &amp; R&amp;D Network
             </span>
-          </button>
+          </div>
         </div>
 
-        {/* Desktop & Tablet Horizontal Website Navigation (Visible on md+ screens) */}
+        {/* Center: Desktop Horizontal Website Navigation (Visible on lg+ screens) */}
         {onNavigateWebsiteSection && (
           <nav
             aria-label="Website Main Navigation"
@@ -182,7 +191,7 @@ export const Header: React.FC<HeaderProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => onNavigateWebsiteSection(item.id)}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                     isActive
                       ? 'bg-[#1673B8] text-white shadow-2xs'
                       : 'text-[#1A2138] hover:bg-[#EBF4FC] hover:text-[#1673B8]'
@@ -190,7 +199,9 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <Icon
                     className={`w-3.5 h-3.5 shrink-0 ${
-                      isActive ? 'text-white stroke-[2.3]' : 'text-[#1673B8] stroke-[2]'
+                      isActive
+                        ? 'text-white stroke-[2.3]'
+                        : 'text-[#1673B8] stroke-[2]'
                     }`}
                   />
                   <span>{item.label}</span>
@@ -200,19 +211,31 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
         )}
 
-        {/* Right Actions: Install App Button, Admin (if admin), Bell Notifications Dropdown, 3-Dots Menu */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Right Actions: Desktop Quick Search Pill, Install App Button, Admin, Bell, User Avatar, 3-Dots Menu */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Desktop Inline Quick Search Button (Shown on md+ when search bar row is hidden or for quick access) */}
+          <button
+            type="button"
+            onClick={onSearchClick}
+            title="Search Portal"
+            className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F4F8FD] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-slate-600 hover:text-[#1673B8] text-xs font-bold transition-colors cursor-pointer"
+          >
+            <Search className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.3]" />
+            <span className="hidden xl:inline">Search jobs, grants, tools...</span>
+            <span className="xl:hidden">Search</span>
+          </button>
+
           {/* Install Mobile App Button (Shown on Website when not already running as installed standalone app) */}
           {!isStandaloneApp && onInstallAppClick && (
             <button
               type="button"
               onClick={onInstallAppClick}
               title="Download & Install Food Science Portal Mobile App"
-              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] hover:from-[#105E9A] hover:to-[#1673B8] text-white text-[10.5px] sm:text-xs font-extrabold flex items-center gap-1 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] hover:from-[#105E9A] hover:to-[#1673B8] text-white text-[10.5px] sm:text-xs font-extrabold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5 text-sky-200 shrink-0" />
-              <span className="hidden xs:inline sm:inline">Install App</span>
-              <span className="inline xs:hidden sm:hidden">App</span>
+              <span className="hidden sm:inline">Install App</span>
+              <span className="inline sm:hidden">App</span>
             </button>
           )}
 
@@ -221,12 +244,12 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onAdminClick}
               title="Open Admin Panel"
-              className="relative px-2.5 py-1 rounded-lg bg-[#F0F6FC] hover:bg-[#E1EEF9] text-[10.5px] font-extrabold text-[#1673B8] border border-[#1673B8]/40 flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+              className="relative px-2.5 py-1.5 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] text-[10.5px] sm:text-xs font-extrabold text-[#1673B8] border border-[#1673B8]/40 flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <Shield className="w-3 h-3 text-[#1673B8]" />
+              <Shield className="w-3.5 h-3.5 text-[#1673B8]" />
               <span>Admin</span>
               {pendingAdminCount > 0 && (
-                <span className="px-1 py-0.2 rounded-full bg-red-600 text-white text-[9px] font-extrabold tabular-nums">
+                <span className="px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[9px] font-extrabold tabular-nums">
                   {pendingAdminCount}
                 </span>
               )}
@@ -243,7 +266,7 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               aria-label="Job Notifications"
               title="New Job Notifications"
-              className={`relative w-8 h-8 rounded-full border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+              className={`relative w-8 h-8 md:w-9 md:h-9 rounded-full border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                 notifOpen
                   ? 'bg-[#EBF4FC] border-[#1673B8] text-[#1673B8]'
                   : 'bg-[#F0F6FC] hover:bg-[#E1EEF9] border-[#D2DEEA] text-[#1A2138]'
@@ -258,7 +281,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {notifOpen && (
-              <div className="absolute right-0 mt-2 w-[310px] sm:w-[340px] rounded-2xl bg-white border border-[#D2DEEA] shadow-[0_18px_45px_rgba(26,33,56,0.18)] overflow-hidden z-50 text-left">
+              <div className="absolute right-0 mt-2 w-[310px] sm:w-[350px] rounded-2xl bg-white border border-[#D2DEEA] shadow-[0_18px_45px_rgba(26,33,56,0.18)] overflow-hidden z-50 text-left">
                 {/* Dropdown Header */}
                 <div className="px-3.5 py-2.5 bg-gradient-to-r from-[#1A2138] to-[#1673B8] text-white flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
@@ -381,6 +404,24 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
+          {/* Desktop User Profile Avatar Button */}
+          <button
+            type="button"
+            onClick={onProfileClick}
+            title="My Profile & CV"
+            className="hidden md:flex w-9 h-9 rounded-full bg-[#EBF4FC] hover:bg-[#D2DEEA] border border-[#1673B8]/40 text-[#1673B8] font-extrabold text-xs items-center justify-center overflow-hidden transition-colors cursor-pointer shrink-0"
+          >
+            {userAvatarUrl ? (
+              <img
+                src={userAvatarUrl}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{userInitial}</span>
+            )}
+          </button>
+
           {/* 3-Dots Google Play Store Policy & App Closure Menu */}
           <div className="relative" ref={menuRef}>
             <button
@@ -391,7 +432,7 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               aria-label="Policies, Legal & App Closure Menu"
               title="Policies & App Options"
-              className="w-8 h-8 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1A2138] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1A2138] flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >
               <MoreVertical className="w-4 h-4 stroke-[2.2]" />
             </button>
@@ -506,7 +547,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Medium Tablet Navigation Bar (Visible on md screens where lg top bar is compact) */}
       {onNavigateWebsiteSection && (
-        <div className="hidden md:flex lg:hidden items-center justify-between gap-1 px-4 py-1.5 bg-[#F4F8FD] border-t border-[#D2DEEA] overflow-x-auto">
+        <div className="hidden md:flex lg:hidden items-center justify-between gap-1 px-6 py-1.5 bg-[#F4F8FD] border-t border-[#D2DEEA] overflow-x-auto">
           {desktopNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeWebsiteNav === item.id;
@@ -523,7 +564,9 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Icon
                   className={`w-3.5 h-3.5 shrink-0 ${
-                    isActive ? 'text-white stroke-[2.3]' : 'text-[#1673B8] stroke-[2]'
+                    isActive
+                      ? 'text-white stroke-[2.3]'
+                      : 'text-[#1673B8] stroke-[2]'
                   }`}
                 />
                 <span>{item.label}</span>
@@ -533,9 +576,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
 
-      {/* Compact Responsive Search Bar Row (Hidden when hideSearchBar is true) */}
+      {/* Mobile Compact Search Bar Row (Visible on mobile < 768px when hideSearchBar is false) */}
       {!hideSearchBar && (
-        <div className="px-3.5 sm:px-5 py-2 bg-[#F8FAFC] border-t border-[#E6EEF6]">
+        <div className="md:hidden px-3.5 sm:px-4 py-2 bg-[#F8FAFC] border-t border-[#E6EEF6]">
           <button
             type="button"
             onClick={onSearchClick}
