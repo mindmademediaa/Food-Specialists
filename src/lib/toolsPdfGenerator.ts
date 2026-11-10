@@ -14,6 +14,7 @@ import {
   UnifiedInterviewQuestion
 } from '../data/questionBank2000';
 import { InterviewPrepSet } from '../data/interviewPrepData';
+import { drawPdfBrandLogo, drawPdfUserPhoto } from './pdfBranding';
 
 function extractUserDetails(userOrName: HubUser | string) {
   if (typeof userOrName === 'string') {
@@ -23,7 +24,8 @@ function extractUserDetails(userOrName: HubUser | string) {
       phone: '',
       role: 'Food Safety & Quality Specialist',
       qualification: 'Food Science & Technology',
-      location: 'Pakistan'
+      location: 'Pakistan',
+      profilePicUrl: undefined as string | undefined
     };
   }
   return {
@@ -36,7 +38,8 @@ function extractUserDetails(userOrName: HubUser | string) {
       'Food Safety & Quality Specialist',
     qualification:
       userOrName.qualification?.trim() || 'Food Science & Technology',
-    location: userOrName.location?.trim() || 'Pakistan'
+    location: userOrName.location?.trim() || 'Pakistan',
+    profilePicUrl: userOrName.profilePicUrl
   };
 }
 
@@ -52,29 +55,48 @@ export function downloadNutritionReportPdf(
   const margin = 14;
   let y = 16;
 
-  // Top Emerald Header Banner
+  // Top Emerald Header Banner with Large Food Science Portal Logo & User Profile Picture
   doc.setFillColor(19, 66, 43);
-  doc.rect(0, 0, pageWidth, 36, 'F');
+  doc.rect(0, 0, pageWidth, 40, 'F');
+
+  // Left: Large Food Science Portal Logo (26mm x 26mm)
+  drawPdfBrandLogo(doc, 12, 7, 26, {
+    borderColor: [255, 255, 255],
+    bgFill: [255, 255, 255],
+    roundedRadius: 3.5
+  });
+
+  // Right: User Profile Picture (24mm x 24mm)
+  drawPdfUserPhoto(doc, u.profilePicUrl, u.name, pageWidth - 36, 8, 24, {
+    borderColor: [167, 243, 208],
+    fallbackBgColor: [22, 163, 74],
+    fallbackTextColor: [255, 255, 255]
+  });
+
+  const textX = 41;
+  doc.setTextColor(167, 243, 208);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('Food Science Portal', textX, 12.5);
 
   doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15.5);
-  doc.text('FOOD SCIENCE PORTAL — PERSONAL NUTRITION & BMI HEALTH REPORT', margin, 13);
+  doc.setFontSize(13.5);
+  doc.text('PERSONAL NUTRITION & BMI HEALTH REPORT', textX, 19.5);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8.6);
   doc.text(
     `Specialist: ${u.name}   |   Role: ${u.role}   |   Email: ${u.email}`,
-    margin,
-    20.5
+    textX,
+    26.5
   );
   doc.text(
-    `Height: ${nutrition.heightCm} cm   |   Current Weight: ${nutrition.weightKg} kg   |   Target Weight: ${nutrition.targetWeightKg} kg   |   Age: ${nutrition.age} yrs (${nutrition.gender.toUpperCase()})   |   Date: ${new Date().toLocaleDateString('en-PK')}`,
-    margin,
-    27.5
+    `Height: ${nutrition.heightCm} cm  |  Weight: ${nutrition.weightKg} kg  |  Target: ${nutrition.targetWeightKg} kg  |  Age: ${nutrition.age} (${nutrition.gender.toUpperCase()})  |  ${new Date().toLocaleDateString('en-PK')}`,
+    textX,
+    33
   );
 
-  y = 43;
+  y = 46;
 
   // Section 1: BMI & Weight Recommendation Box
   doc.setFillColor(240, 253, 244);
@@ -278,50 +300,65 @@ export function downloadExamReportPdf(
       ? attempt.failedCount
       : Math.max(0, totalQs - passedCount);
 
-  // 1. Top Emerald Official Transcript Header with Candidate Profile Details
+  // 1. Top Emerald Official Transcript Header with Large Logo & Candidate Photo
   doc.setFillColor(19, 66, 43);
-  doc.rect(0, 0, pageWidth, 40, 'F');
+  doc.rect(0, 0, pageWidth, 42, 'F');
+
+  // Left: Large Food Science Portal Logo (26mm x 26mm)
+  drawPdfBrandLogo(doc, 12, 8, 26, {
+    borderColor: [255, 255, 255],
+    bgFill: [255, 255, 255],
+    roundedRadius: 3.5
+  });
+
+  // Right: Candidate Profile Picture (24mm x 24mm)
+  drawPdfUserPhoto(doc, u.profilePicUrl, u.name, pageWidth - 36, 9, 24, {
+    borderColor: [167, 243, 208],
+    fallbackBgColor: [22, 163, 74],
+    fallbackTextColor: [255, 255, 255]
+  });
+
+  const textX = 41;
+  doc.setTextColor(167, 243, 208);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11.5);
+  doc.text('Food Science Portal', textX, 11.5);
 
   doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.text(
-    'FOOD SCIENCE PORTAL — OFFICIAL 30-MCQ EXAM ASSESSMENT REPORT',
-    margin,
-    12
-  );
+  doc.setFontSize(13);
+  doc.text('OFFICIAL 30-MCQ EXAM ASSESSMENT REPORT', textX, 18);
 
-  doc.setFontSize(10.5);
+  doc.setFontSize(9.5);
   doc.setTextColor(167, 243, 208);
   doc.text(
-    `Candidate Name: ${u.name.toUpperCase()}   |   Verdict: ${
+    `Candidate: ${u.name.toUpperCase()}  |  Verdict: ${
       attempt.passed ? 'PASSED (QUALIFIED)' : 'NEEDS REVISION (FAILED)'
     } (${attempt.percentage}%)`,
-    margin,
-    19.5
+    textX,
+    24.5
   );
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.8);
+  doc.setFontSize(8.2);
   doc.setTextColor(255, 255, 255);
   doc.text(
-    `Email: ${u.email}   |   Role: ${u.role}   |   Qualification: ${u.qualification}`,
-    margin,
-    26.5
+    `Email: ${u.email}  |  Role: ${u.role}  |  Qualification: ${u.qualification}`,
+    textX,
+    30.5
   );
   doc.text(
-    `Session: ${attempt.setTitle || '30-MCQ Randomized Specialist Exam'}   |   Date: ${new Date(
+    `Session: ${(attempt.setTitle || '30-MCQ Specialist Exam').slice(0, 38)}  |  Date: ${new Date(
       attempt.completedAt || Date.now()
     ).toLocaleDateString('en-PK', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
-    })}   |   Question Bank: 2,000 Verified MCQs`,
-    margin,
-    33.5
+    })}`,
+    textX,
+    36.5
   );
 
-  y = 46;
+  y = 48;
 
   // 2. Score Summary & Pass/Fail KPI Box
   doc.setFillColor(
@@ -540,42 +577,57 @@ export function downloadInterviewSessionReportPdf(
     (preparedInSession / Math.max(1, questions.length)) * 100
   );
 
-  // Header
+  // Header with Large Food Science Portal Logo & Specialist Photo
   doc.setFillColor(19, 66, 43);
-  doc.rect(0, 0, pageWidth, 38, 'F');
+  doc.rect(0, 0, pageWidth, 42, 'F');
+
+  // Left: Large Food Science Portal Logo (26mm x 26mm)
+  drawPdfBrandLogo(doc, 12, 8, 26, {
+    borderColor: [255, 255, 255],
+    bgFill: [255, 255, 255],
+    roundedRadius: 3.5
+  });
+
+  // Right: Specialist Profile Picture (24mm x 24mm)
+  drawPdfUserPhoto(doc, u.profilePicUrl, u.name, pageWidth - 36, 9, 24, {
+    borderColor: [167, 243, 208],
+    fallbackBgColor: [22, 163, 74],
+    fallbackTextColor: [255, 255, 255]
+  });
+
+  const textX = 41;
+  doc.setTextColor(167, 243, 208);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11.5);
+  doc.text('Food Science Portal', textX, 11.5);
 
   doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14.5);
-  doc.text(
-    'FOOD SCIENCE PORTAL — PERSONALIZED 30-QUESTION INTERVIEW REPORT',
-    margin,
-    12
-  );
+  doc.setFontSize(13);
+  doc.text('PERSONALIZED 30-QUESTION INTERVIEW REPORT', textX, 18);
 
-  doc.setFontSize(10);
+  doc.setFontSize(9.5);
   doc.setTextColor(167, 243, 208);
   doc.text(
-    `Specialist Name: ${u.name.toUpperCase()}   |   Session #${sessionNumber} (30 Unique Q&As from 2,000-Question Bank)`,
-    margin,
-    19.5
+    `Specialist: ${u.name.toUpperCase()}  |  Session #${sessionNumber} (30 Q&As)`,
+    textX,
+    24.5
   );
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.8);
+  doc.setFontSize(8.2);
   doc.setTextColor(255, 255, 255);
   doc.text(
-    `Email: ${u.email}   |   Role: ${u.role}   |   Qualification: ${u.qualification}`,
-    margin,
-    26.5
+    `Email: ${u.email}  |  Role: ${u.role}  |  Qualification: ${u.qualification}`,
+    textX,
+    30.5
   );
   doc.text(
-    `Date: ${new Date().toLocaleDateString('en-PK')}   |   Standards Covered: Food Safety, HACCP, ISO 9001, ISO 22000, FSSC 22000 & Food Science`,
-    margin,
-    33
+    `Date: ${new Date().toLocaleDateString('en-PK')}  |  Standards: Food Safety, HACCP, ISO 9001, ISO 22000 & FSSC 22000`,
+    textX,
+    36.5
   );
 
-  y = 44;
+  y = 48;
 
   // Visual Topic & Readiness Graph Box
   doc.setFillColor(248, 250, 252);

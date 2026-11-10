@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { HubUser } from '../types/hub';
 import { SuiteExamResult } from '../data/examSuiteData';
+import { drawPdfBrandLogo, drawPdfUserPhoto } from './pdfBranding';
 
 function drawQrCodePlaceholder(pdf: jsPDF, x: number, y: number, size: number) {
   pdf.setDrawColor(19, 66, 43);
@@ -97,24 +98,24 @@ export function download5PageExamReportPdf(
   pdf.setFillColor(22, 163, 74);
   pdf.rect(0, 48, 210, 4, 'F');
 
-  // Logo Emblem Box
-  pdf.setFillColor(255, 255, 255);
-  pdf.roundedRect(14, 11, 24, 24, 4, 4, 'F');
-  pdf.setTextColor(19, 66, 43);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(15);
-  pdf.text('FS', 26, 26, { align: 'center' });
+  // Large Food Science Portal Logo Emblem Box (28mm x 28mm)
+  drawPdfBrandLogo(pdf, 14, 10, 28, {
+    borderColor: [255, 255, 255],
+    bgFill: [255, 255, 255],
+    roundedRadius: 4
+  });
 
   pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(11);
-  pdf.text('FOOD SCIENCE PORTAL OFFICIAL ASSESSMENT BOARD', 44, 18);
-  pdf.setFontSize(20);
-  pdf.text('EXAM PERFORMANCE REPORT', 44, 28);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(15);
+  pdf.text('Food Science Portal — Official Assessment Board', 46, 18);
+  pdf.setFontSize(19.5);
+  pdf.text('EXAM PERFORMANCE REPORT', 46, 28);
   pdf.setFontSize(10);
   pdf.setTextColor(187, 247, 208);
   pdf.text(
     `Certificate ID: ${result.certificateId}  •  Official Multi-Page Transcript`,
-    44,
+    46,
     36
   );
 
@@ -124,16 +125,17 @@ export function download5PageExamReportPdf(
   pdf.setLineWidth(0.5);
   pdf.roundedRect(14, 62, 182, 54, 4, 4, 'FD');
 
-  // Avatar Circle with Initial
-  pdf.setFillColor(22, 163, 74);
-  pdf.circle(32, 89, 12, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(16);
-  pdf.text(candidateName.charAt(0).toUpperCase(), 32, 94, { align: 'center' });
+  // Candidate Profile Photo (28mm x 28mm)
+  drawPdfUserPhoto(pdf, user.profilePicUrl, candidateName, 20, 74, 28, {
+    borderColor: [22, 163, 74],
+    fallbackBgColor: [22, 163, 74],
+    fallbackTextColor: [255, 255, 255]
+  });
 
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(15, 41, 30);
   pdf.setFontSize(14);
-  pdf.text(candidateName, 50, 76);
+  pdf.text(candidateName, 54, 76);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(10);
   pdf.setTextColor(75, 99, 86);
@@ -141,16 +143,16 @@ export function download5PageExamReportPdf(
     `Role / Qualification: ${
       user.title || user.currentRole || user.qualification || 'Food Safety & Quality Specialist'
     }`,
-    50,
+    54,
     83
   );
-  pdf.text(`Email: ${user.email || 'Verified Specialist Member'}`, 50, 90);
+  pdf.text(`Email: ${user.email || 'Verified Specialist Member'}`, 54, 90);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(19, 66, 43);
-  pdf.text(`Exam Title: ${result.title} (${result.category})`, 50, 99);
+  pdf.text(`Exam Title: ${result.title} (${result.category})`, 54, 99);
   pdf.text(
     `Date Completed: ${result.dateFormatted}   •   Duration: ${result.timeTakenFormatted}`,
-    50,
+    54,
     106
   );
 
@@ -223,11 +225,19 @@ export function download5PageExamReportPdf(
   // ==========================================================================
   pdf.addPage();
   pdf.setFillColor(19, 66, 43);
-  pdf.rect(0, 0, 210, 22, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.rect(0, 0, 210, 24, 'F');
+  drawPdfBrandLogo(pdf, 14, 3.5, 17, {
+    borderColor: [255, 255, 255],
+    bgFill: [255, 255, 255],
+    roundedRadius: 2.5
+  });
+  pdf.setTextColor(187, 247, 208);
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(13);
-  pdf.text('PAGE 2 — EXECUTIVE SUMMARY DASHBOARD & VISUAL ANALYTICS', 14, 14);
+  pdf.setFontSize(9);
+  pdf.text('Food Science Portal', 34, 9.5);
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(12);
+  pdf.text('PAGE 2 — EXECUTIVE SUMMARY DASHBOARD & VISUAL ANALYTICS', 34, 17);
 
   // 1. Summary Table
   pdf.setTextColor(15, 41, 30);
@@ -384,11 +394,19 @@ export function download5PageExamReportPdf(
   // ==========================================================================
   pdf.addPage();
   pdf.setFillColor(19, 66, 43);
-  pdf.rect(0, 0, 210, 22, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.rect(0, 0, 210, 24, 'F');
+  drawPdfBrandLogo(pdf, 14, 3.5, 17, {
+    borderColor: [255, 255, 255],
+    bgFill: [255, 255, 255],
+    roundedRadius: 2.5
+  });
+  pdf.setTextColor(187, 247, 208);
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(13);
-  pdf.text('PAGE 3 — SUBJECT-WISE DETAILED ANALYSIS & RECOMMENDATIONS', 14, 14);
+  pdf.setFontSize(9);
+  pdf.text('Food Science Portal', 34, 9.5);
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(12);
+  pdf.text('PAGE 3 — SUBJECT-WISE DETAILED ANALYSIS & RECOMMENDATIONS', 34, 17);
 
   // Table Header
   let sY = 32;
@@ -466,27 +484,43 @@ export function download5PageExamReportPdf(
   // ==========================================================================
   pdf.addPage();
   pdf.setFillColor(19, 66, 43);
-  pdf.rect(0, 0, 210, 22, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.rect(0, 0, 210, 24, 'F');
+  drawPdfBrandLogo(pdf, 14, 3.5, 17, {
+    borderColor: [255, 255, 255],
+    bgFill: [255, 255, 255],
+    roundedRadius: 2.5
+  });
+  pdf.setTextColor(187, 247, 208);
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(13);
-  pdf.text('PAGE 4 — COMPLETE 30-MCQ EXAM PAPER & ANSWER KEY REVIEW', 14, 14);
+  pdf.setFontSize(9);
+  pdf.text('Food Science Portal', 34, 9.5);
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(12);
+  pdf.text('PAGE 4 — COMPLETE 30-MCQ EXAM PAPER & ANSWER KEY REVIEW', 34, 17);
 
   let qY = 28;
   result.answers.forEach((ans, idx) => {
     if (qY > 238) {
       pdf.addPage();
       pdf.setFillColor(19, 66, 43);
-      pdf.rect(0, 0, 210, 18, 'F');
-      pdf.setTextColor(255, 255, 255);
+      pdf.rect(0, 0, 210, 20, 'F');
+      drawPdfBrandLogo(pdf, 14, 2.5, 15, {
+        borderColor: [255, 255, 255],
+        bgFill: [255, 255, 255],
+        roundedRadius: 2
+      });
+      pdf.setTextColor(187, 247, 208);
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(11);
+      pdf.setFontSize(8.5);
+      pdf.text('Food Science Portal', 32, 8);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(10.5);
       pdf.text(
         `30-MCQ EXAM PAPER & ANSWER KEY REVIEW (CONTINUED — Q${idx + 1} TO Q${result.answers.length})`,
-        14,
-        12
+        32,
+        15
       );
-      qY = 24;
+      qY = 25;
     }
 
     const boxH = 38;
@@ -569,11 +603,19 @@ export function download5PageExamReportPdf(
   // ==========================================================================
   pdf.addPage();
   pdf.setFillColor(19, 66, 43);
-  pdf.rect(0, 0, 210, 22, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.rect(0, 0, 210, 24, 'F');
+  drawPdfBrandLogo(pdf, 14, 3.5, 17, {
+    borderColor: [255, 255, 255],
+    bgFill: [255, 255, 255],
+    roundedRadius: 2.5
+  });
+  pdf.setTextColor(187, 247, 208);
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(13);
-  pdf.text('FINAL PAGE — PERSONALIZED IMPROVEMENT PLAN & CERTIFICATION', 14, 14);
+  pdf.setFontSize(9);
+  pdf.text('Food Science Portal', 34, 9.5);
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(12);
+  pdf.text('FINAL PAGE — PERSONALIZED IMPROVEMENT PLAN & CERTIFICATION', 34, 17);
 
   // Top 5 Weak Topics to Study
   pdf.setTextColor(15, 41, 30);
@@ -709,14 +751,34 @@ export function downloadExamAchievementCertificatePdf(
   pdf.setLineWidth(0.8);
   pdf.rect(14, 14, 269, 182);
 
+  // Top-Left: Large Official Food Science Portal Logo (28mm x 28mm)
+  drawPdfBrandLogo(pdf, 22, 20, 28, {
+    borderColor: [19, 66, 43],
+    bgFill: [255, 255, 255],
+    roundedRadius: 4
+  });
+
+  // Top-Right: Candidate Profile Picture (28mm x 28mm)
+  drawPdfUserPhoto(pdf, user.profilePicUrl, candidateName, 247, 20, 28, {
+    borderColor: [22, 163, 74],
+    fallbackBgColor: [19, 66, 43],
+    fallbackTextColor: [255, 255, 255]
+  });
+
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(14);
-  pdf.setTextColor(22, 163, 74);
-  pdf.text('FOOD SCIENCE PORTAL PROFESSIONAL CERTIFICATION BOARD', 148.5, 38, {
+  pdf.setFontSize(18);
+  pdf.setTextColor(19, 66, 43);
+  pdf.text('Food Science Portal', 148.5, 29, {
     align: 'center'
   });
 
-  pdf.setFontSize(28);
+  pdf.setFontSize(12.5);
+  pdf.setTextColor(22, 163, 74);
+  pdf.text('PROFESSIONAL CERTIFICATION BOARD', 148.5, 38, {
+    align: 'center'
+  });
+
+  pdf.setFontSize(27);
   pdf.setTextColor(19, 66, 43);
   pdf.text('CERTIFICATE OF EXCELLENCE', 148.5, 55, { align: 'center' });
 

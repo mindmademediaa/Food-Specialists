@@ -41,6 +41,7 @@ import {
   SuiteOnboardingProfile
 } from '../data/nutritionSuiteData';
 import { jsPDF } from 'jspdf';
+import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
 
 interface NutritionSuiteToolProps {
   user: HubUser;
@@ -485,27 +486,49 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
   const handleDownloadNutritionPdfReport = () => {
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
+    const displayName = profile.fullName || user.name || 'Food Specialist';
 
     pdf.setFillColor(22, 115, 184);
-    pdf.rect(0, 0, pageW, 36, 'F');
-    pdf.setTextColor(255, 255, 255);
+    pdf.rect(0, 0, pageW, 40, 'F');
+
+    // Left: Large Food Science Portal Logo (26mm x 26mm)
+    drawPdfBrandLogo(pdf, 12, 7, 26, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 3.5
+    });
+
+    // Right: User Profile Picture (24mm x 24mm)
+    drawPdfUserPhoto(pdf, user.profilePicUrl, displayName, pageW - 36, 8, 24, {
+      borderColor: [220, 233, 246],
+      fallbackBgColor: [16, 94, 154],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    const textX = 41;
+    pdf.setTextColor(220, 233, 246);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(16);
-    pdf.text('PERSONAL NUTRITION, BMI & AI DIETITIAN REPORT', 14, 15);
-    pdf.setFontSize(10);
+    pdf.setFontSize(11.5);
+    pdf.text('Food Science Portal', textX, 12);
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(13.5);
+    pdf.text('PERSONAL NUTRITION, BMI & DIETITIAN REPORT', textX, 19);
+
+    pdf.setFontSize(9.5);
     pdf.setFont('helvetica', 'normal');
     pdf.text(
-      `Prepared For: ${profile.fullName || user.name || 'Food Specialist'} | Date: ${new Date().toLocaleDateString()}`,
-      14,
-      23
+      `Prepared For: ${displayName}  |  Date: ${new Date().toLocaleDateString()}`,
+      textX,
+      26
     );
     pdf.text(
-      `Age: ${profile.age} yrs | Gender: ${profile.gender} | Height: ${profile.heightCm} cm | Current Weight: ${profile.weightKg} kg | Target: ${profile.targetWeightKg} kg`,
-      14,
-      30
+      `Age: ${profile.age} yrs | Gender: ${profile.gender} | Height: ${profile.heightCm} cm | Weight: ${profile.weightKg} kg | Target: ${profile.targetWeightKg} kg`,
+      textX,
+      32.5
     );
 
-    let y = 46;
+    let y = 48;
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(12);

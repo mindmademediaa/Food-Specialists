@@ -40,6 +40,8 @@ import {
   getSequentialModuleList,
   resolveOfficialVerificationBaseUrl
 } from '../utils/certificatePdfGenerator';
+import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
+import { preloadUserAvatarForPdf } from '../lib/pdfBranding';
 import { AlisonCourseModuleViewer } from './AlisonCourseModuleViewer';
 
 interface TrainingsAcademyViewProps {
@@ -776,18 +778,30 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
             {/* Top Section: Brand Logo, Rosette Seal, Title, User & Training Info */}
             <div className="space-y-4 relative z-10">
-              {/* Top Row: Food Science Portal Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
+              {/* Top Row: Large Food Science Portal Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-xl sm:text-2xl font-black tracking-tight text-[#0C182D] flex items-baseline gap-1.5">
-                    <span>Food Science</span>
-                    <span className="text-[#1673B8] border-b-[3px] border-[#1673B8] pb-0.5 leading-none">
-                      Portal
-                    </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 border-[#1673B8] bg-white p-0.5 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
+                    <img
+                      src={FS_PORTAL_LOGO_DATA_URI}
+                      alt="Food Science Portal Logo"
+                      className="w-full h-full object-contain scale-105"
+                    />
                   </div>
-                  <p className="text-[11px] font-semibold text-slate-600 mt-1">
-                    International Food Safety &amp; Hospitality Academy
-                  </p>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black tracking-tight text-[#0C182D] flex items-baseline gap-1.5">
+                      <span>Food Science</span>
+                      <span className="text-[#1673B8] border-b-[3px] border-[#1673B8] pb-0.5 leading-none">
+                        Portal
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-semibold text-slate-600 mt-1">
+                      International Food Safety &amp; Hospitality Academy
+                    </p>
+                    <p className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] mt-0.5">
+                      Official Accredited Credential
+                    </p>
+                  </div>
                 </div>
 
                 {/* Blue Scalloped Rosette Seal with Two Hanging Ribbons */}
@@ -854,15 +868,34 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 </p>
               </div>
 
-              {/* 2. "This is to certify that" + Recipient Name ONLY (No Email) */}
-              <div className="space-y-1.5">
-                <p className="text-sm sm:text-base text-[#1C2336]">
-                  This is to certify that
-                </p>
-                <div className="border-b border-[#D8E4EE] pb-2 pt-0.5">
+              {/* 2. "This is to certify that" + Recipient Name + User Profile Picture */}
+              <div className="flex items-end justify-between gap-3 border-b border-[#D8E4EE] pb-2.5">
+                <div className="space-y-1.5 min-w-0 flex-1">
+                  <p className="text-sm sm:text-base text-[#1C2336]">
+                    This is to certify that
+                  </p>
                   <p className="text-xl sm:text-2xl font-black text-[#162038] tracking-tight break-words">
                     {holderName}
                   </p>
+                </div>
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 border-[#1673B8] bg-[#F0F7FF] overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                  {currentUser?.profilePicUrl ? (
+                    <img
+                      src={currentUser.profilePicUrl}
+                      alt={holderName}
+                      onLoad={() => preloadUserAvatarForPdf(currentUser.profilePicUrl)}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-base sm:text-lg font-black text-[#1673B8]">
+                      {holderName
+                        .trim()
+                        .split(/\s+/)
+                        .slice(0, 2)
+                        .map((p) => p.charAt(0).toUpperCase())
+                        .join('') || 'FS'}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -943,9 +976,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
                 {/* 7. Endorsed by Food Science Portal Badge */}
                 <div className="flex items-start gap-2.5">
-                  <div className="w-10 h-11 rounded-lg border border-[#1673B8] bg-[#F0F7FF] flex flex-col items-center justify-center p-1 text-[#1673B8] shrink-0">
-                    <span className="text-xs font-black leading-none">FSP</span>
-                    <span className="text-[5.5px] font-black uppercase mt-0.5">PORTAL</span>
+                  <div className="w-11 h-11 rounded-lg border border-[#1673B8] bg-white flex items-center justify-center p-0.5 shrink-0 overflow-hidden shadow-2xs">
+                    <img
+                      src={FS_PORTAL_LOGO_DATA_URI}
+                      alt="Food Science Portal Logo"
+                      className="w-full h-full object-contain scale-105"
+                    />
                   </div>
                   <div className="space-y-1">
                     <div className="leading-tight text-[#1A2138]">
@@ -1068,6 +1104,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     certificateNumber: certNo,
                     recipientName: holderName,
                     recipientEmail: currentUser?.email || '',
+                    recipientProfilePicUrl: currentUser?.profilePicUrl,
                     courseTitle: course.title,
                     courseCode: course.code,
                     accreditationStandard: course.accreditationStandard,
@@ -1369,10 +1406,21 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                                 (c) =>
                                   c.title.toLowerCase() === rec.courseTitle.trim().toLowerCase()
                               );
+                              const matchedHolderUser = users.find(
+                                (u) =>
+                                  (rec.recipientEmail &&
+                                    u.email?.trim().toLowerCase() ===
+                                      rec.recipientEmail.trim().toLowerCase()) ||
+                                  u.name?.trim().toLowerCase() ===
+                                    rec.recipientName.trim().toLowerCase()
+                              );
                               downloadOfficialCourseCertificatePdf({
                                 certificateNumber: rec.certificateNumber,
                                 recipientName: rec.recipientName,
                                 recipientEmail: rec.recipientEmail,
+                                recipientProfilePicUrl:
+                                  matchedHolderUser?.profilePicUrl ||
+                                  currentUser?.profilePicUrl,
                                 courseTitle: rec.courseTitle,
                                 courseCode: rec.courseCode || matched?.code || 'FS-CERT-INTL',
                                 accreditationStandard: rec.accreditationBody,
@@ -1473,6 +1521,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                               certificateNumber: cert.certificateNumber,
                               recipientName: cert.recipientName,
                               recipientEmail: cert.recipientEmail || currentUser.email,
+                              recipientProfilePicUrl: currentUser.profilePicUrl,
                               courseTitle: cert.trainingTitle,
                               courseCode: matched?.code || 'FS-CERT-INTL',
                               accreditationStandard:

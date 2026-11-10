@@ -403,10 +403,18 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       }
 
       // Immediately generate and download the Portrait A4 PDF Certificate
+      const matchedRecipientUser = users.find(
+        (u) =>
+          (directRecipientEmail.trim() &&
+            u.email?.trim().toLowerCase() ===
+              directRecipientEmail.trim().toLowerCase()) ||
+          u.name?.trim().toLowerCase() === cleanName.toLowerCase()
+      );
       downloadOfficialCourseCertificatePdf({
         certificateNumber: generatedCertNo,
         recipientName: cleanName,
         recipientEmail: directRecipientEmail.trim(),
+        recipientProfilePicUrl: matchedRecipientUser?.profilePicUrl,
         courseTitle: finalCourseTitle,
         courseCode: finalCourseCode,
         accreditationStandard: finalAccreditation,
@@ -3169,11 +3177,23 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() =>
+                              onClick={() => {
+                                const matchedUserForCert = users.find(
+                                  (u) =>
+                                    (cert.recipientUid &&
+                                      u.uid === cert.recipientUid) ||
+                                    (cert.recipientEmail &&
+                                      u.email?.trim().toLowerCase() ===
+                                        cert.recipientEmail.trim().toLowerCase()) ||
+                                    u.name?.trim().toLowerCase() ===
+                                      cert.recipientName.trim().toLowerCase()
+                                );
                                 downloadOfficialCourseCertificatePdf({
                                   certificateNumber: cert.certificateNumber,
                                   recipientName: cert.recipientName,
                                   recipientEmail: cert.recipientEmail || '',
+                                  recipientProfilePicUrl:
+                                    matchedUserForCert?.profilePicUrl,
                                   courseTitle: cert.trainingTitle,
                                   courseCode:
                                     matchedTr?.standardCode ||
@@ -3191,8 +3211,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                   verificationPortalUrl: window.location.origin,
                                   syllabusModules: certModulesList,
                                   issuedByMode: 'admin_direct'
-                                })
-                              }
+                                });
+                              }}
                               className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold inline-flex items-center gap-1 cursor-pointer"
                             >
                               <Download className="w-3.5 h-3.5" />

@@ -10,10 +10,12 @@ import {
   normalizeEducationArray,
   normalizeExperienceArray
 } from '../components/EditProfileView';
+import { drawPdfBrandLogo, drawPdfUserPhoto } from './pdfBranding';
 
 /**
  * Generates and downloads a razor-sharp, vector-crisp, executive market-ready PDF CV
- * directly from the user's entered profile information.
+ * directly from the user's entered profile information, complete with the official
+ * Food Science Portal Logo and the Specialist's Profile Picture.
  */
 export function downloadProfessionalCvPdf(
   user: HubUser,
@@ -86,24 +88,64 @@ export function downloadProfessionalCvPdf(
   // ==================== HEADER BANNER ====================
   // Top deep navy executive banner
   doc.setFillColor(26, 33, 56); // #1A2138
-  doc.rect(0, 0, pageWidth, 44, 'F');
+  doc.rect(0, 0, pageWidth, 46, 'F');
 
   // Subtle gold bottom border on header
   doc.setFillColor(217, 119, 6); // #D97706 Gold accent bar
-  doc.rect(0, 44, pageWidth, 1.4, 'F');
+  doc.rect(0, 46, pageWidth, 1.4, 'F');
+
+  // Left: Large Official Food Science Portal Logo (28mm x 28mm)
+  drawPdfBrandLogo(doc, 14, 9, 28, {
+    borderColor: [255, 255, 255],
+    bgFill: [255, 255, 255],
+    roundedRadius: 3.8
+  });
+
+  // Right: Specialist Profile Picture (28mm x 28mm)
+  drawPdfUserPhoto(
+    doc,
+    user.profilePicUrl,
+    fullName,
+    pageWidth - 42,
+    9,
+    28,
+    {
+      borderColor: [186, 230, 253],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    }
+  );
+
+  const headerTextX = 46;
+  const headerTextWidth = pageWidth - 92;
+
+  // Top Brand Label
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(253, 224, 71); // Soft gold
+  doc.text(
+    'Food Science Portal  •  Verified Specialist Curriculum Vitae',
+    headerTextX,
+    12.5
+  );
 
   // Full Name
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
+  doc.setFontSize(fullName.length > 26 ? 15.5 : 18.5);
   doc.setTextColor(255, 255, 255);
-  doc.text(fullName.toUpperCase(), marginX, 17);
+  const nameLine = doc.splitTextToSize(fullName.toUpperCase(), headerTextWidth)[0];
+  doc.text(nameLine, headerTextX, 21);
 
   // Title & Current Company
   const headlineParts = [roleTitle, companyName].filter(Boolean);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11.5);
+  doc.setFontSize(10.2);
   doc.setTextColor(186, 230, 253); // Soft ice-blue
-  doc.text(headlineParts.join('  |  '), marginX, 25);
+  const headlineLine = doc.splitTextToSize(
+    headlineParts.join('  |  '),
+    headerTextWidth
+  )[0];
+  doc.text(headlineLine, headerTextX, 27.5);
 
   // Contact Details Row inside Header
   const contactItems = [
@@ -115,22 +157,35 @@ export function downloadProfessionalCvPdf(
 
   if (contactItems.length > 0) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.2);
+    doc.setFontSize(8.5);
     doc.setTextColor(229, 231, 235);
     const contactLine = contactItems.join('   •   ');
-    const wrappedContact = doc.splitTextToSize(contactLine, contentWidth);
-    doc.text(wrappedContact.slice(0, 2), marginX, 33.5);
+    const wrappedContact = doc.splitTextToSize(contactLine, headerTextWidth);
+    doc.text(wrappedContact.slice(0, 2), headerTextX, 34);
   }
 
-  let cursorY = 54;
+  let cursorY = 55;
 
   const ensureSpace = (neededMm: number) => {
     if (cursorY + neededMm > pageHeight - 16) {
       doc.addPage();
-      // Top accent bar on continuation page
+      // Top accent bar with Food Science Portal Logo on continuation page
       doc.setFillColor(26, 33, 56);
-      doc.rect(0, 0, pageWidth, 6, 'F');
-      cursorY = 18;
+      doc.rect(0, 0, pageWidth, 16, 'F');
+      drawPdfBrandLogo(doc, marginX, 2, 12, {
+        borderColor: [255, 255, 255],
+        bgFill: [255, 255, 255],
+        roundedRadius: 2
+      });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(
+        `Food Science Portal  •  ${fullName} — Curriculum Vitae`,
+        marginX + 15,
+        10
+      );
+      cursorY = 24;
     }
   };
 

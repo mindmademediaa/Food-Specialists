@@ -23,6 +23,9 @@ import {
 } from 'lucide-react';
 import { HubUser } from '../types/hub';
 import { E_NUMBERS_DATABASE, ENumberAdditive } from '../data/eNumbersData';
+import { jsPDF } from 'jspdf';
+import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
+import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
 
 // ============================================================================
 // 1. LAB & FORMULA CALCULATOR (SANITIZER PPM, TITRATABLE ACIDITY, BRIX/ACID & CONVERTER)
@@ -3371,7 +3374,9 @@ Codex, A. & FAO (2023). General standard for food additives CXS 192-1995. Food C
 Hussain, S., M. I. Anjum and A. Rehman. 2023. Physicochemical and microbiological quality of fruit pulps in Punjab. Journal of Animal and Plant Sciences. 35(1): 55-62.
 Akram, K. and M. A. Randhawa (2022). Hurdle technology in tropical fruit processing. Journal of Food Science, 87(4), 412-420.`;
 
-export const CitationReferenceGeneratorTool: React.FC = () => {
+export const CitationReferenceGeneratorTool: React.FC<{
+  user?: HubUser | null;
+}> = ({ user }) => {
   const [activeResearchTab, setActiveResearchTab] = useState<
     'extractor' | 'thesis-converter' | 'statistics' | 'references'
   >('extractor');
@@ -3873,7 +3878,224 @@ ${refsFormatted}`;
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadManuscriptPdf = () => {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const authorName = user?.name || editAuthors || 'Food Science Researcher';
+
+    doc.setFillColor(26, 33, 56);
+    doc.rect(0, 0, pageW, 40, 'F');
+    drawPdfBrandLogo(doc, 12, 7, 26, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 3.5
+    });
+    drawPdfUserPhoto(
+      doc,
+      user?.profilePicUrl,
+      authorName,
+      pageW - 36,
+      8,
+      24,
+      {
+        borderColor: [186, 230, 253],
+        fallbackBgColor: [22, 115, 184],
+        fallbackTextColor: [255, 255, 255]
+      }
+    );
+
+    const textX = 41;
+    doc.setTextColor(186, 230, 253);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
+    doc.text('Food Science Portal', textX, 12);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(13);
+    doc.text('OFFICIAL JOURNAL MANUSCRIPT & RESEARCH PAPER', textX, 18.5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(
+      `Author: ${authorName.slice(0, 48)}  |  Target Journal: ${activeJournalMeta.shortName}`,
+      textX,
+      25.5
+    );
+    doc.text(
+      `Format: ${activeJournalMeta.hecCategoryOrImpact}  |  Date: ${new Date().toLocaleDateString('en-PK')}`,
+      textX,
+      32
+    );
+
+    let y = 48;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.2);
+    doc.setTextColor(26, 33, 56);
+    const lines = doc.splitTextToSize(
+      compiledJournalManuscript,
+      pageW - margin * 2
+    );
+    lines.forEach((line: string) => {
+      if (y > pageH - 16) {
+        doc.addPage();
+        doc.setFillColor(26, 33, 56);
+        doc.rect(0, 0, pageW, 16, 'F');
+        drawPdfBrandLogo(doc, margin, 2, 12, {
+          borderColor: [255, 255, 255],
+          bgFill: [255, 255, 255],
+          roundedRadius: 2
+        });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text(
+          `Food Science Portal  •  ${activeJournalMeta.shortName} Manuscript`,
+          margin + 15,
+          10
+        );
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.2);
+        doc.setTextColor(26, 33, 56);
+        y = 24;
+      }
+      doc.text(line, margin, y);
+      y += 4.5;
+    });
+
+    doc.save(
+      `Food_Science_Portal_${activeJournalMeta.shortName.replace(
+        /[^a-zA-Z0-9]+/g,
+        '_'
+      )}_Manuscript.pdf`
+    );
+  };
+
+  const handleDownloadStatAnovaPdf = () => {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const researcherName = user?.name || 'Food Science Researcher';
+
+    doc.setFillColor(26, 33, 56);
+    doc.rect(0, 0, pageW, 40, 'F');
+    drawPdfBrandLogo(doc, 12, 7, 26, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 3.5
+    });
+    drawPdfUserPhoto(
+      doc,
+      user?.profilePicUrl,
+      researcherName,
+      pageW - 36,
+      8,
+      24,
+      {
+        borderColor: [186, 230, 253],
+        fallbackBgColor: [22, 115, 184],
+        fallbackTextColor: [255, 255, 255]
+      }
+    );
+
+    const textX = 41;
+    doc.setTextColor(186, 230, 253);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
+    doc.text('Food Science Portal', textX, 12);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(13);
+    doc.text('ONE-WAY ANOVA & LSD STATISTICAL ANALYSIS REPORT', textX, 18.5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(
+      `Researcher: ${researcherName}  |  Parameter: ${statParameterName}`,
+      textX,
+      25.5
+    );
+    doc.text(
+      `Factor: ${statFactorName}  |  Date: ${new Date().toLocaleDateString('en-PK')}`,
+      textX,
+      32
+    );
+
+    let y = 48;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(26, 33, 56);
+    doc.text(
+      `1. Treatment Means ± SD & LSD (0.05) Grouping — ${statParameterName}`,
+      14,
+      y
+    );
+    y += 6;
+
+    statisticalAnalysis.treatments.forEach((t, idx) => {
+      doc.setFillColor(idx % 2 === 0 ? 240 : 255, idx % 2 === 0 ? 246 : 255, idx % 2 === 0 ? 252 : 255);
+      doc.setDrawColor(210, 222, 234);
+      doc.rect(14, y, pageW - 28, 9, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(26, 33, 56);
+      doc.text(t.treatmentName.slice(0, 38), 17, y + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Mean ± SD: ${t.formattedMeanSd}`, 98, y + 6);
+      doc.text(`Range: ${t.min.toFixed(2)} – ${t.max.toFixed(2)}`, 155, y + 6);
+      y += 9;
+    });
+
+    y += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(26, 33, 56);
+    doc.text('2. One-Way ANOVA Summary & Critical Values', 14, y);
+    y += 6;
+
+    doc.setFillColor(240, 246, 252);
+    doc.setDrawColor(187, 214, 238);
+    doc.roundedRect(14, y, pageW - 28, 34, 3, 3, 'FD');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.2);
+    doc.text(
+      `Between Treatments: df = ${statisticalAnalysis.dfBetween}, SS = ${statisticalAnalysis.ssBetween}, MS = ${statisticalAnalysis.msBetween}, F-Value = ${statisticalAnalysis.fCalculated}`,
+      18,
+      y + 8
+    );
+    doc.text(
+      `Within Treatments (Error): df = ${statisticalAnalysis.dfWithin}, SS = ${statisticalAnalysis.ssWithin}, MS = ${statisticalAnalysis.msWithin}`,
+      18,
+      y + 15
+    );
+    doc.text(
+      `Critical F (0.05) = ${statisticalAnalysis.f05}  |  Critical F (0.01) = ${statisticalAnalysis.f01}  |  Verdict: ${statisticalAnalysis.significanceBadge}`,
+      18,
+      y + 22
+    );
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(22, 115, 184);
+    doc.text(
+      `Grand Mean = ${statisticalAnalysis.grandMean}  |  LSD (0.05) = ${statisticalAnalysis.lsd05}  |  SED = ${statisticalAnalysis.sed}  |  CV = ${statisticalAnalysis.cvPct}%`,
+      18,
+      y + 29
+    );
+
+    doc.save(
+      `Food_Science_Portal_${statParameterName.replace(
+        /[^a-zA-Z0-9]+/g,
+        '_'
+      )}_ANOVA_Report.pdf`
+    );
+  };
+
   const handleDownloadStatCsv = () => {
+    const brandTopRows = [
+      `"FOOD SCIENCE PORTAL — OFFICIAL STATISTICAL ANOVA REPORT"`,
+      `"Researcher: ${(user?.name || 'Food Science Specialist').replace(/"/g, '""')}","Parameter: ${statParameterName.replace(/"/g, '""')}","Factor: ${statFactorName.replace(/"/g, '""')}"`,
+      ''
+    ].join('\n');
+
     const header = [
       'Treatment / Factor',
       'Rep 1',
@@ -3921,7 +4143,7 @@ ${refsFormatted}`;
 
     handleDownloadFile(
       `${statParameterName.replace(/[^a-zA-Z0-9]+/g, '_')}_Statistical_ANOVA_Report.csv`,
-      `${header}\n${rowsCsv}\n${anovaFooter}`,
+      `${brandTopRows}\n${header}\n${rowsCsv}\n${anovaFooter}`,
       'text/csv;charset=utf-8;'
     );
   };
@@ -4355,17 +4577,39 @@ ${refsFormatted}`;
 
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={handleDownloadManuscriptPdf}
+                      className="px-3 py-1.5 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download PDF</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Food Science Portal Manuscript</title></head><body style="font-family: Calibri, Arial, sans-serif; padding: 24px; color: #1A2138;">
+                          <div style="display:flex; align-items:center; justify-content:space-between; background:#1A2138; color:#FFFFFF; padding:14px 18px; border-radius:10px; margin-bottom:20px;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                              <img src="${FS_PORTAL_LOGO_DATA_URI}" width="54" height="54" style="background:#FFFFFF; border-radius:8px; padding:2px;" alt="Food Science Portal Logo" />
+                              <div>
+                                <div style="font-size:18pt; font-weight:bold; color:#FFFFFF;">Food Science <span style="color:#7DD3FC;">Portal</span></div>
+                                <div style="font-size:10pt; color:#DBEAFE;">Official Journal Manuscript • ${user?.name || 'Food Science Specialist'}</div>
+                              </div>
+                            </div>
+                            ${user?.profilePicUrl ? `<img src="${user.profilePicUrl}" width="52" height="52" style="border-radius:8px; border:2px solid #7DD3FC; object-fit:cover;" alt="Author Photo" />` : ''}
+                          </div>
+                          <pre style="font-family: Calibri, Arial, sans-serif; white-space: pre-wrap; font-size: 11pt; line-height: 1.5;">${compiledJournalManuscript.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                        </body></html>`;
                         handleDownloadFile(
-                          `${activeJournalMeta.shortName.replace(
+                          `Food_Science_Portal_${activeJournalMeta.shortName.replace(
                             /[^a-zA-Z0-9]+/g,
                             '_'
                           )}_Manuscript.doc`,
-                          compiledJournalManuscript,
+                          docHtml,
                           'application/msword;charset=utf-8'
-                        )
-                      }
-                      className="px-3 py-1.5 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                        );
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-[#1A2138] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download Word (.doc)</span>
@@ -4412,11 +4656,20 @@ ${refsFormatted}`;
 
                 <button
                   type="button"
+                  onClick={handleDownloadStatAnovaPdf}
+                  className="px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF Report</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleDownloadStatCsv}
                   className="px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download Excel / CSV Report</span>
+                  <span>Download Excel / CSV</span>
                 </button>
               </div>
             </div>

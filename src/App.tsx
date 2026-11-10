@@ -79,6 +79,7 @@ import {
   handleFirestoreError
 } from './lib/firebase';
 import { FS_PORTAL_LOGO_DATA_URI } from './lib/brandLogo';
+import { preloadUserAvatarForPdf } from './lib/pdfBranding';
 import {
   HubUser,
   PrivacySettings,
@@ -2007,6 +2008,15 @@ export default function App() {
   }, [paymentRequests, authUser?.uid, myProfile, payReceiptUrl]);
 
   const myLatestApplication = myPaymentApplications[0] || null;
+
+  useEffect(() => {
+    preloadUserAvatarForPdf(myProfile.profilePicUrl);
+    users.forEach((u) => {
+      if (u.profilePicUrl) {
+        preloadUserAvatarForPdf(u.profilePicUrl);
+      }
+    });
+  }, [myProfile.profilePicUrl, users]);
 
   const [deletedPaymentReqIds, setDeletedPaymentReqIds] = useState<string[]>(() => {
     try {

@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
 
 export const OFFICIAL_APP_PORTAL_URL =
   'https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app';
@@ -8,6 +9,7 @@ export interface OfficialCertificatePdfParams {
   certificateNumber: string;
   recipientName: string;
   recipientEmail?: string;
+  recipientProfilePicUrl?: string;
   courseTitle: string;
   courseCode: string;
   accreditationStandard: string;
@@ -128,14 +130,13 @@ export function getSequentialModuleList(
 
 /**
  * Generates and downloads an official Portrait A4 (210mm x 297mm) PDF Certificate:
- *  1. Always displays "Certificate of Achievement"
- *  2. Displays ONLY the recipient's Name (no email address on certificate)
+ *  1. Displays the large, clear Food Science Portal Logo + "Food Science Portal" at the top
+ *  2. Displays the recipient's Name and Profile Picture
  *  3. Properly fits Course Title, Code/Standard, and lists all Modules sequentially one below another inside the certificate bounds
- *  4. 3-Column Metrics Row: Certificate No. | Awarded | Exam Score (no CPD Credits)
- *  5. Validation section links directly to the App/Website Verification Portal (no GitHub link)
+ *  4. 3-Column Metrics Row: Certificate No. | Awarded | Exam Score
+ *  5. Validation section links directly to the App/Website Verification Portal
  *  6. Scannable vector QR Code on the bottom-right for instant verification on scan
- *  7. "Endorsed by FS Portal" badge (replaces Institute of Hospitality)
- *  8. All CPD marks removed
+ *  7. "Endorsed by Food Science Portal" badge with official emblem
  */
 export function downloadOfficialCourseCertificatePdf(
   params: OfficialCertificatePdfParams
@@ -143,6 +144,7 @@ export function downloadOfficialCourseCertificatePdf(
   const {
     certificateNumber,
     recipientName,
+    recipientProfilePicUrl,
     courseTitle,
     courseCode,
     accreditationStandard,
@@ -217,91 +219,119 @@ export function downloadOfficialCourseCertificatePdf(
   doc.text('Certificate', 39.5, 289, { angle: 90 });
 
   // =========================================================================
-  // 3. TOP-LEFT BRAND LOGO ("FS Portal") & TOP-RIGHT BLUE SCALLOPED ROSETTE SEAL
+  // 3. TOP-LEFT LARGE BRAND LOGO + "Food Science Portal" & TOP-RIGHT ROSETTE SEAL
   // =========================================================================
+  // Large, crystal-clear Food Science Portal Logo (22mm x 22mm) at the top
+  drawPdfBrandLogo(doc, leftX, 10, 22, {
+    borderColor: [22, 115, 184],
+    bgFill: [255, 255, 255],
+    roundedRadius: 3.5
+  });
+
+  const brandTextX = leftX + 25;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(17.5);
   doc.setTextColor(12, 24, 45);
-  doc.text('Food Science ', leftX, 21);
+  doc.text('Food Science ', brandTextX, 19.5);
 
   const portW = doc.getTextWidth('Food Science ');
   doc.setTextColor(22, 115, 184);
-  doc.text('Portal', leftX + portW, 21);
+  doc.text('Portal', brandTextX + portW, 19.5);
   const alW = doc.getTextWidth('Portal');
 
   doc.setFillColor(22, 115, 184);
-  doc.rect(leftX + portW + 0.3, 22.3, alW - 0.5, 1.3, 'F');
+  doc.rect(brandTextX + portW + 0.3, 20.8, alW - 0.5, 1.3, 'F');
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.8);
+  doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
-  doc.text('International Food Safety & Hospitality Academy', leftX, 27.5);
+  doc.text('International Food Safety & Hospitality Academy', brandTextX, 25.8);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(22, 115, 184);
+  doc.text('OFFICIAL ACCREDITED CREDENTIAL', brandTextX, 30.2);
 
-  // Top-Right Blue Scalloped Rosette Seal with Two Ribbons (center x = 179mm, y = 35mm)
-  const sealX = 179;
-  const sealY = 35;
+  // Top-Right Blue Scalloped Rosette Seal with Two Ribbons (center x = 180mm, y = 26mm)
+  const sealX = 180;
+  const sealY = 26;
 
   doc.setFillColor(22, 115, 184);
-  doc.triangle(sealX - 8.5, sealY + 11, sealX - 2, sealY + 11, sealX - 10.5, sealY + 27, 'F');
-  doc.triangle(sealX - 2, sealY + 11, sealX - 4, sealY + 26, sealX - 7.5, sealY + 22, 'F');
-  doc.triangle(sealX + 2, sealY + 11, sealX + 8.5, sealY + 11, sealX + 10.5, sealY + 26, 'F');
-  doc.triangle(sealX + 2, sealY + 11, sealX + 4, sealY + 26, sealX + 7.5, sealY + 22, 'F');
+  doc.triangle(sealX - 8.5, sealY + 11, sealX - 2, sealY + 11, sealX - 10.5, sealY + 26, 'F');
+  doc.triangle(sealX - 2, sealY + 11, sealX - 4, sealY + 25, sealX - 7.5, sealY + 21, 'F');
+  doc.triangle(sealX + 2, sealY + 11, sealX + 8.5, sealY + 11, sealX + 10.5, sealY + 25, 'F');
+  doc.triangle(sealX + 2, sealY + 11, sealX + 4, sealY + 25, sealX + 7.5, sealY + 21, 'F');
 
   const numLobes = 12;
-  const lobeRingR = 13.5;
+  const lobeRingR = 12.8;
   for (let k = 0; k < numLobes; k++) {
     const theta = (k / numLobes) * Math.PI * 2;
     const lx = sealX + lobeRingR * Math.cos(theta);
     const ly = sealY + lobeRingR * Math.sin(theta);
-    doc.circle(lx, ly, 4.0, 'F');
+    doc.circle(lx, ly, 3.8, 'F');
   }
-  doc.circle(sealX, sealY, 14.4, 'F');
+  doc.circle(sealX, sealY, 13.6, 'F');
 
   doc.setFillColor(255, 255, 255);
-  doc.circle(sealX, sealY, 10.8, 'F');
+  doc.circle(sealX, sealY, 10.2, 'F');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(5.0);
+  doc.setFontSize(4.8);
   doc.setTextColor(45, 118, 175);
-  doc.text('FOOD SCIENCE', sealX, sealY - 6.3, { align: 'center' });
-  doc.text('CERTIFIED', sealX, sealY + 8.1, { align: 'center' });
+  doc.text('FOOD SCIENCE', sealX, sealY - 6.0, { align: 'center' });
+  doc.text('CERTIFIED', sealX, sealY + 7.8, { align: 'center' });
 
   doc.setFillColor(22, 115, 184);
-  doc.rect(sealX - 7.4, sealY - 0.8, 1.4, 1.4, 'F');
-  doc.rect(sealX + 6.0, sealY - 0.8, 1.4, 1.4, 'F');
+  doc.rect(sealX - 7.0, sealY - 0.8, 1.3, 1.3, 'F');
+  doc.rect(sealX + 5.7, sealY - 0.8, 1.3, 1.3, 'F');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   doc.setTextColor(22, 115, 184);
-  doc.text('FS', sealX, sealY + 1.7, { align: 'center' });
-  doc.rect(sealX - 3.0, sealY + 2.8, 6.0, 0.9, 'F');
+  doc.text('FSP', sealX, sealY + 1.6, { align: 'center' });
+  doc.rect(sealX - 3.0, sealY + 2.7, 6.0, 0.8, 'F');
 
   // =========================================================================
   // 4. "Certificate of Achievement" HEADING (Always "of Achievement")
   // =========================================================================
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(29);
+  doc.setFontSize(28);
   doc.setTextColor(34, 108, 163); // #226CA3
-  doc.text('Certificate', leftX, 44);
-  doc.text('of Achievement', leftX, 55);
+  doc.text('Certificate', leftX, 45);
+  doc.text('of Achievement', leftX, 55.5);
 
   // =========================================================================
-  // 5. "This is to certify that" + RECIPIENT NAME ONLY (No Email)
+  // 5. "This is to certify that" + RECIPIENT NAME + USER PROFILE PICTURE
   // =========================================================================
+  const cleanRecipient = (recipientName || 'Certified Professional').trim();
+
+  // Draw Recipient's Profile Picture (22mm x 22mm) on the right side of the recipient row
+  drawPdfUserPhoto(
+    doc,
+    recipientProfilePicUrl,
+    cleanRecipient,
+    rightEdgeX - 22,
+    60,
+    22,
+    {
+      borderColor: [22, 115, 184],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    }
+  );
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11.5);
   doc.setTextColor(28, 35, 54);
   doc.text('This is to certify that', leftX, 68);
 
-  const cleanRecipient = (recipientName || 'Certified Professional').trim();
   doc.setFont('helvetica', 'bold');
-  const recipientFontSize = cleanRecipient.length > 32 ? 17 : 20.5;
+  const recipientFontSize = cleanRecipient.length > 28 ? 16.5 : 20;
   doc.setFontSize(recipientFontSize);
   doc.setTextColor(22, 32, 56);
-  const nameLines = doc.splitTextToSize(cleanRecipient, contentWidth);
+  const nameLines = doc.splitTextToSize(cleanRecipient, contentWidth - 26);
   doc.text(nameLines[0], leftX, 80);
 
-  // Horizontal divider line under Recipient Name
+  // Horizontal divider line under Recipient Name & Photo
   doc.setDrawColor(210, 222, 234);
   doc.setLineWidth(0.45);
   doc.line(leftX, 85, rightEdgeX, 85);
@@ -464,36 +494,33 @@ export function downloadOfficialCourseCertificatePdf(
   });
 
   // Right-Side Endorsement Badge: "Endorsed by Food Science Portal"
-  const endX = 142;
-  const endY = 208;
+  const endX = 140;
+  const endY = 207;
 
-  // Food Science Portal Official Crest Icon
-  doc.setDrawColor(22, 115, 184);
-  doc.setFillColor(240, 247, 255);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(endX, endY, 11, 12.5, 1.5, 1.5, 'FD');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.5);
-  doc.setTextColor(22, 115, 184);
-  doc.text('FSP', endX + 5.5, endY + 7.8, { align: 'center' });
+  // Food Science Portal Official Emblem Icon
+  drawPdfBrandLogo(doc, endX, endY, 14, {
+    borderColor: [22, 115, 184],
+    bgFill: [255, 255, 255],
+    roundedRadius: 2.2
+  });
 
   // "Endorsed by Food Science Portal" text
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(26, 33, 56);
-  doc.text('Endorsed by', endX + 13, endY + 4.5);
+  doc.text('Endorsed by', endX + 16, endY + 4.5);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10.5);
   doc.setTextColor(22, 115, 184);
-  doc.text('Food Science Portal', endX + 13, endY + 9.8);
+  doc.text('Food Science Portal', endX + 16, endY + 9.8);
 
   // Official Endorsed Bar
   doc.setFillColor(13, 92, 58); // #0D5C3A
-  doc.roundedRect(endX + 13, endY + 11.5, 42, 4.2, 0.8, 0.8, 'F');
+  doc.roundedRect(endX + 16, endY + 11.5, 40, 4.2, 0.8, 0.8, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(5.4);
+  doc.setFontSize(5.2);
   doc.setTextColor(255, 255, 255);
-  doc.text('ENDORSED BY FOOD SCIENCE PORTAL', endX + 34, endY + 14.3, { align: 'center' });
+  doc.text('ENDORSED BY FOOD SCIENCE PORTAL', endX + 36, endY + 14.3, { align: 'center' });
 
   // =========================================================================
   // 9. BOTTOM-LEFT GREEN SHIELD + APP VERIFICATION LINK (No GitHub URL)

@@ -1121,7 +1121,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           VIEW 10: CITATION & REFERENCE GENERATOR
          ===================================================================== */}
       {activeSection === 'citation-generator' && (
-        <CitationReferenceGeneratorTool />
+        <CitationReferenceGeneratorTool user={user} />
       )}
     </div>
   );
