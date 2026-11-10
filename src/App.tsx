@@ -476,6 +476,59 @@ export default function App() {
   );
   const [savedScholarshipIds, setSavedScholarshipIds] = useState<string[]>([]);
 
+  // Active Tool Section inside ToolsHubView (used to hide app search bar inside E-Numbers Finder)
+  const [activeToolSection, setActiveToolSection] = useState<string>('hub');
+
+  // Read Job Notification IDs (persisted so newly posted jobs trigger unread Bell notifications)
+  const [readJobNotificationIds, setReadJobNotificationIds] = useState<string[]>(
+    () => {
+      if (typeof window === 'undefined') return [];
+      try {
+        const saved = window.localStorage.getItem(
+          'fs_portal_read_job_notif_ids_v1'
+        );
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch {
+        // Ignore
+      }
+      // On initial visit, leave the newest 3 jobs unread and mark older seed jobs as read
+      return INITIAL_JOBS.slice(3).map((j) => j.id);
+    }
+  );
+
+  const handleMarkJobNotificationRead = (jobId: string) => {
+    setReadJobNotificationIds((prev) => {
+      const next = prev.includes(jobId) ? prev : [...prev, jobId];
+      try {
+        window.localStorage.setItem(
+          'fs_portal_read_job_notif_ids_v1',
+          JSON.stringify(next)
+        );
+      } catch {
+        // Ignore
+      }
+      return next;
+    });
+  };
+
+  const handleMarkAllJobNotificationsRead = () => {
+    const allIds = Array.from(
+      new Set([...readJobNotificationIds, ...jobs.map((j) => j.id)])
+    );
+    setReadJobNotificationIds(allIds);
+    try {
+      window.localStorage.setItem(
+        'fs_portal_read_job_notif_ids_v1',
+        JSON.stringify(allIds)
+      );
+    } catch {
+      // Ignore
+    }
+  };
+
   // Copy Helper Feedback State (for 1-click 'Copy Contact Email & Subject')
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -545,7 +598,7 @@ export default function App() {
     null
   );
   const [contactCustomMsg, setContactCustomMsg] = useState<string>(
-    'Assalam-o-Alaikum, I saw your Verified Specialist profile on FS Portal and would like to connect regarding a Food Science / QA opportunity.'
+    'Assalam-o-Alaikum, I saw your Verified Specialist profile on Foodifyy and would like to connect regarding a Food Science / QA opportunity.'
   );
   const [contactSentBanner, setContactSentBanner] = useState<string | null>(
     null
@@ -645,6 +698,11 @@ export default function App() {
           profilePhotoUrl: prev.profilePhotoUrl || prev.profilePicUrl || defaultAvatar,
           profilePicUrl: prev.profilePicUrl || prev.profilePhotoUrl || defaultAvatar
         }));
+
+        // Only query/write Firestore once the live Firebase Auth token is ready
+        if (!rawFirebaseUser) {
+          return;
+        }
 
         // Check if user profile already exists in Firestore; hydrate both public doc and private owner vault in background
         const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -848,7 +906,7 @@ export default function App() {
 
   // Real-time Firestore Listeners (Real Firestore data only — no placeholder users)
   useEffect(() => {
-    if (!authUser) return;
+    if (!authUser || !auth.currentUser) return;
     const isAdminUser =
       authUser.email?.toLowerCase() === 'mindmademedia9@gmail.com';
 
@@ -1256,8 +1314,8 @@ export default function App() {
   ) => {
     const currentUrl = url || window.location.href;
     const shareData = {
-      title: `${title} | FS Portal`,
-      text: `${title}\n${subtitle}\n\nShared via FS Portal:`,
+      title: `${title} | Foodifyy`,
+      text: `${title}\n${subtitle}\n\nShared via Foodifyy:`,
       url: currentUrl
     };
 
@@ -2172,9 +2230,9 @@ export default function App() {
               'International Certification',
             accreditationBody:
               matchedCourse?.accreditationStandard ||
-              'FS Portal International Academy',
+              'Foodifyy International Academy',
             issueDate: nowIso.slice(0, 10),
-            issuedBy: 'FS Portal International Academy',
+            issuedBy: 'Foodifyy International Academy',
             verificationStatus: 'valid',
             createdAt: nowIso,
             scorePercentage: updatedCourseProg.bestExamPercentage,
@@ -2759,7 +2817,7 @@ export default function App() {
         75
       ),
       issuedBy: (
-        cert.issuedBy || 'FS Portal Administration (Direct Executive Issuance)'
+        cert.issuedBy || 'Foodifyy Administration (Direct Executive Issuance)'
       ).slice(0, 195),
       verificationStatus: 'valid',
       createdAt: new Date().toISOString(),
@@ -2911,7 +2969,7 @@ export default function App() {
 
   const userInitial = firstName.charAt(0).toUpperCase() || 'G';
 
-  // 0. 0.5-Second (500ms) Startup Splash Screen with FS Portal WebP Logo
+  // 0. 0.5-Second (500ms) Startup Splash Screen with Foodifyy WebP Logo
   if (showSplashLogo) {
     return (
       <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-fade-in">
@@ -2919,13 +2977,13 @@ export default function App() {
           <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white shadow-[0_12px_40px_rgba(26,33,56,0.12)] border border-[#D2DEEA] flex items-center justify-center overflow-hidden">
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
-              alt="FS Portal"
-              className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
+              alt="Foodifyy"
+              className="w-full h-full object-cover select-none"
             />
           </div>
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A2138] tracking-tight">
-              FS Portal
+              Foodifyy
             </h1>
             <p className="text-xs font-bold text-[#1673B8] uppercase tracking-widest">
               Food Safety &amp; Quality Specialists
@@ -2941,15 +2999,15 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#F0F6FC] flex flex-col items-center justify-center p-4">
         <div className="bg-white border-[1.5px] border-[#BBD6EE] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-xs w-full">
-          <div className="w-20 h-20 rounded-2xl bg-white border border-[#D2DEEA] shadow-xs flex items-center justify-center overflow-hidden">
+          <div className="w-24 h-24 rounded-2xl bg-white border border-[#D2DEEA] shadow-xs flex items-center justify-center overflow-hidden">
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
-              alt="FS Portal"
-              className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
+              alt="Foodifyy"
+              className="w-full h-full object-cover select-none"
             />
           </div>
           <h2 className="text-base font-extrabold text-[#1A2138]">
-            FS Portal
+            Foodifyy
           </h2>
           <p className="text-xs font-medium text-gray-500">
             Verifying your authentication session...
@@ -3003,7 +3061,7 @@ export default function App() {
                   Official QR Verified Certificate
                 </span>
                 <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-[#1673B8] text-[11px] font-extrabold">
-                  Endorsed by FS Portal
+                  Endorsed by Foodifyy
                 </span>
               </div>
               <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
@@ -3062,7 +3120,7 @@ export default function App() {
             </div>
 
             <p className="text-[11px] text-[#1A2138] bg-[#F0F6FC] border border-[#D2DEEA] rounded-xl p-3 font-medium">
-              This Certificate of Achievement has been verified via the official FS Portal Online Verification Registry. Sign in below to access the full FS Portal Verification Search &amp; Training Academy.
+              This Certificate of Achievement has been verified via the official Foodifyy Online Verification Registry. Sign in below to access the full Foodifyy Verification Search &amp; Training Academy.
             </p>
           </div>
 
@@ -3140,7 +3198,9 @@ export default function App() {
         <Header
           showBack={route.name !== 'home'}
           hideSearchBar={
-            route.name === 'communities' || route.name === 'profile'
+            route.name === 'communities' ||
+            route.name === 'profile' ||
+            (route.name === 'tools' && activeToolSection === 'e-numbers')
           }
           onBack={() => {
             if (route.name === 'job-detail') setRoute({ name: 'jobs' });
@@ -3161,6 +3221,14 @@ export default function App() {
           onHomeClick={() => setRoute({ name: 'home' })}
           onSearchClick={() => setRoute({ name: 'search' })}
           onBellClick={() => navigateToJobs('All')}
+          jobNotifications={activeJobs}
+          readJobIds={readJobNotificationIds}
+          onSelectJobNotification={(jobId) => {
+            handleMarkJobNotificationRead(jobId);
+            setRoute({ name: 'job-detail', jobId });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onMarkAllNotificationsRead={handleMarkAllJobNotificationsRead}
           onProfileClick={() => setRoute({ name: 'profile' })}
           onAdminClick={() => {
             setAdminPreviewUserMode(false);
@@ -4702,6 +4770,7 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               initialSection={route.initialSection || 'hub'}
+              onActiveSectionChange={(sec) => setActiveToolSection(sec)}
             />
           )}
 
@@ -5369,7 +5438,7 @@ export default function App() {
                     href={`mailto:${
                       contactModalMember.email
                     }?subject=${encodeURIComponent(
-                      'Hiring / Networking Inquiry via FS Portal'
+                      'Hiring / Networking Inquiry via Foodifyy'
                     )}&body=${encodeURIComponent(contactCustomMsg)}`}
                     className="w-full py-3 px-4 rounded-2xl bg-[#EBF4FC] hover:bg-[#D2DEEA] text-[#1A2138] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
                   >

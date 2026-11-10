@@ -101,6 +101,7 @@ interface ToolsHubViewProps {
   onSaveToolsData: (updatedToolsData: UserToolsData) => Promise<void>;
   onOpenPremiumModal: () => void;
   onGoToProfileTools?: () => void;
+  onActiveSectionChange?: (section: ActiveToolSection) => void;
 }
 
 export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
@@ -112,7 +113,8 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   initialSection = 'hub',
   onSaveToolsData,
   onOpenPremiumModal,
-  onGoToProfileTools
+  onGoToProfileTools,
+  onActiveSectionChange
 }) => {
   const yearlyDiscountPct = useMemo(() => {
     const fullYear = (monthlyFeeRs || 100) * 12;
@@ -173,6 +175,10 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       setActiveSection('hub');
     }
   }, [initialSection, isUserPaid, hasExpiredPremium]);
+
+  useEffect(() => {
+    onActiveSectionChange?.(activeSection);
+  }, [activeSection, onActiveSectionChange]);
 
   // Nutrition Local Editable State
   const [nutritionForm, setNutritionForm] = useState<NutritionProfileData>(
@@ -848,7 +854,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
         <div className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-4">
           <div className="text-center">
             <h1 className="text-base sm:text-lg font-extrabold text-[#1A2138] tracking-tight">
-              Specialist Tools
+              Tools
             </h1>
           </div>
 

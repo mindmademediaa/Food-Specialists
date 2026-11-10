@@ -392,7 +392,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             month: 'short',
             year: 'numeric'
           }),
-        issuedBy: 'FS Portal Administration (Direct Executive Issuance)',
+        issuedBy: 'Foodifyy Administration (Direct Executive Issuance)',
         verificationStatus: 'valid',
         scorePercentage: clampedScore,
         distinction: isDistinction
@@ -851,17 +851,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               type="button"
               onClick={() => setActiveTab('menu')}
               title="Admin Control Panel Home"
-              className="w-9 h-9 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-[#D2DEEA] cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-[#D2DEEA] cursor-pointer"
             >
               <img
                 src={FS_PORTAL_LOGO_DATA_URI}
-                alt="FS Portal Admin"
-                className="w-full h-full object-contain scale-[1.85] transform-gpu select-none"
+                alt="Foodifyy Admin"
+                className="w-full h-full object-cover select-none"
               />
             </button>
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="text-[17px] sm:text-[19px] font-extrabold tracking-tight leading-none text-white truncate">
-                FS Portal
+                Foodifyy
               </h1>
               <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold uppercase tracking-wider shrink-0">
                 Admin

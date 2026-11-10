@@ -1,6 +1,5 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from 'firebase/app';
-import { getAnalytics, isSupported } from 'firebase/analytics';
 import {
   getAuth,
   setPersistence,
@@ -48,13 +47,6 @@ setLogLevel('silent');
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const analytics =
-  typeof window !== 'undefined'
-    ? isSupported()
-        .then((yes) => (yes ? getAnalytics(app) : null))
-        .catch(() => null)
-    : null;
-
 export const auth = getAuth(app);
 
 // Explicitly enforce local persistence across browser tabs, mobile backgrounding, and reloads

@@ -222,12 +222,12 @@ export function downloadOfficialCourseCertificatePdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(22);
   doc.setTextColor(26, 33, 56);
-  doc.text('FS Port', leftX, 21);
+  doc.text('Foodi', leftX, 21);
 
-  const portW = doc.getTextWidth('FS Port');
+  const portW = doc.getTextWidth('Foodi');
   doc.setTextColor(22, 115, 184);
-  doc.text('al', leftX + portW, 21);
-  const alW = doc.getTextWidth('al');
+  doc.text('fyy', leftX + portW, 21);
+  const alW = doc.getTextWidth('fyy');
 
   doc.setFillColor(22, 115, 184);
   doc.rect(leftX + portW + 0.3, 22.3, alW - 0.5, 1.3, 'F');
@@ -263,7 +263,7 @@ export function downloadOfficialCourseCertificatePdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(5.0);
   doc.setTextColor(45, 118, 175);
-  doc.text('FS PORTAL', sealX, sealY - 6.3, { align: 'center' });
+  doc.text('FOODIFYY', sealX, sealY - 6.3, { align: 'center' });
   doc.text('CERTIFIED', sealX, sealY + 8.1, { align: 'center' });
 
   doc.setFillColor(22, 115, 184);
@@ -459,15 +459,15 @@ export function downloadOfficialCourseCertificatePdf(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.8);
   doc.setTextColor(45, 55, 72);
-  doc.text('Signed on behalf of FS Portal', leftX + 23, sigBaseY + 4.5, {
+  doc.text('Signed on behalf of Foodifyy', leftX + 23, sigBaseY + 4.5, {
     align: 'center'
   });
 
-  // Right-Side Endorsement Badge: "Endorsed by FS Portal" (replaces Institute of Hospitality)
+  // Right-Side Endorsement Badge: "Endorsed by Foodifyy"
   const endX = 142;
   const endY = 208;
 
-  // FS Portal Official Crest Icon
+  // Foodifyy Official Crest Icon
   doc.setDrawColor(22, 115, 184);
   doc.setFillColor(240, 247, 255);
   doc.setLineWidth(0.5);
@@ -475,9 +475,9 @@ export function downloadOfficialCourseCertificatePdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(22, 115, 184);
-  doc.text('FS', endX + 5.5, endY + 7.8, { align: 'center' });
+  doc.text('FD', endX + 5.5, endY + 7.8, { align: 'center' });
 
-  // "Endorsed by FS Portal" text
+  // "Endorsed by Foodifyy" text
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(26, 33, 56);
@@ -485,7 +485,7 @@ export function downloadOfficialCourseCertificatePdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(22, 115, 184);
-  doc.text('FS Portal', endX + 13, endY + 9.8);
+  doc.text('Foodifyy', endX + 13, endY + 9.8);
 
   // Official Endorsed Bar
   doc.setFillColor(13, 92, 58); // #0D5C3A
@@ -493,7 +493,7 @@ export function downloadOfficialCourseCertificatePdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(6.2);
   doc.setTextColor(255, 255, 255);
-  doc.text('ENDORSED BY FS PORTAL', endX + 32, endY + 14.3, { align: 'center' });
+  doc.text('ENDORSED BY FOODIFYY', endX + 32, endY + 14.3, { align: 'center' });
 
   // =========================================================================
   // 9. BOTTOM-LEFT GREEN SHIELD + APP VERIFICATION LINK (No GitHub URL)
@@ -540,7 +540,7 @@ export function downloadOfficialCourseCertificatePdf(
   doc.setFontSize(7.8);
   doc.setTextColor(51, 65, 85);
   doc.text(
-    `Enter Certificate No: ${certificateNumber} on FS Portal Verification Registry`,
+    `Enter Certificate No: ${certificateNumber} on Foodifyy Verification Registry`,
     leftX + 13,
     urlBottomY + 1.2
   );

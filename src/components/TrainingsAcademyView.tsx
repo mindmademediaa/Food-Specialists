@@ -610,7 +610,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             courseTitle: prog.courseTitle,
             courseCode: courseObj?.code || 'FS-CERT-INTL',
             accreditationBody:
-              courseObj?.accreditationStandard || 'FS Portal International Academy',
+              courseObj?.accreditationStandard || 'Foodifyy International Academy',
             issueDate: prog.certificateUnlockedAt
               ? new Date(prog.certificateUnlockedAt).toLocaleDateString('en-GB', {
                   day: '2-digit',
@@ -776,13 +776,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
             {/* Top Section: Brand Logo, Rosette Seal, Title, User & Training Info */}
             <div className="space-y-4 relative z-10">
-              {/* Top Row: FS Portal Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
+              {/* Top Row: Foodifyy Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-2xl sm:text-3xl font-black tracking-tight text-[#1A2138] flex items-baseline">
-                    <span>FS Port</span>
+                    <span>Foodi</span>
                     <span className="text-[#1673B8] border-b-[3px] border-[#1673B8] pb-0.5 leading-none">
-                      al
+                      fyy
                     </span>
                   </div>
                   <p className="text-[11px] font-semibold text-slate-600 mt-1">
@@ -814,7 +814,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       fontWeight="800"
                       letterSpacing="0.8"
                     >
-                      FS PORTAL
+                      FOODIFYY
                     </text>
                     <rect x="39" y="51" width="4" height="4" fill="#1673B8" />
                     <rect x="77" y="51" width="4" height="4" fill="#1673B8" />
@@ -826,7 +826,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       fontSize="19"
                       fontWeight="900"
                     >
-                      FS
+                      FD
                     </text>
                     <rect x="50" y="62" width="20" height="2.6" fill="#1673B8" />
                     <text
@@ -936,24 +936,24 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   </svg>
                   <div className="border-t border-[#D2DEEA] pt-1">
                     <p className="text-[10.5px] text-slate-700">
-                      Signed on behalf of FS Portal
+                      Signed on behalf of Foodifyy
                     </p>
                   </div>
                 </div>
 
-                {/* 7. Endorsed by FS Portal Badge (replaces Institute of Hospitality) */}
+                {/* 7. Endorsed by Foodifyy Badge */}
                 <div className="flex items-start gap-2.5">
                   <div className="w-10 h-11 rounded-lg border border-[#1673B8] bg-[#F0F7FF] flex flex-col items-center justify-center p-1 text-[#1673B8] shrink-0">
-                    <span className="text-xs font-black leading-none">FS</span>
-                    <span className="text-[6px] font-black uppercase mt-0.5">PORTAL</span>
+                    <span className="text-xs font-black leading-none">FD</span>
+                    <span className="text-[5.5px] font-black uppercase mt-0.5">FOODIFYY</span>
                   </div>
                   <div className="space-y-1">
                     <div className="leading-tight text-[#1A2138]">
                       <p className="text-[11px] font-medium text-slate-600">Endorsed by</p>
-                      <p className="text-sm font-black text-[#1673B8]">FS Portal</p>
+                      <p className="text-sm font-black text-[#1673B8]">Foodifyy</p>
                     </div>
                     <div className="px-2.5 py-0.5 rounded bg-[#1673B8] text-white text-[7.5px] font-black uppercase tracking-wider text-center">
-                      ENDORSED BY FS PORTAL
+                      ENDORSED BY FOODIFYY
                     </div>
                   </div>
                 </div>
@@ -1305,7 +1305,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           Certificate Verification Paused — Holder’s Paid Membership Expired
                         </div>
                         <p className="text-xs text-amber-800 leading-relaxed">
-                          Certificate ID <span className="font-mono font-bold">{rec.certificateNumber}</span> system may registered hy, magar is member ki <strong>Paid Premium Membership</strong> is waqt expire ho chuki hy. FS Portal policy k mutabiq certificate ki online verification aur details sirf active Paid Membership k doran show hoti hain. Jab member apni Paid Premium Membership dobara purchase/renew karega, tamam certificates ki verification details khud ba khud dobara live show ho jayengi.
+                          Certificate ID <span className="font-mono font-bold">{rec.certificateNumber}</span> system may registered hy, magar is member ki <strong>Paid Premium Membership</strong> is waqt expire ho chuki hy. Foodifyy policy k mutabiq certificate ki online verification aur details sirf active Paid Membership k doran show hoti hain. Jab member apni Paid Premium Membership dobara purchase/renew karega, tamam certificates ki verification details khud ba khud dobara live show ho jayengi.
                         </p>
                       </div>
                     );

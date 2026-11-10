@@ -59,7 +59,7 @@ export function downloadNutritionReportPdf(
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15.5);
-  doc.text('FS PORTAL — PERSONAL NUTRITION & BMI HEALTH REPORT', margin, 13);
+  doc.text('FOODIFYY — PERSONAL NUTRITION & BMI HEALTH REPORT', margin, 13);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
@@ -212,13 +212,13 @@ export function downloadNutritionReportPdf(
   doc.setFontSize(8);
   doc.setTextColor(107, 114, 128);
   doc.text(
-    `Official Personalized Nutrition Report for ${u.name} | Generated via FS Portal — Developed by Food Specialist`,
+    `Official Personalized Nutrition Report for ${u.name} | Generated via Foodifyy — Developed by Food Specialist`,
     margin,
     pageHeight - 8
   );
 
   doc.save(
-    `FS-Portal-Nutrition-Report-${u.name
+    `Foodifyy-Nutrition-Report-${u.name
       .replace(/[^a-zA-Z0-9]/g, '-')
       .slice(0, 25)}.pdf`
   );
@@ -286,7 +286,7 @@ export function downloadExamReportPdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
   doc.text(
-    'FS PORTAL — OFFICIAL 30-MCQ EXAM ASSESSMENT REPORT',
+    'FOODIFYY — OFFICIAL 30-MCQ EXAM ASSESSMENT REPORT',
     margin,
     12
   );
@@ -503,13 +503,13 @@ export function downloadExamReportPdf(
   doc.setFontSize(8);
   doc.setTextColor(107, 114, 128);
   doc.text(
-    `Official Exam Assessment Report for ${u.name} (${u.email}) | FS Portal — Developed by Food Specialist`,
+    `Official Exam Assessment Report for ${u.name} (${u.email}) | Foodifyy — Developed by Food Specialist`,
     margin,
     pageHeight - 8
   );
 
   doc.save(
-    `FS-Portal-30MCQ-Exam-Report-${u.name
+    `Foodifyy-30MCQ-Exam-Report-${u.name
       .replace(/[^a-zA-Z0-9]/g, '-')
       .slice(0, 22)}.pdf`
   );
@@ -548,7 +548,7 @@ export function downloadInterviewSessionReportPdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14.5);
   doc.text(
-    'FS PORTAL — PERSONALIZED 30-QUESTION INTERVIEW REPORT',
+    'FOODIFYY — PERSONALIZED 30-QUESTION INTERVIEW REPORT',
     margin,
     12
   );
@@ -688,13 +688,13 @@ export function downloadInterviewSessionReportPdf(
   doc.setFontSize(8);
   doc.setTextColor(107, 114, 128);
   doc.text(
-    `Official Interview Preparation Report for ${u.name} (${u.email}) | FS Portal — Developed by Food Specialist`,
+    `Official Interview Preparation Report for ${u.name} (${u.email}) | Foodifyy — Developed by Food Specialist`,
     margin,
     pageHeight - 8
   );
 
   doc.save(
-    `FS-Portal-30Q-Interview-Report-${u.name
+    `Foodifyy-30Q-Interview-Report-${u.name
       .replace(/[^a-zA-Z0-9]/g, '-')
       .slice(0, 22)}.pdf`
   );
