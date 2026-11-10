@@ -1,4 +1,4 @@
-const CACHE_NAME = 'food-science-portal-v20261110';
+const CACHE_NAME = 'food-science-portal-v20261110-v2';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -37,7 +37,9 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(() =>
-        caches.match(event.request).then((cached) => cached || caches.match('./index.html'))
+        caches
+          .match(event.request)
+          .then((cached) => cached || caches.match('./index.html') || caches.match('./'))
       )
   );
 });
