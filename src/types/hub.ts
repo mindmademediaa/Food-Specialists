@@ -436,6 +436,154 @@ export interface PearsonBatchUserData {
   savedBatchRecords: PearsonBatchSavedRecord[];
 }
 
+export interface LabMolarityCustomReagentItem {
+  id: string;
+  name: string;
+  mw: number;
+  nFactor: number;
+  createdAt: string;
+}
+
+export interface LabMolaritySavedRecord {
+  id: string;
+  recordCode: string;
+  recordType: 'solid_prep' | 'liquid_dilution';
+  solutionName: string;
+  notes?: string;
+  savedDateFormatted: string;
+  savedAtIso: string;
+
+  // Solid Reagent to Molar (M) / Normal (N) Solution
+  reagentName?: string;
+  mw?: number;
+  nFactor?: number;
+  concMode?: 'N' | 'M';
+  targetConc?: number;
+  targetVolMl?: number;
+  purityPct?: number;
+  eqWeight?: number;
+  pureGrams?: number;
+  actualGramsToWeigh?: number;
+  equivMolarity?: number;
+  equivNormality?: number;
+
+  // Liquid Stock Dilution (C1 * V1 = C2 * V2)
+  stockC1?: number;
+  desiredC2?: number;
+  finalV2Ml?: number;
+  requiredStockV1Ml?: number;
+  waterToAddMl?: number;
+}
+
+export interface LabMolarityUserData {
+  customReagents: LabMolarityCustomReagentItem[];
+  savedRecords: LabMolaritySavedRecord[];
+}
+
+export interface MoistureAshSavedRecord {
+  id: string;
+  recordCode: string;
+  sampleName: string;
+  productCategory?: string;
+  notes?: string;
+  savedDateFormatted: string;
+  savedAtIso: string;
+
+  // 1. Moisture & Dry Matter
+  mEmptyDish?: number;
+  mDishPlusWet?: number;
+  mDishPlusDry?: number;
+  wetSampleG?: number;
+  drySampleG?: number;
+  waterLossG?: number;
+  moistureWetBasis?: number;
+  totalSolidsPct?: number;
+  moistureDryBasis?: number;
+
+  // 2. Total Ash (Muffle Furnace at 550°C)
+  aEmptyCrucible?: number;
+  aCruciblePlusSample?: number;
+  aCruciblePlusAsh?: number;
+  ashSampleG?: number;
+  ashResidueG?: number;
+  ashWetBasis?: number;
+  ashDryBasis?: number;
+
+  // 3. Kjeldahl Nitrogen & Crude Protein
+  kSampleWeightG?: number;
+  kSampleTitrationMl?: number;
+  kBlankTitrationMl?: number;
+  kAcidNormality?: number;
+  kProteinFactor?: number;
+  nitrogenPct?: number;
+  crudeProteinPct?: number;
+}
+
+export interface MoistureAshUserData {
+  savedRecords: MoistureAshSavedRecord[];
+}
+
+export interface ProductionFloorSavedRecord {
+  id: string;
+  recordCode: string;
+  plantCompanyName: string;
+  lineOrProductName: string;
+  shiftName: string;
+  productionDate: string; // YYYY-MM-DD
+  savedDateFormatted: string;
+  savedAtIso: string;
+  notes?: string;
+
+  // 1. 1-Hour Machine Efficiency
+  machineSpeedTraysPerHour: number;
+  oneHourActualTrays: number;
+  oneHourEfficiencyPct: number;
+  oneHourLostTrays: number;
+
+  // 2. Full-Day Net Efficiency (Start Time, Late Start, Break, CIP, Breakdown, Total Trays)
+  scheduledStartTime: string;
+  actualStartTime: string;
+  totalShiftHours: number;
+  lateStartMins: number;
+  breakMins: number;
+  cipMins: number;
+  unplannedDowntimeMins: number;
+  totalFullDayTrays: number;
+  rejectedTrays: number;
+  goodFullDayTrays: number;
+  workersCount: number;
+  fullDayGrossEfficiencyPct: number;
+  fullDayNetOperatingEfficiencyPct: number;
+  fullDayOeePct: number;
+  traysPerWorkerHour: number;
+
+  // 3. Syrup Room / Preparation Room Batch Efficiency
+  syrupUnit: 'Liters' | 'kg';
+  syrupPreparedTotal: number;
+  syrupPackedTotal: number;
+  syrupWasteTotal: number;
+  syrupBatchEfficiencyPct: number;
+  syrupWastagePct: number;
+  syrupCostPerUnit: number;
+  syrupWasteCostRs: number;
+
+  // 4. Raw-to-Packed Process Yield
+  rawInputKg: number;
+  trimmedPreppedKg: number;
+  finalPackedKg: number;
+  rawCostPerKg: number;
+  prepYieldPct: number;
+  netProcessYieldPct: number;
+  totalLossKg: number;
+  totalLossPct: number;
+  effectiveRawCostPerFinalKg: number;
+}
+
+export interface ProductionFloorUserData {
+  defaultPlantName?: string;
+  savedRecords: ProductionFloorSavedRecord[];
+}
+
 export interface UserToolsData {
   nutrition: NutritionProfileData;
   examAttempts: UserExamAttempt[];
@@ -447,6 +595,9 @@ export interface UserToolsData {
   courseProgress?: Record<string, UserCourseProgress>;
   labFormulaData?: LabFormulaUserData;
   pearsonBatchData?: PearsonBatchUserData;
+  molarityData?: LabMolarityUserData;
+  moistureAshData?: MoistureAshUserData;
+  productionFloorData?: ProductionFloorUserData;
   lastActiveCourseId?: string;
   lastActiveTool?: 'nutrition' | 'exam' | 'interview';
   updatedAt: string;

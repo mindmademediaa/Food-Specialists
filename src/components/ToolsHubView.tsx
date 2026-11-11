@@ -160,6 +160,17 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       pearsonBatchData: {
         customProducts: saved.pearsonBatchData?.customProducts || [],
         savedBatchRecords: saved.pearsonBatchData?.savedBatchRecords || []
+      },
+      molarityData: {
+        customReagents: saved.molarityData?.customReagents || [],
+        savedRecords: saved.molarityData?.savedRecords || []
+      },
+      moistureAshData: {
+        savedRecords: saved.moistureAshData?.savedRecords || []
+      },
+      productionFloorData: {
+        defaultPlantName: saved.productionFloorData?.defaultPlantName || '',
+        savedRecords: saved.productionFloorData?.savedRecords || []
       }
     };
   }, [user.toolsData]);
@@ -1132,17 +1143,44 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       {/* =====================================================================
           VIEW 5: LAB SOLUTION & MOLARITY / NORMALITY CALCULATOR
          ===================================================================== */}
-      {activeSection === 'molarity-normality' && <LabSolutionMolarityTool />}
+      {activeSection === 'molarity-normality' && (
+        <LabSolutionMolarityTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          toolsData={toolsData}
+          onSaveToolsData={onSaveToolsData}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
+      )}
 
       {/* =====================================================================
           VIEW 6: MOISTURE, ASH & YIELD % CALCULATOR
          ===================================================================== */}
-      {activeSection === 'moisture-ash' && <MoistureAshYieldTool />}
+      {activeSection === 'moisture-ash' && (
+        <MoistureAshYieldTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          toolsData={toolsData}
+          onSaveToolsData={onSaveToolsData}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
+      )}
 
       {/* =====================================================================
           VIEW 7: PRODUCTION FLOOR, YIELD & WORKERS CALCULATOR
          ===================================================================== */}
-      {activeSection === 'production-floor' && <ProductionFloorWorkersTool />}
+      {activeSection === 'production-floor' && (
+        <ProductionFloorWorkersTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          toolsData={toolsData}
+          onSaveToolsData={onSaveToolsData}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
+      )}
 
       {/* =====================================================================
           VIEW 8: E-NUMBERS & FOOD ADDITIVES INSTANT FINDER

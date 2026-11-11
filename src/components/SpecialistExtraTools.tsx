@@ -26,9 +26,13 @@ import {
   CustomSanitizerItem,
   HubUser,
   LabFormulaSavedRecord,
+  LabMolarityCustomReagentItem,
+  LabMolaritySavedRecord,
+  MoistureAshSavedRecord,
   PearsonBatchSavedRecord,
   PearsonCalculatorMode,
   PearsonCustomProductItem,
+  ProductionFloorSavedRecord,
   UserToolsData
 } from '../types/hub';
 import { E_NUMBERS_DATABASE, ENumberAdditive } from '../data/eNumbersData';
@@ -4707,8 +4711,57 @@ const LAB_REAGENTS = [
   { name: 'Sodium Chloride (NaCl)', mw: 58.44, nFactor: 1, form: 'solid' }
 ];
 
-export const LabSolutionMolarityTool: React.FC = () => {
-  const [selectedReagentIdx, setSelectedReagentIdx] = useState<number>(0);
+export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = ({
+  user,
+  isUserPaid = false,
+  hasExpiredPremium = false,
+  toolsData,
+  onSaveToolsData,
+  onOpenPremiumModal
+}) => {
+  const canUsePremium = Boolean(isUserPaid && !hasExpiredPremium);
+
+  const [viewTab, setViewTab] = useState<'calculator' | 'directory'>('calculator');
+  const [statusToast, setStatusToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setStatusToast(msg);
+    setTimeout(() => {
+      setStatusToast((prev) => (prev === msg ? null : prev));
+    }, 3800);
+  };
+
+  const customReagents: LabMolarityCustomReagentItem[] = useMemo(
+    () => toolsData?.molarityData?.customReagents || [],
+    [toolsData?.molarityData?.customReagents]
+  );
+
+  const savedRecords: LabMolaritySavedRecord[] = useMemo(
+    () => toolsData?.molarityData?.savedRecords || [],
+    [toolsData?.molarityData?.savedRecords]
+  );
+
+  const allReagentOptions = useMemo(() => {
+    const customList = customReagents.map((cr) => ({
+      id: cr.id,
+      name: cr.name,
+      mw: cr.mw,
+      nFactor: cr.nFactor,
+      isCustom: true
+    }));
+    const defaultList = LAB_REAGENTS.map((r, i) => ({
+      id: `def-reagent-${i}`,
+      name: r.name,
+      mw: r.mw,
+      nFactor: r.nFactor,
+      isCustom: false
+    }));
+    return [...customList, ...defaultList];
+  }, [customReagents]);
+
+  const [selectedReagentName, setSelectedReagentName] = useState<string>(
+    LAB_REAGENTS[0].name
+  );
   const [mw, setMw] = useState<string>('40.0');
   const [nFactor, setNFactor] = useState<string>('1');
   const [concMode, setConcMode] = useState<'N' | 'M'>('N');
@@ -4716,10 +4769,31 @@ export const LabSolutionMolarityTool: React.FC = () => {
   const [targetVolMl, setTargetVolMl] = useState<string>('1000');
   const [purityPct, setPurityPct] = useState<string>('99');
 
+  // Custom Reagent Form (Paid users)
+  const [showAddReagentForm, setShowAddReagentForm] = useState<boolean>(false);
+  const [newReagentName, setNewReagentName] = useState<string>('');
+  const [newReagentMw, setNewReagentMw] = useState<string>('');
+  const [newReagentNFactor, setNewReagentNFactor] = useState<string>('1');
+
   // Stock liquid dilution (C1V1 = C2V2)
   const [c1, setC1] = useState<string>('1.0');
   const [c2, setC2] = useState<string>('0.1');
   const [v2Ml, setV2Ml] = useState<string>('500');
+
+  // Paid Member Solution Logging Fields
+  const [solutionLabel, setSolutionLabel] = useState<string>('');
+  const [solutionNotes, setSolutionNotes] = useState<string>('');
+  const [dilutionLabel, setDilutionLabel] = useState<string>('');
+  const [dilutionNotes, setDilutionNotes] = useState<string>('');
+
+  // Directory Search & Filters
+  const [dirSearchQuery, setDirSearchQuery] = useState<string>('');
+  const [dirTypeFilter, setDirTypeFilter] = useState<
+    'all' | 'solid_prep' | 'liquid_dilution'
+  >('all');
+  const [dirDateFilter, setDirDateFilter] = useState<
+    'all' | 'today' | 'week' | 'month'
+  >('all');
 
   const solidCalc = useMemo(() => {
     const molW = Math.max(1, Number(mw) || 40);
@@ -4758,255 +4832,1245 @@ export const LabSolutionMolarityTool: React.FC = () => {
     };
   }, [c1, c2, v2Ml]);
 
+  const handleSaveCustomReagent = async () => {
+    if (!canUsePremium || !toolsData || !onSaveToolsData) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const cleanName = newReagentName.trim();
+    const parsedMw = Number(newReagentMw);
+    const parsedNF = Math.max(1, Number(newReagentNFactor) || 1);
+    if (!cleanName || !parsedMw || parsedMw <= 0) {
+      showToast('Please enter a valid reagent name and molecular weight (g/mol).');
+      return;
+    }
+    const newItem: LabMolarityCustomReagentItem = {
+      id: `reagent-${Date.now()}`,
+      name: cleanName,
+      mw: Number(parsedMw.toFixed(2)),
+      nFactor: parsedNF,
+      createdAt: new Date().toISOString()
+    };
+    const nextCustom = [newItem, ...customReagents];
+    await onSaveToolsData({
+      ...toolsData,
+      molarityData: {
+        customReagents: nextCustom,
+        savedRecords
+      },
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    });
+    setSelectedReagentName(newItem.name);
+    setMw(String(newItem.mw));
+    setNFactor(String(newItem.nFactor));
+    setNewReagentName('');
+    setNewReagentMw('');
+    setNewReagentNFactor('1');
+    setShowAddReagentForm(false);
+    showToast(`Saved "${newItem.name}" (MW ${newItem.mw}) to your Reagent List!`);
+  };
+
+  const handleDeleteCustomReagent = async (id: string) => {
+    if (!canUsePremium || !toolsData || !onSaveToolsData) return;
+    const nextCustom = customReagents.filter((r) => r.id !== id);
+    await onSaveToolsData({
+      ...toolsData,
+      molarityData: {
+        customReagents: nextCustom,
+        savedRecords
+      },
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    });
+    showToast('Removed custom reagent from list.');
+  };
+
+  const buildCurrentSolidRecord = (): LabMolaritySavedRecord => {
+    const now = new Date();
+    const defaultTitle =
+      solutionLabel.trim() ||
+      `${targetConc} ${concMode} ${selectedReagentName} (${targetVolMl} mL)`;
+    return {
+      id: `mol-rec-${Date.now()}`,
+      recordCode: `MOL-${String(Date.now()).slice(-6)}`,
+      recordType: 'solid_prep',
+      solutionName: defaultTitle,
+      notes: solutionNotes.trim() || undefined,
+      savedDateFormatted: now.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      savedAtIso: now.toISOString(),
+      reagentName: selectedReagentName,
+      mw: Number(mw) || 40,
+      nFactor: Number(nFactor) || 1,
+      concMode,
+      targetConc: Number(targetConc) || 0.1,
+      targetVolMl: Number(targetVolMl) || 1000,
+      purityPct: Number(purityPct) || 99,
+      eqWeight: solidCalc.eqWeight,
+      pureGrams: solidCalc.pureGrams,
+      actualGramsToWeigh: solidCalc.actualGramsToWeigh,
+      equivMolarity: solidCalc.equivMolarity,
+      equivNormality: solidCalc.equivNormality
+    };
+  };
+
+  const buildCurrentDilutionRecord = (): LabMolaritySavedRecord => {
+    const now = new Date();
+    const defaultTitle =
+      dilutionLabel.trim() ||
+      `Stock Dilution (${c1} -> ${c2}, Final ${v2Ml} mL)`;
+    return {
+      id: `mol-rec-${Date.now()}`,
+      recordCode: `MOL-${String(Date.now()).slice(-6)}`,
+      recordType: 'liquid_dilution',
+      solutionName: defaultTitle,
+      notes: dilutionNotes.trim() || undefined,
+      savedDateFormatted: now.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      savedAtIso: now.toISOString(),
+      stockC1: Number(c1) || 1.0,
+      desiredC2: Number(c2) || 0.1,
+      finalV2Ml: Number(v2Ml) || 500,
+      requiredStockV1Ml: dilutionCalc.v1Ml,
+      waterToAddMl: dilutionCalc.waterToAddMl
+    };
+  };
+
+  const handleSaveRecordToDirectory = async (
+    type: 'solid_prep' | 'liquid_dilution'
+  ) => {
+    if (!canUsePremium || !toolsData || !onSaveToolsData) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const newRec =
+      type === 'solid_prep'
+        ? buildCurrentSolidRecord()
+        : buildCurrentDilutionRecord();
+    const nextRecords = [newRec, ...savedRecords].slice(0, 200);
+    await onSaveToolsData({
+      ...toolsData,
+      molarityData: {
+        customReagents,
+        savedRecords: nextRecords
+      },
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    });
+    if (type === 'solid_prep') {
+      setSolutionLabel('');
+      setSolutionNotes('');
+    } else {
+      setDilutionLabel('');
+      setDilutionNotes('');
+    }
+    showToast(
+      `Saved "${newRec.solutionName}" (${newRec.recordCode}) to your Lab Solutions Directory!`
+    );
+  };
+
+  const handleDeleteSavedRecord = async (id: string) => {
+    if (!canUsePremium || !toolsData || !onSaveToolsData) return;
+    const nextRecords = savedRecords.filter((r) => r.id !== id);
+    await onSaveToolsData({
+      ...toolsData,
+      molarityData: {
+        customReagents,
+        savedRecords: nextRecords
+      },
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    });
+    showToast('Removed solution record from directory.');
+  };
+
+  const handleLoadRecordIntoCalculator = (rec: LabMolaritySavedRecord) => {
+    if (rec.recordType === 'solid_prep') {
+      if (rec.reagentName) setSelectedReagentName(rec.reagentName);
+      if (rec.mw !== undefined) setMw(String(rec.mw));
+      if (rec.nFactor !== undefined) setNFactor(String(rec.nFactor));
+      if (rec.concMode) setConcMode(rec.concMode);
+      if (rec.targetConc !== undefined) setTargetConc(String(rec.targetConc));
+      if (rec.targetVolMl !== undefined) setTargetVolMl(String(rec.targetVolMl));
+      if (rec.purityPct !== undefined) setPurityPct(String(rec.purityPct));
+      setSolutionLabel(rec.solutionName || '');
+      setSolutionNotes(rec.notes || '');
+    } else {
+      if (rec.stockC1 !== undefined) setC1(String(rec.stockC1));
+      if (rec.desiredC2 !== undefined) setC2(String(rec.desiredC2));
+      if (rec.finalV2Ml !== undefined) setV2Ml(String(rec.finalV2Ml));
+      setDilutionLabel(rec.solutionName || '');
+      setDilutionNotes(rec.notes || '');
+    }
+    setViewTab('calculator');
+    showToast(`Loaded "${rec.solutionName}" (${rec.recordCode}) into Calculator!`);
+  };
+
+  // Single Solution PDF Report
+  const handleDownloadSingleSolutionPdf = (rec: LabMolaritySavedRecord) => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+    const specialistRole = (
+      user?.currentRole ||
+      user?.qualification ||
+      'QA & Analytical Chemist'
+    ).trim();
+
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 44, 'F');
+    drawPdfBrandLogo(pdf, 14, 8, 26, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('Food Science Portal — Analytical Lab Suite', 45, 17);
+    pdf.setFontSize(16);
+    pdf.text(
+      rec.recordType === 'solid_prep'
+        ? 'MOLARITY / NORMALITY SOLUTION PREP SHEET'
+        : 'LIQUID STOCK SOLUTION DILUTION SHEET (C1V1=C2V2)',
+      45,
+      26
+    );
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Record ID: ${rec.recordCode}   •   Prepared On: ${rec.savedDateFormatted}`,
+      45,
+      34
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 170, 8, 26, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    pdf.setFillColor(240, 246, 252);
+    pdf.setDrawColor(187, 214, 238);
+    pdf.roundedRect(14, 50, 182, 28, 3, 3, 'FD');
+
+    pdf.setTextColor(26, 33, 56);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.text(`Solution / Batch Label: ${rec.solutionName}`, 20, 60);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.5);
+    pdf.text(
+      `Prepared By: ${specialistName} (${specialistRole})`,
+      20,
+      68
+    );
+    pdf.text(
+      `Method Type: ${
+        rec.recordType === 'solid_prep'
+          ? 'Solid Reagent to Molar (M) / Normal (N) Solution'
+          : 'Liquid Stock Dilution Formula (C1 × V1 = C2 × V2)'
+      }`,
+      20,
+      74
+    );
+
+    let y = 88;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      rec.recordType === 'solid_prep'
+        ? '1. Analytical Reagent Specifications & Weighing Calculation'
+        : '1. Stock Solution Dilution Parameters & Volumetric Addition',
+      14,
+      y
+    );
+    y += 6;
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(22, 115, 184);
+    pdf.roundedRect(14, y, 182, 74, 3, 3, 'FD');
+
+    pdf.setFontSize(10);
+    pdf.setTextColor(26, 33, 56);
+    if (rec.recordType === 'solid_prep') {
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Chemical / Reagent Name:', 20, y + 12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.reagentName || '-'}`, 82, y + 12);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Molecular Weight & Valency Factor:', 20, y + 22);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(
+        `MW = ${rec.mw} g/mol   |   Valency Factor (n) = ${rec.nFactor}   |   Eq. Weight = ${rec.eqWeight} g/eq`,
+        82,
+        y + 22
+      );
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Target Solution Strength & Volume:', 20, y + 32);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(
+        `${rec.targetConc} ${rec.concMode}   (Final Volume = ${rec.targetVolMl} mL)   |   Reagent Purity = ${rec.purityPct}%`,
+        82,
+        y + 32
+      );
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Equivalent Strength Conversion:', 20, y + 42);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(
+        `Normality = ${rec.equivNormality} N   |   Molarity = ${rec.equivMolarity} M`,
+        82,
+        y + 42
+      );
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(22, 115, 184);
+      pdf.text('EXACT MASS TO WEIGH ON BALANCE:', 20, y + 54);
+      pdf.text(
+        `${rec.actualGramsToWeigh} grams   (100% Pure Theoretical Mass: ${rec.pureGrams} g)`,
+        88,
+        y + 54
+      );
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.2);
+      pdf.setTextColor(74, 85, 104);
+      pdf.text(
+        `SOP: Weigh ${rec.actualGramsToWeigh} g reagent, dissolve in ~${Math.round(
+          (rec.targetVolMl || 1000) * 0.6
+        )} mL distilled water, cool to 20°C, and make up to ${rec.targetVolMl} mL.`,
+        20,
+        y + 65
+      );
+    } else {
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Stock Solution Concentration (C1):', 20, y + 14);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.stockC1} (N, M, or %)`, 92, y + 14);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Desired Target Concentration (C2):', 20, y + 25);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.desiredC2} (N, M, or %)`, 92, y + 25);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Desired Final Solution Volume (V2):', 20, y + 36);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.finalV2Ml} mL`, 92, y + 36);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(22, 115, 184);
+      pdf.text('REQUIRED STOCK VOLUME (V1):', 20, y + 50);
+      pdf.text(`${rec.requiredStockV1Ml} mL`, 92, y + 50);
+
+      pdf.setTextColor(26, 33, 56);
+      pdf.text('DISTILLED WATER TO ADD:', 20, y + 62);
+      pdf.text(
+        `+ ${rec.waterToAddMl} mL   (Total Final Volume = ${rec.finalV2Ml} mL)`,
+        92,
+        y + 62
+      );
+    }
+
+    y += 84;
+    if (rec.notes) {
+      pdf.setFillColor(248, 250, 252);
+      pdf.setDrawColor(210, 222, 234);
+      pdf.roundedRect(14, y, 182, 30, 3, 3, 'FD');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text('Analyst / Preparation Notes:', 20, y + 10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(74, 85, 104);
+      const wrapped = pdf.splitTextToSize(rec.notes, 170);
+      pdf.text(wrapped.slice(0, 2), 20, y + 18);
+    }
+
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(120, 130, 145);
+    pdf.text(
+      'Generated by Food Science Portal — Lab Solution & Molarity / Normality Suite',
+      14,
+      284
+    );
+
+    pdf.save(`${rec.recordCode}_Lab_Solution_Report.pdf`);
+    showToast(`Downloaded Solution Report PDF (${rec.recordCode})!`);
+  };
+
+  // Filtered Directory Records
+  const filteredDirectoryRecords = useMemo(() => {
+    const q = dirSearchQuery.trim().toLowerCase();
+    const now = new Date();
+    return savedRecords.filter((rec) => {
+      if (dirTypeFilter !== 'all' && rec.recordType !== dirTypeFilter) {
+        return false;
+      }
+      if (dirDateFilter !== 'all' && rec.savedAtIso) {
+        const recDate = new Date(rec.savedAtIso);
+        const diffDays =
+          (now.getTime() - recDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (dirDateFilter === 'today' && diffDays > 1) return false;
+        if (dirDateFilter === 'week' && diffDays > 7) return false;
+        if (dirDateFilter === 'month' && diffDays > 31) return false;
+      }
+      if (!q) return true;
+      return (
+        rec.solutionName.toLowerCase().includes(q) ||
+        rec.recordCode.toLowerCase().includes(q) ||
+        (rec.reagentName || '').toLowerCase().includes(q) ||
+        (rec.notes || '').toLowerCase().includes(q)
+      );
+    });
+  }, [savedRecords, dirSearchQuery, dirTypeFilter, dirDateFilter]);
+
+  // Full Directory Logbook PDF
+  const handleDownloadDirectoryLogbookPdf = () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    if (filteredDirectoryRecords.length === 0) {
+      showToast('No saved solution records to export.');
+      return;
+    }
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 42, 'F');
+    drawPdfBrandLogo(pdf, 14, 8, 25, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('Food Science Portal — Analytical Reagent Logbook', 44, 17);
+    pdf.setFontSize(15.5);
+    pdf.text('MOLARITY, NORMALITY & DILUTION DIRECTORY REPORT', 44, 26);
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Specialist: ${specialistName}   •   Total Logged Solutions: ${filteredDirectoryRecords.length}`,
+      44,
+      34
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 172, 8, 24, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    let y = 50;
+    filteredDirectoryRecords.forEach((rec, idx) => {
+      if (y > 252) {
+        pdf.addPage();
+        y = 20;
+      }
+      pdf.setFillColor(
+        idx % 2 === 0 ? 248 : 240,
+        idx % 2 === 0 ? 250 : 246,
+        252
+      );
+      pdf.setDrawColor(210, 222, 234);
+      pdf.roundedRect(14, y, 182, 27, 2.5, 2.5, 'FD');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text(
+        `${idx + 1}. [${rec.recordCode}] ${rec.solutionName}  (${rec.savedDateFormatted})`,
+        18,
+        y + 7
+      );
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.7);
+      pdf.setTextColor(22, 115, 184);
+      if (rec.recordType === 'solid_prep') {
+        pdf.text(
+          `Solid Reagent: ${rec.reagentName} (MW ${rec.mw}, n=${rec.nFactor}, Purity ${rec.purityPct}%) -> ${rec.targetConc} ${rec.concMode} (${rec.targetVolMl} mL) => Weigh ${rec.actualGramsToWeigh} g`,
+          18,
+          y + 14.5
+        );
+      } else {
+        pdf.text(
+          `Stock Dilution (C1V1=C2V2): Stock C1=${rec.stockC1} -> Target C2=${rec.desiredC2} (${rec.finalV2Ml} mL) => Take ${rec.requiredStockV1Ml} mL Stock + ${rec.waterToAddMl} mL Water`,
+          18,
+          y + 14.5
+        );
+      }
+
+      if (rec.notes) {
+        pdf.setTextColor(90, 108, 132);
+        pdf.text(`Notes: ${rec.notes.slice(0, 95)}`, 18, y + 21.5);
+      }
+      y += 31;
+    });
+
+    pdf.save(`Molarity_Normality_Directory_Logbook_${Date.now()}.pdf`);
+    showToast('Downloaded Complete Molarity & Solutions Logbook PDF!');
+  };
+
   return (
     <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
-      <div className="border-b border-[#D2DEEA] pb-3.5 flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
-          <FlaskConical className="w-6 h-6" />
+      {/* Toast Notification */}
+      {statusToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+          <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
+          <span>{statusToast}</span>
         </div>
-        <div>
-          <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
-            Lab Solution &amp; Molarity / Normality Calculator
-          </h2>
-          <p className="text-xs text-[#4A5568] font-medium">
-            Analytical Reagent Preparation (Grams to Weigh) &amp; Stock Dilution Formula (C1 × V1 = C2 × V2)
-          </p>
-        </div>
-      </div>
+      )}
 
-      {/* SECTION 1: SOLID REAGENT TO MOLAR / NORMAL SOLUTION */}
-      <div className="space-y-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1673B8]">
-            1. Prepare Molar (M) or Normal (N) Solution from Solid Reagent
-          </h3>
-          <span className="text-[11px] font-bold text-[#4A5568] bg-[#F0F6FC] px-2.5 py-1 rounded-lg border border-[#D2DEEA]">
-            {concMode === 'N'
-              ? 'Formula: Grams = (Normality × Equivalent Weight × Volume in mL) / 1000'
-              : 'Formula: Grams = (Molarity × Molecular Weight × Volume in mL) / 1000'}
-          </span>
+      <div className="border-b border-[#D2DEEA] pb-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
+            <FlaskConical className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                Lab Solution &amp; Molarity / Normality Calculator
+              </h2>
+              <span className="text-[11px] font-extrabold text-[#1673B8]">
+                {canUsePremium
+                  ? '· Paid Pro Mode (Solution Log, Directory & PDF Unlocked)'
+                  : '· Free Basic Calculator'}
+              </span>
+            </div>
+            <p className="text-xs text-[#4A5568] font-medium">
+              Analytical Reagent Preparation (Grams to Weigh) &amp; Stock Dilution Formula (C1 × V1 = C2 × V2)
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-              Select Food Lab Chemical / Reagent (Auto-Fills Molecular Weight &amp; Valency Factor)
-            </label>
-            <select
-              value={selectedReagentIdx}
-              onChange={(e) => {
-                const idx = Number(e.target.value);
-                setSelectedReagentIdx(idx);
-                const r = LAB_REAGENTS[idx];
-                if (r) {
-                  setMw(String(r.mw));
-                  setNFactor(String(r.nFactor));
-                }
-              }}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+        {canUsePremium && (
+          <div className="flex flex-wrap gap-1.5 bg-[#F0F6FC] p-1 rounded-xl border border-[#D2DEEA]">
+            <button
+              type="button"
+              onClick={() => setViewTab('calculator')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+                viewTab === 'calculator'
+                  ? 'bg-[#1673B8] text-white shadow-2xs'
+                  : 'text-[#1A2138] hover:bg-white'
+              }`}
             >
-              {LAB_REAGENTS.map((r, i) => (
-                <option key={r.name} value={i}>
-                  {r.name} — Molecular Wt: {r.mw} g/mol (Valency Factor = {r.nFactor})
-                </option>
+              Solution Calculator
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewTab('directory')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+                viewTab === 'directory'
+                  ? 'bg-[#1673B8] text-white shadow-2xs'
+                  : 'text-[#1A2138] hover:bg-white'
+              }`}
+            >
+              Saved Solutions Directory ({savedRecords.length})
+            </button>
+          </div>
+        )}
+      </div>
+
+      {viewTab === 'calculator' && (
+        <>
+          {/* SECTION 1: SOLID REAGENT TO MOLAR / NORMAL SOLUTION */}
+          <div className="space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1673B8]">
+                1. Prepare Molar (M) or Normal (N) Solution from Solid Reagent
+              </h3>
+              <span className="text-[11px] font-bold text-[#4A5568] bg-[#F0F6FC] px-2.5 py-1 rounded-lg border border-[#D2DEEA]">
+                {concMode === 'N'
+                  ? 'Formula: Grams = (Normality × Equivalent Weight × Volume in mL) / 1000'
+                  : 'Formula: Grams = (Molarity × Molecular Weight × Volume in mL) / 1000'}
+              </span>
+            </div>
+
+            {/* Paid Member Custom Reagent Addition Bar */}
+            {canUsePremium && (
+              <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-xs text-[#1A2138]">
+                    <span className="font-extrabold text-[#1673B8]">
+                      Custom Lab Reagent Library:
+                    </span>{' '}
+                    Add any custom laboratory salt, standard, or reagent with its
+                    Molecular Weight &amp; Valency Factor to reuse anytime.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddReagentForm((prev) => !prev)}
+                    className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>
+                      {showAddReagentForm ? 'Close Form' : '+ Add Custom Reagent'}
+                    </span>
+                  </button>
+                </div>
+
+                {showAddReagentForm && (
+                  <div className="p-3.5 rounded-xl bg-white border border-[#94B8D7] grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div className="sm:col-span-5">
+                      <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                        Reagent / Chemical Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Potassium Dichromate (K2Cr2O7)"
+                        value={newReagentName}
+                        onChange={(e) => setNewReagentName(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                        Molecular Wt (g/mol)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="294.18"
+                        value={newReagentMw}
+                        onChange={(e) => setNewReagentMw(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                        Valency Factor (n)
+                      </label>
+                      <input
+                        type="number"
+                        step="1"
+                        placeholder="6"
+                        value={newReagentNFactor}
+                        onChange={(e) => setNewReagentNFactor(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                      />
+                    </div>
+                    <div className="sm:col-span-3">
+                      <button
+                        type="button"
+                        onClick={handleSaveCustomReagent}
+                        className="w-full py-2 px-3 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                      >
+                        Save Reagent ✓
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {customReagents.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                    <span className="font-extrabold text-[#5A6C84]">
+                      Saved Custom Reagents:
+                    </span>
+                    {customReagents.map((cr) => (
+                      <span
+                        key={cr.id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-[#D2DEEA] text-[#1A2138] font-bold"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedReagentName(cr.name);
+                            setMw(String(cr.mw));
+                            setNFactor(String(cr.nFactor));
+                          }}
+                          className="hover:text-[#1673B8] cursor-pointer"
+                        >
+                          {cr.name} (MW {cr.mw}, n={cr.nFactor})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCustomReagent(cr.id)}
+                          className="text-red-500 hover:text-red-700 cursor-pointer"
+                          title="Delete custom reagent"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                  Select Food Lab Chemical / Reagent (Auto-Fills Molecular Weight &amp; Valency Factor)
+                </label>
+                <select
+                  value={selectedReagentName}
+                  onChange={(e) => {
+                    const nameVal = e.target.value;
+                    setSelectedReagentName(nameVal);
+                    const r = allReagentOptions.find((item) => item.name === nameVal);
+                    if (r) {
+                      setMw(String(r.mw));
+                      setNFactor(String(r.nFactor));
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                >
+                  {allReagentOptions.map((r) => (
+                    <option key={r.id} value={r.name}>
+                      {r.isCustom ? `★ ${r.name}` : r.name} — Molecular Wt: {r.mw} g/mol (Valency Factor = {r.nFactor})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                  Concentration Unit
+                </label>
+                <div className="grid grid-cols-2 gap-1.5 bg-[#F0F6FC] p-1 rounded-xl border border-[#D2DEEA]">
+                  <button
+                    type="button"
+                    onClick={() => setConcMode('N')}
+                    className={`py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
+                      concMode === 'N' ? 'bg-[#1673B8] text-white' : 'text-[#1A2138]'
+                    }`}
+                  >
+                    Normality (N)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConcMode('M')}
+                    className={`py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
+                      concMode === 'M' ? 'bg-[#1673B8] text-white' : 'text-[#1A2138]'
+                    }`}
+                  >
+                    Molarity (M)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Molecular Weight (g/mol)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={mw}
+                  onChange={(e) => setMw(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Valency Factor (Acidity/Basicity)
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  value={nFactor}
+                  onChange={(e) => setNFactor(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Desired {concMode === 'N' ? 'Normality (N)' : 'Molarity (M)'}
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={targetConc}
+                  onChange={(e) => setTargetConc(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#EBF4FC] border border-[#1673B8] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Final Volume (mL)
+                </label>
+                <input
+                  type="number"
+                  step="50"
+                  value={targetVolMl}
+                  onChange={(e) => setTargetVolMl(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Reagent Purity (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={purityPct}
+                  onChange={(e) => setPurityPct(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#1A2138] text-white grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  Exact Mass to Weigh on Analytical Balance
+                </div>
+                <div className="text-2xl font-extrabold text-amber-300 font-mono mt-0.5">
+                  {solidCalc.actualGramsToWeigh} g
+                </div>
+                <div className="text-[11px] text-slate-300 mt-0.5">
+                  (100% Pure Reagent Weight: {solidCalc.pureGrams} g)
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  Equivalent Weight &amp; Solution Strength
+                </div>
+                <div className="text-sm font-extrabold text-white font-mono mt-1">
+                  Equivalent Weight = {solidCalc.eqWeight} g/eq
+                </div>
+                <div className="text-[11px] text-slate-300 mt-0.5">
+                  Normality: {solidCalc.equivNormality} N | Molarity: {solidCalc.equivMolarity} M
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  Standard Lab Preparation Method
+                </div>
+                <div className="text-[11px] text-slate-200 mt-1 leading-snug">
+                  Weigh <strong>{solidCalc.actualGramsToWeigh} g</strong> of reagent, dissolve in ~{Math.round(Number(targetVolMl) * 0.6)} mL distilled water, cool to 20°C, and make up final volume to <strong>{targetVolMl} mL</strong> in a volumetric flask.
+                </div>
+              </div>
+            </div>
+
+            {/* Paid Member Save & PDF Report Bar for Section 1 */}
+            {canUsePremium && (
+              <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] space-y-3">
+                <div className="text-xs font-extrabold text-[#1A2138] flex items-center justify-between">
+                  <span>
+                    Log Solid Reagent Solution to Directory &amp; Generate PDF Report
+                  </span>
+                  <span className="text-[11px] text-[#1673B8]">
+                    Saved in your Paid Member Directory
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                  <div className="sm:col-span-4">
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Solution / Reagent Batch Label (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`e.g., ${targetConc} ${concMode} ${selectedReagentName} for Titration`}
+                      value={solutionLabel}
+                      onChange={(e) => setSolutionLabel(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-4">
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Analyst / Standardization Notes (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Standardized against KHP primary standard"
+                      value={solutionNotes}
+                      onChange={(e) => setSolutionNotes(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveRecordToDirectory('solid_prep')}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Save Solution</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDownloadSingleSolutionPdf(buildCurrentSolidRecord())
+                      }
+                      className="py-2.5 px-3 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>PDF Report</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* SECTION 2: C1 x V1 = C2 x V2 LIQUID DILUTION */}
+          <div className="pt-3 border-t border-[#D2DEEA] space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1673B8]">
+                2. Liquid Stock Solution Dilution Calculator
+              </h3>
+              <span className="text-[11px] font-bold text-[#4A5568] bg-[#F0F6FC] px-2.5 py-1 rounded-lg border border-[#D2DEEA]">
+                Formula: Stock Volume (V1) = (Desired Concentration C2 × Final Volume V2) / Stock Concentration C1
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Stock Solution Concentration (C1 in N, M, or %)
+                </label>
+                <input
+                  type="number"
+                  step="0.05"
+                  value={c1}
+                  onChange={(e) => setC1(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Desired Target Concentration (C2)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={c2}
+                  onChange={(e) => setC2(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Desired Final Volume (V2 in mL)
+                </label>
+                <input
+                  type="number"
+                  step="50"
+                  value={v2Ml}
+                  onChange={(e) => setV2Ml(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#1673B8] flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div>
+                <span className="font-bold text-[#4A5568]">Required Stock Solution Volume (V1): </span>
+                <span className="text-base font-extrabold text-[#1673B8] font-mono">
+                  {dilutionCalc.v1Ml} mL
+                </span>
+              </div>
+              <div>
+                <span className="font-bold text-[#4A5568]">Distilled Water to Add: </span>
+                <span className="text-base font-extrabold text-[#1A2138] font-mono">
+                  + {dilutionCalc.waterToAddMl} mL
+                </span>
+              </div>
+              <div className="font-bold text-[#105E9A]">
+                Total Final Solution Volume (V2) = {v2Ml} mL
+              </div>
+            </div>
+
+            {/* Paid Member Save & PDF Report Bar for Section 2 */}
+            {canUsePremium && (
+              <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] space-y-3">
+                <div className="text-xs font-extrabold text-[#1A2138] flex items-center justify-between">
+                  <span>
+                    Log Stock Dilution (C1V1 = C2V2) to Directory &amp; Generate PDF Report
+                  </span>
+                  <span className="text-[11px] text-[#1673B8]">
+                    Saved in your Paid Member Directory
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                  <div className="sm:col-span-4">
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Dilution Solution Name (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`e.g., Working Acid Solution (${c1} -> ${c2})`}
+                      value={dilutionLabel}
+                      onChange={(e) => setDilutionLabel(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-4">
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Lab Notes (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Prepared for daily milk acidity bench"
+                      value={dilutionNotes}
+                      onChange={(e) => setDilutionNotes(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleSaveRecordToDirectory('liquid_dilution')
+                      }
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Save Dilution</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDownloadSingleSolutionPdf(
+                          buildCurrentDilutionRecord()
+                        )
+                      }
+                      className="py-2.5 px-3 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>PDF Report</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* SAVED SOLUTIONS DIRECTORY TAB (PAID USERS) */}
+      {canUsePremium && viewTab === 'directory' && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-extrabold text-[#1A2138]">
+                Saved Lab Solutions &amp; Molarity Directory ({filteredDirectoryRecords.length})
+              </h3>
+              <p className="text-xs text-[#5A6C84]">
+                Search, reload, or download official PDF Lab Preparation Reports for any saved Molar/Normal solution or stock dilution.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadDirectoryLogbookPdf}
+              className="px-4 py-2.5 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-2 cursor-pointer shadow-2xs"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Full Directory Logbook PDF</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-6 relative">
+              <Search className="w-4 h-4 text-[#5A6C84] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by solution name, reagent, or record code (MOL-...)..."
+                value={dirSearchQuery}
+                onChange={(e) => setDirSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <select
+                value={dirTypeFilter}
+                onChange={(e) =>
+                  setDirTypeFilter(
+                    e.target.value as 'all' | 'solid_prep' | 'liquid_dilution'
+                  )
+                }
+                className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              >
+                <option value="all">All Solution Types</option>
+                <option value="solid_prep">Solid Reagent (M / N)</option>
+                <option value="liquid_dilution">Stock Dilution (C1V1)</option>
+              </select>
+            </div>
+            <div className="sm:col-span-3">
+              <select
+                value={dirDateFilter}
+                onChange={(e) =>
+                  setDirDateFilter(
+                    e.target.value as 'all' | 'today' | 'week' | 'month'
+                  )
+                }
+                className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              >
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">This Month</option>
+              </select>
+            </div>
+          </div>
+
+          {filteredDirectoryRecords.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-[#F8FAFC] border border-dashed border-[#94B8D7] text-center space-y-2">
+              <div className="text-sm font-extrabold text-[#1A2138]">
+                No Saved Lab Solutions Found
+              </div>
+              <p className="text-xs text-[#5A6C84]">
+                Use the Solution Calculator tab and click &ldquo;Save Solution&rdquo; or &ldquo;Save Dilution&rdquo; to log records here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredDirectoryRecords.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] hover:border-[#1673B8] transition-colors space-y-2.5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-[#1A2138] text-white text-[10px] font-extrabold font-mono">
+                          {rec.recordCode}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10px] font-extrabold">
+                          {rec.recordType === 'solid_prep'
+                            ? 'Solid Reagent Prep (M / N)'
+                            : 'Stock Dilution (C1V1 = C2V2)'}
+                        </span>
+                        <span className="text-[11px] font-bold text-[#5A6C84]">
+                          {rec.savedDateFormatted}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-extrabold text-[#1A2138] mt-1">
+                        {rec.solutionName}
+                      </h4>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleLoadRecordIntoCalculator(rec)}
+                        className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#EBF4FC] border border-[#94B8D7] text-[#1A2138] text-[11px] font-extrabold cursor-pointer"
+                      >
+                        Load into Calculator
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadSingleSolutionPdf(rec)}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>PDF Report</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSavedRecord(rec.id)}
+                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
+                        title="Delete record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {rec.recordType === 'solid_prep' ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                        <div className="text-[10px] text-[#5A6C84] font-bold">
+                          Reagent &amp; MW
+                        </div>
+                        <div className="font-extrabold text-[#1A2138] truncate">
+                          {rec.reagentName} ({rec.mw} g/mol)
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                        <div className="text-[10px] text-[#5A6C84] font-bold">
+                          Target Strength &amp; Volume
+                        </div>
+                        <div className="font-extrabold text-[#1673B8] font-mono">
+                          {rec.targetConc} {rec.concMode} • {rec.targetVolMl} mL
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                        <div className="text-[10px] text-[#5A6C84] font-bold">
+                          Exact Mass to Weigh
+                        </div>
+                        <div className="font-extrabold text-emerald-700 font-mono">
+                          {rec.actualGramsToWeigh} g ({rec.purityPct}% purity)
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                        <div className="text-[10px] text-[#5A6C84] font-bold">
+                          Normality / Molarity
+                        </div>
+                        <div className="font-extrabold text-[#1A2138] font-mono">
+                          {rec.equivNormality} N / {rec.equivMolarity} M
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                        <div className="text-[10px] text-[#5A6C84] font-bold">
+                          Stock (C1) → Desired (C2)
+                        </div>
+                        <div className="font-extrabold text-[#1A2138] font-mono">
+                          C1: {rec.stockC1} → C2: {rec.desiredC2}
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                        <div className="text-[10px] text-[#5A6C84] font-bold">
+                          Required Stock Volume (V1)
+                        </div>
+                        <div className="font-extrabold text-[#1673B8] font-mono">
+                          {rec.requiredStockV1Ml} mL
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                        <div className="text-[10px] text-[#5A6C84] font-bold">
+                          Water to Add (Final V2 = {rec.finalV2Ml} mL)
+                        </div>
+                        <div className="font-extrabold text-emerald-700 font-mono">
+                          + {rec.waterToAddMl} mL Distilled Water
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {rec.notes && (
+                    <div className="text-[11px] text-[#4A5568] bg-white px-3 py-1.5 rounded-lg border border-[#D2DEEA]">
+                      <strong className="text-[#1A2138]">Notes:</strong> {rec.notes}
+                    </div>
+                  )}
+                </div>
               ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-              Concentration Unit
-            </label>
-            <div className="grid grid-cols-2 gap-1.5 bg-[#F0F6FC] p-1 rounded-xl border border-[#D2DEEA]">
-              <button
-                type="button"
-                onClick={() => setConcMode('N')}
-                className={`py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
-                  concMode === 'N' ? 'bg-[#1673B8] text-white' : 'text-[#1A2138]'
-                }`}
-              >
-                Normality (N)
-              </button>
-              <button
-                type="button"
-                onClick={() => setConcMode('M')}
-                className={`py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
-                  concMode === 'M' ? 'bg-[#1673B8] text-white' : 'text-[#1A2138]'
-                }`}
-              >
-                Molarity (M)
-              </button>
             </div>
-          </div>
+          )}
         </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Molecular Weight (g/mol)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={mw}
-              onChange={(e) => setMw(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Valency Factor (Acidity/Basicity)
-            </label>
-            <input
-              type="number"
-              step="1"
-              value={nFactor}
-              onChange={(e) => setNFactor(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Desired {concMode === 'N' ? 'Normality (N)' : 'Molarity (M)'}
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={targetConc}
-              onChange={(e) => setTargetConc(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#EBF4FC] border border-[#1673B8] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Final Volume (mL)
-            </label>
-            <input
-              type="number"
-              step="50"
-              value={targetVolMl}
-              onChange={(e) => setTargetVolMl(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Reagent Purity (%)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              value={purityPct}
-              onChange={(e) => setPurityPct(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-[#1A2138] text-white grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-3 rounded-xl bg-white/10 border border-white/15">
-            <div className="text-[11px] text-sky-200 font-bold">
-              Exact Mass to Weigh on Analytical Balance
-            </div>
-            <div className="text-2xl font-extrabold text-amber-300 font-mono mt-0.5">
-              {solidCalc.actualGramsToWeigh} g
-            </div>
-            <div className="text-[11px] text-slate-300 mt-0.5">
-              (100% Pure Reagent Weight: {solidCalc.pureGrams} g)
-            </div>
-          </div>
-
-          <div className="p-3 rounded-xl bg-white/10 border border-white/15">
-            <div className="text-[11px] text-sky-200 font-bold">
-              Equivalent Weight &amp; Solution Strength
-            </div>
-            <div className="text-sm font-extrabold text-white font-mono mt-1">
-              Equivalent Weight = {solidCalc.eqWeight} g/eq
-            </div>
-            <div className="text-[11px] text-slate-300 mt-0.5">
-              Normality: {solidCalc.equivNormality} N | Molarity: {solidCalc.equivMolarity} M
-            </div>
-          </div>
-
-          <div className="p-3 rounded-xl bg-white/10 border border-white/15">
-            <div className="text-[11px] text-sky-200 font-bold">
-              Standard Lab Preparation Method
-            </div>
-            <div className="text-[11px] text-slate-200 mt-1 leading-snug">
-              Weigh <strong>{solidCalc.actualGramsToWeigh} g</strong> of reagent, dissolve in ~{Math.round(Number(targetVolMl) * 0.6)} mL distilled water, cool to 20°C, and make up final volume to <strong>{targetVolMl} mL</strong> in a volumetric flask.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 2: C1 x V1 = C2 x V2 LIQUID DILUTION */}
-      <div className="pt-3 border-t border-[#D2DEEA] space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1673B8]">
-            2. Liquid Stock Solution Dilution Calculator
-          </h3>
-          <span className="text-[11px] font-bold text-[#4A5568] bg-[#F0F6FC] px-2.5 py-1 rounded-lg border border-[#D2DEEA]">
-            Formula: Stock Volume (V1) = (Desired Concentration C2 × Final Volume V2) / Stock Concentration C1
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Stock Solution Concentration (C1 in N, M, or %)
-            </label>
-            <input
-              type="number"
-              step="0.05"
-              value={c1}
-              onChange={(e) => setC1(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Desired Target Concentration (C2)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={c2}
-              onChange={(e) => setC2(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Desired Final Volume (V2 in mL)
-            </label>
-            <input
-              type="number"
-              step="50"
-              value={v2Ml}
-              onChange={(e) => setV2Ml(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#1673B8] flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div>
-            <span className="font-bold text-[#4A5568]">Required Stock Solution Volume (V1): </span>
-            <span className="text-base font-extrabold text-[#1673B8] font-mono">
-              {dilutionCalc.v1Ml} mL
-            </span>
-          </div>
-          <div>
-            <span className="font-bold text-[#4A5568]">Distilled Water to Add: </span>
-            <span className="text-base font-extrabold text-[#1A2138] font-mono">
-              + {dilutionCalc.waterToAddMl} mL
-            </span>
-          </div>
-          <div className="font-bold text-[#105E9A]">
-            Total Final Solution Volume (V2) = {v2Ml} mL
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -5014,7 +6078,45 @@ export const LabSolutionMolarityTool: React.FC = () => {
 // ============================================================================
 // 4. MOISTURE, ASH & PROXIMATE ANALYSIS % CALCULATOR
 // ============================================================================
-export const MoistureAshYieldTool: React.FC = () => {
+export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
+  user,
+  isUserPaid = false,
+  hasExpiredPremium = false,
+  toolsData,
+  onSaveToolsData,
+  onOpenPremiumModal
+}) => {
+  const canUsePremium = Boolean(isUserPaid && !hasExpiredPremium);
+
+  const [viewTab, setViewTab] = useState<'calculator' | 'directory'>('calculator');
+  const [statusToast, setStatusToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setStatusToast(msg);
+    setTimeout(() => {
+      setStatusToast((prev) => (prev === msg ? null : prev));
+    }, 3800);
+  };
+
+  const savedRecords: MoistureAshSavedRecord[] = useMemo(
+    () => toolsData?.moistureAshData?.savedRecords || [],
+    [toolsData?.moistureAshData?.savedRecords]
+  );
+
+  // Paid Member Sample Identification & Notes
+  const [sampleName, setSampleName] = useState<string>('');
+  const [productCategory, setProductCategory] = useState<string>(
+    'Flour, Bakery & Biscuits'
+  );
+  const [sampleNotes, setSampleNotes] = useState<string>('');
+
+  // Directory Search & Filters
+  const [dirSearchQuery, setDirSearchQuery] = useState<string>('');
+  const [dirCategoryFilter, setDirCategoryFilter] = useState<string>('all');
+  const [dirDateFilter, setDirDateFilter] = useState<
+    'all' | 'today' | 'week' | 'month'
+  >('all');
+
   // Moisture Dish Weights
   const [mEmptyDish, setMEmptyDish] = useState<string>('24.5120');
   const [mDishPlusWet, setMDishPlusWet] = useState<string>('29.5140');
@@ -5109,309 +6211,1317 @@ export const MoistureAshYieldTool: React.FC = () => {
     effectiveProteinFactor
   ]);
 
+  const buildCurrentProximateRecord = (): MoistureAshSavedRecord => {
+    const now = new Date();
+    const defaultTitle =
+      sampleName.trim() ||
+      `${productCategory} Sample (${moistureCalc.moistureWetBasis}% Moisture)`;
+    return {
+      id: `prx-rec-${Date.now()}`,
+      recordCode: `PRX-${String(Date.now()).slice(-6)}`,
+      sampleName: defaultTitle,
+      productCategory,
+      notes: sampleNotes.trim() || undefined,
+      savedDateFormatted: now.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      savedAtIso: now.toISOString(),
+
+      mEmptyDish: Number(mEmptyDish) || 0,
+      mDishPlusWet: Number(mDishPlusWet) || 0,
+      mDishPlusDry: Number(mDishPlusDry) || 0,
+      wetSampleG: moistureCalc.wetSampleG,
+      drySampleG: moistureCalc.drySampleG,
+      waterLossG: moistureCalc.waterLossG,
+      moistureWetBasis: moistureCalc.moistureWetBasis,
+      totalSolidsPct: moistureCalc.totalSolidsPct,
+      moistureDryBasis: moistureCalc.moistureDryBasis,
+
+      aEmptyCrucible: Number(aEmptyCrucible) || 0,
+      aCruciblePlusSample: Number(aCruciblePlusSample) || 0,
+      aCruciblePlusAsh: Number(aCruciblePlusAsh) || 0,
+      ashSampleG: ashCalc.sampleG,
+      ashResidueG: ashCalc.ashG,
+      ashWetBasis: ashCalc.ashWetBasis,
+      ashDryBasis: ashCalc.ashDryBasis,
+
+      kSampleWeightG: Number(kSampleWeightG) || 1,
+      kSampleTitrationMl: Number(kSampleTitrationMl) || 0,
+      kBlankTitrationMl: Number(kBlankTitrationMl) || 0,
+      kAcidNormality: Number(kAcidNormality) || 0.1,
+      kProteinFactor: effectiveProteinFactor,
+      nitrogenPct: kjeldahlCalc.nitrogenPct,
+      crudeProteinPct: kjeldahlCalc.crudeProteinPct
+    };
+  };
+
+  const handleSaveProximateRecord = async () => {
+    if (!canUsePremium || !toolsData || !onSaveToolsData) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const newRec = buildCurrentProximateRecord();
+    const nextRecords = [newRec, ...savedRecords].slice(0, 200);
+    await onSaveToolsData({
+      ...toolsData,
+      moistureAshData: {
+        savedRecords: nextRecords
+      },
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    });
+    setSampleName('');
+    setSampleNotes('');
+    showToast(
+      `Saved "${newRec.sampleName}" (${newRec.recordCode}) to your Proximate Analysis Directory!`
+    );
+  };
+
+  const handleDeleteProximateRecord = async (id: string) => {
+    if (!canUsePremium || !toolsData || !onSaveToolsData) return;
+    const nextRecords = savedRecords.filter((r) => r.id !== id);
+    await onSaveToolsData({
+      ...toolsData,
+      moistureAshData: {
+        savedRecords: nextRecords
+      },
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    });
+    showToast('Removed proximate analysis record from directory.');
+  };
+
+  const handleLoadRecordIntoCalculator = (rec: MoistureAshSavedRecord) => {
+    setSampleName(rec.sampleName || '');
+    if (rec.productCategory) setProductCategory(rec.productCategory);
+    setSampleNotes(rec.notes || '');
+
+    if (rec.mEmptyDish !== undefined) setMEmptyDish(String(rec.mEmptyDish));
+    if (rec.mDishPlusWet !== undefined) setMDishPlusWet(String(rec.mDishPlusWet));
+    if (rec.mDishPlusDry !== undefined) setMDishPlusDry(String(rec.mDishPlusDry));
+
+    if (rec.aEmptyCrucible !== undefined)
+      setAEmptyCrucible(String(rec.aEmptyCrucible));
+    if (rec.aCruciblePlusSample !== undefined)
+      setACruciblePlusSample(String(rec.aCruciblePlusSample));
+    if (rec.aCruciblePlusAsh !== undefined)
+      setACruciblePlusAsh(String(rec.aCruciblePlusAsh));
+
+    if (rec.kSampleWeightG !== undefined)
+      setKSampleWeightG(String(rec.kSampleWeightG));
+    if (rec.kSampleTitrationMl !== undefined)
+      setKSampleTitrationMl(String(rec.kSampleTitrationMl));
+    if (rec.kBlankTitrationMl !== undefined)
+      setKBlankTitrationMl(String(rec.kBlankTitrationMl));
+    if (rec.kAcidNormality !== undefined)
+      setKAcidNormality(String(rec.kAcidNormality));
+    if (rec.kProteinFactor !== undefined) {
+      const presetFactors = ['6.25', '6.38', '5.70', '5.71', '5.95', '5.55'];
+      const pfStr = Number(rec.kProteinFactor).toFixed(2);
+      if (presetFactors.includes(pfStr)) {
+        setKProteinFactorSelect(pfStr);
+      } else {
+        setKProteinFactorSelect('other');
+        setKCustomProteinFactor(String(rec.kProteinFactor));
+      }
+    }
+    setViewTab('calculator');
+    showToast(`Loaded "${rec.sampleName}" (${rec.recordCode}) into Calculator!`);
+  };
+
+  // Single Sample Proximate Analysis PDF Report
+  const handleDownloadSingleProximatePdf = (rec: MoistureAshSavedRecord) => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+    const specialistRole = (
+      user?.currentRole ||
+      user?.qualification ||
+      'Food Analytical Chemist'
+    ).trim();
+
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 44, 'F');
+    drawPdfBrandLogo(pdf, 14, 8, 26, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('Food Science Portal — Proximate & Gravimetric Lab', 45, 17);
+    pdf.setFontSize(15.5);
+    pdf.text('MOISTURE, ASH & CRUDE PROTEIN ANALYSIS REPORT', 45, 26);
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Report Code: ${rec.recordCode}   •   Analyzed On: ${rec.savedDateFormatted}`,
+      45,
+      34
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 170, 8, 26, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    pdf.setFillColor(240, 246, 252);
+    pdf.setDrawColor(187, 214, 238);
+    pdf.roundedRect(14, 50, 182, 26, 3, 3, 'FD');
+
+    pdf.setTextColor(26, 33, 56);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.text(`Sample / Product Name: ${rec.sampleName}`, 20, 59);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.5);
+    pdf.text(
+      `Category: ${rec.productCategory || 'General Food Sample'}   |   Analyst: ${specialistName} (${specialistRole})`,
+      20,
+      67
+    );
+
+    let y = 84;
+    // 1. Moisture & Total Solids
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11.5);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text('1. Gravimetric Oven Moisture & Total Solids (Dry Matter) Analysis', 14, y);
+    y += 5;
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(210, 222, 234);
+    pdf.roundedRect(14, y, 182, 42, 3, 3, 'FD');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(26, 33, 56);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(
+      `Dish Weights: Empty Dish (W1) = ${rec.mEmptyDish} g   |   Dish + Wet (W2) = ${rec.mDishPlusWet} g   |   Dish + Dry (W3) = ${rec.mDishPlusDry} g`,
+      20,
+      y + 10
+    );
+    pdf.text(
+      `Sample Mass: Wet Sample = ${rec.wetSampleG} g   |   Dried Sample = ${rec.drySampleG} g   |   Moisture Loss = ${rec.waterLossG} g`,
+      20,
+      y + 19
+    );
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      `RESULT: Moisture (Wet Basis) = ${rec.moistureWetBasis}%   |   Total Solids (Dry Matter) = ${rec.totalSolidsPct}%   |   Moisture (Dry Basis) = ${rec.moistureDryBasis}%`,
+      20,
+      y + 31
+    );
+
+    y += 50;
+    // 2. Total Ash
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11.5);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text('2. Muffle Furnace Total Ash Analysis (550°C)', 14, y);
+    y += 5;
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(210, 222, 234);
+    pdf.roundedRect(14, y, 182, 38, 3, 3, 'FD');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(26, 33, 56);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(
+      `Crucible Weights: Empty (W1) = ${rec.aEmptyCrucible} g   |   Crucible + Sample (W2) = ${rec.aCruciblePlusSample} g   |   Crucible + Ash (W3) = ${rec.aCruciblePlusAsh} g`,
+      20,
+      y + 10
+    );
+    pdf.text(
+      `Net Sample Incinerated = ${rec.ashSampleG} g   |   Net Inorganic Ash Residue = ${rec.ashResidueG} g`,
+      20,
+      y + 19
+    );
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      `RESULT: Total Ash (As-Is Wet Basis) = ${rec.ashWetBasis}%   |   Total Ash (Dry Matter Basis) = ${rec.ashDryBasis}%`,
+      20,
+      y + 30
+    );
+
+    y += 46;
+    // 3. Kjeldahl Nitrogen & Crude Protein
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11.5);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text('3. Kjeldahl Total Nitrogen (% N) & Crude Protein Analysis', 14, y);
+    y += 5;
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(210, 222, 234);
+    pdf.roundedRect(14, y, 182, 38, 3, 3, 'FD');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(26, 33, 56);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(
+      `Digestion Sample = ${rec.kSampleWeightG} g   |   Sample Titre (Vs) = ${rec.kSampleTitrationMl} mL   |   Blank Titre (Vb) = ${rec.kBlankTitrationMl} mL`,
+      20,
+      y + 10
+    );
+    pdf.text(
+      `Standard Acid Normality = ${rec.kAcidNormality} N   |   Nitrogen-to-Protein Factor = ${rec.kProteinFactor}`,
+      20,
+      y + 19
+    );
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      `RESULT: Total Nitrogen (% N) = ${rec.nitrogenPct}%   |   Crude Protein = ${rec.crudeProteinPct}%`,
+      20,
+      y + 30
+    );
+
+    y += 46;
+    if (rec.notes) {
+      pdf.setFillColor(248, 250, 252);
+      pdf.setDrawColor(210, 222, 234);
+      pdf.roundedRect(14, y, 182, 26, 3, 3, 'FD');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text('Analyst / Quality Remarks:', 20, y + 9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(74, 85, 104);
+      const wrapped = pdf.splitTextToSize(rec.notes, 170);
+      pdf.text(wrapped.slice(0, 2), 20, y + 17);
+    }
+
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(120, 130, 145);
+    pdf.text(
+      'Generated by Food Science Portal — Moisture, Ash & Proximate Analysis Suite',
+      14,
+      284
+    );
+
+    pdf.save(`${rec.recordCode}_Proximate_Analysis_Report.pdf`);
+    showToast(`Downloaded Proximate Analysis PDF (${rec.recordCode})!`);
+  };
+
+  const filteredDirectoryRecords = useMemo(() => {
+    const q = dirSearchQuery.trim().toLowerCase();
+    const now = new Date();
+    return savedRecords.filter((rec) => {
+      if (
+        dirCategoryFilter !== 'all' &&
+        rec.productCategory !== dirCategoryFilter
+      ) {
+        return false;
+      }
+      if (dirDateFilter !== 'all' && rec.savedAtIso) {
+        const recDate = new Date(rec.savedAtIso);
+        const diffDays =
+          (now.getTime() - recDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (dirDateFilter === 'today' && diffDays > 1) return false;
+        if (dirDateFilter === 'week' && diffDays > 7) return false;
+        if (dirDateFilter === 'month' && diffDays > 31) return false;
+      }
+      if (!q) return true;
+      return (
+        rec.sampleName.toLowerCase().includes(q) ||
+        rec.recordCode.toLowerCase().includes(q) ||
+        (rec.productCategory || '').toLowerCase().includes(q) ||
+        (rec.notes || '').toLowerCase().includes(q)
+      );
+    });
+  }, [savedRecords, dirSearchQuery, dirCategoryFilter, dirDateFilter]);
+
+  const handleDownloadDirectoryLogbookPdf = () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    if (filteredDirectoryRecords.length === 0) {
+      showToast('No saved proximate records to export.');
+      return;
+    }
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 42, 'F');
+    drawPdfBrandLogo(pdf, 14, 8, 25, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('Food Science Portal — Proximate Analysis Logbook', 44, 17);
+    pdf.setFontSize(15.5);
+    pdf.text('MOISTURE, DRY MATTER, ASH & PROTEIN DIRECTORY', 44, 26);
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Specialist: ${specialistName}   •   Total Samples Logged: ${filteredDirectoryRecords.length}`,
+      44,
+      34
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 172, 8, 24, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    let y = 50;
+    filteredDirectoryRecords.forEach((rec, idx) => {
+      if (y > 250) {
+        pdf.addPage();
+        y = 20;
+      }
+      pdf.setFillColor(
+        idx % 2 === 0 ? 248 : 240,
+        idx % 2 === 0 ? 250 : 246,
+        252
+      );
+      pdf.setDrawColor(210, 222, 234);
+      pdf.roundedRect(14, y, 182, 28, 2.5, 2.5, 'FD');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text(
+        `${idx + 1}. [${rec.recordCode}] ${rec.sampleName} — ${rec.productCategory || 'Food Sample'} (${rec.savedDateFormatted})`,
+        18,
+        y + 7
+      );
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.8);
+      pdf.setTextColor(22, 115, 184);
+      pdf.text(
+        `Moisture: ${rec.moistureWetBasis}%  |  Total Solids: ${rec.totalSolidsPct}%  |  Ash (Wet/Dry): ${rec.ashWetBasis}% / ${rec.ashDryBasis}%  |  Nitrogen: ${rec.nitrogenPct}%  |  Crude Protein: ${rec.crudeProteinPct}%`,
+        18,
+        y + 15
+      );
+
+      if (rec.notes) {
+        pdf.setTextColor(90, 108, 132);
+        pdf.text(`Notes: ${rec.notes.slice(0, 95)}`, 18, y + 22);
+      }
+      y += 32;
+    });
+
+    pdf.save(`Proximate_Analysis_Logbook_${Date.now()}.pdf`);
+    showToast('Downloaded Complete Proximate Analysis Logbook PDF!');
+  };
+
   return (
     <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
-      <div className="border-b border-[#D2DEEA] pb-3.5 flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-[#1A2138] text-white flex items-center justify-center shrink-0">
-          <Beaker className="w-6 h-6" />
+      {/* Toast Notification */}
+      {statusToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+          <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
+          <span>{statusToast}</span>
         </div>
-        <div>
-          <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
-            Moisture, Ash &amp; Proximate Analysis % Calculator
-          </h2>
-          <p className="text-xs text-[#4A5568] font-medium">
-            Gravimetric Oven Moisture %, Total Solids / Dry Matter %, Muffle Furnace Ash % &amp; Kjeldahl Crude Protein %
-          </p>
-        </div>
-      </div>
+      )}
 
-      {/* 1. MOISTURE & TOTAL SOLIDS */}
-      <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
-            1. Moisture &amp; Dry Matter (Total Solids) %
-          </div>
-          <span className="text-[11px] font-bold text-[#4A5568]">
-            Formula: Moisture % = ((Dish + Wet Sample - Dish + Dried Sample) / Wet Sample Weight) × 100
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Empty Dish Weight (W1 in grams)
-            </label>
-            <input
-              type="number"
-              step="0.0001"
-              value={mEmptyDish}
-              onChange={(e) => setMEmptyDish(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
+      <div className="border-b border-[#D2DEEA] pb-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-[#1A2138] text-white flex items-center justify-center shrink-0">
+            <Beaker className="w-6 h-6" />
           </div>
           <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Dish + Wet Sample Weight (W2 in grams)
-            </label>
-            <input
-              type="number"
-              step="0.0001"
-              value={mDishPlusWet}
-              onChange={(e) => setMDishPlusWet(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Dish + Dried Sample Weight (W3 in grams)
-            </label>
-            <input
-              type="number"
-              step="0.0001"
-              value={mDishPlusDry}
-              onChange={(e) => setMDishPlusDry(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Moisture % (Wet Basis)</div>
-            <div className="text-lg font-extrabold text-[#1673B8] font-mono">
-              {moistureCalc.moistureWetBasis}%
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                Moisture, Ash &amp; Proximate Analysis % Calculator
+              </h2>
+              <span className="text-[11px] font-extrabold text-[#1673B8]">
+                {canUsePremium
+                  ? '· Paid Pro Mode (Sample Log, Directory & COA PDF Unlocked)'
+                  : '· Free Basic Calculator'}
+              </span>
             </div>
-          </div>
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Total Solids / Dry Matter %</div>
-            <div className="text-lg font-extrabold text-[#1A2138] font-mono">
-              {moistureCalc.totalSolidsPct}%
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Moisture % (Dry Basis)</div>
-            <div className="text-lg font-extrabold text-[#1A2138] font-mono">
-              {moistureCalc.moistureDryBasis}%
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Wet Sample / Moisture Loss</div>
-            <div className="text-xs font-extrabold text-[#4A5568] font-mono mt-1">
-              {moistureCalc.wetSampleG} g / {moistureCalc.waterLossG} g lost
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. TOTAL ASH % */}
-      <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
-            2. Total Ash % (Muffle Furnace at 550°C)
-          </div>
-          <span className="text-[11px] font-bold text-[#4A5568]">
-            Formula: Total Ash % = ((Crucible + Ash - Empty Crucible) / Sample Weight) × 100
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Empty Crucible Weight (W1 in grams)
-            </label>
-            <input
-              type="number"
-              step="0.0001"
-              value={aEmptyCrucible}
-              onChange={(e) => setAEmptyCrucible(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Crucible + Sample Weight (W2 in grams)
-            </label>
-            <input
-              type="number"
-              step="0.0001"
-              value={aCruciblePlusSample}
-              onChange={(e) => setACruciblePlusSample(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Crucible + Ash Residue Weight (W3 in grams)
-            </label>
-            <input
-              type="number"
-              step="0.0001"
-              value={aCruciblePlusAsh}
-              onChange={(e) => setACruciblePlusAsh(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
+            <p className="text-xs text-[#4A5568] font-medium">
+              Gravimetric Oven Moisture %, Total Solids / Dry Matter %, Muffle Furnace Ash % &amp; Kjeldahl Crude Protein %
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Total Ash % (As-Is Basis)</div>
-            <div className="text-lg font-extrabold text-[#1673B8] font-mono">
-              {ashCalc.ashWetBasis}%
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Total Ash % (Dry Matter Basis)</div>
-            <div className="text-lg font-extrabold text-[#1A2138] font-mono">
-              {ashCalc.ashDryBasis}%
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Net Ash Residue Weight</div>
-            <div className="text-sm font-extrabold text-[#4A5568] font-mono mt-1">
-              {ashCalc.ashG} g (from {ashCalc.sampleG} g sample)
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. KJELDAHL CRUDE PROTEIN % */}
-      <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
-            3. Kjeldahl Nitrogen &amp; Crude Protein % Calculator
-          </div>
-          <span className="text-[11px] font-bold text-[#4A5568]">
-            Formula: Nitrogen % = ((Sample Titre - Blank Titre) × Acid Normality × 1.4007) / Sample Weight (g)
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Sample Weight (grams)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={kSampleWeightG}
-              onChange={(e) => setKSampleWeightG(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Sample Titre Volume (mL)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              value={kSampleTitrationMl}
-              onChange={(e) => setKSampleTitrationMl(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Blank Titre Volume (mL)
-            </label>
-            <input
-              type="number"
-              step="0.05"
-              value={kBlankTitrationMl}
-              onChange={(e) => setKBlankTitrationMl(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Standard Acid Normality (N)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={kAcidNormality}
-              onChange={(e) => setKAcidNormality(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Nitrogen Factor (N Factor)
-            </label>
-            <select
-              value={kProteinFactorSelect}
-              onChange={(e) => setKProteinFactorSelect(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+        {canUsePremium && (
+          <div className="flex flex-wrap gap-1.5 bg-[#F0F6FC] p-1 rounded-xl border border-[#D2DEEA]">
+            <button
+              type="button"
+              onClick={() => setViewTab('calculator')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+                viewTab === 'calculator'
+                  ? 'bg-[#1673B8] text-white shadow-2xs'
+                  : 'text-[#1A2138] hover:bg-white'
+              }`}
             >
-              <option value="6.25">6.25 (Meat / General Food)</option>
-              <option value="6.38">6.38 (Milk &amp; Dairy)</option>
-              <option value="5.70">5.70 (Wheat Flour)</option>
-              <option value="5.71">5.71 (Soybean)</option>
-              <option value="5.95">5.95 (Rice)</option>
-              <option value="5.55">5.55 (Gelatin)</option>
-              <option value="other">Other (Enter Custom Factor)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Custom N Factor Input Box when "Other" is selected */}
-        {kProteinFactorSelect === 'other' && (
-          <div className="p-3 rounded-xl bg-white border-2 border-[#1673B8] flex flex-wrap items-center justify-between gap-3">
-            <label className="text-xs font-extrabold text-[#1A2138]">
-              Enter Desired Custom Nitrogen-to-Protein Factor:
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={kCustomProteinFactor}
-              onChange={(e) => setKCustomProteinFactor(e.target.value)}
-              placeholder="e.g., 6.10 or 5.83"
-              className="w-44 px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#1673B8] text-xs font-extrabold text-[#1A2138]"
-            />
+              Proximate Calculator
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewTab('directory')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+                viewTab === 'directory'
+                  ? 'bg-[#1673B8] text-white shadow-2xs'
+                  : 'text-[#1A2138] hover:bg-white'
+              }`}
+            >
+              Saved Proximate Directory ({savedRecords.length})
+            </button>
           </div>
         )}
-
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Total Nitrogen (% N)</div>
-            <div className="text-lg font-extrabold text-[#1A2138] font-mono">
-              {kjeldahlCalc.nitrogenPct}%
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">
-              Crude Protein % (Nitrogen % × {effectiveProteinFactor})
-            </div>
-            <div className="text-lg font-extrabold text-[#1673B8] font-mono">
-              {kjeldahlCalc.crudeProteinPct}%
-            </div>
-          </div>
-        </div>
       </div>
+
+      {viewTab === 'calculator' && (
+        <>
+          {/* PAID MEMBER SAMPLE LOGGING & REPORT HEADER */}
+          {canUsePremium && (
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs font-extrabold text-[#1A2138]">
+                  Paid Member Proximate Sample Logger &amp; Certificate of Analysis (COA) PDF
+                </div>
+                <span className="text-[11px] font-bold text-[#1673B8]">
+                  Saves Moisture %, Total Solids %, Ash %, and Crude Protein % together
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                <div className="sm:col-span-3">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Product / Sample Category
+                  </label>
+                  <select
+                    value={productCategory}
+                    onChange={(e) => setProductCategory(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  >
+                    <option value="Flour, Bakery & Biscuits">
+                      Flour, Bakery &amp; Biscuits
+                    </option>
+                    <option value="Milk & Dairy Products">
+                      Milk &amp; Dairy Products
+                    </option>
+                    <option value="Meat, Poultry & Seafood">
+                      Meat, Poultry &amp; Seafood
+                    </option>
+                    <option value="Grains, Cereals & Pulses">
+                      Grains, Cereals &amp; Pulses
+                    </option>
+                    <option value="Sauces, Ketchup & Condiments">
+                      Sauces, Ketchup &amp; Condiments
+                    </option>
+                    <option value="Beverages & Concentrates">
+                      Beverages &amp; Concentrates
+                    </option>
+                    <option value="Spices, Oils & Other">
+                      Spices, Oils &amp; Other
+                    </option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Sample / Product Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Wheat Flour Patent / Biscuit Dough"
+                    value={sampleName}
+                    onChange={(e) => setSampleName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Analyst / Lab Notes (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Oven 105°C for 3 hrs, Muffle 550°C"
+                    value={sampleNotes}
+                    onChange={(e) => setSampleNotes(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+
+                <div className="sm:col-span-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveProximateRecord}
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Analysis</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingleProximatePdf(
+                        buildCurrentProximateRecord()
+                      )
+                    }
+                    className="py-2.5 px-3 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>PDF Report</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 1. MOISTURE & TOTAL SOLIDS */}
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
+                1. Moisture &amp; Dry Matter (Total Solids) %
+              </div>
+              <span className="text-[11px] font-bold text-[#4A5568]">
+                Formula: Moisture % = ((Dish + Wet Sample - Dish + Dried Sample) / Wet Sample Weight) × 100
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Empty Dish Weight (W1 in grams)
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={mEmptyDish}
+                  onChange={(e) => setMEmptyDish(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Dish + Wet Sample Weight (W2 in grams)
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={mDishPlusWet}
+                  onChange={(e) => setMDishPlusWet(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Dish + Dried Sample Weight (W3 in grams)
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={mDishPlusDry}
+                  onChange={(e) => setMDishPlusDry(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Moisture % (Wet Basis)</div>
+                <div className="text-lg font-extrabold text-[#1673B8] font-mono">
+                  {moistureCalc.moistureWetBasis}%
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Total Solids / Dry Matter %</div>
+                <div className="text-lg font-extrabold text-[#1A2138] font-mono">
+                  {moistureCalc.totalSolidsPct}%
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Moisture % (Dry Basis)</div>
+                <div className="text-lg font-extrabold text-[#1A2138] font-mono">
+                  {moistureCalc.moistureDryBasis}%
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Wet Sample / Moisture Loss</div>
+                <div className="text-xs font-extrabold text-[#4A5568] font-mono mt-1">
+                  {moistureCalc.wetSampleG} g / {moistureCalc.waterLossG} g lost
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. TOTAL ASH % */}
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
+                2. Total Ash % (Muffle Furnace at 550°C)
+              </div>
+              <span className="text-[11px] font-bold text-[#4A5568]">
+                Formula: Total Ash % = ((Crucible + Ash - Empty Crucible) / Sample Weight) × 100
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Empty Crucible Weight (W1 in grams)
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={aEmptyCrucible}
+                  onChange={(e) => setAEmptyCrucible(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Crucible + Sample Weight (W2 in grams)
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={aCruciblePlusSample}
+                  onChange={(e) => setACruciblePlusSample(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Crucible + Ash Residue Weight (W3 in grams)
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={aCruciblePlusAsh}
+                  onChange={(e) => setACruciblePlusAsh(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Total Ash % (As-Is Basis)</div>
+                <div className="text-lg font-extrabold text-[#1673B8] font-mono">
+                  {ashCalc.ashWetBasis}%
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Total Ash % (Dry Matter Basis)</div>
+                <div className="text-lg font-extrabold text-[#1A2138] font-mono">
+                  {ashCalc.ashDryBasis}%
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Net Ash Residue Weight</div>
+                <div className="text-sm font-extrabold text-[#4A5568] font-mono mt-1">
+                  {ashCalc.ashG} g (from {ashCalc.sampleG} g sample)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. KJELDAHL CRUDE PROTEIN % */}
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
+                3. Kjeldahl Nitrogen &amp; Crude Protein % Calculator
+              </div>
+              <span className="text-[11px] font-bold text-[#4A5568]">
+                Formula: Nitrogen % = ((Sample Titre - Blank Titre) × Acid Normality × 1.4007) / Sample Weight (g)
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Sample Weight (grams)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={kSampleWeightG}
+                  onChange={(e) => setKSampleWeightG(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Sample Titre Volume (mL)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={kSampleTitrationMl}
+                  onChange={(e) => setKSampleTitrationMl(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Blank Titre Volume (mL)
+                </label>
+                <input
+                  type="number"
+                  step="0.05"
+                  value={kBlankTitrationMl}
+                  onChange={(e) => setKBlankTitrationMl(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Standard Acid Normality (N)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={kAcidNormality}
+                  onChange={(e) => setKAcidNormality(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Nitrogen Factor (N Factor)
+                </label>
+                <select
+                  value={kProteinFactorSelect}
+                  onChange={(e) => setKProteinFactorSelect(e.target.value)}
+                  className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                >
+                  <option value="6.25">6.25 (Meat / General Food)</option>
+                  <option value="6.38">6.38 (Milk &amp; Dairy)</option>
+                  <option value="5.70">5.70 (Wheat Flour)</option>
+                  <option value="5.71">5.71 (Soybean)</option>
+                  <option value="5.95">5.95 (Rice)</option>
+                  <option value="5.55">5.55 (Gelatin)</option>
+                  <option value="other">Other (Enter Custom Factor)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Custom N Factor Input Box when "Other" is selected */}
+            {kProteinFactorSelect === 'other' && (
+              <div className="p-3 rounded-xl bg-white border-2 border-[#1673B8] flex flex-wrap items-center justify-between gap-3">
+                <label className="text-xs font-extrabold text-[#1A2138]">
+                  Enter Desired Custom Nitrogen-to-Protein Factor:
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={kCustomProteinFactor}
+                  onChange={(e) => setKCustomProteinFactor(e.target.value)}
+                  placeholder="e.g., 6.10 or 5.83"
+                  className="w-44 px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#1673B8] text-xs font-extrabold text-[#1A2138]"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Total Nitrogen (% N)</div>
+                <div className="text-lg font-extrabold text-[#1A2138] font-mono">
+                  {kjeldahlCalc.nitrogenPct}%
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">
+                  Crude Protein % (Nitrogen % × {effectiveProteinFactor})
+                </div>
+                <div className="text-lg font-extrabold text-[#1673B8] font-mono">
+                  {kjeldahlCalc.crudeProteinPct}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* SAVED PROXIMATE ANALYSIS DIRECTORY TAB (PAID USERS) */}
+      {canUsePremium && viewTab === 'directory' && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-extrabold text-[#1A2138]">
+                Saved Proximate Analysis Directory ({filteredDirectoryRecords.length})
+              </h3>
+              <p className="text-xs text-[#5A6C84]">
+                Search, reload, or download Certificate of Analysis (COA) PDF reports for all saved Moisture, Total Solids, Ash &amp; Protein records.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadDirectoryLogbookPdf}
+              className="px-4 py-2.5 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-2 cursor-pointer shadow-2xs"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Full Proximate Logbook PDF</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-6 relative">
+              <Search className="w-4 h-4 text-[#5A6C84] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by sample name, category, or record code (PRX-...)..."
+                value={dirSearchQuery}
+                onChange={(e) => setDirSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <select
+                value={dirCategoryFilter}
+                onChange={(e) => setDirCategoryFilter(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              >
+                <option value="all">All Categories</option>
+                <option value="Flour, Bakery & Biscuits">
+                  Flour, Bakery &amp; Biscuits
+                </option>
+                <option value="Milk & Dairy Products">
+                  Milk &amp; Dairy Products
+                </option>
+                <option value="Meat, Poultry & Seafood">
+                  Meat, Poultry &amp; Seafood
+                </option>
+                <option value="Grains, Cereals & Pulses">
+                  Grains, Cereals &amp; Pulses
+                </option>
+                <option value="Sauces, Ketchup & Condiments">
+                  Sauces, Ketchup &amp; Condiments
+                </option>
+                <option value="Beverages & Concentrates">
+                  Beverages &amp; Concentrates
+                </option>
+                <option value="Spices, Oils & Other">
+                  Spices, Oils &amp; Other
+                </option>
+              </select>
+            </div>
+            <div className="sm:col-span-3">
+              <select
+                value={dirDateFilter}
+                onChange={(e) =>
+                  setDirDateFilter(
+                    e.target.value as 'all' | 'today' | 'week' | 'month'
+                  )
+                }
+                className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              >
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">This Month</option>
+              </select>
+            </div>
+          </div>
+
+          {filteredDirectoryRecords.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-[#F8FAFC] border border-dashed border-[#94B8D7] text-center space-y-2">
+              <div className="text-sm font-extrabold text-[#1A2138]">
+                No Saved Proximate Analysis Records Found
+              </div>
+              <p className="text-xs text-[#5A6C84]">
+                Enter your sample details in the Proximate Calculator tab and click &ldquo;Save Analysis&rdquo; to store records here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredDirectoryRecords.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] hover:border-[#1673B8] transition-colors space-y-2.5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-[#1A2138] text-white text-[10px] font-extrabold font-mono">
+                          {rec.recordCode}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10px] font-extrabold">
+                          {rec.productCategory || 'Food Sample'}
+                        </span>
+                        <span className="text-[11px] font-bold text-[#5A6C84]">
+                          {rec.savedDateFormatted}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-extrabold text-[#1A2138] mt-1">
+                        {rec.sampleName}
+                      </h4>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleLoadRecordIntoCalculator(rec)}
+                        className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#EBF4FC] border border-[#94B8D7] text-[#1A2138] text-[11px] font-extrabold cursor-pointer"
+                      >
+                        Load into Calculator
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadSingleProximatePdf(rec)}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>PDF Report</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProximateRecord(rec.id)}
+                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
+                        title="Delete record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        Moisture (Wet Basis)
+                      </div>
+                      <div className="font-extrabold text-[#1673B8] font-mono">
+                        {rec.moistureWetBasis}%
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        Total Solids / Dry Matter
+                      </div>
+                      <div className="font-extrabold text-[#1A2138] font-mono">
+                        {rec.totalSolidsPct}%
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        Total Ash (Wet / Dry)
+                      </div>
+                      <div className="font-extrabold text-[#1A2138] font-mono">
+                        {rec.ashWetBasis}% / {rec.ashDryBasis}%
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        Kjeldahl Nitrogen (% N)
+                      </div>
+                      <div className="font-extrabold text-[#1A2138] font-mono">
+                        {rec.nitrogenPct}%
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        Crude Protein (×{rec.kProteinFactor})
+                      </div>
+                      <div className="font-extrabold text-emerald-700 font-mono">
+                        {rec.crudeProteinPct}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {rec.notes && (
+                    <div className="text-[11px] text-[#4A5568] bg-white px-3 py-1.5 rounded-lg border border-[#D2DEEA]">
+                      <strong className="text-[#1A2138]">Notes:</strong> {rec.notes}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 // ============================================================================
-// 5. PRODUCTION FLOOR & LINE WORKERS TOOL (PROCESS YIELD %, WASTAGE, LINE OEE & LABOR)
+// 5. PRODUCTION FLOOR, LINE EFFICIENCY, SYRUP ROOM & WORKERS TOOL
 // ============================================================================
-export const ProductionFloorWorkersTool: React.FC = () => {
-  // Yield & Wastage
+export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps> = ({
+  user,
+  isUserPaid = false,
+  hasExpiredPremium = false,
+  toolsData,
+  onSaveToolsData,
+  onOpenPremiumModal
+}) => {
+  const canUsePremium = Boolean(isUserPaid && !hasExpiredPremium);
+
+  const [viewTab, setViewTab] = useState<
+    'calculator' | 'directory' | 'analytics'
+  >('calculator');
+  const [statusToast, setStatusToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setStatusToast(msg);
+    setTimeout(() => {
+      setStatusToast((prev) => (prev === msg ? null : prev));
+    }, 3800);
+  };
+
+  const savedRecords: ProductionFloorSavedRecord[] = useMemo(
+    () => toolsData?.productionFloorData?.savedRecords || [],
+    [toolsData?.productionFloorData?.savedRecords]
+  );
+
+  // Paid Member Plant / Line / Shift Identification
+  const [plantCompanyName, setPlantCompanyName] = useState<string>(
+    () =>
+      toolsData?.productionFloorData?.defaultPlantName ||
+      user?.company ||
+      'Food & Beverage Processing Plant'
+  );
+  const [lineOrProductName, setLineOrProductName] = useState<string>(
+    'Line 1 — Beverage / Food Trays'
+  );
+  const [shiftName, setShiftName] = useState<string>('Morning Shift (A)');
+  const [productionDate, setProductionDate] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10)
+  );
+  const [shiftNotes, setShiftNotes] = useState<string>('');
+
+  // 1. 1-HOUR MACHINE EFFICIENCY (TRAYS / HOUR)
+  const [machineSpeedTraysPerHour, setMachineSpeedTraysPerHour] =
+    useState<string>('1000');
+  const [oneHourActualTrays, setOneHourActualTrays] = useState<string>('880');
+
+  // 2. FULL-DAY NET EFFICIENCY (START TIME, LATE START, BREAK, CIP, DOWNTIME, TOTAL TRAYS)
+  const [scheduledStartTime, setScheduledStartTime] = useState<string>('08:00');
+  const [actualStartTime, setActualStartTime] = useState<string>('08:25');
+  const [lateStartMins, setLateStartMins] = useState<string>('25');
+  const [totalShiftHours, setTotalShiftHours] = useState<string>('8');
+  const [breakMins, setBreakMins] = useState<string>('45');
+  const [cipMins, setCipMins] = useState<string>('40');
+  const [unplannedDowntimeMins, setUnplannedDowntimeMins] =
+    useState<string>('20');
+  const [totalFullDayTrays, setTotalFullDayTrays] = useState<string>('5850');
+  const [rejectedTrays, setRejectedTrays] = useState<string>('35');
+  const [workersCount, setWorkersCount] = useState<string>('12');
+
+  // Helper to auto-sync Late Start minutes when Scheduled or Actual Start Time changes
+  const computeLateMinsFromTimes = (sched: string, actual: string): number => {
+    const [sh, sm] = sched.split(':').map(Number);
+    const [ah, am] = actual.split(':').map(Number);
+    if (
+      Number.isNaN(sh) ||
+      Number.isNaN(sm) ||
+      Number.isNaN(ah) ||
+      Number.isNaN(am)
+    ) {
+      return 0;
+    }
+    const diff = ah * 60 + am - (sh * 60 + sm);
+    return Math.max(0, diff);
+  };
+
+  // 3. SYRUP ROOM / PREPARATION ROOM BATCH EFFICIENCY
+  const [syrupUnit, setSyrupUnit] = useState<'Liters' | 'kg'>('Liters');
+  const [syrupPreparedTotal, setSyrupPreparedTotal] = useState<string>('5000');
+  const [syrupPackedTotal, setSyrupPackedTotal] = useState<string>('4860');
+  const [syrupCustomWasteInput, setSyrupCustomWasteInput] =
+    useState<string>('');
+  const [syrupCostPerUnit, setSyrupCostPerUnit] = useState<string>('95');
+
+  // 4. RAW-TO-PACKED PROCESS YIELD & WASTAGE
   const [rawInputKg, setRawInputKg] = useState<string>('1200');
   const [trimmedPreppedKg, setTrimmedPreppedKg] = useState<string>('1050');
   const [finalPackedKg, setFinalPackedKg] = useState<string>('990');
   const [rawCostPerKg, setRawCostPerKg] = useState<string>('220');
 
-  // Shift Line Efficiency, OEE & Workers Productivity
-  const [lineSpeedPerMin, setLineSpeedPerMin] = useState<string>('60');
-  const [shiftHours, setShiftHours] = useState<string>('8');
-  const [plannedBreakMins, setPlannedBreakMins] = useState<string>('30');
-  const [unplannedDowntimeMins, setUnplannedDowntimeMins] = useState<string>('25');
-  const [actualProducedPacks, setActualProducedPacks] = useState<string>('23500');
-  const [rejectedDamagedPacks, setRejectedDamagedPacks] = useState<string>('320');
-  const [workersCount, setWorkersCount] = useState<string>('12');
+  // Directory & Analytics Filters
+  const [dirSearchQuery, setDirSearchQuery] = useState<string>('');
+  const [dirPlantFilter, setDirPlantFilter] = useState<string>('all');
+  const [dirPeriodFilter, setDirPeriodFilter] = useState<
+    'all' | 'today' | 'week' | 'month' | 'year'
+  >('all');
+  const [analyticsGrouping, setAnalyticsGrouping] = useState<
+    'daily' | 'weekly' | 'monthly' | 'yearly'
+  >('daily');
 
+  // 1-Hour Efficiency Calculation
+  const oneHourStats = useMemo(() => {
+    const ratedPerHr = Math.max(1, Number(machineSpeedTraysPerHour) || 1000);
+    const actual1Hr = Math.max(0, Number(oneHourActualTrays) || 0);
+    const efficiencyPct = (actual1Hr / ratedPerHr) * 100;
+    const lostTrays = Math.max(0, ratedPerHr - actual1Hr);
+    const ratedPerMin = ratedPerHr / 60;
+    const actualPerMin = actual1Hr / 60;
+
+    return {
+      ratedPerHr,
+      actual1Hr,
+      efficiencyPct: Number(efficiencyPct.toFixed(2)),
+      lostTrays: Number(lostTrays.toFixed(0)),
+      ratedPerMin: Number(ratedPerMin.toFixed(2)),
+      actualPerMin: Number(actualPerMin.toFixed(2))
+    };
+  }, [machineSpeedTraysPerHour, oneHourActualTrays]);
+
+  // Full-Day Net Efficiency Calculation (with Late Start, Break, CIP, Unplanned Downtime)
+  const fullDayStats = useMemo(() => {
+    const speedPerHr = Math.max(1, Number(machineSpeedTraysPerHour) || 1000);
+    const speedPerMin = speedPerHr / 60;
+    const shiftHrs = Math.max(1, Number(totalShiftHours) || 8);
+    const totalShiftMins = shiftHrs * 60;
+
+    const lateMins = Math.max(0, Number(lateStartMins) || 0);
+    const brkMins = Math.max(0, Number(breakMins) || 0);
+    const cipSanitationMins = Math.max(0, Number(cipMins) || 0);
+    const breakdownMins = Math.max(0, Number(unplannedDowntimeMins) || 0);
+
+    const totalTrays = Math.max(0, Number(totalFullDayTrays) || 0);
+    const rejects = Math.max(0, Number(rejectedTrays) || 0);
+    const goodTrays = Math.max(0, totalTrays - rejects);
+    const workers = Math.max(1, Number(workersCount) || 1);
+
+    // 1. Gross Shift Target (100% of total shift hours without deductions)
+    const grossShiftTargetTrays = shiftHrs * speedPerHr;
+    const grossShiftEfficiencyPct =
+      grossShiftTargetTrays > 0
+        ? (totalTrays / grossShiftTargetTrays) * 100
+        : 0;
+
+    // 2. Scheduled Net Production Time (Shift minus Planned Break & Planned CIP)
+    // Late Start & Unplanned Downtime remain inside Net Production Time so they directly impact Net Efficiency
+    const netAvailableMinsAfterBreakCip = Math.max(
+      15,
+      totalShiftMins - brkMins - cipSanitationMins
+    );
+    const netAvailableHoursAfterBreakCip = netAvailableMinsAfterBreakCip / 60;
+    const netTargetTraysAfterBreakCip =
+      netAvailableMinsAfterBreakCip * speedPerMin;
+
+    const netEfficiencyPct =
+      netTargetTraysAfterBreakCip > 0
+        ? (totalTrays / netTargetTraysAfterBreakCip) * 100
+        : 0;
+
+    // 3. Actual Running Time (Deducting Late Start + Break + CIP + Breakdown)
+    const actualRunningMins = Math.max(
+      10,
+      totalShiftMins - lateMins - brkMins - cipSanitationMins - breakdownMins
+    );
+    const actualRunningHours = actualRunningMins / 60;
+    const theoreticalTraysDuringRunning = actualRunningMins * speedPerMin;
+    const runningSpeedPerformancePct =
+      theoreticalTraysDuringRunning > 0
+        ? (totalTrays / theoreticalTraysDuringRunning) * 100
+        : 0;
+
+    // Availability % = Actual Running Mins / Net Available Mins (after Break & CIP)
+    const availabilityPct =
+      (actualRunningMins / netAvailableMinsAfterBreakCip) * 100;
+    const qualityPct = totalTrays > 0 ? (goodTrays / totalTrays) * 100 : 100;
+
+    const oeePct =
+      (Math.min(100, availabilityPct) / 100) *
+      (Math.min(100, runningSpeedPerformancePct) / 100) *
+      (Math.min(100, qualityPct) / 100) *
+      100;
+
+    // Trays Equivalent for each Factor
+    const traysLostToLateStart = Math.round(lateMins * speedPerMin);
+    const traysInBreakTime = Math.round(brkMins * speedPerMin);
+    const traysInCipTime = Math.round(cipSanitationMins * speedPerMin);
+    const traysLostToBreakdown = Math.round(breakdownMins * speedPerMin);
+
+    const lateStartImpactPct =
+      netTargetTraysAfterBreakCip > 0
+        ? (traysLostToLateStart / netTargetTraysAfterBreakCip) * 100
+        : 0;
+
+    const traysPerWorkerShift = goodTrays / workers;
+    const traysPerWorkerHour = traysPerWorkerShift / shiftHrs;
+
+    return {
+      totalShiftMins,
+      netAvailableMinsAfterBreakCip: Math.round(netAvailableMinsAfterBreakCip),
+      netAvailableHoursAfterBreakCip: Number(
+        netAvailableHoursAfterBreakCip.toFixed(2)
+      ),
+      actualRunningMins: Math.round(actualRunningMins),
+      actualRunningHours: Number(actualRunningHours.toFixed(2)),
+      grossShiftTargetTrays: Math.round(grossShiftTargetTrays),
+      netTargetTraysAfterBreakCip: Math.round(netTargetTraysAfterBreakCip),
+      theoreticalTraysDuringRunning: Math.round(theoreticalTraysDuringRunning),
+      goodTrays,
+      grossShiftEfficiencyPct: Number(grossShiftEfficiencyPct.toFixed(2)),
+      netEfficiencyPct: Number(netEfficiencyPct.toFixed(2)),
+      runningSpeedPerformancePct: Number(runningSpeedPerformancePct.toFixed(2)),
+      availabilityPct: Number(Math.min(100, availabilityPct).toFixed(1)),
+      qualityPct: Number(Math.min(100, qualityPct).toFixed(2)),
+      oeePct: Number(Math.min(100, oeePct).toFixed(1)),
+      traysLostToLateStart,
+      traysInBreakTime,
+      traysInCipTime,
+      traysLostToBreakdown,
+      lateStartImpactPct: Number(lateStartImpactPct.toFixed(2)),
+      traysPerWorkerShift: Math.round(traysPerWorkerShift),
+      traysPerWorkerHour: Math.round(traysPerWorkerHour)
+    };
+  }, [
+    machineSpeedTraysPerHour,
+    totalShiftHours,
+    lateStartMins,
+    breakMins,
+    cipMins,
+    unplannedDowntimeMins,
+    totalFullDayTrays,
+    rejectedTrays,
+    workersCount
+  ]);
+
+  // Syrup Room / Preparation Room Batch Efficiency Calculation
+  const syrupStats = useMemo(() => {
+    const prepared = Math.max(0.1, Number(syrupPreparedTotal) || 5000);
+    const packed = Math.max(0, Number(syrupPackedTotal) || 0);
+    const calculatedLoss = Math.max(0, prepared - packed);
+    const wasteTotal =
+      syrupCustomWasteInput.trim() !== ''
+        ? Math.max(0, Number(syrupCustomWasteInput) || 0)
+        : calculatedLoss;
+
+    const batchEfficiencyPct = (packed / prepared) * 100;
+    const wastagePct = (wasteTotal / prepared) * 100;
+    const unaccountedDiff = Number((calculatedLoss - wasteTotal).toFixed(2));
+    const unitRate = Math.max(0, Number(syrupCostPerUnit) || 0);
+    const wasteCostRs = wasteTotal * unitRate;
+
+    return {
+      prepared: Number(prepared.toFixed(2)),
+      packed: Number(packed.toFixed(2)),
+      wasteTotal: Number(wasteTotal.toFixed(2)),
+      calculatedLoss: Number(calculatedLoss.toFixed(2)),
+      unaccountedDiff,
+      batchEfficiencyPct: Number(batchEfficiencyPct.toFixed(2)),
+      wastagePct: Number(wastagePct.toFixed(2)),
+      wasteCostRs: Math.round(wasteCostRs)
+    };
+  }, [
+    syrupPreparedTotal,
+    syrupPackedTotal,
+    syrupCustomWasteInput,
+    syrupCostPerUnit
+  ]);
+
+  // Process Yield & Wastage Calculation
   const yieldStats = useMemo(() => {
     const raw = Math.max(1, Number(rawInputKg) || 1200);
     const prepped = Math.max(0, Number(trimmedPreppedKg) || 1050);
@@ -5434,272 +7544,1953 @@ export const ProductionFloorWorkersTool: React.FC = () => {
     };
   }, [rawInputKg, trimmedPreppedKg, finalPackedKg, rawCostPerKg]);
 
-  const lineStats = useMemo(() => {
-    const speed = Math.max(1, Number(lineSpeedPerMin) || 60);
-    const totalShiftMins = Math.max(30, (Number(shiftHours) || 8) * 60);
-    const plannedMins = Math.max(0, Number(plannedBreakMins) || 0);
-    const downtimeMins = Math.max(0, Number(unplannedDowntimeMins) || 0);
-    const actualTotal = Math.max(0, Number(actualProducedPacks) || 0);
-    const rejects = Math.max(0, Number(rejectedDamagedPacks) || 0);
-    const workers = Math.max(1, Number(workersCount) || 1);
-
-    const plannedProductionMins = Math.max(1, totalShiftMins - plannedMins);
-    const operatingMins = Math.max(1, plannedProductionMins - downtimeMins);
-    const availabilityPct = (operatingMins / plannedProductionMins) * 100;
-
-    const theoreticalMaxAtOperating = operatingMins * speed;
-    const performancePct =
-      theoreticalMaxAtOperating > 0
-        ? (actualTotal / theoreticalMaxAtOperating) * 100
-        : 0;
-
-    const goodPacks = Math.max(0, actualTotal - rejects);
-    const qualityPct = actualTotal > 0 ? (goodPacks / actualTotal) * 100 : 100;
-
-    const oeePct =
-      (availabilityPct / 100) *
-      (performancePct / 100) *
-      (qualityPct / 100) *
-      100;
-
-    const packsPerWorkerShift = goodPacks / workers;
-    const packsPerWorkerHour =
-      packsPerWorkerShift / Math.max(1, Number(shiftHours) || 8);
+  const buildCurrentProductionRecord = (): ProductionFloorSavedRecord => {
+    const now = new Date();
+    const cleanPlant =
+      plantCompanyName.trim() || 'Food & Beverage Processing Plant';
+    const cleanLine =
+      lineOrProductName.trim() || 'Production Line 1';
+    const dateStr = productionDate || now.toISOString().slice(0, 10);
 
     return {
-      operatingMins,
-      goodPacks,
-      availabilityPct: Number(Math.min(100, availabilityPct).toFixed(1)),
-      performancePct: Number(Math.min(100, performancePct).toFixed(1)),
-      qualityPct: Number(Math.min(100, qualityPct).toFixed(2)),
-      oeePct: Number(Math.min(100, oeePct).toFixed(1)),
-      packsPerWorkerShift: Math.round(packsPerWorkerShift),
-      packsPerWorkerHour: Math.round(packsPerWorkerHour)
+      id: `prd-rec-${Date.now()}`,
+      recordCode: `PRD-${String(Date.now()).slice(-6)}`,
+      plantCompanyName: cleanPlant,
+      lineOrProductName: cleanLine,
+      shiftName: shiftName || 'Morning Shift (A)',
+      productionDate: dateStr,
+      savedDateFormatted: `${dateStr} (${now.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })})`,
+      savedAtIso: now.toISOString(),
+      notes: shiftNotes.trim() || undefined,
+
+      machineSpeedTraysPerHour: oneHourStats.ratedPerHr,
+      oneHourActualTrays: oneHourStats.actual1Hr,
+      oneHourEfficiencyPct: oneHourStats.efficiencyPct,
+      oneHourLostTrays: oneHourStats.lostTrays,
+
+      scheduledStartTime,
+      actualStartTime,
+      totalShiftHours: Number(totalShiftHours) || 8,
+      lateStartMins: Number(lateStartMins) || 0,
+      breakMins: Number(breakMins) || 0,
+      cipMins: Number(cipMins) || 0,
+      unplannedDowntimeMins: Number(unplannedDowntimeMins) || 0,
+      totalFullDayTrays: Number(totalFullDayTrays) || 0,
+      rejectedTrays: Number(rejectedTrays) || 0,
+      goodFullDayTrays: fullDayStats.goodTrays,
+      workersCount: Number(workersCount) || 1,
+      fullDayGrossEfficiencyPct: fullDayStats.grossShiftEfficiencyPct,
+      fullDayNetOperatingEfficiencyPct: fullDayStats.netEfficiencyPct,
+      fullDayOeePct: fullDayStats.oeePct,
+      traysPerWorkerHour: fullDayStats.traysPerWorkerHour,
+
+      syrupUnit,
+      syrupPreparedTotal: syrupStats.prepared,
+      syrupPackedTotal: syrupStats.packed,
+      syrupWasteTotal: syrupStats.wasteTotal,
+      syrupBatchEfficiencyPct: syrupStats.batchEfficiencyPct,
+      syrupWastagePct: syrupStats.wastagePct,
+      syrupCostPerUnit: Number(syrupCostPerUnit) || 0,
+      syrupWasteCostRs: syrupStats.wasteCostRs,
+
+      rawInputKg: Number(rawInputKg) || 0,
+      trimmedPreppedKg: Number(trimmedPreppedKg) || 0,
+      finalPackedKg: Number(finalPackedKg) || 0,
+      rawCostPerKg: Number(rawCostPerKg) || 0,
+      prepYieldPct: yieldStats.prepYieldPct,
+      netProcessYieldPct: yieldStats.netProcessYieldPct,
+      totalLossKg: yieldStats.totalLossKg,
+      totalLossPct: yieldStats.totalLossPct,
+      effectiveRawCostPerFinalKg: yieldStats.effectiveRawCostPerFinalKg
     };
-  }, [
-    lineSpeedPerMin,
-    shiftHours,
-    plannedBreakMins,
-    unplannedDowntimeMins,
-    actualProducedPacks,
-    rejectedDamagedPacks,
-    workersCount
-  ]);
+  };
+
+  const handleSaveProductionRecord = async () => {
+    if (!canUsePremium || !toolsData || !onSaveToolsData) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const newRec = buildCurrentProductionRecord();
+    const nextRecords = [newRec, ...savedRecords].slice(0, 365);
+    await onSaveToolsData({
+      ...toolsData,
+      productionFloorData: {
+        defaultPlantName: newRec.plantCompanyName,
+        savedRecords: nextRecords
+      },
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    });
+    setShiftNotes('');
+    showToast(
+      `Saved Shift Record "${newRec.lineOrProductName}" (${newRec.recordCode}) to your Plant Directory!`
+    );
+  };
+
+  const handleDeleteProductionRecord = async (id: string) => {
+    if (!canUsePremium || !toolsData || !onSaveToolsData) return;
+    const nextRecords = savedRecords.filter((r) => r.id !== id);
+    await onSaveToolsData({
+      ...toolsData,
+      productionFloorData: {
+        defaultPlantName: plantCompanyName.trim(),
+        savedRecords: nextRecords
+      },
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    });
+    showToast('Removed production record from directory.');
+  };
+
+  const handleLoadRecordIntoCalculator = (rec: ProductionFloorSavedRecord) => {
+    setPlantCompanyName(rec.plantCompanyName || '');
+    setLineOrProductName(rec.lineOrProductName || '');
+    setShiftName(rec.shiftName || 'Morning Shift (A)');
+    setProductionDate(rec.productionDate || new Date().toISOString().slice(0, 10));
+    setShiftNotes(rec.notes || '');
+
+    setMachineSpeedTraysPerHour(String(rec.machineSpeedTraysPerHour));
+    setOneHourActualTrays(String(rec.oneHourActualTrays));
+
+    setScheduledStartTime(rec.scheduledStartTime || '08:00');
+    setActualStartTime(rec.actualStartTime || '08:25');
+    setTotalShiftHours(String(rec.totalShiftHours));
+    setLateStartMins(String(rec.lateStartMins));
+    setBreakMins(String(rec.breakMins));
+    setCipMins(String(rec.cipMins));
+    setUnplannedDowntimeMins(String(rec.unplannedDowntimeMins));
+    setTotalFullDayTrays(String(rec.totalFullDayTrays));
+    setRejectedTrays(String(rec.rejectedTrays));
+    setWorkersCount(String(rec.workersCount));
+
+    setSyrupUnit(rec.syrupUnit || 'Liters');
+    setSyrupPreparedTotal(String(rec.syrupPreparedTotal));
+    setSyrupPackedTotal(String(rec.syrupPackedTotal));
+    setSyrupCustomWasteInput(String(rec.syrupWasteTotal));
+    setSyrupCostPerUnit(String(rec.syrupCostPerUnit || 0));
+
+    setRawInputKg(String(rec.rawInputKg));
+    setTrimmedPreppedKg(String(rec.trimmedPreppedKg));
+    setFinalPackedKg(String(rec.finalPackedKg));
+    setRawCostPerKg(String(rec.rawCostPerKg));
+
+    setViewTab('calculator');
+    showToast(`Loaded "${rec.lineOrProductName}" (${rec.recordCode}) into Calculator!`);
+  };
+
+  // Distinct Plant Names for filtering
+  const uniquePlantNames = useMemo(() => {
+    const set = new Set<string>();
+    savedRecords.forEach((r) => {
+      if (r.plantCompanyName) set.add(r.plantCompanyName);
+    });
+    return Array.from(set);
+  }, [savedRecords]);
+
+  // Filtered Directory Records
+  const filteredDirectoryRecords = useMemo(() => {
+    const q = dirSearchQuery.trim().toLowerCase();
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+
+    return savedRecords.filter((rec) => {
+      if (
+        dirPlantFilter !== 'all' &&
+        rec.plantCompanyName !== dirPlantFilter
+      ) {
+        return false;
+      }
+      if (dirPeriodFilter !== 'all') {
+        const dStr = rec.productionDate || rec.savedAtIso.slice(0, 10);
+        if (dirPeriodFilter === 'today' && dStr !== todayStr) return false;
+        const recDate = new Date(dStr);
+        const diffDays =
+          (now.getTime() - recDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (dirPeriodFilter === 'week' && diffDays > 7) return false;
+        if (dirPeriodFilter === 'month' && diffDays > 31) return false;
+        if (dirPeriodFilter === 'year' && diffDays > 366) return false;
+      }
+      if (!q) return true;
+      return (
+        rec.plantCompanyName.toLowerCase().includes(q) ||
+        rec.lineOrProductName.toLowerCase().includes(q) ||
+        rec.shiftName.toLowerCase().includes(q) ||
+        rec.recordCode.toLowerCase().includes(q) ||
+        rec.productionDate.toLowerCase().includes(q) ||
+        (rec.notes || '').toLowerCase().includes(q)
+      );
+    });
+  }, [savedRecords, dirSearchQuery, dirPlantFilter, dirPeriodFilter]);
+
+  // Daily / Weekly / Monthly / Yearly Plant Efficiency Aggregations
+  const analyticsGroups = useMemo(() => {
+    const source =
+      dirPlantFilter === 'all'
+        ? savedRecords
+        : savedRecords.filter((r) => r.plantCompanyName === dirPlantFilter);
+
+    const map = new Map<
+      string,
+      {
+        periodKey: string;
+        periodLabel: string;
+        shiftsCount: number;
+        avgOneHourEff: number;
+        avgFullDayNetEff: number;
+        avgFullDayGrossEff: number;
+        avgOee: number;
+        avgSyrupEff: number;
+        avgProcessYield: number;
+        totalTrays: number;
+        totalSyrupPrepared: number;
+        totalSyrupPacked: number;
+        totalSyrupWaste: number;
+        totalLateMins: number;
+        totalBreakMins: number;
+        totalCipMins: number;
+      }
+    >();
+
+    const getPeriodKeyAndLabel = (dateStr: string) => {
+      const clean = dateStr || new Date().toISOString().slice(0, 10);
+      const d = new Date(clean + 'T00:00:00');
+      if (Number.isNaN(d.getTime())) {
+        return { key: clean, label: clean };
+      }
+      if (analyticsGrouping === 'daily') {
+        return { key: clean, label: `Day: ${clean}` };
+      }
+      if (analyticsGrouping === 'weekly') {
+        // ISO week start (Monday)
+        const dayOfWeek = d.getDay() || 7;
+        const monday = new Date(d);
+        monday.setDate(d.getDate() - dayOfWeek + 1);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        const mStr = monday.toISOString().slice(0, 10);
+        const sStr = sunday.toISOString().slice(5, 10);
+        return {
+          key: `W-${mStr}`,
+          label: `Week of ${mStr} to ${sStr}`
+        };
+      }
+      if (analyticsGrouping === 'monthly') {
+        const ym = clean.slice(0, 7);
+        const monthLabel = d.toLocaleDateString('en-GB', {
+          month: 'long',
+          year: 'numeric'
+        });
+        return { key: ym, label: `Month: ${monthLabel}` };
+      }
+      // yearly
+      const yr = clean.slice(0, 4);
+      return { key: yr, label: `Year: ${yr}` };
+    };
+
+    source.forEach((rec) => {
+      const { key, label } = getPeriodKeyAndLabel(rec.productionDate);
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, {
+          periodKey: key,
+          periodLabel: label,
+          shiftsCount: 1,
+          avgOneHourEff: rec.oneHourEfficiencyPct,
+          avgFullDayNetEff: rec.fullDayNetOperatingEfficiencyPct,
+          avgFullDayGrossEff: rec.fullDayGrossEfficiencyPct,
+          avgOee: rec.fullDayOeePct,
+          avgSyrupEff: rec.syrupBatchEfficiencyPct,
+          avgProcessYield: rec.netProcessYieldPct,
+          totalTrays: rec.totalFullDayTrays,
+          totalSyrupPrepared: rec.syrupPreparedTotal,
+          totalSyrupPacked: rec.syrupPackedTotal,
+          totalSyrupWaste: rec.syrupWasteTotal,
+          totalLateMins: rec.lateStartMins,
+          totalBreakMins: rec.breakMins,
+          totalCipMins: rec.cipMins
+        });
+      } else {
+        const n = existing.shiftsCount + 1;
+        existing.avgOneHourEff = Number(
+          (
+            (existing.avgOneHourEff * existing.shiftsCount +
+              rec.oneHourEfficiencyPct) /
+            n
+          ).toFixed(2)
+        );
+        existing.avgFullDayNetEff = Number(
+          (
+            (existing.avgFullDayNetEff * existing.shiftsCount +
+              rec.fullDayNetOperatingEfficiencyPct) /
+            n
+          ).toFixed(2)
+        );
+        existing.avgFullDayGrossEff = Number(
+          (
+            (existing.avgFullDayGrossEff * existing.shiftsCount +
+              rec.fullDayGrossEfficiencyPct) /
+            n
+          ).toFixed(2)
+        );
+        existing.avgOee = Number(
+          ((existing.avgOee * existing.shiftsCount + rec.fullDayOeePct) / n).toFixed(
+            1
+          )
+        );
+        existing.avgSyrupEff = Number(
+          (
+            (existing.avgSyrupEff * existing.shiftsCount +
+              rec.syrupBatchEfficiencyPct) /
+            n
+          ).toFixed(2)
+        );
+        existing.avgProcessYield = Number(
+          (
+            (existing.avgProcessYield * existing.shiftsCount +
+              rec.netProcessYieldPct) /
+            n
+          ).toFixed(2)
+        );
+        existing.shiftsCount = n;
+        existing.totalTrays += rec.totalFullDayTrays;
+        existing.totalSyrupPrepared = Number(
+          (existing.totalSyrupPrepared + rec.syrupPreparedTotal).toFixed(1)
+        );
+        existing.totalSyrupPacked = Number(
+          (existing.totalSyrupPacked + rec.syrupPackedTotal).toFixed(1)
+        );
+        existing.totalSyrupWaste = Number(
+          (existing.totalSyrupWaste + rec.syrupWasteTotal).toFixed(1)
+        );
+        existing.totalLateMins += rec.lateStartMins;
+        existing.totalBreakMins += rec.breakMins;
+        existing.totalCipMins += rec.cipMins;
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      b.periodKey.localeCompare(a.periodKey)
+    );
+  }, [savedRecords, dirPlantFilter, analyticsGrouping]);
+
+  // Overall Plant Summary KPIs across filtered records
+  const overallPlantKpis = useMemo(() => {
+    const source =
+      dirPlantFilter === 'all'
+        ? savedRecords
+        : savedRecords.filter((r) => r.plantCompanyName === dirPlantFilter);
+    if (source.length === 0) {
+      return {
+        totalShifts: 0,
+        avg1HrEff: 0,
+        avgNetDayEff: 0,
+        avgSyrupEff: 0,
+        avgProcessYield: 0,
+        totalTraysProduced: 0,
+        totalSyrupWaste: 0,
+        totalLateStartHrs: 0,
+        totalCipHrs: 0
+      };
+    }
+    const n = source.length;
+    const sum1Hr = source.reduce((s, r) => s + r.oneHourEfficiencyPct, 0);
+    const sumNetDay = source.reduce(
+      (s, r) => s + r.fullDayNetOperatingEfficiencyPct,
+      0
+    );
+    const sumSyrup = source.reduce((s, r) => s + r.syrupBatchEfficiencyPct, 0);
+    const sumYield = source.reduce((s, r) => s + r.netProcessYieldPct, 0);
+    const totalTraysProduced = source.reduce(
+      (s, r) => s + r.totalFullDayTrays,
+      0
+    );
+    const totalSyrupWaste = source.reduce((s, r) => s + r.syrupWasteTotal, 0);
+    const totalLateMins = source.reduce((s, r) => s + r.lateStartMins, 0);
+    const totalCipMins = source.reduce((s, r) => s + r.cipMins, 0);
+
+    return {
+      totalShifts: n,
+      avg1HrEff: Number((sum1Hr / n).toFixed(2)),
+      avgNetDayEff: Number((sumNetDay / n).toFixed(2)),
+      avgSyrupEff: Number((sumSyrup / n).toFixed(2)),
+      avgProcessYield: Number((sumYield / n).toFixed(2)),
+      totalTraysProduced,
+      totalSyrupWaste: Number(totalSyrupWaste.toFixed(1)),
+      totalLateStartHrs: Number((totalLateMins / 60).toFixed(1)),
+      totalCipHrs: Number((totalCipMins / 60).toFixed(1))
+    };
+  }, [savedRecords, dirPlantFilter]);
+
+  // Download Single Shift / Batch Production & Syrup Room Efficiency PDF Report
+  const handleDownloadSingleProductionPdf = (
+    rec: ProductionFloorSavedRecord
+  ) => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Production & QA Specialist').trim();
+    const specialistRole = (
+      user?.currentRole ||
+      user?.qualification ||
+      'Production & Plant Operations Manager'
+    ).trim();
+
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 44, 'F');
+    drawPdfBrandLogo(pdf, 14, 8, 26, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13.5);
+    pdf.text(
+      `${rec.plantCompanyName.slice(0, 48)} — Production Efficiency Report`,
+      45,
+      17
+    );
+    pdf.setFontSize(15);
+    pdf.text('1-HR & FULL-DAY NET EFFICIENCY, SYRUP ROOM & YIELD', 45, 26);
+    pdf.setFontSize(9.2);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Record Code: ${rec.recordCode}   •   Production Date: ${rec.productionDate}   •   ${rec.shiftName}`,
+      45,
+      34
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 170, 8, 26, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    // Plant & Specialist Box
+    pdf.setFillColor(240, 246, 252);
+    pdf.setDrawColor(187, 214, 238);
+    pdf.roundedRect(14, 49, 182, 24, 3, 3, 'FD');
+    pdf.setTextColor(26, 33, 56);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(10.5);
+    pdf.text(
+      `Plant / Company: ${rec.plantCompanyName}   |   Line / Product: ${rec.lineOrProductName}`,
+      19,
+      58
+    );
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.2);
+    pdf.text(
+      `Supervisor / Specialist: ${specialistName} (${specialistRole})   |   Workers on Line: ${rec.workersCount}`,
+      19,
+      66
+    );
+
+    let y = 80;
+    // SECTION 1: 1-Hour Machine Efficiency
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text('1. 1-Hour Machine Production Efficiency (Trays / Hour)', 14, y);
+    y += 4.5;
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(210, 222, 234);
+    pdf.roundedRect(14, y, 182, 24, 2.5, 2.5, 'FD');
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(26, 33, 56);
+    pdf.text(
+      `Rated Machine Speed: ${rec.machineSpeedTraysPerHour} Trays/Hour   |   Actual 1-Hour Production: ${rec.oneHourActualTrays} Trays   |   Shortfall: ${rec.oneHourLostTrays} Trays`,
+      19,
+      y + 9.5
+    );
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      `1-HOUR MACHINE EFFICIENCY = ${rec.oneHourEfficiencyPct}%   (Formula: ${rec.oneHourActualTrays} / ${rec.machineSpeedTraysPerHour} × 100)`,
+      19,
+      y + 18.5
+    );
+
+    y += 31;
+    // SECTION 2: Full-Day Net Efficiency (Start Time, Late Start, Break, CIP, Total Trays)
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      '2. Full-Day Net Efficiency (Including Start Time, Late Start, Break & CIP Factors)',
+      14,
+      y
+    );
+    y += 4.5;
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(210, 222, 234);
+    pdf.roundedRect(14, y, 182, 46, 2.5, 2.5, 'FD');
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.2);
+    pdf.setTextColor(26, 33, 56);
+    pdf.text(
+      `Scheduled Start: ${rec.scheduledStartTime}  |  Actual Start: ${rec.actualStartTime}  |  Total Shift: ${rec.totalShiftHours} Hours  |  Rated Speed: ${rec.machineSpeedTraysPerHour} Trays/Hr`,
+      19,
+      y + 9
+    );
+    pdf.text(
+      `Time Factors: Late Start = ${rec.lateStartMins} mins  |  Break Time = ${rec.breakMins} mins  |  CIP Time = ${rec.cipMins} mins  |  Breakdown = ${rec.unplannedDowntimeMins} mins`,
+      19,
+      y + 17.5
+    );
+    pdf.text(
+      `Full-Day Output: Total Produced = ${rec.totalFullDayTrays} Trays  |  Good Trays = ${rec.goodFullDayTrays} (Rejects: ${rec.rejectedTrays})  |  Worker Rate = ${rec.traysPerWorkerHour} Trays/Worker/Hr`,
+      19,
+      y + 26
+    );
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      `FULL-DAY NET EFFICIENCY (After Break & CIP) = ${rec.fullDayNetOperatingEfficiencyPct}%   |   Gross Shift Efficiency = ${rec.fullDayGrossEfficiencyPct}%   |   Line OEE = ${rec.fullDayOeePct}%`,
+      19,
+      y + 37.5
+    );
+
+    y += 53;
+    // SECTION 3: Syrup Room / Preparation Room Batch Efficiency
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      '3. Syrup Room / Preparation Room Batch Efficiency & Wastage',
+      14,
+      y
+    );
+    y += 4.5;
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(210, 222, 234);
+    pdf.roundedRect(14, y, 182, 30, 2.5, 2.5, 'FD');
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.2);
+    pdf.setTextColor(26, 33, 56);
+    pdf.text(
+      `Total Syrup / Batch Prepared: ${rec.syrupPreparedTotal} ${rec.syrupUnit}   |   Total Packed: ${rec.syrupPackedTotal} ${rec.syrupUnit}   |   Total Waste / Drain: ${rec.syrupWasteTotal} ${rec.syrupUnit}`,
+      19,
+      y + 10
+    );
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      `SYRUP ROOM BATCH EFFICIENCY = ${rec.syrupBatchEfficiencyPct}%   |   Syrup Wastage = ${rec.syrupWastagePct}%   |   Waste Cost = Rs. ${rec.syrupWasteCostRs.toLocaleString()}`,
+      19,
+      y + 21
+    );
+
+    y += 37;
+    // SECTION 4: Process Yield & Material Cost
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      '4. Raw Material to Final Packed Process Yield & Wastage',
+      14,
+      y
+    );
+    y += 4.5;
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(210, 222, 234);
+    pdf.roundedRect(14, y, 182, 28, 2.5, 2.5, 'FD');
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.2);
+    pdf.setTextColor(26, 33, 56);
+    pdf.text(
+      `Raw Input: ${rec.rawInputKg} kg   |   After Trim/Prep: ${rec.trimmedPreppedKg} kg (${rec.prepYieldPct}%)   |   Final Packed: ${rec.finalPackedKg} kg`,
+      19,
+      y + 10
+    );
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      `NET PACKED YIELD = ${rec.netProcessYieldPct}%   |   Total Loss = ${rec.totalLossKg} kg (${rec.totalLossPct}%)   |   Effective Cost = Rs. ${rec.effectiveRawCostPerFinalKg}/kg`,
+      19,
+      y + 20
+    );
+
+    y += 34;
+    if (rec.notes) {
+      pdf.setFillColor(248, 250, 252);
+      pdf.setDrawColor(210, 222, 234);
+      pdf.roundedRect(14, y, 182, 20, 2.5, 2.5, 'FD');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text(`Production Notes: ${rec.notes.slice(0, 110)}`, 19, y + 11);
+    }
+
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(120, 130, 145);
+    pdf.text(
+      'Generated by Food Science Portal — Production Yield, Line Efficiency & Syrup Room Suite',
+      14,
+      285
+    );
+
+    pdf.save(`${rec.recordCode}_Production_Syrup_Efficiency_Report.pdf`);
+    showToast(`Downloaded Production Efficiency PDF (${rec.recordCode})!`);
+  };
+
+  // Download Plant Efficiency Analytics & Logbook PDF (Daily / Weekly / Monthly / Yearly)
+  const handleDownloadPlantAnalyticsPdf = () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    if (savedRecords.length === 0) {
+      showToast('No saved production records yet to generate plant analytics report.');
+      return;
+    }
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Production & QA Specialist').trim();
+    const targetPlantTitle =
+      dirPlantFilter === 'all'
+        ? plantCompanyName.trim() || 'All Logged Plants / Companies'
+        : dirPlantFilter;
+
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 44, 'F');
+    drawPdfBrandLogo(pdf, 14, 8, 25, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13.5);
+    pdf.text(`${targetPlantTitle.slice(0, 52)}`, 44, 16);
+    pdf.setFontSize(15);
+    pdf.text(
+      `PLANT EFFICIENCY REPORT (${analyticsGrouping.toUpperCase()} BREAKDOWN)`,
+      44,
+      25
+    );
+    pdf.setFontSize(9.2);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Specialist: ${specialistName}   •   Total Shifts Logged: ${overallPlantKpis.totalShifts}   •   Total Trays: ${overallPlantKpis.totalTraysProduced.toLocaleString()}`,
+      44,
+      34
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 172, 8, 24, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    // Overall Plant Summary Box
+    pdf.setFillColor(240, 246, 252);
+    pdf.setDrawColor(22, 115, 184);
+    pdf.roundedRect(14, 50, 182, 24, 3, 3, 'FD');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(26, 33, 56);
+    pdf.text(
+      `Plant Averages:  1-Hr Efficiency = ${overallPlantKpis.avg1HrEff}%   |   Full-Day Net Efficiency = ${overallPlantKpis.avgNetDayEff}%   |   Syrup Room Efficiency = ${overallPlantKpis.avgSyrupEff}%`,
+      18,
+      59
+    );
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    pdf.text(
+      `Avg Process Yield: ${overallPlantKpis.avgProcessYield}%   |   Total Syrup Waste: ${overallPlantKpis.totalSyrupWaste}   |   Late Start Hrs: ${overallPlantKpis.totalLateStartHrs}h   |   CIP Hrs: ${overallPlantKpis.totalCipHrs}h`,
+      18,
+      67
+    );
+
+    let y = 82;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      `${analyticsGrouping.toUpperCase()} PLANT & SYRUP ROOM EFFICIENCY SUMMARY`,
+      14,
+      y
+    );
+    y += 5;
+
+    analyticsGroups.forEach((grp, idx) => {
+      if (y > 252) {
+        pdf.addPage();
+        y = 20;
+      }
+      pdf.setFillColor(
+        idx % 2 === 0 ? 248 : 240,
+        idx % 2 === 0 ? 250 : 246,
+        252
+      );
+      pdf.setDrawColor(210, 222, 234);
+      pdf.roundedRect(14, y, 182, 24, 2.5, 2.5, 'FD');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text(
+        `${idx + 1}. ${grp.periodLabel}   (${grp.shiftsCount} Shift${
+          grp.shiftsCount > 1 ? 's' : ''
+        } • Total Trays: ${grp.totalTrays.toLocaleString()})`,
+        18,
+        y + 7.5
+      );
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.8);
+      pdf.setTextColor(22, 115, 184);
+      pdf.text(
+        `1-Hr Eff: ${grp.avgOneHourEff}%  |  Full-Day Net Eff: ${grp.avgFullDayNetEff}%  |  OEE: ${grp.avgOee}%  |  Syrup Room Eff: ${grp.avgSyrupEff}%  |  Process Yield: ${grp.avgProcessYield}%`,
+        18,
+        y + 14.5
+      );
+
+      pdf.setTextColor(90, 108, 132);
+      pdf.text(
+        `Syrup Prepared/Packed/Waste: ${grp.totalSyrupPrepared} / ${grp.totalSyrupPacked} / ${grp.totalSyrupWaste}   |   Late Start: ${grp.totalLateMins}m • Break: ${grp.totalBreakMins}m • CIP: ${grp.totalCipMins}m`,
+        18,
+        y + 20.5
+      );
+      y += 27.5;
+    });
+
+    pdf.save(
+      `Plant_Efficiency_${analyticsGrouping.toUpperCase()}_Report_${Date.now()}.pdf`
+    );
+    showToast(
+      `Downloaded ${analyticsGrouping.toUpperCase()} Plant Efficiency Report PDF!`
+    );
+  };
 
   return (
     <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
-      <div className="border-b border-[#D2DEEA] pb-3.5 flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
-          <Factory className="w-6 h-6" />
+      {/* Toast Notification */}
+      {statusToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+          <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
+          <span>{statusToast}</span>
         </div>
-        <div>
-          <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
-            Production Floor, Process Yield &amp; Line Workers Calculator
-          </h2>
-          <p className="text-xs text-[#4A5568] font-medium">
-            Raw-to-Packed Process Yield %, Trim/Wastage Loss, Shift OEE &amp; Worker Output Efficiency
-          </p>
+      )}
+
+      {/* HEADER & TABS */}
+      <div className="border-b border-[#D2DEEA] pb-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
+            <Factory className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                Production Floor, Net Efficiency, Syrup Room &amp; Yield Tool
+              </h2>
+              <span className="text-[11px] font-extrabold text-[#1673B8]">
+                {canUsePremium
+                  ? '· Paid Pro Mode (Plant Log, Daily/Weekly/Monthly/Yearly Analytics & PDF Unlocked)'
+                  : '· Free Calculator View'}
+              </span>
+            </div>
+            <p className="text-xs text-[#4A5568] font-medium">
+              1-Hour &amp; Full-Day Net Efficiency (Late Start, Break, CIP), Syrup/Prep Room Batch Efficiency, Process Yield &amp; Plant Analytics
+            </p>
+          </div>
         </div>
+
+        {canUsePremium && (
+          <div className="flex flex-wrap gap-1.5 bg-[#F0F6FC] p-1 rounded-xl border border-[#D2DEEA]">
+            <button
+              type="button"
+              onClick={() => setViewTab('calculator')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+                viewTab === 'calculator'
+                  ? 'bg-[#1673B8] text-white shadow-2xs'
+                  : 'text-[#1A2138] hover:bg-white'
+              }`}
+            >
+              Production Calculator
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewTab('directory')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+                viewTab === 'directory'
+                  ? 'bg-[#1673B8] text-white shadow-2xs'
+                  : 'text-[#1A2138] hover:bg-white'
+              }`}
+            >
+              Saved Directory ({savedRecords.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewTab('analytics')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+                viewTab === 'analytics'
+                  ? 'bg-[#1A2138] text-white shadow-2xs'
+                  : 'text-[#1A2138] hover:bg-white'
+              }`}
+            >
+              Plant Efficiency (Daily/Weekly/Monthly/Yearly)
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* 1. PROCESS YIELD & WASTAGE */}
-      <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
-        <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
-          1. Batch Process Yield %, Peeling/Trim Loss &amp; Cost Impact
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Raw Material Input (kg)
-            </label>
-            <input
-              type="number"
-              value={rawInputKg}
-              onChange={(e) => setRawInputKg(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              After Trim / Prep (kg)
-            </label>
-            <input
-              type="number"
-              value={trimmedPreppedKg}
-              onChange={(e) => setTrimmedPreppedKg(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Final Packed Output (kg)
-            </label>
-            <input
-              type="number"
-              value={finalPackedKg}
-              onChange={(e) => setFinalPackedKg(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-              Raw Material Rate (Rs./kg)
-            </label>
-            <input
-              type="number"
-              value={rawCostPerKg}
-              onChange={(e) => setRawCostPerKg(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-        </div>
+      {/* =====================================================================
+          TAB 1: PRODUCTION & SYRUP ROOM CALCULATOR
+         ===================================================================== */}
+      {viewTab === 'calculator' && (
+        <div className="space-y-5">
+          {/* PAID MEMBER PLANT / COMPANY & SHIFT LOGGER BAR */}
+          {canUsePremium && (
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs font-extrabold text-[#1A2138]">
+                  Paid Member Plant / Factory Logger &amp; Professional PDF Report Generator
+                </div>
+                <span className="text-[11px] font-bold text-[#1673B8]">
+                  Logs Daily, Weekly, Monthly &amp; Yearly Plant Efficiency automatically
+                </span>
+              </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Net Packed Yield %</div>
-            <div className="text-xl font-extrabold text-[#1673B8] font-mono">
-              {yieldStats.netProcessYieldPct}%
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Prep / Trim Yield %</div>
-            <div className="text-xl font-extrabold text-[#1A2138] font-mono">
-              {yieldStats.prepYieldPct}%
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Total Wastage / Loss</div>
-            <div className="text-base font-extrabold text-red-600 font-mono mt-0.5">
-              {yieldStats.totalLossKg} kg ({yieldStats.totalLossPct}%)
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
-            <div className="text-[10.5px] font-bold text-[#4A5568]">Effective Material Cost</div>
-            <div className="text-base font-extrabold text-[#1A2138] font-mono mt-0.5">
-              Rs. {yieldStats.effectiveRawCostPerFinalKg}/kg
-            </div>
-          </div>
-        </div>
-      </div>
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                <div className="sm:col-span-3">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Plant / Factory / Company Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., ABC Foods & Beverages Plant"
+                    value={plantCompanyName}
+                    onChange={(e) => setPlantCompanyName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Production Line / Product Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Line 1 — Mango Drink 250mL Trays"
+                    value={lineOrProductName}
+                    onChange={(e) => setLineOrProductName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Shift
+                  </label>
+                  <select
+                    value={shiftName}
+                    onChange={(e) => setShiftName(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  >
+                    <option value="Morning Shift (A)">Morning Shift (A)</option>
+                    <option value="Evening Shift (B)">Evening Shift (B)</option>
+                    <option value="Night Shift (C)">Night Shift (C)</option>
+                    <option value="Full Day Operations">Full Day Operations</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Production Date
+                  </label>
+                  <input
+                    type="date"
+                    value={productionDate}
+                    onChange={(e) => setProductionDate(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-2 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleSaveProductionRecord}
+                    className="flex-1 py-2 px-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11px] font-extrabold inline-flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Log</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingleProductionPdf(
+                        buildCurrentProductionRecord()
+                      )
+                    }
+                    className="py-2 px-2.5 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-[11px] font-extrabold inline-flex items-center justify-center gap-1 cursor-pointer"
+                    title="Download Shift Efficiency PDF Report"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>PDF</span>
+                  </button>
+                </div>
+              </div>
 
-      {/* 2. SHIFT LINE OEE & WORKER OUTPUT */}
-      <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
-        <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
-          2. Packaging / Processing Line OEE &amp; Workers Productivity
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-          <div>
-            <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
-              Speed (Packs/min)
-            </label>
-            <input
-              type="number"
-              value={lineSpeedPerMin}
-              onChange={(e) => setLineSpeedPerMin(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
-              Shift (Hours)
-            </label>
-            <input
-              type="number"
-              value={shiftHours}
-              onChange={(e) => setShiftHours(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
-              Break (Mins)
-            </label>
-            <input
-              type="number"
-              value={plannedBreakMins}
-              onChange={(e) => setPlannedBreakMins(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
-              Downtime (Mins)
-            </label>
-            <input
-              type="number"
-              value={unplannedDowntimeMins}
-              onChange={(e) => setUnplannedDowntimeMins(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
-              Total Produced
-            </label>
-            <input
-              type="number"
-              value={actualProducedPacks}
-              onChange={(e) => setActualProducedPacks(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
-              Rejected Packs
-            </label>
-            <input
-              type="number"
-              value={rejectedDamagedPacks}
-              onChange={(e) => setRejectedDamagedPacks(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-          <div>
-            <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
-              Line Workers
-            </label>
-            <input
-              type="number"
-              value={workersCount}
-              onChange={(e) => setWorkersCount(e.target.value)}
-              className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-            />
-          </div>
-        </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="Optional Shift / Downtime / Syrup Room Remarks (e.g., 25m late start due to steam boiler warm-up, CIP completed on Tank 2)..."
+                  value={shiftNotes}
+                  onChange={(e) => setShiftNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+            </div>
+          )}
 
-        <div className="p-4 rounded-2xl bg-[#1A2138] text-white grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div>
-            <div className="text-[10.5px] text-sky-200 font-bold">Overall Line OEE</div>
-            <div className="text-xl font-extrabold text-amber-300 font-mono">
-              {lineStats.oeePct}%
+          {/* =================================================================
+              SECTION 1: 1-HOUR MACHINE EFFICIENCY (TRAYS / HOUR)
+             ================================================================= */}
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
+                1. Net Efficiency for 1 Hour (Hourly Machine Speed vs Actual Trays Produced)
+              </div>
+              <span className="text-[11px] font-bold text-[#4A5568]">
+                Formula: 1-Hour Efficiency (%) = (Trays Produced in 1 Hour ÷ Machine Rated Speed per Hour) × 100
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Machine Rated Speed per 1 Hour (Trays / Cartons / Packs per Hour)
+                </label>
+                <input
+                  type="number"
+                  step="10"
+                  value={machineSpeedTraysPerHour}
+                  onChange={(e) => setMachineSpeedTraysPerHour(e.target.value)}
+                  placeholder="e.g., 1000"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Actual Trays Produced in Full 1 Hour
+                </label>
+                <input
+                  type="number"
+                  step="10"
+                  value={oneHourActualTrays}
+                  onChange={(e) => setOneHourActualTrays(e.target.value)}
+                  placeholder="e.g., 880"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white border-2 border-[#1673B8] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+              <div className="p-3.5 rounded-xl bg-[#1A2138] text-white">
+                <div className="text-[10.5px] font-bold text-sky-200">
+                  1-Hour Machine Efficiency
+                </div>
+                <div className="text-2xl font-extrabold text-amber-300 font-mono mt-0.5">
+                  {oneHourStats.efficiencyPct}%
+                </div>
+                <div className="text-[10.5px] text-slate-300 mt-0.5">
+                  ({oneHourStats.actual1Hr} ÷ {oneHourStats.ratedPerHr} Trays × 100)
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">
+                  1-Hour Trays Shortfall / Loss
+                </div>
+                <div className="text-lg font-extrabold text-red-600 font-mono mt-0.5">
+                  {oneHourStats.lostTrays} Trays
+                </div>
+                <div className="text-[10.5px] text-[#5A6C84] mt-0.5">
+                  Target: {oneHourStats.ratedPerHr} Trays/hr
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">
+                  Speed per Minute (Actual vs Rated)
+                </div>
+                <div className="text-lg font-extrabold text-[#1673B8] font-mono mt-0.5">
+                  {oneHourStats.actualPerMin} / {oneHourStats.ratedPerMin} Trays/min
+                </div>
+                <div className="text-[10.5px] text-[#5A6C84] mt-0.5">
+                  Live 60-minute run rate
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <div className="text-[10.5px] text-sky-200 font-bold">Availability</div>
-            <div className="text-base font-extrabold font-mono">
-              {lineStats.availabilityPct}% ({lineStats.operatingMins}m)
+
+          {/* =================================================================
+              SECTION 2: FULL-DAY NET EFFICIENCY (START TIME, LATE START, BREAK, CIP)
+             ================================================================= */}
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
+                2. Net Efficiency for Full Day (Start Time, Late Production Start, Break Hour, CIP Time &amp; Total Trays)
+              </div>
+              <span className="text-[11px] font-bold text-[#4A5568]">
+                Includes Late Start, Meal/Tea Break, CIP Sanitation &amp; Unplanned Downtime Factors
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div>
+                <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                  Scheduled Start Time
+                </label>
+                <input
+                  type="time"
+                  value={scheduledStartTime}
+                  onChange={(e) => {
+                    const nextSched = e.target.value;
+                    setScheduledStartTime(nextSched);
+                    setLateStartMins(
+                      String(
+                        computeLateMinsFromTimes(nextSched, actualStartTime)
+                      )
+                    );
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                  Actual Production Start
+                </label>
+                <input
+                  type="time"
+                  value={actualStartTime}
+                  onChange={(e) => {
+                    const nextAct = e.target.value;
+                    setActualStartTime(nextAct);
+                    setLateStartMins(
+                      String(
+                        computeLateMinsFromTimes(scheduledStartTime, nextAct)
+                      )
+                    );
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                  Late Start Factor (Mins)
+                </label>
+                <input
+                  type="number"
+                  value={lateStartMins}
+                  onChange={(e) => setLateStartMins(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-amber-400 text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                  Break Hour Factor (Mins)
+                </label>
+                <input
+                  type="number"
+                  value={breakMins}
+                  onChange={(e) => setBreakMins(e.target.value)}
+                  placeholder="e.g., 45 or 60"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                  CIP Cleaning Time (Mins)
+                </label>
+                <input
+                  type="number"
+                  value={cipMins}
+                  onChange={(e) => setCipMins(e.target.value)}
+                  placeholder="e.g., 40"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                  Total Shift Duration (Hours)
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={totalShiftHours}
+                  onChange={(e) => setTotalShiftHours(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                  Machine Speed (Trays/Hr)
+                </label>
+                <input
+                  type="number"
+                  step="10"
+                  value={machineSpeedTraysPerHour}
+                  onChange={(e) => setMachineSpeedTraysPerHour(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                  Total Trays Produced (Full Day)
+                </label>
+                <input
+                  type="number"
+                  value={totalFullDayTrays}
+                  onChange={(e) => setTotalFullDayTrays(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border-2 border-[#1673B8] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                  Other Stoppage / Breakdown (Mins)
+                </label>
+                <input
+                  type="number"
+                  value={unplannedDowntimeMins}
+                  onChange={(e) => setUnplannedDowntimeMins(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                    Reject Trays
+                  </label>
+                  <input
+                    type="number"
+                    value={rejectedTrays}
+                    onChange={(e) => setRejectedTrays(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                    Workers
+                  </label>
+                  <input
+                    type="number"
+                    value={workersCount}
+                    onChange={(e) => setWorkersCount(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Full-Day Net Efficiency Result Banner */}
+            <div className="p-4 rounded-2xl bg-[#1A2138] text-white grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="p-2.5 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[10.5px] text-sky-200 font-bold">
+                  Full-Day Net Efficiency
+                </div>
+                <div className="text-2xl font-extrabold text-amber-300 font-mono">
+                  {fullDayStats.netEfficiencyPct}%
+                </div>
+                <div className="text-[10px] text-slate-300 mt-0.5">
+                  Net Target (After Break &amp; CIP): {fullDayStats.netTargetTraysAfterBreakCip} Trays
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[10.5px] text-sky-200 font-bold">
+                  Gross Shift Efficiency
+                </div>
+                <div className="text-lg font-extrabold text-white font-mono">
+                  {fullDayStats.grossShiftEfficiencyPct}%
+                </div>
+                <div className="text-[10px] text-slate-300 mt-0.5">
+                  Full {totalShiftHours}h Target: {fullDayStats.grossShiftTargetTrays} Trays
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[10.5px] text-sky-200 font-bold">
+                  Running Speed Efficiency
+                </div>
+                <div className="text-lg font-extrabold text-emerald-300 font-mono">
+                  {fullDayStats.runningSpeedPerformancePct}%
+                </div>
+                <div className="text-[10px] text-slate-300 mt-0.5">
+                  Net Run Time: {fullDayStats.actualRunningHours} hrs ({fullDayStats.actualRunningMins}m)
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[10.5px] text-sky-200 font-bold">
+                  Overall Line OEE
+                </div>
+                <div className="text-lg font-extrabold text-sky-300 font-mono">
+                  {fullDayStats.oeePct}%
+                </div>
+                <div className="text-[10px] text-slate-300 mt-0.5">
+                  Avail {fullDayStats.availabilityPct}% • Qual {fullDayStats.qualityPct}%
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[10.5px] text-sky-200 font-bold">
+                  Worker Productivity
+                </div>
+                <div className="text-sm font-extrabold text-white font-mono mt-0.5">
+                  {fullDayStats.traysPerWorkerHour} Trays/worker/hr
+                </div>
+                <div className="text-[10px] text-slate-300 mt-0.5">
+                  {fullDayStats.traysPerWorkerShift} Trays/worker/shift
+                </div>
+              </div>
+            </div>
+
+            {/* Factor-wise Tray & Time Impact Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="p-2.5 rounded-xl bg-white border border-amber-300">
+                <div className="text-[10px] font-bold text-[#92400E]">
+                  Late Production Start Impact ({lateStartMins}m)
+                </div>
+                <div className="font-extrabold text-red-600 font-mono mt-0.5">
+                  -{fullDayStats.traysLostToLateStart} Trays (-{fullDayStats.lateStartImpactPct}%)
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#4A5568]">
+                  Break Time Factor ({breakMins}m)
+                </div>
+                <div className="font-extrabold text-[#1A2138] font-mono mt-0.5">
+                  {fullDayStats.traysInBreakTime} Trays (Deducted)
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#4A5568]">
+                  CIP Sanitation Factor ({cipMins}m)
+                </div>
+                <div className="font-extrabold text-[#1673B8] font-mono mt-0.5">
+                  {fullDayStats.traysInCipTime} Trays (Deducted)
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#4A5568]">
+                  Breakdown / Stoppage ({unplannedDowntimeMins}m)
+                </div>
+                <div className="font-extrabold text-red-600 font-mono mt-0.5">
+                  -{fullDayStats.traysLostToBreakdown} Trays Lost
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <div className="text-[10.5px] text-sky-200 font-bold">Speed Performance</div>
-            <div className="text-base font-extrabold font-mono">
-              {lineStats.performancePct}%
+
+          {/* =================================================================
+              SECTION 3: SYRUP ROOM / PREPARATION ROOM BATCH EFFICIENCY
+             ================================================================= */}
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
+                3. Syrup Room / Preparation Room Batch Efficiency (Prepared vs Packed vs Waste)
+              </div>
+              <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-[#D2DEEA]">
+                <span className="text-[10.5px] font-bold text-[#4A5568]">Unit:</span>
+                {(['Liters', 'kg'] as const).map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => setSyrupUnit(u)}
+                    className={`px-2 py-0.5 rounded text-[10.5px] font-extrabold cursor-pointer ${
+                      syrupUnit === u
+                        ? 'bg-[#1673B8] text-white'
+                        : 'text-[#1A2138]'
+                    }`}
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Total Syrup / Batch Prepared ({syrupUnit})
+                </label>
+                <input
+                  type="number"
+                  step="10"
+                  value={syrupPreparedTotal}
+                  onChange={(e) => setSyrupPreparedTotal(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Total Syrup / Batch Packed ({syrupUnit})
+                </label>
+                <input
+                  type="number"
+                  step="10"
+                  value={syrupPackedTotal}
+                  onChange={(e) => setSyrupPackedTotal(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border-2 border-[#1673B8] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Syrup Waste / Drain / CIP Loss ({syrupUnit})
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  value={syrupCustomWasteInput}
+                  onChange={(e) => setSyrupCustomWasteInput(e.target.value)}
+                  placeholder={`Auto: ${syrupStats.calculatedLoss} ${syrupUnit}`}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Syrup Cost Rate (Rs. / {syrupUnit})
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  value={syrupCostPerUnit}
+                  onChange={(e) => setSyrupCostPerUnit(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              <div className="p-3 rounded-xl bg-[#1A2138] text-white">
+                <div className="text-[10.5px] font-bold text-sky-200">
+                  Syrup Room Batch Efficiency
+                </div>
+                <div className="text-xl font-extrabold text-amber-300 font-mono">
+                  {syrupStats.batchEfficiencyPct}%
+                </div>
+                <div className="text-[10px] text-slate-300">
+                  Packed {syrupStats.packed} of {syrupStats.prepared} {syrupUnit}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">
+                  Total Syrup Wasted / Lost
+                </div>
+                <div className="text-lg font-extrabold text-red-600 font-mono">
+                  {syrupStats.wasteTotal} {syrupUnit} ({syrupStats.wastagePct}%)
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">
+                  Financial Value of Syrup Waste
+                </div>
+                <div className="text-lg font-extrabold text-[#1A2138] font-mono">
+                  Rs. {syrupStats.wasteCostRs.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">
+                  Mass Balance Status
+                </div>
+                <div className="text-xs font-extrabold text-emerald-700 mt-1">
+                  {syrupStats.unaccountedDiff === 0
+                    ? `100% Accounted (${syrupStats.prepared} ${syrupUnit})`
+                    : `Variance: ${syrupStats.unaccountedDiff} ${syrupUnit}`}
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <div className="text-[10.5px] text-sky-200 font-bold">First-Pass Quality</div>
-            <div className="text-base font-extrabold text-emerald-300 font-mono">
-              {lineStats.qualityPct}%
+
+          {/* =================================================================
+              SECTION 4: RAW-TO-PACKED PROCESS YIELD & WASTAGE
+             ================================================================= */}
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+            <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
+              4. Raw Material to Packed Process Yield %, Peeling/Trim Loss &amp; Cost Impact
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Raw Material Input (kg)
+                </label>
+                <input
+                  type="number"
+                  value={rawInputKg}
+                  onChange={(e) => setRawInputKg(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  After Trim / Prep (kg)
+                </label>
+                <input
+                  type="number"
+                  value={trimmedPreppedKg}
+                  onChange={(e) => setTrimmedPreppedKg(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Final Packed Output (kg)
+                </label>
+                <input
+                  type="number"
+                  value={finalPackedKg}
+                  onChange={(e) => setFinalPackedKg(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Raw Material Rate (Rs./kg)
+                </label>
+                <input
+                  type="number"
+                  value={rawCostPerKg}
+                  onChange={(e) => setRawCostPerKg(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Net Packed Yield %</div>
+                <div className="text-xl font-extrabold text-[#1673B8] font-mono">
+                  {yieldStats.netProcessYieldPct}%
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Prep / Trim Yield %</div>
+                <div className="text-xl font-extrabold text-[#1A2138] font-mono">
+                  {yieldStats.prepYieldPct}%
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Total Wastage / Loss</div>
+                <div className="text-base font-extrabold text-red-600 font-mono mt-0.5">
+                  {yieldStats.totalLossKg} kg ({yieldStats.totalLossPct}%)
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10.5px] font-bold text-[#4A5568]">Effective Material Cost</div>
+                <div className="text-base font-extrabold text-[#1A2138] font-mono mt-0.5">
+                  Rs. {yieldStats.effectiveRawCostPerFinalKg}/kg
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <div className="text-[10.5px] text-sky-200 font-bold">Worker Productivity</div>
-            <div className="text-sm font-extrabold font-mono">
-              {lineStats.packsPerWorkerHour} packs/worker/hr
+
+          {/* =================================================================
+              SECTION 5: CONSOLIDATED PRODUCTION & SYRUP ROOM REPORT PREVIEW
+             ================================================================= */}
+          <div className="p-4 rounded-2xl bg-[#F8FAFC] border-2 border-[#1673B8] space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] uppercase tracking-wider">
+                  Consolidated Production Floor &amp; Syrup Room Efficiency Report Summary
+                </h3>
+                <p className="text-[11px] text-[#5A6C84]">
+                  Live executive summary combining 1-Hour Efficiency, Full-Day Net Efficiency, Syrup Room Yield &amp; Process Yield
+                </p>
+              </div>
+              {canUsePremium && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveProductionRecord}
+                    className="px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Shift Record to Directory</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingleProductionPdf(
+                        buildCurrentProductionRecord()
+                      )
+                    }
+                    className="px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Full Shift PDF Report</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
+                  1-Hour Machine Efficiency
+                </div>
+                <div className="text-base font-extrabold text-[#1673B8] font-mono">
+                  {oneHourStats.efficiencyPct}% ({oneHourStats.actual1Hr}/{oneHourStats.ratedPerHr} Trays)
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
+                  Full-Day Net Efficiency
+                </div>
+                <div className="text-base font-extrabold text-[#1A2138] font-mono">
+                  {fullDayStats.netEfficiencyPct}% ({totalFullDayTrays} Trays)
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
+                  Syrup / Prep Room Efficiency
+                </div>
+                <div className="text-base font-extrabold text-emerald-700 font-mono">
+                  {syrupStats.batchEfficiencyPct}% (Waste: {syrupStats.wasteTotal} {syrupUnit})
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[10px] font-bold text-[#5A6C84]">
+                  Raw-to-Packed Process Yield
+                </div>
+                <div className="text-base font-extrabold text-[#1A2138] font-mono">
+                  {yieldStats.netProcessYieldPct}% (Loss: {yieldStats.totalLossKg} kg)
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* =====================================================================
+          TAB 2: SAVED PRODUCTION DIRECTORY (PAID USERS)
+         ===================================================================== */}
+      {canUsePremium && viewTab === 'directory' && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-extrabold text-[#1A2138]">
+                Saved Production Floor &amp; Syrup Room Directory ({filteredDirectoryRecords.length})
+              </h3>
+              <p className="text-xs text-[#5A6C84]">
+                Search, reload, or download official PDF Shift &amp; Batch Efficiency Reports for your plant.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadPlantAnalyticsPdf}
+              className="px-4 py-2.5 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-2 cursor-pointer shadow-2xs"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Plant Efficiency Logbook PDF</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-6 relative">
+              <Search className="w-4 h-4 text-[#5A6C84] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by plant/company, line, shift, date, or record code (PRD-...)..."
+                value={dirSearchQuery}
+                onChange={(e) => setDirSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <select
+                value={dirPlantFilter}
+                onChange={(e) => setDirPlantFilter(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              >
+                <option value="all">All Plants / Companies</option>
+                {uniquePlantNames.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:col-span-3">
+              <select
+                value={dirPeriodFilter}
+                onChange={(e) =>
+                  setDirPeriodFilter(
+                    e.target.value as 'all' | 'today' | 'week' | 'month' | 'year'
+                  )
+                }
+                className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              >
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 Days (Weekly)</option>
+                <option value="month">Last 30 Days (Monthly)</option>
+                <option value="year">Last 365 Days (Yearly)</option>
+              </select>
+            </div>
+          </div>
+
+          {filteredDirectoryRecords.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-[#F8FAFC] border border-dashed border-[#94B8D7] text-center space-y-2">
+              <div className="text-sm font-extrabold text-[#1A2138]">
+                No Saved Production Records Found
+              </div>
+              <p className="text-xs text-[#5A6C84]">
+                Enter your shift and syrup room data in the Production Calculator tab and click &ldquo;Save Log&rdquo; to build your plant directory.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredDirectoryRecords.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] hover:border-[#1673B8] transition-colors space-y-2.5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-[#1A2138] text-white text-[10px] font-extrabold font-mono">
+                          {rec.recordCode}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10px] font-extrabold">
+                          {rec.plantCompanyName}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-white border border-[#D2DEEA] text-[#1A2138] text-[10px] font-extrabold">
+                          {rec.shiftName} • {rec.productionDate}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-extrabold text-[#1A2138] mt-1">
+                        {rec.lineOrProductName}
+                      </h4>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleLoadRecordIntoCalculator(rec)}
+                        className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#EBF4FC] border border-[#94B8D7] text-[#1A2138] text-[11px] font-extrabold cursor-pointer"
+                      >
+                        Load into Calculator
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadSingleProductionPdf(rec)}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>PDF Report</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProductionRecord(rec.id)}
+                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
+                        title="Delete record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        1-Hour Efficiency
+                      </div>
+                      <div className="font-extrabold text-[#1673B8] font-mono">
+                        {rec.oneHourEfficiencyPct}% ({rec.oneHourActualTrays}/{rec.machineSpeedTraysPerHour})
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        Full-Day Net Efficiency
+                      </div>
+                      <div className="font-extrabold text-[#1A2138] font-mono">
+                        {rec.fullDayNetOperatingEfficiencyPct}% ({rec.totalFullDayTrays} Trays)
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        Late / Break / CIP
+                      </div>
+                      <div className="font-extrabold text-[#92400E] font-mono">
+                        {rec.lateStartMins}m / {rec.breakMins}m / {rec.cipMins}m
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        Syrup Room Efficiency
+                      </div>
+                      <div className="font-extrabold text-emerald-700 font-mono">
+                        {rec.syrupBatchEfficiencyPct}% (Waste: {rec.syrupWasteTotal} {rec.syrupUnit})
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] text-[#5A6C84] font-bold">
+                        Process Yield &amp; OEE
+                      </div>
+                      <div className="font-extrabold text-[#1A2138] font-mono">
+                        Yield {rec.netProcessYieldPct}% • OEE {rec.fullDayOeePct}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {rec.notes && (
+                    <div className="text-[11px] text-[#4A5568] bg-white px-3 py-1.5 rounded-lg border border-[#D2DEEA]">
+                      <strong className="text-[#1A2138]">Remarks:</strong> {rec.notes}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =====================================================================
+          TAB 3: PLANT / COMPANY EFFICIENCY ANALYTICS (DAILY / WEEKLY / MONTHLY / YEARLY)
+         ===================================================================== */}
+      {canUsePremium && viewTab === 'analytics' && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-extrabold text-[#1A2138]">
+                Plant / Factory / Company Efficiency Tracker (Daily, Weekly, Monthly &amp; Yearly)
+              </h3>
+              <p className="text-xs text-[#5A6C84]">
+                Track your company&apos;s 1-Hour Efficiency, Full-Day Net Efficiency, Syrup Room Batch Efficiency &amp; Process Yield across any time horizon.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadPlantAnalyticsPdf}
+              className="px-4 py-2.5 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-2 cursor-pointer shadow-2xs"
+            >
+              <Download className="w-4 h-4" />
+              <span>
+                Download {analyticsGrouping.toUpperCase()} Plant Efficiency PDF
+              </span>
+            </button>
+          </div>
+
+          {/* Plant Filter & Grouping Period Selector */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-extrabold text-[#1A2138]">
+                Plant / Company:
+              </span>
+              <select
+                value={dirPlantFilter}
+                onChange={(e) => setDirPlantFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              >
+                <option value="all">All Logged Plants ({savedRecords.length} shifts)</option>
+                {uniquePlantNames.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 bg-[#F0F6FC] p-1 rounded-xl border border-[#D2DEEA]">
+              {(
+                [
+                  { id: 'daily', label: 'Daily-Wise' },
+                  { id: 'weekly', label: 'Weekly-Wise' },
+                  { id: 'monthly', label: 'Monthly-Wise' },
+                  { id: 'yearly', label: 'Yearly-Wise' }
+                ] as const
+              ).map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setAnalyticsGrouping(g.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+                    analyticsGrouping === g.id
+                      ? 'bg-[#1673B8] text-white shadow-2xs'
+                      : 'text-[#1A2138] hover:bg-white'
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Plant Overall KPI Cards */}
+          <div className="p-4 rounded-2xl bg-[#1A2138] text-white grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+              <div className="text-[10.5px] text-sky-200 font-bold">
+                Plant Avg 1-Hour Efficiency
+              </div>
+              <div className="text-2xl font-extrabold text-amber-300 font-mono">
+                {overallPlantKpis.avg1HrEff}%
+              </div>
+              <div className="text-[10px] text-slate-300 mt-0.5">
+                Across {overallPlantKpis.totalShifts} logged shifts
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+              <div className="text-[10.5px] text-sky-200 font-bold">
+                Plant Avg Full-Day Net Efficiency
+              </div>
+              <div className="text-2xl font-extrabold text-emerald-300 font-mono">
+                {overallPlantKpis.avgNetDayEff}%
+              </div>
+              <div className="text-[10px] text-slate-300 mt-0.5">
+                Total Produced: {overallPlantKpis.totalTraysProduced.toLocaleString()} Trays
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+              <div className="text-[10.5px] text-sky-200 font-bold">
+                Avg Syrup Room Batch Efficiency
+              </div>
+              <div className="text-2xl font-extrabold text-sky-300 font-mono">
+                {overallPlantKpis.avgSyrupEff}%
+              </div>
+              <div className="text-[10px] text-slate-300 mt-0.5">
+                Total Syrup Waste: {overallPlantKpis.totalSyrupWaste}
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+              <div className="text-[10.5px] text-sky-200 font-bold">
+                Avg Process Yield &amp; Time Factors
+              </div>
+              <div className="text-xl font-extrabold text-white font-mono">
+                {overallPlantKpis.avgProcessYield}% Yield
+              </div>
+              <div className="text-[10px] text-slate-300 mt-0.5">
+                Late Start: {overallPlantKpis.totalLateStartHrs}h • CIP: {overallPlantKpis.totalCipHrs}h
+              </div>
+            </div>
+          </div>
+
+          {/* Period-by-Period Breakdown List */}
+          {analyticsGroups.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-[#F8FAFC] border border-dashed border-[#94B8D7] text-center space-y-2">
+              <div className="text-sm font-extrabold text-[#1A2138]">
+                No Plant Efficiency Data Logged Yet
+              </div>
+              <p className="text-xs text-[#5A6C84]">
+                Save your daily shifts in the Production Calculator tab to view Daily, Weekly, Monthly, and Yearly plant performance trends.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {analyticsGroups.map((grp) => (
+                <div
+                  key={grp.periodKey}
+                  className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] space-y-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <span className="text-sm font-extrabold text-[#1A2138]">
+                        {grp.periodLabel}
+                      </span>
+                      <span className="ml-2 px-2.5 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[11px] font-extrabold">
+                        {grp.shiftsCount} Shift{grp.shiftsCount > 1 ? 's' : ''} Logged
+                      </span>
+                    </div>
+                    <div className="text-xs font-extrabold text-[#1A2138] font-mono">
+                      Total Output: {grp.totalTrays.toLocaleString()} Trays
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                    <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] font-bold text-[#5A6C84]">
+                        Avg 1-Hour Efficiency
+                      </div>
+                      <div className="text-base font-extrabold text-[#1673B8] font-mono">
+                        {grp.avgOneHourEff}%
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] font-bold text-[#5A6C84]">
+                        Avg Full-Day Net Eff.
+                      </div>
+                      <div className="text-base font-extrabold text-[#1A2138] font-mono">
+                        {grp.avgFullDayNetEff}%
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] font-bold text-[#5A6C84]">
+                        Avg Syrup Room Eff.
+                      </div>
+                      <div className="text-base font-extrabold text-emerald-700 font-mono">
+                        {grp.avgSyrupEff}%
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] font-bold text-[#5A6C84]">
+                        Avg Process Yield %
+                      </div>
+                      <div className="text-base font-extrabold text-[#1A2138] font-mono">
+                        {grp.avgProcessYield}%
+                      </div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="text-[10px] font-bold text-[#5A6C84]">
+                        Late / Break / CIP Mins
+                      </div>
+                      <div className="text-xs font-extrabold text-[#92400E] font-mono mt-1">
+                        {grp.totalLateMins}m / {grp.totalBreakMins}m / {grp.totalCipMins}m
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Visual Efficiency Bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10.5px] font-bold text-[#5A6C84]">
+                      <span>
+                        Syrup Prepared: {grp.totalSyrupPrepared} • Packed: {grp.totalSyrupPacked} • Waste: {grp.totalSyrupWaste}
+                      </span>
+                      <span>Net Efficiency: {grp.avgFullDayNetEff}%</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-[#D2DEEA] overflow-hidden">
+                      <div
+                        className="h-full bg-[#1673B8] rounded-full"
+                        style={{
+                          width: `${Math.min(100, Math.max(5, grp.avgFullDayNetEff))}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
