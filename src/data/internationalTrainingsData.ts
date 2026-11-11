@@ -1,4 +1,37 @@
 import { HubTraining } from '../types/hub';
+import {
+  MANAGER_FOOD_DIETARY_COURSE,
+  MANAGER_FOOD_DIETARY_HUB_TRAINING
+} from './managerFoodDietaryCourse';
+import {
+  HACCP_3_AND_4_COURSES,
+  HACCP_3_AND_4_HUB_TRAININGS
+} from './coursesHaccp3And4';
+import {
+  FOOD_SAFETY_3_AND_4_COURSES,
+  FOOD_SAFETY_3_AND_4_HUB_TRAININGS
+} from './coursesFoodSafety3And4';
+import {
+  ISO_9001_22000_FSSC_COURSES,
+  ISO_9001_22000_FSSC_HUB_TRAININGS
+} from './coursesIso9001And22000AndFssc';
+import {
+  ISO_14001_45001_BRCGS_COURSES,
+  ISO_14001_45001_BRCGS_HUB_TRAININGS
+} from './coursesIso14001And45001AndBrcgs';
+import {
+  OFFICE_AND_ENGLISH_COURSES,
+  OFFICE_AND_ENGLISH_HUB_TRAININGS
+} from './coursesOfficeAndEnglish';
+
+export interface CoursePresentationSlide {
+  slideNumber: number;
+  title: string;
+  subtitle: string;
+  bulletPoints: string[];
+  keyTakeaway: string;
+  practicalExample?: string;
+}
 
 export interface CourseStudyModule {
   id: string;
@@ -14,6 +47,7 @@ export interface CourseStudyModule {
     correctiveProtocol: string;
   }>;
   practicalChecklist: string[];
+  presentationSlides?: CoursePresentationSlide[];
 }
 
 export interface CourseExamMCQ {
@@ -103,11 +137,14 @@ export const DEFAULT_COURSE_TEMPLATE: InternationalTrainingCourse = {
   ]
 };
 
-/**
- * Pre-populated 14 courses and modules removed per user request.
- * Future trainings added by the user/Admin will automatically integrate with all certificate and exam features.
- */
-export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = [];
+export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = [
+  MANAGER_FOOD_DIETARY_COURSE,
+  ...HACCP_3_AND_4_COURSES,
+  ...FOOD_SAFETY_3_AND_4_COURSES,
+  ...ISO_9001_22000_FSSC_COURSES,
+  ...ISO_14001_45001_BRCGS_COURSES,
+  ...OFFICE_AND_ENGLISH_COURSES
+];
 
 export function get40CourseExamQuestions(courseId: string): CourseExamMCQ[] {
   const course =
@@ -128,7 +165,7 @@ export function get40CourseExamQuestions(courseId: string): CourseExamMCQ[] {
   for (const mod of course.modules) {
     for (const ccp of mod.criticalControlParameters) {
       generated.push({
-        q: `In ${course.title} (${mod.title}), what is the required international standard limit for "${ccp.parameter}"?`,
+        q: `In ${course.title} (${mod.title}), what is the required standard limit or rule for "${ccp.parameter}"?`,
         options: [
           ccp.standardLimit,
           'No limit is required unless a customer complains',
@@ -136,26 +173,42 @@ export function get40CourseExamQuestions(courseId: string): CourseExamMCQ[] {
           'Operate at ambient room condition without calibration'
         ],
         correctIndex: 0,
-        explanation: `For ${ccp.parameter}, the international standard limit is: ${ccp.standardLimit}. Corrective protocol: ${ccp.correctiveProtocol}`
+        explanation: `For ${ccp.parameter}, the standard requirement is: ${ccp.standardLimit}. Action: ${ccp.correctiveProtocol}`
       });
 
       generated.push({
-        q: `During an operational check in ${course.title}, if "${ccp.parameter}" breaches its standard limit (${ccp.standardLimit}), what is the mandatory corrective protocol?`,
+        q: `During an operational check in ${course.title}, if "${ccp.parameter}" deviates from its standard requirement, what action applies?`,
         options: [
-          'Continue production and note it at the end of the month',
+          'Continue operations and note it at the end of the month',
           ccp.correctiveProtocol,
           'Delete the monitoring log entry so auditors do not see it',
-          'Ship the batch immediately under a discount label'
+          'Ship the batch immediately without review'
         ],
         correctIndex: 1,
-        explanation: `When ${ccp.parameter} deviates from ${ccp.standardLimit}, the mandatory action is: ${ccp.correctiveProtocol}`
+        explanation: `When ${ccp.parameter} deviates, the required protocol is: ${ccp.correctiveProtocol}`
       });
+    }
+
+    if (mod.presentationSlides) {
+      for (const sl of mod.presentationSlides) {
+        generated.push({
+          q: `According to Module ${mod.moduleNumber} (${sl.title}) of ${course.title}, which key takeaway is accurate?`,
+          options: [
+            sl.keyTakeaway,
+            'Skip all daily monitoring and documentation',
+            'Ignore safety and quality procedures during peak hours',
+            'Training and supervision are never required'
+          ],
+          correctIndex: 0,
+          explanation: sl.keyTakeaway
+        });
+      }
     }
 
     for (let i = 0; i < mod.keyPrinciples.length; i++) {
       const principle = mod.keyPrinciples[i];
       generated.push({
-        q: `According to Module ${mod.moduleNumber} (${mod.title}) of ${course.title}, which of the following technical statements is compliant with international standards?`,
+        q: `According to Module ${mod.moduleNumber} (${mod.title}) of ${course.title}, which of the following statements is compliant?`,
         options: [
           principle,
           'Documentation and calibration are optional during night shifts',
@@ -185,4 +238,13 @@ export function get40CourseExamQuestions(courseId: string): CourseExamMCQ[] {
   }));
 }
 
-export const INITIAL_INTERNATIONAL_TRAININGS: HubTraining[] = [];
+export const INITIAL_INTERNATIONAL_TRAININGS: HubTraining[] = [
+  MANAGER_FOOD_DIETARY_HUB_TRAINING,
+  ...HACCP_3_AND_4_HUB_TRAININGS,
+  ...FOOD_SAFETY_3_AND_4_HUB_TRAININGS,
+  ...ISO_9001_22000_FSSC_HUB_TRAININGS,
+  ...ISO_14001_45001_BRCGS_HUB_TRAININGS,
+  ...OFFICE_AND_ENGLISH_HUB_TRAININGS
+];
+
+

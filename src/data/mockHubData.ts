@@ -735,6 +735,9 @@ export const INITIAL_SCHOLARSHIPS: HubScholarship[] = [
   }
 ];
 
-export const INITIAL_TRAININGS: HubTraining[] = [];
+export const INITIAL_TRAININGS: HubTraining[] = [
+  ...INITIAL_INTERNATIONAL_TRAININGS
+];
+
 
 

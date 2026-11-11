@@ -148,6 +148,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   const mergedCourses: InternationalTrainingCourse[] = useMemo(() => {
     const activeAdminTrainings = trainings.filter((t) => t.isActive !== false);
     const result: InternationalTrainingCourse[] = [];
+    const seenIds = new Set<string>();
 
     for (const customTr of activeAdminTrainings) {
       const baseMatch = INTERNATIONAL_TRAINING_COURSES.find(
@@ -159,10 +160,21 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       const mappedCustomModules: CourseStudyModule[] =
         customTr.customModules && customTr.customModules.length > 0
           ? customTr.customModules.map((m, idx) => {
+              const richBaseMod = baseMatch?.modules.find(
+                (bm, bIdx) => bm.id === m.id || bIdx === idx
+              );
               const paragraphs = (m.description || '')
                 .split(/\n+/)
                 .map((p) => p.trim())
                 .filter(Boolean);
+              if (richBaseMod) {
+                return {
+                  ...richBaseMod,
+                  id: m.id || richBaseMod.id,
+                  moduleNumber: idx + 1,
+                  title: m.subject || richBaseMod.title
+                };
+              }
               return {
                 id: m.id || `mod-${idx + 1}`,
                 moduleNumber: idx + 1,
@@ -198,6 +210,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             })
           : fallbackTemplate.modules;
 
+      seenIds.add(customTr.id);
+      if (baseMatch) seenIds.add(baseMatch.id);
+
       result.push({
         ...fallbackTemplate,
         id: customTr.id,
@@ -211,6 +226,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
           baseMatch?.duration ||
           `Self-Paced · ${mappedCustomModules.length} Modules`
       });
+    }
+
+    for (const baseCourse of INTERNATIONAL_TRAINING_COURSES) {
+      if (!seenIds.has(baseCourse.id)) {
+        result.push(baseCourse);
+      }
     }
 
     return result;
@@ -273,19 +294,46 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     return combined;
   }, [currentUser, certificates, paymentRequests]);
 
+  const cleanCourseProgressObj = (prog: UserCourseProgress): UserCourseProgress => {
+    const cleaned: UserCourseProgress = {
+      courseId: prog.courseId,
+      courseTitle: prog.courseTitle,
+      completedModuleIds: prog.completedModuleIds || [],
+      lastModuleIndex: prog.lastModuleIndex ?? 0,
+      lastAccessedAt: prog.lastAccessedAt || new Date().toISOString(),
+      examPassed: Boolean(prog.examPassed),
+      bestExamScore: prog.bestExamScore ?? 0,
+      bestExamTotal: prog.bestExamTotal ?? 40,
+      bestExamPercentage: prog.bestExamPercentage ?? 0,
+      distinctionEarned: Boolean(prog.distinctionEarned),
+      certificateNumber: prog.certificateNumber || '',
+      certificateFeePaid: Boolean(prog.certificateFeePaid),
+      certificateFeePending: Boolean(prog.certificateFeePending)
+    };
+    if (prog.examCompletedAt) {
+      cleaned.examCompletedAt = prog.examCompletedAt;
+    }
+    if (prog.certificateUnlockedAt) {
+      cleaned.certificateUnlockedAt = prog.certificateUnlockedAt;
+    }
+    return cleaned;
+  };
+
   const saveProgressHelper = (course: InternationalTrainingCourse, updated: UserCourseProgress) => {
     const uidKey = currentUser?.uid || 'guest';
-    const nextMap = {
-      ...courseProgressMap,
-      [course.id]: updated
-    };
+    const sanitizedUpdated = cleanCourseProgressObj(updated);
+    const nextMap: Record<string, UserCourseProgress> = {};
+    for (const [k, v] of Object.entries(courseProgressMap)) {
+      if (v) nextMap[k] = cleanCourseProgressObj(v);
+    }
+    nextMap[course.id] = sanitizedUpdated;
     try {
       localStorage.setItem(`fsp_course_progress_${uidKey}`, JSON.stringify(nextMap));
       localStorage.setItem(`fsp_last_active_course_${uidKey}`, course.id);
     } catch {
       // ignore
     }
-    onSaveCourseProgress(course.id, updated, nextMap);
+    onSaveCourseProgress(course.id, sanitizedUpdated, nextMap);
   };
 
   // Find the most recently accessed course for "Continue Where You Left Off"
@@ -351,13 +399,15 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       bestExamTotal: 40,
       bestExamPercentage: existing?.bestExamPercentage || 0,
       distinctionEarned: existing?.distinctionEarned || false,
-      examCompletedAt: existing?.examCompletedAt,
+      ...(existing?.examCompletedAt ? { examCompletedAt: existing.examCompletedAt } : {}),
       certificateNumber:
         existing?.certificateNumber ||
         makeDeterministicCertNumber(currentUser?.uid || 'GUEST', course.code),
       certificateFeePaid: existing?.certificateFeePaid || false,
       certificateFeePending: existing?.certificateFeePending || false,
-      certificateUnlockedAt: existing?.certificateUnlockedAt
+      ...(existing?.certificateUnlockedAt
+        ? { certificateUnlockedAt: existing.certificateUnlockedAt }
+        : {})
     };
     saveProgressHelper(course, updated);
   };
@@ -1888,11 +1938,14 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                             {mod.title}
                           </p>
                           <p className="text-[10px] text-slate-500 mt-0.5">
+                            {mod.presentationSlides?.length
+                              ? `${mod.presentationSlides.length} Slides · `
+                              : ''}
                             {mod.estimatedMinutes} mins ·{' '}
                             {isCompleted
                               ? 'Completed'
                               : isCurrent
-                              ? 'Reading Now (Saved Point)'
+                              ? 'Viewing Slides Now'
                               : 'Pending'}
                           </p>
                         </div>

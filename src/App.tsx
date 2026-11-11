@@ -1879,9 +1879,26 @@ export default function App() {
     paidCommunityMembers
   ]);
 
+  const stripUndefinedDeep = <T,>(input: T): T => {
+    if (Array.isArray(input)) {
+      return input.map((item) => stripUndefinedDeep(item)) as unknown as T;
+    }
+    if (input !== null && typeof input === 'object') {
+      const cleaned: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+        if (v !== undefined) {
+          cleaned[k] = stripUndefinedDeep(v);
+        }
+      }
+      return cleaned as T;
+    }
+    return input;
+  };
+
   // Persist both full private vault (/users/{uid}/private/profile, /users/{uid}/profile/main) and sanitized public profile (/users/{uid})
   const persistUserProfileToFirestore = async (fullUser: HubUser) => {
-    const sanitizedPublic = buildSanitizedPublicUser(fullUser);
+    const cleanFullUser = stripUndefinedDeep(fullUser);
+    const sanitizedPublic = stripUndefinedDeep(buildSanitizedPublicUser(cleanFullUser));
     setUsers((prev) => {
       const exists = prev.some((u) => u.uid === sanitizedPublic.uid);
       if (exists) {
@@ -1895,16 +1912,16 @@ export default function App() {
     try {
       await Promise.all([
         setDoc(
-          doc(db, 'users', fullUser.uid, 'private', 'profile'),
-          fullUser,
+          doc(db, 'users', cleanFullUser.uid, 'private', 'profile'),
+          cleanFullUser,
           { merge: true }
         ),
         setDoc(
-          doc(db, 'users', fullUser.uid, 'profile', 'main'),
+          doc(db, 'users', cleanFullUser.uid, 'profile', 'main'),
           sanitizedPublic,
           { merge: true }
         ),
-        setDoc(doc(db, 'users', fullUser.uid), sanitizedPublic, {
+        setDoc(doc(db, 'users', cleanFullUser.uid), sanitizedPublic, {
           merge: true
         })
       ]);
@@ -1913,7 +1930,7 @@ export default function App() {
         handleFirestoreError(
           err,
           OperationType.WRITE,
-          `users/${fullUser.uid}`
+          `users/${cleanFullUser.uid}`
         );
       } catch {}
     }
