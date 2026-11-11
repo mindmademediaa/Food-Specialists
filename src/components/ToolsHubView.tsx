@@ -217,13 +217,15 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     'Breakfast' | 'Lunch' | 'Dinner' | 'Snack'
   >('Breakfast');
   const [newFoodName, setNewFoodName] = useState<string>('');
-  const [newPortion, setNewPortion] = useState<string>('');
-  const [newCalories, setNewCalories] = useState<string>('');
-  const [newProtein, setNewProtein] = useState<string>('');
-  const [newCarbs, setNewCarbs] = useState<string>('');
-  const [newFats, setNewFats] = useState<string>('');
-  const [newWeightEntryKg, setNewWeightEntryKg] = useState<string>('');
-  const [newWeightEntryDate, setNewWeightEntryDate] = useState<string>('');
+  const [newPortion, setNewPortion] = useState<string>('1 serving');
+  const [newCalories, setNewCalories] = useState<string>('250');
+  const [newProtein, setNewProtein] = useState<string>('15');
+  const [newCarbs, setNewCarbs] = useState<string>('30');
+  const [newFats, setNewFats] = useState<string>('8');
+  const [newWeightEntryKg, setNewWeightEntryKg] = useState<string>(
+    String(toolsData.nutrition.weightKg || 76)
+  );
+  const [newWeightEntryDate, setNewWeightEntryDate] = useState<string>('Today');
 
   const metrics = useMemo(
     () => computeNutritionMetrics(nutritionForm),
