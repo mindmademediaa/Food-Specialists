@@ -551,32 +551,20 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
   const [patientCodeInput, setPatientCodeInput] = useState<string>(() =>
     generateNextPatientCode(savedNut?.patientLogs || [])
   );
-  const [fullNameInput, setFullNameInput] = useState<string>(
-    () => user.name || 'Food Specialist'
-  );
+  const [fullNameInput, setFullNameInput] = useState<string>('');
   const [patientContactInput, setPatientContactInput] = useState<string>('');
-  const [ageInput, setAgeInput] = useState<string>(() =>
-    String(savedNut?.age ?? 28)
-  );
-  const [genderInput, setGenderInput] = useState<GenderOption>(() =>
-    savedNut?.gender === 'female' ? 'Female' : 'Male'
-  );
+  const [ageInput, setAgeInput] = useState<string>('');
+  const [genderInput, setGenderInput] = useState<GenderOption>('Male');
   const [heightUnit, setHeightUnit] = useState<'cm' | 'feet'>('cm');
-  const [heightCmInput, setHeightCmInput] = useState<string>(() =>
-    String(savedNut?.heightCm ?? 172)
-  );
-  const [heightFeetInput, setHeightFeetInput] = useState<string>('5');
-  const [heightInchesInput, setHeightInchesInput] = useState<string>('8');
-  const [weightKgInput, setWeightKgInput] = useState<string>(() =>
-    String(savedNut?.weightKg ?? 74)
-  );
-  const [targetWeightKgInput, setTargetWeightKgInput] = useState<string>(() =>
-    String(savedNut?.targetWeightKg ?? 68)
-  );
+  const [heightCmInput, setHeightCmInput] = useState<string>('');
+  const [heightFeetInput, setHeightFeetInput] = useState<string>('');
+  const [heightInchesInput, setHeightInchesInput] = useState<string>('');
+  const [weightKgInput, setWeightKgInput] = useState<string>('');
+  const [targetWeightKgInput, setTargetWeightKgInput] = useState<string>('');
   const [activityLevel, setActivityLevel] =
     useState<ActivityLevelOption>('Moderately Active');
   const [goal, setGoal] = useState<GoalOption>('Lose Weight');
-  const [waterGoalInput, setWaterGoalInput] = useState<string>('8');
+  const [waterGoalInput, setWaterGoalInput] = useState<string>('');
 
   // Optional Body Circumference Inputs inside Step 1 (Safe to leave blank!)
   const [circumferenceUnit, setCircumferenceUnit] = useState<'cm' | 'in'>('cm');
@@ -677,9 +665,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
   ]);
 
   // Water glasses tracker
-  const [waterGlasses, setWaterGlasses] = useState<number>(
-    () => toolsData?.nutrition?.waterGlassesToday ?? 6
-  );
+  const [waterGlasses, setWaterGlasses] = useState<number>(0);
 
   // Weight History
   const [weightLogs, setWeightLogs] = useState<
@@ -1231,12 +1217,16 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     setPatientCodeInput(nextCode);
     setFullNameInput('');
     setPatientContactInput('');
-    setAgeInput('28');
+    setAgeInput('');
     setGenderInput('Male');
     setHeightUnit('cm');
-    setHeightCmInput('170');
-    setWeightKgInput('72');
-    setTargetWeightKgInput('66');
+    setHeightCmInput('');
+    setHeightFeetInput('');
+    setHeightInchesInput('');
+    setWeightKgInput('');
+    setTargetWeightKgInput('');
+    setWaterGoalInput('');
+    setWaterGlasses(0);
     setWaistInput('');
     setHipInput('');
     setNeckInput('');

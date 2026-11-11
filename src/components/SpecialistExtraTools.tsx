@@ -151,9 +151,9 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
   const [sanitizerType, setSanitizerType] = useState<string>(
     'Household Bleach (5.25% NaOCl)'
   );
-  const [stockStrengthPct, setStockStrengthPct] = useState<string>('5.25');
-  const [waterVolumeLiters, setWaterVolumeLiters] = useState<string>('100');
-  const [targetPpm, setTargetPpm] = useState<string>('200');
+  const [stockStrengthPct, setStockStrengthPct] = useState<string>('');
+  const [waterVolumeLiters, setWaterVolumeLiters] = useState<string>('');
+  const [targetPpm, setTargetPpm] = useState<string>('');
   const [ppmBatchName, setPpmBatchName] = useState<string>('');
   const [ppmNotes, setPpmNotes] = useState<string>('');
 
@@ -161,20 +161,21 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
   const [showAddSanitizerForm, setShowAddSanitizerForm] =
     useState<boolean>(false);
   const [newChemicalName, setNewChemicalName] = useState<string>('');
-  const [newChemicalPct, setNewChemicalPct] = useState<string>('10');
+  const [newChemicalPct, setNewChemicalPct] = useState<string>('');
 
   const ppmResult = useMemo(() => {
-    const stockPct = Math.max(0.01, Number(stockStrengthPct) || 5.25);
-    const volL = Math.max(0.1, Number(waterVolumeLiters) || 100);
-    const ppm = Math.max(1, Number(targetPpm) || 200);
+    const stockPct = Number(stockStrengthPct) || 0;
+    const volL = Number(waterVolumeLiters) || 0;
+    const ppm = Number(targetPpm) || 0;
     // 1% = 10,000 PPM. Volume of stock (mL) = (Target PPM * Water L) / (Stock % * 10)
-    const stockMlRequired = (ppm * volL) / (stockPct * 10);
+    const stockMlRequired =
+      stockPct > 0 && volL > 0 && ppm > 0 ? (ppm * volL) / (stockPct * 10) : 0;
     const stockLitersRequired = stockMlRequired / 1000;
-    const stockMlPerLiter = stockMlRequired / volL;
+    const stockMlPerLiter = volL > 0 ? stockMlRequired / volL : 0;
 
     let applicationGuide =
       'Food contact surfaces & equipment sanitization (No-rinse up to 200 PPM).';
-    if (ppm <= 60) {
+    if (ppm > 0 && ppm <= 60) {
       applicationGuide =
         'Raw fruit & vegetable washing tank (typically 50–100 PPM free chlorine, pH 6.5–7.5).';
     } else if (ppm > 200 && ppm <= 400) {
@@ -197,29 +198,29 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
   const [selectedAcidLabel, setSelectedAcidLabel] = useState<string>(
     DEFAULT_ACID_FACTORS[0].label
   );
-  const [taSampleWeightG, setTaSampleWeightG] = useState<string>('10');
-  const [taNaohMl, setTaNaohMl] = useState<string>('4.5');
-  const [taNaohNormality, setTaNaohNormality] = useState<string>('0.1');
+  const [taSampleWeightG, setTaSampleWeightG] = useState<string>('');
+  const [taNaohMl, setTaNaohMl] = useState<string>('');
+  const [taNaohNormality, setTaNaohNormality] = useState<string>('');
   const [taAcidFactor, setTaAcidFactor] = useState<string>('0.064'); // Citric Acid anhydrous = 0.064
-  const [taSampleBrix, setTaSampleBrix] = useState<string>('12.5');
+  const [taSampleBrix, setTaSampleBrix] = useState<string>('');
   const [taSampleName, setTaSampleName] = useState<string>('');
   const [taNotes, setTaNotes] = useState<string>('');
 
   // Add Custom Acid Form State (Paid Only)
   const [showAddAcidForm, setShowAddAcidForm] = useState<boolean>(false);
   const [newAcidName, setNewAcidName] = useState<string>('');
-  const [newAcidFactor, setNewAcidFactor] = useState<string>('0.064');
+  const [newAcidFactor, setNewAcidFactor] = useState<string>('');
   const [newAcidEqWeight, setNewAcidEqWeight] = useState<string>('');
 
   const taResult = useMemo(() => {
-    const w = Math.max(0.1, Number(taSampleWeightG) || 10);
-    const v = Math.max(0, Number(taNaohMl) || 0);
-    const n = Math.max(0.001, Number(taNaohNormality) || 0.1);
-    const eq = Math.max(0.001, Number(taAcidFactor) || 0.064);
+    const w = Number(taSampleWeightG) || 0;
+    const v = Number(taNaohMl) || 0;
+    const n = Number(taNaohNormality) || 0;
+    const eq = Number(taAcidFactor) || 0.064;
     const brix = Math.max(0, Number(taSampleBrix) || 0);
 
     // % Acidity = (V_NaOH * N_NaOH * meq_factor * 100) / Sample_g
-    const acidityPct = (v * n * eq * 100) / w;
+    const acidityPct = w > 0 && v > 0 && n > 0 ? (v * n * eq * 100) / w : 0;
     const brixAcidRatio = acidityPct > 0 ? brix / acidityPct : 0;
 
     return {
@@ -229,20 +230,21 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
   }, [taSampleWeightG, taNaohMl, taNaohNormality, taAcidFactor, taSampleBrix]);
 
   // C. Quick Food Unit Converter State
-  const [tempC, setTempC] = useState<string>('72');
-  const [pctVal, setPctVal] = useState<string>('0.05');
-  const [brixVal, setBrixVal] = useState<string>('11.5');
+  const [tempC, setTempC] = useState<string>('');
+  const [pctVal, setPctVal] = useState<string>('');
+  const [brixVal, setBrixVal] = useState<string>('');
 
   const unitConversions = useMemo(() => {
+    const hasTemp = tempC.trim() !== '';
     const c = Number(tempC) || 0;
-    const f = (c * 9) / 5 + 32;
-    const k = c + 273.15;
+    const f = hasTemp ? (c * 9) / 5 + 32 : 0;
+    const k = hasTemp ? c + 273.15 : 0;
 
     const pct = Math.max(0, Number(pctVal) || 0);
     const ppm = pct * 10000;
 
     const bx = Math.min(85, Math.max(0, Number(brixVal) || 0));
-    const sg = 1 / (1 - bx / 261.3);
+    const sg = bx > 0 ? 1 / (1 - bx / 261.3) : 0;
     const baume = bx * 0.555;
 
     return {
@@ -1773,7 +1775,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   const [selectedIndustry, setSelectedIndustry] = useState<string>(
     INDUSTRY_CATEGORIES[0].industry
   );
-  const [productName, setProductName] = useState<string>('Mango Fruit Drink');
+  const [productName, setProductName] = useState<string>('');
   const [batchNotes, setBatchNotes] = useState<string>('');
 
   // Add Custom Product to Reusable Library State
@@ -1785,17 +1787,34 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   // =========================================================================
   // MODE 1: JUICE & BEVERAGE BATCH CORRECTOR (Batch Size, Brix, Acidity & pH)
   // =========================================================================
-  const [bevBatchKg, setBevBatchKg] = useState<string>('500');
-  const [bevCurrentBrix, setBevCurrentBrix] = useState<string>('10.2');
-  const [bevTargetBrix, setBevTargetBrix] = useState<string>('13.0');
-  const [bevCurrentAcid, setBevCurrentAcid] = useState<string>('0.18');
-  const [bevTargetAcid, setBevTargetAcid] = useState<string>('0.28');
-  const [bevCurrentPh, setBevCurrentPh] = useState<string>('3.85');
-  const [bevTargetPh, setBevTargetPh] = useState<string>('3.50');
-  const [bevSugarSourceBrix, setBevSugarSourceBrix] = useState<string>('100');
+  const [bevBatchKg, setBevBatchKg] = useState<string>('');
+  const [bevCurrentBrix, setBevCurrentBrix] = useState<string>('');
+  const [bevTargetBrix, setBevTargetBrix] = useState<string>('');
+  const [bevCurrentAcid, setBevCurrentAcid] = useState<string>('');
+  const [bevTargetAcid, setBevTargetAcid] = useState<string>('');
+  const [bevCurrentPh, setBevCurrentPh] = useState<string>('');
+  const [bevTargetPh, setBevTargetPh] = useState<string>('');
+  const [bevSugarSourceBrix, setBevSugarSourceBrix] = useState<string>('');
 
   const beverageCorrection = useMemo(() => {
-    const M0 = Math.max(1, Number(bevBatchKg) || 500);
+    const M0 = Math.max(0, Number(bevBatchKg) || 0);
+    if (M0 <= 0) {
+      return {
+        brixStatus: 'ENTER BATCH DETAILS',
+        acidStatus: 'ENTER BATCH DETAILS',
+        phStatus: 'ENTER pH DETAILS',
+        currentRatio: '—',
+        targetRatio: '—',
+        addSugarKg: 0,
+        addSugarGrams: 0,
+        addAcidKg: 0,
+        addAcidGrams: 0,
+        addWaterLiters: 0,
+        finalBatchKg: 0,
+        verifiedBrix: 0,
+        verifiedAcid: 0
+      };
+    }
     const B0 = Math.max(0, Number(bevCurrentBrix) || 0);
     const Bt = Math.max(0.1, Number(bevTargetBrix) || 13);
     const A0 = Math.max(0, Number(bevCurrentAcid) || 0);
@@ -1889,17 +1908,26 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   // =========================================================================
   // MODE 2: DAIRY MILK STANDARDIZATION (Current Milk Batch -> Target Fat % & SNF %)
   // =========================================================================
-  const [dairyBatchKg, setDairyBatchKg] = useState<string>('1000');
-  const [dairyCurrentFat, setDairyCurrentFat] = useState<string>('4.8');
-  const [dairyTargetFat, setDairyTargetFat] = useState<string>('3.5');
-  const [dairyCurrentSnf, setDairyCurrentSnf] = useState<string>('8.3');
-  const [dairyTargetSnf, setDairyTargetSnf] = useState<string>('8.5');
-  const [skimMilkFat, setSkimMilkFat] = useState<string>('0.1');
-  const [skimMilkSnf, setSkimMilkSnf] = useState<string>('8.9');
-  const [creamFat, setCreamFat] = useState<string>('40');
+  const [dairyBatchKg, setDairyBatchKg] = useState<string>('');
+  const [dairyCurrentFat, setDairyCurrentFat] = useState<string>('');
+  const [dairyTargetFat, setDairyTargetFat] = useState<string>('');
+  const [dairyCurrentSnf, setDairyCurrentSnf] = useState<string>('');
+  const [dairyTargetSnf, setDairyTargetSnf] = useState<string>('');
+  const [skimMilkFat, setSkimMilkFat] = useState<string>('');
+  const [skimMilkSnf, setSkimMilkSnf] = useState<string>('');
+  const [creamFat, setCreamFat] = useState<string>('');
 
   const dairyCorrection = useMemo(() => {
-    const M0 = Math.max(1, Number(dairyBatchKg) || 1000);
+    const M0 = Math.max(0, Number(dairyBatchKg) || 0);
+    if (M0 <= 0) {
+      return {
+        addSkimKg: 0,
+        addCreamKg: 0,
+        addSmpKg: 0,
+        addWaterKg: 0,
+        finalMass: 0
+      };
+    }
     const F0 = Math.max(0, Number(dairyCurrentFat) || 4.8);
     const Ft = Math.max(0.1, Number(dairyTargetFat) || 3.5);
     const S0 = Math.max(0, Number(dairyCurrentSnf) || 8.3);
@@ -1960,22 +1988,33 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   const [sauceSubType, setSauceSubType] = useState<
     'ketchup_sauce' | 'mayo_emulsion'
   >('ketchup_sauce');
-  const [sauceBatchKg, setSauceBatchKg] = useState<string>('500');
+  const [sauceBatchKg, setSauceBatchKg] = useState<string>('');
   const [sauceCurrentTssOrOil, setSauceCurrentTssOrOil] =
-    useState<string>('25.5');
+    useState<string>('');
   const [sauceTargetTssOrOil, setSauceTargetTssOrOil] =
-    useState<string>('29.0');
-  const [sauceCurrentAcid, setSauceCurrentAcid] = useState<string>('0.95');
-  const [sauceTargetAcid, setSauceTargetAcid] = useState<string>('1.25');
-  const [sauceCurrentSalt, setSauceCurrentSalt] = useState<string>('1.70');
-  const [sauceTargetSalt, setSauceTargetSalt] = useState<string>('2.10');
-  const [sauceCurrentPh, setSauceCurrentPh] = useState<string>('4.12');
-  const [sauceTargetPh, setSauceTargetPh] = useState<string>('3.75');
+    useState<string>('');
+  const [sauceCurrentAcid, setSauceCurrentAcid] = useState<string>('');
+  const [sauceTargetAcid, setSauceTargetAcid] = useState<string>('');
+  const [sauceCurrentSalt, setSauceCurrentSalt] = useState<string>('');
+  const [sauceTargetSalt, setSauceTargetSalt] = useState<string>('');
+  const [sauceCurrentPh, setSauceCurrentPh] = useState<string>('');
+  const [sauceTargetPh, setSauceTargetPh] = useState<string>('');
   const [sauceVinegarStrength, setSauceVinegarStrength] =
-    useState<string>('10'); // 10% distilled vinegar or 100% glacial/citric
+    useState<string>(''); // 10% distilled vinegar or 100% glacial/citric
 
   const sauceMayoCorrection = useMemo(() => {
-    const M0 = Math.max(1, Number(sauceBatchKg) || 500);
+    const M0 = Math.max(0, Number(sauceBatchKg) || 0);
+    if (M0 <= 0) {
+      return {
+        addSolidsOrOilKg: 0,
+        addVinegarKg: 0,
+        addSaltKg: 0,
+        addSaltGrams: 0,
+        addWaterKg: 0,
+        phStatus: 'ENTER BATCH DETAILS',
+        finalBatchKg: 0
+      };
+    }
     const T0 = Math.max(0, Number(sauceCurrentTssOrOil) || 0);
     const Tt = Math.max(0.5, Number(sauceTargetTssOrOil) || 28);
     const A0 = Math.max(0, Number(sauceCurrentAcid) || 0);
@@ -2056,24 +2095,34 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   // MODE 4: BAKING, BISCUITS & DOUGH STANDARDIZER
   //         (Flour/Dough Moisture %, Protein/Gluten %, Shortening Fat % & Sugar %)
   // =========================================================================
-  const [bakingBatchKg, setBakingBatchKg] = useState<string>('500');
+  const [bakingBatchKg, setBakingBatchKg] = useState<string>('');
   const [bakingCurrentMoisture, setBakingCurrentMoisture] =
-    useState<string>('13.2');
+    useState<string>('');
   const [bakingTargetMoisture, setBakingTargetMoisture] =
-    useState<string>('18.5');
+    useState<string>('');
   const [bakingCurrentProtein, setBakingCurrentProtein] =
-    useState<string>('9.2');
+    useState<string>('');
   const [bakingTargetProtein, setBakingTargetProtein] =
-    useState<string>('10.8');
-  const [bakingCurrentFat, setBakingCurrentFat] = useState<string>('15.5');
-  const [bakingTargetFat, setBakingTargetFat] = useState<string>('18.0');
-  const [bakingCurrentSugar, setBakingCurrentSugar] = useState<string>('20.0');
-  const [bakingTargetSugar, setBakingTargetSugar] = useState<string>('22.5');
+    useState<string>('');
+  const [bakingCurrentFat, setBakingCurrentFat] = useState<string>('');
+  const [bakingTargetFat, setBakingTargetFat] = useState<string>('');
+  const [bakingCurrentSugar, setBakingCurrentSugar] = useState<string>('');
+  const [bakingTargetSugar, setBakingTargetSugar] = useState<string>('');
   const [bakingGlutenSourcePct, setBakingGlutenSourcePct] =
-    useState<string>('75'); // Vital Wheat Gluten (75% protein)
+    useState<string>(''); // Vital Wheat Gluten (75% protein)
 
   const bakingCorrection = useMemo(() => {
-    const M0 = Math.max(1, Number(bakingBatchKg) || 500);
+    const M0 = Math.max(0, Number(bakingBatchKg) || 0);
+    if (M0 <= 0) {
+      return {
+        addWaterLiters: 0,
+        addGlutenKg: 0,
+        addGlutenGrams: 0,
+        addShorteningFatKg: 0,
+        addSugarKg: 0,
+        finalDoughKg: 0
+      };
+    }
     const W0 = Math.max(0, Number(bakingCurrentMoisture) || 13);
     const Wt = Math.max(1, Number(bakingTargetMoisture) || 18);
     const P0 = Math.max(0, Number(bakingCurrentProtein) || 9.2);
@@ -2127,30 +2176,30 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   // =========================================================================
   // MODE 5: CLASSIC 2-INGREDIENT PEARSON SQUARE
   // =========================================================================
-  const [psIngredientAName, setPsIngredientAName] = useState<string>(
-    'High Concentration Stream (Ingredient A)'
-  );
-  const [psIngredientBName, setPsIngredientBName] = useState<string>(
-    'Low Concentration / Diluent (Ingredient B)'
-  );
-  const [psHighVal, setPsHighVal] = useState<string>('65');
-  const [psLowVal, setPsLowVal] = useState<string>('0');
-  const [psTargetVal, setPsTargetVal] = useState<string>('12');
-  const [psTotalBatch, setPsTotalBatch] = useState<string>('1000');
+  const [psIngredientAName, setPsIngredientAName] = useState<string>('');
+  const [psIngredientBName, setPsIngredientBName] = useState<string>('');
+  const [psHighVal, setPsHighVal] = useState<string>('');
+  const [psLowVal, setPsLowVal] = useState<string>('');
+  const [psTargetVal, setPsTargetVal] = useState<string>('');
+  const [psTotalBatch, setPsTotalBatch] = useState<string>('');
 
   const classicPearson = useMemo(() => {
     const H = Number(psHighVal) || 0;
     const L = Number(psLowVal) || 0;
     const T = Number(psTargetVal) || 0;
-    const batch = Math.max(1, Number(psTotalBatch) || 100);
+    const batch = Math.max(0, Number(psTotalBatch) || 0);
 
     const highParts = Math.abs(T - L);
     const lowParts = Math.abs(H - T);
     const totalParts = Math.max(0.0001, highParts + lowParts);
 
-    const highAmount = (highParts / totalParts) * batch;
-    const lowAmount = (lowParts / totalParts) * batch;
-    const isValid = (T >= L && T <= H) || (T >= H && T <= L);
+    const highAmount = batch > 0 ? (highParts / totalParts) * batch : 0;
+    const lowAmount = batch > 0 ? (lowParts / totalParts) * batch : 0;
+    const isValid =
+      psHighVal === '' ||
+      psTargetVal === '' ||
+      (T >= L && T <= H) ||
+      (T >= H && T <= L);
 
     return {
       isValid,
@@ -3148,7 +3197,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   );
                   if (found) {
                     setIndustryMode(found.defaultMode);
-                    setProductName(found.defaultProduct);
                   }
                 }}
                 className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
@@ -4762,23 +4810,23 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
   const [selectedReagentName, setSelectedReagentName] = useState<string>(
     LAB_REAGENTS[0].name
   );
-  const [mw, setMw] = useState<string>('40.0');
-  const [nFactor, setNFactor] = useState<string>('1');
+  const [mw, setMw] = useState<string>('');
+  const [nFactor, setNFactor] = useState<string>('');
   const [concMode, setConcMode] = useState<'N' | 'M'>('N');
-  const [targetConc, setTargetConc] = useState<string>('0.1');
-  const [targetVolMl, setTargetVolMl] = useState<string>('1000');
-  const [purityPct, setPurityPct] = useState<string>('99');
+  const [targetConc, setTargetConc] = useState<string>('');
+  const [targetVolMl, setTargetVolMl] = useState<string>('');
+  const [purityPct, setPurityPct] = useState<string>('');
 
   // Custom Reagent Form (Paid users)
   const [showAddReagentForm, setShowAddReagentForm] = useState<boolean>(false);
   const [newReagentName, setNewReagentName] = useState<string>('');
   const [newReagentMw, setNewReagentMw] = useState<string>('');
-  const [newReagentNFactor, setNewReagentNFactor] = useState<string>('1');
+  const [newReagentNFactor, setNewReagentNFactor] = useState<string>('');
 
   // Stock liquid dilution (C1V1 = C2V2)
-  const [c1, setC1] = useState<string>('1.0');
-  const [c2, setC2] = useState<string>('0.1');
-  const [v2Ml, setV2Ml] = useState<string>('500');
+  const [c1, setC1] = useState<string>('');
+  const [c2, setC2] = useState<string>('');
+  const [v2Ml, setV2Ml] = useState<string>('');
 
   // Paid Member Solution Logging Fields
   const [solutionLabel, setSolutionLabel] = useState<string>('');
@@ -4796,20 +4844,24 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
   >('all');
 
   const solidCalc = useMemo(() => {
-    const molW = Math.max(1, Number(mw) || 40);
+    const molW = Number(mw) || 0;
     const valency = Math.max(1, Number(nFactor) || 1);
-    const eqWeight = molW / valency;
-    const conc = Math.max(0.0001, Number(targetConc) || 0.1);
-    const volL = Math.max(1, Number(targetVolMl) || 1000) / 1000;
-    const purity = Math.min(100, Math.max(1, Number(purityPct) || 99)) / 100;
+    const eqWeight = molW > 0 ? molW / valency : 0;
+    const conc = Number(targetConc) || 0;
+    const volL = (Number(targetVolMl) || 0) / 1000;
+    const purity = Math.min(100, Math.max(1, Number(purityPct) || 100)) / 100;
 
     // Pure mass (g) = Molarity * MW * L  OR  Normality * EqWeight * L
     const pureGrams =
-      concMode === 'M' ? conc * molW * volL : conc * eqWeight * volL;
-    const actualGramsToWeigh = pureGrams / purity;
+      conc > 0 && volL > 0 && molW > 0
+        ? concMode === 'M'
+          ? conc * molW * volL
+          : conc * eqWeight * volL
+        : 0;
+    const actualGramsToWeigh = pureGrams > 0 ? pureGrams / purity : 0;
 
-    const equivMolarity = concMode === 'M' ? conc : conc / valency;
-    const equivNormality = concMode === 'N' ? conc : conc * valency;
+    const equivMolarity = conc > 0 ? (concMode === 'M' ? conc : conc / valency) : 0;
+    const equivNormality = conc > 0 ? (concMode === 'N' ? conc : conc * valency) : 0;
 
     return {
       eqWeight: Number(eqWeight.toFixed(2)),
@@ -4821,11 +4873,14 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
   }, [mw, nFactor, concMode, targetConc, targetVolMl, purityPct]);
 
   const dilutionCalc = useMemo(() => {
-    const stockC = Math.max(0.0001, Number(c1) || 1);
-    const desiredC = Math.max(0.0001, Number(c2) || 0.1);
-    const finalV = Math.max(1, Number(v2Ml) || 500);
-    const v1Ml = (desiredC * finalV) / stockC;
-    const waterToAddMl = Math.max(0, finalV - v1Ml);
+    const stockC = Number(c1) || 0;
+    const desiredC = Number(c2) || 0;
+    const finalV = Number(v2Ml) || 0;
+    const v1Ml =
+      stockC > 0 && desiredC > 0 && finalV > 0
+        ? (desiredC * finalV) / stockC
+        : 0;
+    const waterToAddMl = finalV > 0 && v1Ml > 0 ? Math.max(0, finalV - v1Ml) : 0;
     return {
       v1Ml: Number(v1Ml.toFixed(2)),
       waterToAddMl: Number(waterToAddMl.toFixed(2))
@@ -6118,22 +6173,22 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
   >('all');
 
   // Moisture Dish Weights
-  const [mEmptyDish, setMEmptyDish] = useState<string>('24.5120');
-  const [mDishPlusWet, setMDishPlusWet] = useState<string>('29.5140');
-  const [mDishPlusDry, setMDishPlusDry] = useState<string>('28.9120');
+  const [mEmptyDish, setMEmptyDish] = useState<string>('');
+  const [mDishPlusWet, setMDishPlusWet] = useState<string>('');
+  const [mDishPlusDry, setMDishPlusDry] = useState<string>('');
 
   // Ash Crucible Weights
-  const [aEmptyCrucible, setAEmptyCrucible] = useState<string>('18.2100');
-  const [aCruciblePlusSample, setACruciblePlusSample] = useState<string>('23.2100');
-  const [aCruciblePlusAsh, setACruciblePlusAsh] = useState<string>('18.2950');
+  const [aEmptyCrucible, setAEmptyCrucible] = useState<string>('');
+  const [aCruciblePlusSample, setACruciblePlusSample] = useState<string>('');
+  const [aCruciblePlusAsh, setACruciblePlusAsh] = useState<string>('');
 
   // Kjeldahl Protein
-  const [kSampleWeightG, setKSampleWeightG] = useState<string>('1.000');
-  const [kSampleTitrationMl, setKSampleTitrationMl] = useState<string>('15.4');
-  const [kBlankTitrationMl, setKBlankTitrationMl] = useState<string>('0.2');
-  const [kAcidNormality, setKAcidNormality] = useState<string>('0.1');
+  const [kSampleWeightG, setKSampleWeightG] = useState<string>('');
+  const [kSampleTitrationMl, setKSampleTitrationMl] = useState<string>('');
+  const [kBlankTitrationMl, setKBlankTitrationMl] = useState<string>('');
+  const [kAcidNormality, setKAcidNormality] = useState<string>('');
   const [kProteinFactorSelect, setKProteinFactorSelect] = useState<string>('6.25');
-  const [kCustomProteinFactor, setKCustomProteinFactor] = useState<string>('6.25');
+  const [kCustomProteinFactor, setKCustomProteinFactor] = useState<string>('');
 
   const effectiveProteinFactor = useMemo(() => {
     if (kProteinFactorSelect === 'other') {
@@ -6147,6 +6202,16 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
     const w1 = Number(mEmptyDish) || 0;
     const w2 = Number(mDishPlusWet) || 0;
     const w3 = Number(mDishPlusDry) || 0;
+    if (w2 <= w1 || w2 <= 0) {
+      return {
+        wetSampleG: 0,
+        drySampleG: 0,
+        waterLossG: 0,
+        moistureWetBasis: 0,
+        totalSolidsPct: 0,
+        moistureDryBasis: 0
+      };
+    }
     const wetSample = Math.max(0.0001, w2 - w1);
     const drySample = Math.max(0, w3 - w1);
     const waterLoss = Math.max(0, w2 - w3);
@@ -7282,38 +7347,29 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
   );
 
   // Paid Member Plant / Line / Shift Identification
-  const [plantCompanyName, setPlantCompanyName] = useState<string>(
-    () =>
-      toolsData?.productionFloorData?.defaultPlantName ||
-      user?.company ||
-      'Food & Beverage Processing Plant'
-  );
-  const [lineOrProductName, setLineOrProductName] = useState<string>(
-    'Line 1 — Beverage / Food Trays'
-  );
+  const [plantCompanyName, setPlantCompanyName] = useState<string>('');
+  const [lineOrProductName, setLineOrProductName] = useState<string>('');
   const [shiftName, setShiftName] = useState<string>('Morning Shift (A)');
-  const [productionDate, setProductionDate] = useState<string>(() =>
-    new Date().toISOString().slice(0, 10)
-  );
+  const [productionDate, setProductionDate] = useState<string>('');
   const [shiftNotes, setShiftNotes] = useState<string>('');
 
   // 1. 1-HOUR MACHINE EFFICIENCY (TRAYS / HOUR)
   const [machineSpeedTraysPerHour, setMachineSpeedTraysPerHour] =
-    useState<string>('1000');
-  const [oneHourActualTrays, setOneHourActualTrays] = useState<string>('880');
+    useState<string>('');
+  const [oneHourActualTrays, setOneHourActualTrays] = useState<string>('');
 
   // 2. FULL-DAY NET EFFICIENCY (START TIME, LATE START, BREAK, CIP, DOWNTIME, TOTAL TRAYS)
-  const [scheduledStartTime, setScheduledStartTime] = useState<string>('08:00');
-  const [actualStartTime, setActualStartTime] = useState<string>('08:25');
-  const [lateStartMins, setLateStartMins] = useState<string>('25');
-  const [totalShiftHours, setTotalShiftHours] = useState<string>('8');
-  const [breakMins, setBreakMins] = useState<string>('45');
-  const [cipMins, setCipMins] = useState<string>('40');
+  const [scheduledStartTime, setScheduledStartTime] = useState<string>('');
+  const [actualStartTime, setActualStartTime] = useState<string>('');
+  const [lateStartMins, setLateStartMins] = useState<string>('');
+  const [totalShiftHours, setTotalShiftHours] = useState<string>('');
+  const [breakMins, setBreakMins] = useState<string>('');
+  const [cipMins, setCipMins] = useState<string>('');
   const [unplannedDowntimeMins, setUnplannedDowntimeMins] =
-    useState<string>('20');
-  const [totalFullDayTrays, setTotalFullDayTrays] = useState<string>('5850');
-  const [rejectedTrays, setRejectedTrays] = useState<string>('35');
-  const [workersCount, setWorkersCount] = useState<string>('12');
+    useState<string>('');
+  const [totalFullDayTrays, setTotalFullDayTrays] = useState<string>('');
+  const [rejectedTrays, setRejectedTrays] = useState<string>('');
+  const [workersCount, setWorkersCount] = useState<string>('');
 
   // Helper to auto-sync Late Start minutes when Scheduled or Actual Start Time changes
   const computeLateMinsFromTimes = (sched: string, actual: string): number => {
@@ -7333,17 +7389,17 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
 
   // 3. SYRUP ROOM / PREPARATION ROOM BATCH EFFICIENCY
   const [syrupUnit, setSyrupUnit] = useState<'Liters' | 'kg'>('Liters');
-  const [syrupPreparedTotal, setSyrupPreparedTotal] = useState<string>('5000');
-  const [syrupPackedTotal, setSyrupPackedTotal] = useState<string>('4860');
+  const [syrupPreparedTotal, setSyrupPreparedTotal] = useState<string>('');
+  const [syrupPackedTotal, setSyrupPackedTotal] = useState<string>('');
   const [syrupCustomWasteInput, setSyrupCustomWasteInput] =
     useState<string>('');
-  const [syrupCostPerUnit, setSyrupCostPerUnit] = useState<string>('95');
+  const [syrupCostPerUnit, setSyrupCostPerUnit] = useState<string>('');
 
   // 4. RAW-TO-PACKED PROCESS YIELD & WASTAGE
-  const [rawInputKg, setRawInputKg] = useState<string>('1200');
-  const [trimmedPreppedKg, setTrimmedPreppedKg] = useState<string>('1050');
-  const [finalPackedKg, setFinalPackedKg] = useState<string>('990');
-  const [rawCostPerKg, setRawCostPerKg] = useState<string>('220');
+  const [rawInputKg, setRawInputKg] = useState<string>('');
+  const [trimmedPreppedKg, setTrimmedPreppedKg] = useState<string>('');
+  const [finalPackedKg, setFinalPackedKg] = useState<string>('');
+  const [rawCostPerKg, setRawCostPerKg] = useState<string>('');
 
   // Directory & Analytics Filters
   const [dirSearchQuery, setDirSearchQuery] = useState<string>('');
@@ -7357,10 +7413,10 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
 
   // 1-Hour Efficiency Calculation
   const oneHourStats = useMemo(() => {
-    const ratedPerHr = Math.max(1, Number(machineSpeedTraysPerHour) || 1000);
+    const ratedPerHr = Math.max(0, Number(machineSpeedTraysPerHour) || 0);
     const actual1Hr = Math.max(0, Number(oneHourActualTrays) || 0);
-    const efficiencyPct = (actual1Hr / ratedPerHr) * 100;
-    const lostTrays = Math.max(0, ratedPerHr - actual1Hr);
+    const efficiencyPct = ratedPerHr > 0 ? (actual1Hr / ratedPerHr) * 100 : 0;
+    const lostTrays = ratedPerHr > 0 ? Math.max(0, ratedPerHr - actual1Hr) : 0;
     const ratedPerMin = ratedPerHr / 60;
     const actualPerMin = actual1Hr / 60;
 
@@ -7376,9 +7432,9 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
 
   // Full-Day Net Efficiency Calculation (with Late Start, Break, CIP, Unplanned Downtime)
   const fullDayStats = useMemo(() => {
-    const speedPerHr = Math.max(1, Number(machineSpeedTraysPerHour) || 1000);
+    const speedPerHr = Math.max(0, Number(machineSpeedTraysPerHour) || 0);
     const speedPerMin = speedPerHr / 60;
-    const shiftHrs = Math.max(1, Number(totalShiftHours) || 8);
+    const shiftHrs = Math.max(0, Number(totalShiftHours) || 0);
     const totalShiftMins = shiftHrs * 60;
 
     const lateMins = Math.max(0, Number(lateStartMins) || 0);
@@ -7390,6 +7446,33 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     const rejects = Math.max(0, Number(rejectedTrays) || 0);
     const goodTrays = Math.max(0, totalTrays - rejects);
     const workers = Math.max(1, Number(workersCount) || 1);
+
+    if (speedPerHr <= 0 || shiftHrs <= 0) {
+      return {
+        totalShiftMins: 0,
+        netAvailableMinsAfterBreakCip: 0,
+        netAvailableHoursAfterBreakCip: 0,
+        actualRunningMins: 0,
+        actualRunningHours: 0,
+        grossShiftTargetTrays: 0,
+        netTargetTraysAfterBreakCip: 0,
+        theoreticalTraysDuringRunning: 0,
+        goodTrays,
+        grossShiftEfficiencyPct: 0,
+        netEfficiencyPct: 0,
+        runningSpeedPerformancePct: 0,
+        availabilityPct: 0,
+        qualityPct: totalTrays > 0 ? Number(((goodTrays / totalTrays) * 100).toFixed(2)) : 0,
+        oeePct: 0,
+        traysLostToLateStart: 0,
+        traysInBreakTime: 0,
+        traysInCipTime: 0,
+        traysLostToBreakdown: 0,
+        lateStartImpactPct: 0,
+        traysPerWorkerShift: Number(workersCount) > 0 ? Math.round(goodTrays / workers) : 0,
+        traysPerWorkerHour: 0
+      };
+    }
 
     // 1. Gross Shift Target (100% of total shift hours without deductions)
     const grossShiftTargetTrays = shiftHrs * speedPerHr;
@@ -7490,7 +7573,7 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
 
   // Syrup Room / Preparation Room Batch Efficiency Calculation
   const syrupStats = useMemo(() => {
-    const prepared = Math.max(0.1, Number(syrupPreparedTotal) || 5000);
+    const prepared = Math.max(0, Number(syrupPreparedTotal) || 0);
     const packed = Math.max(0, Number(syrupPackedTotal) || 0);
     const calculatedLoss = Math.max(0, prepared - packed);
     const wasteTotal =
@@ -7498,8 +7581,8 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
         ? Math.max(0, Number(syrupCustomWasteInput) || 0)
         : calculatedLoss;
 
-    const batchEfficiencyPct = (packed / prepared) * 100;
-    const wastagePct = (wasteTotal / prepared) * 100;
+    const batchEfficiencyPct = prepared > 0 ? (packed / prepared) * 100 : 0;
+    const wastagePct = prepared > 0 ? (wasteTotal / prepared) * 100 : 0;
     const unaccountedDiff = Number((calculatedLoss - wasteTotal).toFixed(2));
     const unitRate = Math.max(0, Number(syrupCostPerUnit) || 0);
     const wasteCostRs = wasteTotal * unitRate;
@@ -7523,15 +7606,15 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
 
   // Process Yield & Wastage Calculation
   const yieldStats = useMemo(() => {
-    const raw = Math.max(1, Number(rawInputKg) || 1200);
-    const prepped = Math.max(0, Number(trimmedPreppedKg) || 1050);
-    const finalOut = Math.max(0, Number(finalPackedKg) || 990);
+    const raw = Math.max(0, Number(rawInputKg) || 0);
+    const prepped = Math.max(0, Number(trimmedPreppedKg) || 0);
+    const finalOut = Math.max(0, Number(finalPackedKg) || 0);
     const costKg = Math.max(0, Number(rawCostPerKg) || 0);
 
-    const prepYieldPct = (prepped / raw) * 100;
-    const netProcessYieldPct = (finalOut / raw) * 100;
-    const totalLossKg = Math.max(0, raw - finalOut);
-    const totalLossPct = (totalLossKg / raw) * 100;
+    const prepYieldPct = raw > 0 ? (prepped / raw) * 100 : 0;
+    const netProcessYieldPct = raw > 0 ? (finalOut / raw) * 100 : 0;
+    const totalLossKg = raw > 0 ? Math.max(0, raw - finalOut) : 0;
+    const totalLossPct = raw > 0 ? (totalLossKg / raw) * 100 : 0;
     const effectiveRawCostPerFinalKg =
       finalOut > 0 ? (raw * costKg) / finalOut : 0;
 
@@ -9504,8 +9587,8 @@ export const ENumbersInstantFinderTool: React.FC = () => {
   const [halalFilter, setHalalFilter] = useState<string>('All');
 
   // Quick Preservative / Additive PPM Batch Dosing Calculator
-  const [batchSizeKg, setBatchSizeKg] = useState<string>('250');
-  const [targetAdditivePpm, setTargetAdditivePpm] = useState<string>('300');
+  const [batchSizeKg, setBatchSizeKg] = useState<string>('');
+  const [targetAdditivePpm, setTargetAdditivePpm] = useState<string>('');
 
   const filteredAdditives = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -9525,8 +9608,8 @@ export const ENumbersInstantFinderTool: React.FC = () => {
   }, [searchQuery, catFilter, halalFilter]);
 
   const gramsForBatch = useMemo(() => {
-    const kg = Math.max(0.1, Number(batchSizeKg) || 100);
-    const ppm = Math.max(1, Number(targetAdditivePpm) || 200);
+    const kg = Math.max(0, Number(batchSizeKg) || 0);
+    const ppm = Math.max(0, Number(targetAdditivePpm) || 0);
     // 1 PPM = 1 mg/kg = 0.001 g/kg
     const totalGrams = kg * ppm * 0.001;
     return Number(totalGrams.toFixed(2));
@@ -10785,9 +10868,7 @@ export const CitationReferenceGeneratorTool: React.FC<{
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // TAB 1 & TAB 2 STATE: RESEARCH PAPER / THESIS UPLOAD & SECTION EXTRACTOR
-  const [rawPaperInput, setRawPaperInput] = useState<string>(
-    SAMPLE_RESEARCH_PAPER_TEXT
-  );
+  const [rawPaperInput, setRawPaperInput] = useState<string>('');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
   const extractedSections = useMemo(
@@ -10866,51 +10947,31 @@ export const CitationReferenceGeneratorTool: React.FC<{
   };
 
   // TAB 3 STATE: RESEARCH DATA STATISTICAL ANALYSIS (CRD ANOVA, LSD, MEAN ± SD)
-  const [statParameterName, setStatParameterName] = useState<string>(
-    'Ascorbic Acid / Vitamin C (mg/100g)'
-  );
-  const [statFactorName, setStatFactorName] = useState<string>(
-    'Preservative Treatments (90 Days Storage)'
-  );
+  const [statParameterName, setStatParameterName] = useState<string>('');
+  const [statFactorName, setStatFactorName] = useState<string>('');
   const [statRows, setStatRows] = useState<StatTreatmentRow[]>([
     {
       id: 't0',
-      treatmentName: 'T0 (Untreated Control)',
-      rep1: '18.40',
-      rep2: '18.10',
-      rep3: '18.70',
+      treatmentName: '',
+      rep1: '',
+      rep2: '',
+      rep3: '',
       rep4: ''
     },
     {
       id: 't1',
-      treatmentName: 'T1 (0.05% Potassium Sorbate)',
-      rep1: '26.20',
-      rep2: '26.80',
-      rep3: '26.50',
+      treatmentName: '',
+      rep1: '',
+      rep2: '',
+      rep3: '',
       rep4: ''
     },
     {
       id: 't2',
-      treatmentName: 'T2 (0.10% Potassium Sorbate)',
-      rep1: '31.50',
-      rep2: '31.10',
-      rep3: '31.90',
-      rep4: ''
-    },
-    {
-      id: 't3',
-      treatmentName: 'T3 (0.05% Sodium Benzoate)',
-      rep1: '25.10',
-      rep2: '24.80',
-      rep3: '25.40',
-      rep4: ''
-    },
-    {
-      id: 't4',
-      treatmentName: 'T4 (0.05% Sorbate + 0.05% Benzoate)',
-      rep1: '34.80',
-      rep2: '35.20',
-      rep3: '34.40',
+      treatmentName: '',
+      rep1: '',
+      rep2: '',
+      rep3: '',
       rep4: ''
     }
   ]);
@@ -11094,12 +11155,10 @@ export const CitationReferenceGeneratorTool: React.FC<{
   }, [statRows]);
 
   // TAB 4 STATE: CITATION & REFERENCE GENERATOR (BULK + MANUAL)
-  const [bulkRawText, setBulkRawText] = useState<string>(
-    `Khan, M.A., S. Ahmad and T. Mahmood (2024). Effect of potassium sorbate and citric acid on shelf stability of Chaunsa mango pulp. Pakistan Journal of Agricultural Sciences, 61(2), 145-152.\nCodex, A. & FAO (2023). General standard for food additives CXS 192-1995. Food Control, 148(1), 210-218.\nHussain, S., M. I. Anjum and A. Rehman. 2025. Physicochemical and microbiological quality of raw buffalo milk in Punjab. Journal of Animal and Plant Sciences. 35(1): 55-62.`
-  );
+  const [bulkRawText, setBulkRawText] = useState<string>('');
 
   const [manAuthors, setManAuthors] = useState<string>('');
-  const [manYear, setManYear] = useState<string>('2026');
+  const [manYear, setManYear] = useState<string>('');
   const [manTitle, setManTitle] = useState<string>('');
   const [manJournal, setManJournal] = useState<string>('');
   const [manVolume, setManVolume] = useState<string>('');
