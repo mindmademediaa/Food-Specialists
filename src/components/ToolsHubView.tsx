@@ -143,14 +143,20 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           DEFAULT_USER_TOOLS_DATA.nutrition.mealPlans,
         weightHistory:
           saved.nutrition?.weightHistory ||
-          DEFAULT_USER_TOOLS_DATA.nutrition.weightHistory
+          DEFAULT_USER_TOOLS_DATA.nutrition.weightHistory,
+        patientLogs: saved.nutrition?.patientLogs || []
       },
       examAttempts: saved.examAttempts || [],
       interviewSessions: saved.interviewSessions || [],
       seenExamQuestionIds: saved.seenExamQuestionIds || [],
       seenInterviewQuestionIds: saved.seenInterviewQuestionIds || [],
       masteredInterviewIds: saved.masteredInterviewIds || [],
-      bookmarkedInterviewIds: saved.bookmarkedInterviewIds || []
+      bookmarkedInterviewIds: saved.bookmarkedInterviewIds || [],
+      labFormulaData: {
+        customSanitizers: saved.labFormulaData?.customSanitizers || [],
+        customAcids: saved.labFormulaData?.customAcids || [],
+        savedRecords: saved.labFormulaData?.savedRecords || []
+      }
     };
   }, [user.toolsData]);
 
@@ -1094,7 +1100,16 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       {/* =====================================================================
           VIEW 3: LAB & FORMULA CALCULATOR
          ===================================================================== */}
-      {activeSection === 'lab-formula' && <LabFormulaCalculatorTool />}
+      {activeSection === 'lab-formula' && (
+        <LabFormulaCalculatorTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          toolsData={toolsData}
+          onSaveToolsData={onSaveToolsData}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
+      )}
 
       {/* =====================================================================
           VIEW 4: PEARSON SQUARE & BATCH STANDARDIZATION CALCULATOR

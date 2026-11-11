@@ -21,40 +21,161 @@ import {
   Trash2,
   Upload
 } from 'lucide-react';
-import { HubUser } from '../types/hub';
+import {
+  CustomAcidFactorItem,
+  CustomSanitizerItem,
+  HubUser,
+  LabFormulaSavedRecord,
+  UserToolsData
+} from '../types/hub';
 import { E_NUMBERS_DATABASE, ENumberAdditive } from '../data/eNumbersData';
 import { jsPDF } from 'jspdf';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
 
+interface LabFormulaCalculatorToolProps {
+  user?: HubUser;
+  isUserPaid?: boolean;
+  hasExpiredPremium?: boolean;
+  toolsData?: UserToolsData;
+  onSaveToolsData?: (updated: UserToolsData) => Promise<void>;
+  onOpenPremiumModal?: () => void;
+}
+
+const DEFAULT_SANITIZERS: { name: string; pct: string }[] = [
+  { name: 'Household Bleach (5.25% NaOCl)', pct: '5.25' },
+  { name: 'Industrial Liquid Chlorine (12% NaOCl)', pct: '12' },
+  { name: 'Peracetic Acid / PAA (15%)', pct: '15' },
+  { name: 'Quaternary Ammonium / QAC (10%)', pct: '10' },
+  { name: 'Hydrogen Peroxide Food Grade (35% H2O2)', pct: '35' },
+  { name: 'Iodophor Sanitizer (1.75% Titratable Iodine)', pct: '1.75' }
+];
+
+const DEFAULT_ACID_FACTORS: { label: string; val: string }[] = [
+  { label: 'Citric Acid Anhydrous (Citrus / Soft Drinks / Jams) — Factor 0.064', val: '0.064' },
+  { label: 'Citric Acid Monohydrate (Beverages) — Factor 0.070', val: '0.070' },
+  { label: 'Lactic Acid (Milk, Yogurt, Curd, Fermented Foods) — Factor 0.090', val: '0.090' },
+  { label: 'Malic Acid (Apple, Peach, Pear, Apricot Juice) — Factor 0.067', val: '0.067' },
+  { label: 'Tartaric Acid (Grape Juice & Tamarind) — Factor 0.075', val: '0.075' },
+  { label: 'Acetic Acid (Vinegar, Pickles, Ketchup, Mayonnaise) — Factor 0.060', val: '0.060' },
+  { label: 'Oleic Acid (Free Fatty Acids / FFA in Edible Oils) — Factor 0.282', val: '0.282' }
+];
+
 // ============================================================================
-// 1. LAB & FORMULA CALCULATOR (SANITIZER PPM, TITRATABLE ACIDITY, BRIX/ACID & CONVERTER)
+// 1. LAB & FORMULA CALCULATOR (SANITIZER PPM, TITRATABLE ACIDITY, BRIX/ACID, CONVERTER & SAVED DIRECTORY)
 // ============================================================================
-export const LabFormulaCalculatorTool: React.FC = () => {
-  const [subMode, setSubMode] = useState<'ppm' | 'acidity' | 'converter'>('ppm');
+export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> = ({
+  user,
+  isUserPaid = false,
+  hasExpiredPremium = false,
+  toolsData,
+  onSaveToolsData,
+  onOpenPremiumModal
+}) => {
+  const canUsePremium = Boolean(
+    (isUserPaid && !hasExpiredPremium) || user?.isAdmin
+  );
+
+  const [subMode, setSubMode] = useState<
+    'ppm' | 'acidity' | 'converter' | 'directory'
+  >('ppm');
+  const [statusToast, setStatusToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setStatusToast(msg);
+    setTimeout(() => {
+      setStatusToast((prev) => (prev === msg ? null : prev));
+    }, 3500);
+  };
+
+  // Saved Custom Sanitizers, Custom Acids & Lab Directory Records from toolsData
+  const customSanitizers: CustomSanitizerItem[] = useMemo(
+    () => toolsData?.labFormulaData?.customSanitizers || [],
+    [toolsData?.labFormulaData?.customSanitizers]
+  );
+  const customAcids: CustomAcidFactorItem[] = useMemo(
+    () => toolsData?.labFormulaData?.customAcids || [],
+    [toolsData?.labFormulaData?.customAcids]
+  );
+  const savedRecords: LabFormulaSavedRecord[] = useMemo(
+    () => toolsData?.labFormulaData?.savedRecords || [],
+    [toolsData?.labFormulaData?.savedRecords]
+  );
+
+  // Combined Sanitizers List (Default + Paid User Custom Sanitizers)
+  const allSanitizerOptions = useMemo(() => {
+    const customMapped = customSanitizers.map((c) => ({
+      id: c.id,
+      name: `${c.name} (${c.concentrationPct}%)`,
+      rawName: c.name,
+      pct: String(c.concentrationPct),
+      isCustom: true
+    }));
+    const defaultMapped = DEFAULT_SANITIZERS.map((d, idx) => ({
+      id: `default-san-${idx}`,
+      name: d.name,
+      rawName: d.name,
+      pct: d.pct,
+      isCustom: false
+    }));
+    return [...customMapped, ...defaultMapped];
+  }, [customSanitizers]);
+
+  // Combined Acid Factors List (Default + Paid User Custom Acids)
+  const allAcidOptions = useMemo(() => {
+    const customMapped = customAcids.map((c) => ({
+      id: c.id,
+      label: `${c.label} — Factor ${c.factor}`,
+      rawLabel: c.label,
+      val: c.factor,
+      isCustom: true
+    }));
+    const defaultMapped = DEFAULT_ACID_FACTORS.map((d, idx) => ({
+      id: `default-acid-${idx}`,
+      label: d.label,
+      rawLabel: d.label.split('—')[0].trim(),
+      val: d.val,
+      isCustom: false
+    }));
+    return [...customMapped, ...defaultMapped];
+  }, [customAcids]);
 
   // A. Sanitizer / Chlorine PPM Dilution State
-  const [sanitizerType, setSanitizerType] = useState<string>('Sodium Hypochlorite (Bleach)');
+  const [sanitizerType, setSanitizerType] = useState<string>(
+    'Household Bleach (5.25% NaOCl)'
+  );
   const [stockStrengthPct, setStockStrengthPct] = useState<string>('5.25');
   const [waterVolumeLiters, setWaterVolumeLiters] = useState<string>('100');
   const [targetPpm, setTargetPpm] = useState<string>('200');
+  const [ppmBatchName, setPpmBatchName] = useState<string>('');
+  const [ppmNotes, setPpmNotes] = useState<string>('');
+
+  // Add Custom Sanitizer Form State (Paid Only)
+  const [showAddSanitizerForm, setShowAddSanitizerForm] =
+    useState<boolean>(false);
+  const [newChemicalName, setNewChemicalName] = useState<string>('');
+  const [newChemicalPct, setNewChemicalPct] = useState<string>('10');
 
   const ppmResult = useMemo(() => {
     const stockPct = Math.max(0.01, Number(stockStrengthPct) || 5.25);
     const volL = Math.max(0.1, Number(waterVolumeLiters) || 100);
     const ppm = Math.max(1, Number(targetPpm) || 200);
-    // 1% = 10,000 PPM. Volume of stock (mL) = (Target PPM * Water L * 1000) / (Stock % * 10,000) = (Target PPM * Water L) / (Stock % * 10)
+    // 1% = 10,000 PPM. Volume of stock (mL) = (Target PPM * Water L) / (Stock % * 10)
     const stockMlRequired = (ppm * volL) / (stockPct * 10);
     const stockLitersRequired = stockMlRequired / 1000;
     const stockMlPerLiter = stockMlRequired / volL;
 
-    let applicationGuide = 'Food contact surfaces & equipment sanitization (No-rinse up to 200 PPM).';
+    let applicationGuide =
+      'Food contact surfaces & equipment sanitization (No-rinse up to 200 PPM).';
     if (ppm <= 60) {
-      applicationGuide = 'Raw fruit & vegetable washing tank (typically 50–100 PPM free chlorine, pH 6.5–7.5).';
+      applicationGuide =
+        'Raw fruit & vegetable washing tank (typically 50–100 PPM free chlorine, pH 6.5–7.5).';
     } else if (ppm > 200 && ppm <= 400) {
-      applicationGuide = 'Floor, drain, crates & non-food contact sanitization (Rinse required if applied to food surfaces).';
+      applicationGuide =
+        'Floor, drain, crates & non-food contact sanitization (Rinse required if applied to food surfaces).';
     } else if (ppm > 400) {
-      applicationGuide = 'Heavy bio-security / footbath / mold disinfection (Strictly non-food contact or potable water rinse required).';
+      applicationGuide =
+        'Heavy bio-security / footbath / mold disinfection (Strictly non-food contact or potable water rinse required).';
     }
 
     return {
@@ -66,27 +187,28 @@ export const LabFormulaCalculatorTool: React.FC = () => {
   }, [stockStrengthPct, waterVolumeLiters, targetPpm]);
 
   // B. Titratable Acidity (% TA) & Brix:Acid Ratio State
+  const [selectedAcidLabel, setSelectedAcidLabel] = useState<string>(
+    DEFAULT_ACID_FACTORS[0].label
+  );
   const [taSampleWeightG, setTaSampleWeightG] = useState<string>('10');
   const [taNaohMl, setTaNaohMl] = useState<string>('4.5');
   const [taNaohNormality, setTaNaohNormality] = useState<string>('0.1');
   const [taAcidFactor, setTaAcidFactor] = useState<string>('0.064'); // Citric Acid anhydrous = 0.064
   const [taSampleBrix, setTaSampleBrix] = useState<string>('12.5');
+  const [taSampleName, setTaSampleName] = useState<string>('');
+  const [taNotes, setTaNotes] = useState<string>('');
 
-  const ACID_FACTORS = [
-    { label: 'Citric Acid Anhydrous (Citrus / Soft Drinks / Jams) — Factor 0.064', val: '0.064' },
-    { label: 'Citric Acid Monohydrate (Beverages) — Factor 0.070', val: '0.070' },
-    { label: 'Lactic Acid (Milk, Yogurt, Curd, Fermented Foods) — Factor 0.090', val: '0.090' },
-    { label: 'Malic Acid (Apple, Peach, Pear, Apricot Juice) — Factor 0.067', val: '0.067' },
-    { label: 'Tartaric Acid (Grape Juice & Tamarind) — Factor 0.075', val: '0.075' },
-    { label: 'Acetic Acid (Vinegar, Pickles, Ketchup, Mayonnaise) — Factor 0.060', val: '0.060' },
-    { label: 'Oleic Acid (Free Fatty Acids / FFA in Edible Oils) — Factor 0.282', val: '0.282' }
-  ];
+  // Add Custom Acid Form State (Paid Only)
+  const [showAddAcidForm, setShowAddAcidForm] = useState<boolean>(false);
+  const [newAcidName, setNewAcidName] = useState<string>('');
+  const [newAcidFactor, setNewAcidFactor] = useState<string>('0.064');
+  const [newAcidEqWeight, setNewAcidEqWeight] = useState<string>('');
 
   const taResult = useMemo(() => {
     const w = Math.max(0.1, Number(taSampleWeightG) || 10);
     const v = Math.max(0, Number(taNaohMl) || 0);
     const n = Math.max(0.001, Number(taNaohNormality) || 0.1);
-    const eq = Math.max(0.01, Number(taAcidFactor) || 0.064);
+    const eq = Math.max(0.001, Number(taAcidFactor) || 0.064);
     const brix = Math.max(0, Number(taSampleBrix) || 0);
 
     // % Acidity = (V_NaOH * N_NaOH * meq_factor * 100) / Sample_g
@@ -113,7 +235,6 @@ export const LabFormulaCalculatorTool: React.FC = () => {
     const ppm = pct * 10000;
 
     const bx = Math.min(85, Math.max(0, Number(brixVal) || 0));
-    // Specific gravity at 20°C approximation from °Brix: SG = 1 / (1 - (Brix / 261.3))
     const sg = 1 / (1 - bx / 261.3);
     const baume = bx * 0.555;
 
@@ -126,19 +247,575 @@ export const LabFormulaCalculatorTool: React.FC = () => {
     };
   }, [tempC, pctVal, brixVal]);
 
+  // D. Directory Filter & Search State (Paid Users)
+  const [dirTypeFilter, setDirTypeFilter] = useState<'all' | 'ppm' | 'acidity'>(
+    'all'
+  );
+  const [dirPeriodFilter, setDirPeriodFilter] = useState<
+    'all' | 'today' | 'week' | 'month'
+  >('all');
+  const [dirSearchQuery, setDirSearchQuery] = useState<string>('');
+
+  const filteredDirectoryRecords = useMemo(() => {
+    const now = Date.now();
+    return savedRecords.filter((rec) => {
+      if (dirTypeFilter !== 'all' && rec.recordType !== dirTypeFilter) {
+        return false;
+      }
+      if (dirPeriodFilter !== 'all' && rec.savedAtIso) {
+        const recTime = new Date(rec.savedAtIso).getTime();
+        const diffDays = (now - recTime) / (1000 * 3600 * 24);
+        if (dirPeriodFilter === 'today' && diffDays > 1) return false;
+        if (dirPeriodFilter === 'week' && diffDays > 7) return false;
+        if (dirPeriodFilter === 'month' && diffDays > 31) return false;
+      }
+      if (dirSearchQuery.trim()) {
+        const q = dirSearchQuery.toLowerCase();
+        const hay = `${rec.recordCode} ${rec.batchOrSampleName} ${
+          rec.sanitizerName || ''
+        } ${rec.acidName || ''} ${rec.savedDateFormatted} ${
+          rec.notes || ''
+        }`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [savedRecords, dirTypeFilter, dirPeriodFilter, dirSearchQuery]);
+
+  // Helper to persist LabFormulaUserData into toolsData
+  const persistLabFormulaData = async (nextLabData: {
+    customSanitizers?: CustomSanitizerItem[];
+    customAcids?: CustomAcidFactorItem[];
+    savedRecords?: LabFormulaSavedRecord[];
+  }) => {
+    if (!toolsData || !onSaveToolsData) return;
+    const updated: UserToolsData = {
+      ...toolsData,
+      labFormulaData: {
+        customSanitizers: nextLabData.customSanitizers ?? customSanitizers,
+        customAcids: nextLabData.customAcids ?? customAcids,
+        savedRecords: nextLabData.savedRecords ?? savedRecords
+      },
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    };
+    await onSaveToolsData(updated);
+  };
+
+  // Save Custom Sanitizer / Chemical (Paid Only)
+  const handleSaveCustomSanitizer = async () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const cleanName = newChemicalName.trim();
+    const pctNum = Number(newChemicalPct);
+    if (!cleanName) {
+      showToast('Please enter the chemical / sanitizer name.');
+      return;
+    }
+    if (!pctNum || pctNum <= 0 || pctNum > 100) {
+      showToast('Please enter a valid stock concentration % (0.01 to 100).');
+      return;
+    }
+
+    const newItem: CustomSanitizerItem = {
+      id: `chem-${Date.now()}`,
+      name: cleanName,
+      concentrationPct: Number(pctNum.toFixed(2)),
+      createdAt: new Date().toISOString()
+    };
+
+    const nextList = [newItem, ...customSanitizers];
+    await persistLabFormulaData({ customSanitizers: nextList });
+
+    const formattedOptionName = `${newItem.name} (${newItem.concentrationPct}%)`;
+    setSanitizerType(formattedOptionName);
+    setStockStrengthPct(String(newItem.concentrationPct));
+    setNewChemicalName('');
+    setNewChemicalPct('10');
+    setShowAddSanitizerForm(false);
+    showToast(
+      `Saved "${newItem.name} (${newItem.concentrationPct}%)" to your Chemical List!`
+    );
+  };
+
+  // Delete Custom Sanitizer
+  const handleDeleteCustomSanitizer = async (id: string) => {
+    const nextList = customSanitizers.filter((c) => c.id !== id);
+    await persistLabFormulaData({ customSanitizers: nextList });
+    showToast('Custom chemical removed from list.');
+  };
+
+  // Save Custom Organic Acid / Factor (Paid Only)
+  const handleSaveCustomAcid = async () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const cleanLabel = newAcidName.trim();
+    const factorNum = Number(newAcidFactor);
+    if (!cleanLabel) {
+      showToast('Please enter the Acid or Food Matrix name.');
+      return;
+    }
+    if (!factorNum || factorNum <= 0 || factorNum > 5) {
+      showToast('Please enter a valid acid factor (e.g. 0.064).');
+      return;
+    }
+
+    const factorStr = String(Number(factorNum.toFixed(4)));
+    const newItem: CustomAcidFactorItem = {
+      id: `acid-${Date.now()}`,
+      label: cleanLabel,
+      factor: factorStr,
+      createdAt: new Date().toISOString()
+    };
+
+    const nextList = [newItem, ...customAcids];
+    await persistLabFormulaData({ customAcids: nextList });
+
+    const fullLabel = `${newItem.label} — Factor ${newItem.factor}`;
+    setSelectedAcidLabel(fullLabel);
+    setTaAcidFactor(newItem.factor);
+    setNewAcidName('');
+    setNewAcidFactor('0.064');
+    setNewAcidEqWeight('');
+    setShowAddAcidForm(false);
+    showToast(
+      `Saved "${newItem.label} (Factor ${newItem.factor})" to your Acid List!`
+    );
+  };
+
+  // Delete Custom Acid
+  const handleDeleteCustomAcid = async (id: string) => {
+    const nextList = customAcids.filter((c) => c.id !== id);
+    await persistLabFormulaData({ customAcids: nextList });
+    showToast('Custom acid removed from list.');
+  };
+
+  // Save PPM Solution Record to Directory (Paid Only)
+  const handleSavePpmRecordToDirectory = async () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const now = new Date();
+    const dateFormatted = now.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const recordCode = `LAB-SOL-${1001 + savedRecords.length}`;
+    const batchTitle =
+      ppmBatchName.trim() ||
+      `${sanitizerType} @ ${targetPpm} PPM (${waterVolumeLiters} L)`;
+
+    const newRec: LabFormulaSavedRecord = {
+      id: `lab-rec-${Date.now()}`,
+      recordCode,
+      recordType: 'ppm',
+      savedDateFormatted: dateFormatted,
+      savedAtIso: now.toISOString(),
+      batchOrSampleName: batchTitle,
+      notes: ppmNotes.trim(),
+      sanitizerName: sanitizerType,
+      stockStrengthPct: Number(stockStrengthPct) || 5.25,
+      waterVolumeLiters: Number(waterVolumeLiters) || 100,
+      targetPpm: Number(targetPpm) || 200,
+      stockMlRequired: ppmResult.stockMlRequired,
+      stockLitersRequired: ppmResult.stockLitersRequired,
+      stockMlPerLiter: ppmResult.stockMlPerLiter,
+      applicationGuide: ppmResult.applicationGuide
+    };
+
+    const nextRecords = [newRec, ...savedRecords].slice(0, 200);
+    await persistLabFormulaData({ savedRecords: nextRecords });
+    setPpmBatchName('');
+    setPpmNotes('');
+    showToast(`Saved "${batchTitle}" (${recordCode}) to your Lab Directory!`);
+  };
+
+  // Save Titratable Acidity & Brix:Acid Record to Directory (Paid Only)
+  const handleSaveAcidityRecordToDirectory = async () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const now = new Date();
+    const dateFormatted = now.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const recordCode = `LAB-TA-${1001 + savedRecords.length}`;
+    const sampleTitle =
+      taSampleName.trim() ||
+      `Titratable Acidity (${taResult.acidityPct}%) & Brix:Acid (${taResult.brixAcidRatio}:1)`;
+
+    const newRec: LabFormulaSavedRecord = {
+      id: `lab-rec-${Date.now()}`,
+      recordCode,
+      recordType: 'acidity',
+      savedDateFormatted: dateFormatted,
+      savedAtIso: now.toISOString(),
+      batchOrSampleName: sampleTitle,
+      notes: taNotes.trim(),
+      acidName: selectedAcidLabel,
+      acidFactor: Number(taAcidFactor) || 0.064,
+      sampleWeightG: Number(taSampleWeightG) || 10,
+      naohMl: Number(taNaohMl) || 4.5,
+      naohNormality: Number(taNaohNormality) || 0.1,
+      sampleBrix: Number(taSampleBrix) || 0,
+      acidityPct: taResult.acidityPct,
+      brixAcidRatio: taResult.brixAcidRatio
+    };
+
+    const nextRecords = [newRec, ...savedRecords].slice(0, 200);
+    await persistLabFormulaData({ savedRecords: nextRecords });
+    setTaSampleName('');
+    setTaNotes('');
+    showToast(`Saved "${sampleTitle}" (${recordCode}) to your Lab Directory!`);
+  };
+
+  const handleDeleteDirectoryRecord = async (id: string) => {
+    const nextRecords = savedRecords.filter((r) => r.id !== id);
+    await persistLabFormulaData({ savedRecords: nextRecords });
+    showToast('Record deleted from Lab Directory.');
+  };
+
+  // Load a saved record back into the active calculator
+  const handleLoadRecordIntoCalculator = (rec: LabFormulaSavedRecord) => {
+    if (rec.recordType === 'ppm') {
+      setSanitizerType(rec.sanitizerName || 'Household Bleach (5.25% NaOCl)');
+      setStockStrengthPct(String(rec.stockStrengthPct ?? 5.25));
+      setWaterVolumeLiters(String(rec.waterVolumeLiters ?? 100));
+      setTargetPpm(String(rec.targetPpm ?? 200));
+      setPpmBatchName(rec.batchOrSampleName || '');
+      setPpmNotes(rec.notes || '');
+      setSubMode('ppm');
+      showToast(`Loaded "${rec.batchOrSampleName}" into Sanitizer Calculator!`);
+    } else {
+      setSelectedAcidLabel(rec.acidName || DEFAULT_ACID_FACTORS[0].label);
+      setTaAcidFactor(String(rec.acidFactor ?? 0.064));
+      setTaSampleWeightG(String(rec.sampleWeightG ?? 10));
+      setTaNaohMl(String(rec.naohMl ?? 4.5));
+      setTaNaohNormality(String(rec.naohNormality ?? 0.1));
+      setTaSampleBrix(String(rec.sampleBrix ?? 12.5));
+      setTaSampleName(rec.batchOrSampleName || '');
+      setTaNotes(rec.notes || '');
+      setSubMode('acidity');
+      showToast(`Loaded "${rec.batchOrSampleName}" into Acidity Calculator!`);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Download Single Lab Record PDF Report (On-the-fly generation — zero DB load)
+  const handleDownloadSingleLabRecordPdf = (rec: LabFormulaSavedRecord) => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+
+    // Header Banner
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 44, 'F');
+    pdf.setFillColor(22, 115, 184);
+    pdf.rect(0, 41, 210, 3, 'F');
+
+    drawPdfBrandLogo(pdf, 14, 8, 26, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('Food Science Portal — Official QA Laboratory Log', 44, 17);
+    pdf.setFontSize(17);
+    pdf.text(
+      rec.recordType === 'ppm'
+        ? 'CHEMICAL / SANITIZER DILUTION BATCH REPORT'
+        : 'TITRATABLE ACIDITY & BRIX:ACID LAB REPORT',
+      44,
+      26
+    );
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Record ID: ${rec.recordCode}   •   Date Prepared: ${rec.savedDateFormatted}`,
+      44,
+      34
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 172, 8, 24, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    // Specialist & Batch Info Card
+    pdf.setFillColor(240, 246, 252);
+    pdf.setDrawColor(210, 222, 234);
+    pdf.roundedRect(14, 52, 182, 30, 3, 3, 'FD');
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(26, 33, 56);
+    pdf.text(`Prepared By: ${specialistName}`, 20, 61);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(74, 85, 104);
+    pdf.text(
+      `Batch / Sample Name: ${rec.batchOrSampleName}`,
+      20,
+      68
+    );
+    pdf.text(
+      `Record Code: ${rec.recordCode}   |   Timestamp: ${rec.savedDateFormatted}`,
+      20,
+      75
+    );
+
+    let y = 92;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.setTextColor(22, 115, 184);
+    pdf.text(
+      rec.recordType === 'ppm'
+        ? '1. Sanitizer / Chemical Solution Parameters & Dosing'
+        : '1. Titratable Acidity (% TA) & Brix:Acid Analytical Parameters',
+      14,
+      y
+    );
+    y += 6;
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(22, 115, 184);
+    pdf.roundedRect(14, y, 182, 64, 3, 3, 'FD');
+
+    pdf.setFontSize(10.5);
+    pdf.setTextColor(26, 33, 56);
+    if (rec.recordType === 'ppm') {
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Chemical / Sanitizer Used:`, 20, y + 12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.sanitizerName || '-'}`, 82, y + 12);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Stock Chemical Concentration:`, 20, y + 22);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.stockStrengthPct}% Active Ingredient`, 82, y + 22);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Total Batch / Water Volume:`, 20, y + 32);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.waterVolumeLiters} Liters`, 82, y + 32);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Target Required Concentration:`, 20, y + 42);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.targetPpm} PPM (mg/L)`, 82, y + 42);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(22, 115, 184);
+      pdf.text(`EXACT CHEMICAL DOSING REQUIRED:`, 20, y + 54);
+      pdf.text(
+        `${rec.stockMlRequired} mL (${rec.stockLitersRequired} L)  [${rec.stockMlPerLiter} mL per 1 L water]`,
+        92,
+        y + 54
+      );
+    } else {
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Predominant Organic Acid & Factor:`, 20, y + 12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(
+        `${(rec.acidName || '-').slice(0, 58)} (Factor: ${rec.acidFactor})`,
+        86,
+        y + 12
+      );
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Sample Weight / Volume Analyzed:`, 20, y + 22);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.sampleWeightG} g (or mL)`, 86, y + 22);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`NaOH Titrant Volume & Normality:`, 20, y + 32);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.naohMl} mL of ${rec.naohNormality} N NaOH`, 86, y + 32);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Sample Refractometer °Brix:`, 20, y + 42);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${rec.sampleBrix} °Brix`, 86, y + 42);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(22, 115, 184);
+      pdf.text(`ANALYTICAL RESULT:`, 20, y + 54);
+      pdf.text(
+        `Titratable Acidity = ${rec.acidityPct}%   |   Brix:Acid Ratio = ${rec.brixAcidRatio} : 1`,
+        72,
+        y + 54
+      );
+    }
+
+    y += 76;
+    if (rec.applicationGuide || rec.notes) {
+      pdf.setFillColor(248, 250, 252);
+      pdf.setDrawColor(210, 222, 234);
+      pdf.roundedRect(14, y, 182, 34, 3, 3, 'FD');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text('HACCP Guideline & Laboratory Notes:', 20, y + 10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(74, 85, 104);
+      const combinedNote = `${rec.applicationGuide ? `Guideline: ${rec.applicationGuide} ` : ''}${
+        rec.notes ? `| Lab Notes: ${rec.notes}` : ''
+      }`;
+      const wrapped = pdf.splitTextToSize(combinedNote, 170);
+      pdf.text(wrapped.slice(0, 3), 20, y + 18);
+    }
+
+    pdf.setFont('helvetica', 'italic');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(120, 130, 145);
+    pdf.text(
+      'Generated by Food Science Portal — QA & Laboratory Formula Suite',
+      14,
+      284
+    );
+
+    pdf.save(`${rec.recordCode}_${rec.recordType.toUpperCase()}_Report.pdf`);
+    showToast(`Downloaded PDF Report (${rec.recordCode})!`);
+  };
+
+  // Download Full Directory Logbook PDF (All Filtered Records)
+  const handleDownloadDirectoryLogbookPdf = () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    if (filteredDirectoryRecords.length === 0) {
+      showToast('No saved records to export.');
+      return;
+    }
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 42, 'F');
+    drawPdfBrandLogo(pdf, 14, 8, 25, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('Food Science Portal — QA Laboratory Logbook', 44, 17);
+    pdf.setFontSize(16);
+    pdf.text('SAVED SOLUTIONS & TITRATION DIRECTORY REPORT', 44, 26);
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Specialist: ${specialistName}   •   Total Records: ${filteredDirectoryRecords.length}`,
+      44,
+      34
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 172, 8, 24, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    let y = 50;
+    filteredDirectoryRecords.forEach((rec, idx) => {
+      if (y > 255) {
+        pdf.addPage();
+        y = 20;
+      }
+      pdf.setFillColor(idx % 2 === 0 ? 248 : 240, idx % 2 === 0 ? 250 : 246, 252);
+      pdf.setDrawColor(210, 222, 234);
+      pdf.roundedRect(14, y, 182, 26, 2.5, 2.5, 'FD');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text(
+        `${idx + 1}. [${rec.recordCode}] ${rec.batchOrSampleName}  (${rec.savedDateFormatted})`,
+        18,
+        y + 7
+      );
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.8);
+      pdf.setTextColor(22, 115, 184);
+      if (rec.recordType === 'ppm') {
+        pdf.text(
+          `Sanitizer Dilution: ${rec.sanitizerName} (${rec.stockStrengthPct}% stock) -> ${rec.waterVolumeLiters} L @ ${rec.targetPpm} PPM = Add ${rec.stockMlRequired} mL`,
+          18,
+          y + 14.5
+        );
+      } else {
+        pdf.text(
+          `Titratable Acidity: ${(rec.acidName || '').split('—')[0].trim()} (Factor ${rec.acidFactor}) | Sample ${rec.sampleWeightG}g, NaOH ${rec.naohMl}mL (${rec.naohNormality}N) => TA: ${rec.acidityPct}% | Brix:Acid: ${rec.brixAcidRatio}:1`,
+          18,
+          y + 14.5
+        );
+      }
+
+      if (rec.notes) {
+        pdf.setTextColor(90, 108, 132);
+        pdf.text(`Notes: ${rec.notes.slice(0, 95)}`, 18, y + 21.5);
+      }
+      y += 30;
+    });
+
+    pdf.save(`Lab_Formula_Directory_Logbook_${Date.now()}.pdf`);
+    showToast('Downloaded Complete Lab Directory Logbook PDF!');
+  };
+
   return (
-    <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
-      <div className="border-b border-[#D2DEEA] pb-3.5 flex flex-wrap items-center justify-between gap-2">
+    <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-6">
+      {/* Toast Notification */}
+      {statusToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+          <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
+          <span>{statusToast}</span>
+        </div>
+      )}
+
+      {/* Header & Sub-Mode Tabs */}
+      <div className="border-b border-[#D2DEEA] pb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-[#1673B8] text-white flex items-center justify-center shrink-0">
             <Calculator className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
-              Lab &amp; Formula Calculator
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                Lab &amp; Formula Calculator
+              </h2>
+              <span className="text-[11px] font-extrabold text-[#1673B8]">
+                {canUsePremium
+                  ? '· Paid Pro Mode (Custom Chemicals & Directory Unlocked)'
+                  : '· Free Basic Calculator'}
+              </span>
+            </div>
             <p className="text-xs text-[#4A5568] font-medium">
-              Sanitizer PPM Dilution, Titratable Acidity (% TA), Brix:Acid Ratio &amp; Food Unit Converter
+              Sanitizer PPM Dilution, Titratable Acidity (% TA), Brix:Acid Ratio,
+              Unit Converter &amp; Saved Lab Solutions Directory
             </p>
           </div>
         </div>
@@ -147,7 +824,15 @@ export const LabFormulaCalculatorTool: React.FC = () => {
           {[
             { id: 'ppm' as const, label: 'Sanitizer PPM Dilution' },
             { id: 'acidity' as const, label: 'Titratable Acidity & Brix:Acid' },
-            { id: 'converter' as const, label: 'Temp, PPM & Brix Converter' }
+            { id: 'converter' as const, label: 'Temp, PPM & Brix Converter' },
+            ...(canUsePremium
+              ? [
+                  {
+                    id: 'directory' as const,
+                    label: `Saved Directory (${savedRecords.length})`
+                  }
+                ]
+              : [])
           ].map((t) => (
             <button
               key={t.id}
@@ -165,8 +850,115 @@ export const LabFormulaCalculatorTool: React.FC = () => {
         </div>
       </div>
 
+      {/* =====================================================================
+          MODE 1: SANITIZER / CHEMICAL PPM DILUTION CALCULATOR
+         ===================================================================== */}
       {subMode === 'ppm' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* Paid Member Custom Chemical Addition Bar */}
+          {canUsePremium ? (
+            <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs text-[#1A2138]">
+                  <span className="font-extrabold text-[#1673B8]">
+                    Custom Chemical / Sanitizer Library:
+                  </span>{' '}
+                  If your sanitizer or chemical is not in the dropdown list below,
+                  click <strong>+ Add Custom Chemical</strong> to save its name and
+                  stock concentration (%) for future batches.
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowAddSanitizerForm((prev) => !prev)
+                  }
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>
+                    {showAddSanitizerForm
+                      ? 'Close Form'
+                      : '+ Add Custom Chemical'}
+                  </span>
+                </button>
+              </div>
+
+              {showAddSanitizerForm && (
+                <div className="p-4 rounded-xl bg-white border border-[#94B8D7] grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                  <div className="sm:col-span-6">
+                    <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                      New Chemical / Sanitizer Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Chlorine Dioxide (ClO2) / Divosan / Virkon S"
+                      value={newChemicalName}
+                      onChange={(e) => setNewChemicalName(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                      Its Stock Concentration (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="e.g., 15"
+                      value={newChemicalPct}
+                      onChange={(e) => setNewChemicalPct(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <button
+                      type="button"
+                      onClick={handleSaveCustomSanitizer}
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                    >
+                      Save Chemical to List ✓
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {customSanitizers.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                  <span className="font-extrabold text-[#5A6C84]">
+                    Your Saved Chemicals:
+                  </span>
+                  {customSanitizers.map((cs) => (
+                    <span
+                      key={cs.id}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-[#D2DEEA] text-[#1A2138] font-bold"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSanitizerType(
+                            `${cs.name} (${cs.concentrationPct}%)`
+                          );
+                          setStockStrengthPct(String(cs.concentrationPct));
+                        }}
+                        className="hover:text-[#1673B8] cursor-pointer"
+                      >
+                        {cs.name} ({cs.concentrationPct}%)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCustomSanitizer(cs.id)}
+                        className="text-red-500 hover:text-red-700 cursor-pointer"
+                        title="Remove custom chemical"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
@@ -175,18 +967,22 @@ export const LabFormulaCalculatorTool: React.FC = () => {
               <select
                 value={sanitizerType}
                 onChange={(e) => {
-                  setSanitizerType(e.target.value);
-                  if (e.target.value.includes('5.25')) setStockStrengthPct('5.25');
-                  else if (e.target.value.includes('12%')) setStockStrengthPct('12');
-                  else if (e.target.value.includes('15%')) setStockStrengthPct('15');
-                  else if (e.target.value.includes('10%')) setStockStrengthPct('10');
+                  const val = e.target.value;
+                  setSanitizerType(val);
+                  const matched = allSanitizerOptions.find(
+                    (o) => o.name === val
+                  );
+                  if (matched) {
+                    setStockStrengthPct(matched.pct);
+                  }
                 }}
                 className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
               >
-                <option value="Household Bleach (5.25% NaOCl)">Household Bleach (5.25% NaOCl)</option>
-                <option value="Industrial Liquid Chlorine (12% NaOCl)">Industrial Liquid Chlorine (12% NaOCl)</option>
-                <option value="Peracetic Acid / PAA (15%)">Peracetic Acid / PAA (15%)</option>
-                <option value="Quaternary Ammonium / QAC (10%)">Quaternary Ammonium / QAC (10%)</option>
+                {allSanitizerOptions.map((opt) => (
+                  <option key={opt.id} value={opt.name}>
+                    {opt.isCustom ? `★ ${opt.name}` : opt.name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -249,17 +1045,18 @@ export const LabFormulaCalculatorTool: React.FC = () => {
 
           <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] space-y-3">
             <div className="text-xs font-extrabold text-[#1673B8] uppercase tracking-wider">
-              Exact Dosing Prescription for {waterVolumeLiters} Liters @ {targetPpm} PPM
+              Exact Dosing Prescription for {waterVolumeLiters} Liters @{' '}
+              {targetPpm} PPM ({sanitizerType})
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
                 <div className="text-[11px] font-bold text-[#4A5568]">
                   Add Stock Chemical (mL)
                 </div>
-                <div className="text-2xl font-extrabold text-[#1673B8] mt-0.5 font-mono">
+                <div className="text-2xl font-extrabold text-[#1673B8] mt-0.5 font-mono tabular-nums">
                   {ppmResult.stockMlRequired} mL
                 </div>
-                <div className="text-[11px] text-[#4A5568] mt-0.5">
+                <div className="text-[11px] text-[#4A5568] mt-0.5 tabular-nums">
                   ({ppmResult.stockLitersRequired} Liters total)
                 </div>
               </div>
@@ -268,7 +1065,7 @@ export const LabFormulaCalculatorTool: React.FC = () => {
                 <div className="text-[11px] font-bold text-[#4A5568]">
                   Dosing Rate per 1 Liter Water
                 </div>
-                <div className="text-2xl font-extrabold text-[#1A2138] mt-0.5 font-mono">
+                <div className="text-2xl font-extrabold text-[#1A2138] mt-0.5 font-mono tabular-nums">
                   {ppmResult.stockMlPerLiter} mL / L
                 </div>
                 <div className="text-[11px] text-[#4A5568] mt-0.5">
@@ -285,25 +1082,197 @@ export const LabFormulaCalculatorTool: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Paid User: Save Solution to Lab Directory */}
+            {canUsePremium && (
+              <div className="pt-3 border-t border-[#BBD6EE] grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                <div className="sm:col-span-4">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Batch / Line / Tank Label (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Veg Wash Tank #1 — Morning Shift"
+                    value={ppmBatchName}
+                    onChange={(e) => setPpmBatchName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-4">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Verification Notes / Operator (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Verified 200 PPM via test strip, pH 6.8"
+                    value={ppmNotes}
+                    onChange={(e) => setPpmNotes(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-4 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSavePpmRecordToDirectory}
+                    className="flex-1 py-2.5 px-3.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer shadow-xs"
+                  >
+                    Save Solution to Directory ✓
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
+      {/* =====================================================================
+          MODE 2: TITRATABLE ACIDITY (% TA) & BRIX:ACID RATIO CALCULATOR
+         ===================================================================== */}
       {subMode === 'acidity' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* Paid Member Custom Acid / Factor Addition Bar */}
+          {canUsePremium ? (
+            <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs text-[#1A2138]">
+                  <span className="font-extrabold text-[#1673B8]">
+                    Custom Acid / Matrix Library:
+                  </span>{' '}
+                  If your organic acid or food item is not in the list below,
+                  click <strong>+ Add Custom Acid / Factor</strong> to save it for
+                  future titrations.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddAcidForm((prev) => !prev)}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>
+                    {showAddAcidForm
+                      ? 'Close Form'
+                      : '+ Add Custom Acid / Factor'}
+                  </span>
+                </button>
+              </div>
+
+              {showAddAcidForm && (
+                <div className="p-4 rounded-xl bg-white border border-[#94B8D7] grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                  <div className="sm:col-span-5">
+                    <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                      Acid Name &amp; Food Product
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Ascorbic Acid (Vitamin C Fruit Drink) / Phosphoric Acid"
+                      value={newAcidName}
+                      onChange={(e) => setNewAcidName(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                      Eq. Wt (Optional)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="e.g., 88"
+                      value={newAcidEqWeight}
+                      onChange={(e) => {
+                        setNewAcidEqWeight(e.target.value);
+                        const eqW = Number(e.target.value);
+                        if (eqW > 0) {
+                          setNewAcidFactor(
+                            String(Number((eqW / 1000).toFixed(4)))
+                          );
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                      meq Factor
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      placeholder="e.g., 0.088"
+                      value={newAcidFactor}
+                      onChange={(e) => setNewAcidFactor(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <button
+                      type="button"
+                      onClick={handleSaveCustomAcid}
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                    >
+                      Save Acid to List ✓
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {customAcids.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                  <span className="font-extrabold text-[#5A6C84]">
+                    Your Saved Acids:
+                  </span>
+                  {customAcids.map((ca) => (
+                    <span
+                      key={ca.id}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-[#D2DEEA] text-[#1A2138] font-bold"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAcidLabel(
+                            `${ca.label} — Factor ${ca.factor}`
+                          );
+                          setTaAcidFactor(ca.factor);
+                        }}
+                        className="hover:text-[#1673B8] cursor-pointer"
+                      >
+                        {ca.label} ({ca.factor})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCustomAcid(ca.id)}
+                        className="text-red-500 hover:text-red-700 cursor-pointer"
+                        title="Remove custom acid"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                 Select Predominant Organic Acid (meq Factor)
               </label>
               <select
-                value={taAcidFactor}
-                onChange={(e) => setTaAcidFactor(e.target.value)}
+                value={selectedAcidLabel}
+                onChange={(e) => {
+                  const lbl = e.target.value;
+                  setSelectedAcidLabel(lbl);
+                  const matched = allAcidOptions.find((a) => a.label === lbl);
+                  if (matched) {
+                    setTaAcidFactor(matched.val);
+                  }
+                }}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
               >
-                {ACID_FACTORS.map((af) => (
-                  <option key={af.val} value={af.val}>
-                    {af.label}
+                {allAcidOptions.map((af) => (
+                  <option key={af.id} value={af.label}>
+                    {af.isCustom ? `★ ${af.label}` : af.label}
                   </option>
                 ))}
               </select>
@@ -362,36 +1331,80 @@ export const LabFormulaCalculatorTool: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
-              <div className="text-[11px] font-bold text-[#4A5568]">
-                Titratable Acidity (% w/w or % w/v)
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[11px] font-bold text-[#4A5568]">
+                  Titratable Acidity (% w/w or % w/v)
+                </div>
+                <div className="text-2xl font-extrabold text-[#1673B8] mt-0.5 font-mono tabular-nums">
+                  {taResult.acidityPct}%
+                </div>
+                <div className="text-[11px] text-[#4A5568] mt-0.5">
+                  Formula: (mL NaOH × N × {taAcidFactor} × 100) / Sample Weight
+                </div>
               </div>
-              <div className="text-2xl font-extrabold text-[#1673B8] mt-0.5 font-mono">
-                {taResult.acidityPct}%
-              </div>
-              <div className="text-[11px] text-[#4A5568] mt-0.5">
-                Formula: (mL NaOH × N × {taAcidFactor} × 100) / Sample Weight
+
+              <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
+                <div className="text-[11px] font-bold text-[#4A5568]">
+                  Sugar / Acid Ratio (°Brix : Acidity)
+                </div>
+                <div className="text-2xl font-extrabold text-[#1A2138] mt-0.5 font-mono tabular-nums">
+                  {taResult.brixAcidRatio} : 1
+                </div>
+                <div className="text-[11px] text-[#4A5568] mt-0.5">
+                  {taResult.brixAcidRatio >= 12 && taResult.brixAcidRatio <= 22
+                    ? 'Balanced sensory sweetness-to-tartness ratio for beverages/juices'
+                    : 'Check product sensory spec (Typical juices: 12:1 to 22:1)'}
+                </div>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
-              <div className="text-[11px] font-bold text-[#4A5568]">
-                Sugar / Acid Ratio (°Brix : Acidity)
+            {/* Paid User: Save Titration & Brix:Acid Record to Directory */}
+            {canUsePremium && (
+              <div className="pt-3 border-t border-[#BBD6EE] grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                <div className="sm:col-span-4">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Sample / Product Batch Name (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Mango Nectar Batch #402 / Raw Milk"
+                    value={taSampleName}
+                    onChange={(e) => setTaSampleName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-4">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Lab Analyst Notes / Spec Verdict (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Passed QA Spec (Target TA 0.28%–0.32%)"
+                    value={taNotes}
+                    onChange={(e) => setTaNotes(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-4 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveAcidityRecordToDirectory}
+                    className="flex-1 py-2.5 px-3.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer shadow-xs"
+                  >
+                    Save Acidity Record to Directory ✓
+                  </button>
+                </div>
               </div>
-              <div className="text-2xl font-extrabold text-[#1A2138] mt-0.5 font-mono">
-                {taResult.brixAcidRatio} : 1
-              </div>
-              <div className="text-[11px] text-[#4A5568] mt-0.5">
-                {taResult.brixAcidRatio >= 12 && taResult.brixAcidRatio <= 22
-                  ? 'Balanced sensory sweetness-to-tartness ratio for beverages/juices'
-                  : 'Check product sensory spec (Typical juices: 12:1 to 22:1)'}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
 
+      {/* =====================================================================
+          MODE 3: QUICK FOOD UNIT CONVERTER
+         ===================================================================== */}
       {subMode === 'converter' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2.5">
@@ -443,6 +1456,225 @@ export const LabFormulaCalculatorTool: React.FC = () => {
               <div>Degrees Baumé (°Bé): {unitConversions.baume}</div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          PAID MEMBER SAVED LAB SOLUTIONS & TITRATION DIRECTORY
+          (Shown when in 'directory' tab OR below the calculator for Paid Users)
+         ===================================================================== */}
+      {canUsePremium && (
+        <div className="pt-4 border-t-2 border-[#E4EDF7] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-extrabold text-[#1673B8]">
+                Paid Member Laboratory Logbook &amp; Saved Directory
+              </div>
+              <h3 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                Saved Solutions &amp; Titration Directory ({savedRecords.length})
+              </h3>
+              <p className="text-xs text-[#5A6C84]">
+                Track what date and time you prepared each sanitizer solution or
+                acidity test, reload parameters anytime, or download official
+                PDF reports.
+              </p>
+            </div>
+
+            {savedRecords.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDownloadDirectoryLogbookPdf}
+                className="px-4 py-2.5 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shrink-0 shadow-xs"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download Full Directory PDF ({filteredDirectoryRecords.length})</span>
+              </button>
+            )}
+          </div>
+
+          {/* Search & Filters Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center bg-[#F8FAFC] p-3 rounded-2xl border border-[#D2DEEA]">
+            <div className="sm:col-span-5 relative">
+              <Search className="w-4 h-4 text-[#5A6C84] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by chemical, batch name, ID or date..."
+                value={dirSearchQuery}
+                onChange={(e) => setDirSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-bold text-[#1A2138]"
+              />
+            </div>
+
+            <div className="sm:col-span-4 flex flex-wrap gap-1">
+              {[
+                { id: 'all' as const, label: 'All Types' },
+                { id: 'ppm' as const, label: 'Sanitizer PPM' },
+                { id: 'acidity' as const, label: 'Acidity & Brix' }
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setDirTypeFilter(f.id)}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
+                    dirTypeFilter === f.id
+                      ? 'bg-[#1673B8] text-white'
+                      : 'bg-white text-[#5A6C84] border border-[#D2DEEA]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="sm:col-span-3 flex flex-wrap gap-1 sm:justify-end">
+              {[
+                { id: 'all' as const, label: 'All Time' },
+                { id: 'today' as const, label: 'Today' },
+                { id: 'week' as const, label: 'Week' },
+                { id: 'month' as const, label: 'Month' }
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setDirPeriodFilter(p.id)}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
+                    dirPeriodFilter === p.id
+                      ? 'bg-[#1A2138] text-white'
+                      : 'bg-white text-[#5A6C84] border border-[#D2DEEA]'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Directory Records List */}
+          {filteredDirectoryRecords.length === 0 ? (
+            <div className="p-6 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] text-center space-y-1">
+              <div className="text-xs font-extrabold text-[#1A2138]">
+                No Saved Lab Solutions or Titration Records Found
+              </div>
+              <p className="text-[11px] text-[#5A6C84]">
+                Calculate a Sanitizer PPM dilution or Titratable Acidity above
+                and click &ldquo;Save to Directory&rdquo; to log your solution
+                with date &amp; time.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredDirectoryRecords.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="p-4 rounded-2xl bg-[#F8FAFC] hover:bg-white border border-[#D2DEEA] hover:border-[#1673B8] transition-all space-y-2.5 flex flex-col justify-between"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-[11px] font-extrabold">
+                      <span className="text-[#1673B8]">
+                        {rec.recordCode} ·{' '}
+                        {rec.recordType === 'ppm'
+                          ? 'Sanitizer Solution'
+                          : 'Titratable Acidity & Brix'}
+                      </span>
+                      <span className="text-[#5A6C84]">
+                        Date: {rec.savedDateFormatted}
+                      </span>
+                    </div>
+
+                    <h4 className="text-sm font-extrabold text-[#1A2138]">
+                      {rec.batchOrSampleName}
+                    </h4>
+
+                    {rec.recordType === 'ppm' ? (
+                      <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA] text-xs space-y-1">
+                        <div>
+                          <span className="font-bold text-[#5A6C84]">
+                            Chemical Prepared:
+                          </span>{' '}
+                          <span className="font-extrabold text-[#1A2138]">
+                            {rec.sanitizerName} (Stock {rec.stockStrengthPct}%)
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-bold text-[#5A6C84]">
+                            Batch &amp; Target:
+                          </span>{' '}
+                          <span className="font-extrabold text-[#1A2138]">
+                            {rec.waterVolumeLiters} Liters @ {rec.targetPpm} PPM
+                          </span>
+                        </div>
+                        <div className="text-[#1673B8] font-extrabold">
+                          Dosing Added: {rec.stockMlRequired} mL (
+                          {rec.stockLitersRequired} L) [{rec.stockMlPerLiter}{' '}
+                          mL/L]
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA] text-xs space-y-1">
+                        <div>
+                          <span className="font-bold text-[#5A6C84]">
+                            Acid &amp; Factor:
+                          </span>{' '}
+                          <span className="font-extrabold text-[#1A2138]">
+                            {(rec.acidName || '').split('—')[0].trim()} (Factor{' '}
+                            {rec.acidFactor})
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-bold text-[#5A6C84]">
+                            Titration Inputs:
+                          </span>{' '}
+                          <span className="font-extrabold text-[#1A2138]">
+                            Sample {rec.sampleWeightG}g · NaOH {rec.naohMl} mL (
+                            {rec.naohNormality} N) · {rec.sampleBrix} °Brix
+                          </span>
+                        </div>
+                        <div className="text-[#1673B8] font-extrabold">
+                          Result: Acidity = {rec.acidityPct}% · Brix:Acid Ratio ={' '}
+                          {rec.brixAcidRatio} : 1
+                        </div>
+                      </div>
+                    )}
+
+                    {rec.notes && (
+                      <p className="text-[11px] text-[#5A6C84] italic">
+                        Notes: {rec.notes}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-[#E4EDF7] flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleLoadRecordIntoCalculator(rec)}
+                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] text-[11px] font-extrabold cursor-pointer"
+                    >
+                      Reload Parameters
+                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadSingleLabRecordPdf(rec)}
+                        className="px-3 py-1.5 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Download PDF</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDirectoryRecord(rec.id)}
+                        className="p-1.5 rounded-lg bg-white hover:bg-red-50 border border-[#D2DEEA] text-red-600 cursor-pointer"
+                        title="Delete Record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -162,6 +162,51 @@ export interface WeightHistoryEntry {
   bmi: number;
 }
 
+export interface NutritionPatientVisitEntry {
+  visitId: string;
+  visitNumber: number;
+  visitDate: string;
+  visitIso: string;
+  weightKg: number;
+  targetWeightKg: number;
+  bmi: number;
+  bmiStatus: string;
+  bodyFatPct: number;
+  leanBodyMassKg: number;
+  dailyCaloriesNeeded: number;
+  healthCondition: string;
+  prescriptionNotes: string;
+}
+
+export interface NutritionPatientRecord {
+  id: string;
+  patientCode: string;
+  patientName: string;
+  patientContact?: string;
+  age: number;
+  gender: 'Male' | 'Female' | 'Other';
+  heightCm: number;
+  weightKg: number;
+  targetWeightKg: number;
+  activityLevel: string;
+  goal: string;
+  waterGlasses: number;
+  waistCm?: number;
+  hipCm?: number;
+  neckCm?: number;
+  wristCm?: number;
+  healthCondition: string;
+  prescriptionNotes: string;
+  bmi: number;
+  bmiStatus: string;
+  bodyFatPct: number;
+  leanBodyMassKg: number;
+  dailyCaloriesNeeded: number;
+  savedAt: string;
+  updatedAtIso?: string;
+  visitHistory?: NutritionPatientVisitEntry[];
+}
+
 export interface NutritionProfileData {
   age: number;
   gender: 'male' | 'female';
@@ -174,6 +219,7 @@ export interface NutritionProfileData {
   mealLogs: MealLogItem[];
   mealPlans: DailyMealPlanItem[];
   weightHistory: WeightHistoryEntry[];
+  patientLogs?: NutritionPatientRecord[];
   updatedAt: string;
 }
 
@@ -223,6 +269,54 @@ export interface UserCourseProgress {
   certificateUnlockedAt?: string;
 }
 
+export interface CustomSanitizerItem {
+  id: string;
+  name: string;
+  concentrationPct: number;
+  createdAt: string;
+}
+
+export interface CustomAcidFactorItem {
+  id: string;
+  label: string;
+  factor: string;
+  createdAt: string;
+}
+
+export interface LabFormulaSavedRecord {
+  id: string;
+  recordCode: string;
+  recordType: 'ppm' | 'acidity';
+  savedDateFormatted: string;
+  savedAtIso: string;
+  batchOrSampleName: string;
+  notes?: string;
+  // For 'ppm' (Sanitizer / Chemical Solution)
+  sanitizerName?: string;
+  stockStrengthPct?: number;
+  waterVolumeLiters?: number;
+  targetPpm?: number;
+  stockMlRequired?: number;
+  stockLitersRequired?: number;
+  stockMlPerLiter?: number;
+  applicationGuide?: string;
+  // For 'acidity' (Titratable Acidity & Brix:Acid Ratio)
+  acidName?: string;
+  acidFactor?: number;
+  sampleWeightG?: number;
+  naohMl?: number;
+  naohNormality?: number;
+  sampleBrix?: number;
+  acidityPct?: number;
+  brixAcidRatio?: number;
+}
+
+export interface LabFormulaUserData {
+  customSanitizers: CustomSanitizerItem[];
+  customAcids: CustomAcidFactorItem[];
+  savedRecords: LabFormulaSavedRecord[];
+}
+
 export interface UserToolsData {
   nutrition: NutritionProfileData;
   examAttempts: UserExamAttempt[];
@@ -232,6 +326,7 @@ export interface UserToolsData {
   masteredInterviewIds: string[];
   bookmarkedInterviewIds: string[];
   courseProgress?: Record<string, UserCourseProgress>;
+  labFormulaData?: LabFormulaUserData;
   lastActiveCourseId?: string;
   lastActiveTool?: 'nutrition' | 'exam' | 'interview';
   updatedAt: string;

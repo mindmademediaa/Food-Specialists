@@ -5,11 +5,13 @@ import { INTERVIEW_PREP_SETS, InterviewQuestionItem } from './interviewPrepData'
 export type ExamSubjectCategory =
   | 'Food Safety'
   | 'HACCP'
+  | 'ISO 9001'
   | 'ISO 22000'
   | 'FSSC 22000'
   | 'Food Microbiology'
   | 'Food Science & Tech'
   | 'Food Chemistry & Nutrition'
+  | 'Food Authority & Laws'
   | string;
 
 export interface UnifiedExamQuestion {
@@ -561,9 +563,195 @@ const HAZARD_CONTROL_MATRIX: ChemicalAndPhysicalHazardSpec[] = [
   }
 ];
 
+interface Iso9001LeadAuditorSpec {
+  clauseOrTopic: string;
+  title: string;
+  coreRequirement: string;
+  leadAuditorAction: string;
+  ncrGradingRule: string;
+  capaVerification: string;
+}
+
+const ISO_9001_LEAD_AUDITOR_MATRIX: Iso9001LeadAuditorSpec[] = [
+  {
+    clauseOrTopic: 'ISO 9001:2015 Clause 4.3 & 4.4',
+    title: 'Determining QMS Scope & Process Approach (SIPOC / Turtle Diagram)',
+    coreRequirement: 'Defining QMS boundaries/applicability and determining process inputs, outputs, sequence, interaction, KPIs, and owners.',
+    leadAuditorAction: 'Audit process interaction maps, Turtle Diagrams, and verify that any exclusion (only from Clause 8) is justified and does not affect product conformity.',
+    ncrGradingRule: 'Major NCR if a core production or outsourcing process affecting customer quality is excluded from the QMS scope without justification.',
+    capaVerification: 'Update the QMS Scope statement, map all core/support processes with KPIs, and verify implementation across two production cycles.'
+  },
+  {
+    clauseOrTopic: 'ISO 9001:2015 Clause 5.1, 5.2 & 5.3',
+    title: 'Leadership Commitment, Customer Focus, Quality Policy & Organizational Roles',
+    coreRequirement: 'Top management taking accountability for QMS effectiveness, establishing a Quality Policy aligned with strategic direction, and assigning clear authorities.',
+    leadAuditorAction: 'Interview Top Management directly on strategic QMS alignment, customer complaint trends, and verify that quality authority is independent of production pressure.',
+    ncrGradingRule: 'Major NCR if Top Management delegates all QMS accountability and conducts zero Management Reviews or policy reviews.',
+    capaVerification: 'Establish a signed Quality Policy, communicate measurable quality objectives to all shifts, and document role authorities.'
+  },
+  {
+    clauseOrTopic: 'ISO 9001:2015 Clause 6.2 & 6.3',
+    title: 'Measurable Quality Objectives & Planning of Changes (Management of Change)',
+    coreRequirement: 'Setting SMART quality objectives at relevant functions/levels and executing planned QMS/process changes systematically considering resource and risk impacts.',
+    leadAuditorAction: 'Verify department-level Quality Objectives (e.g., First-Pass Yield ≥98.5%, Customer Complaints <5 ppm) and inspect Management of Change (MoC) logs for new lines.',
+    ncrGradingRule: 'Minor NCR if quality objectives lack target completion dates, responsible owners, or resource allocation plans.',
+    capaVerification: 'Convert vague quality goals into quantifiable KPIs tracked monthly with formal MoC risk assessments before process modifications.'
+  },
+  {
+    clauseOrTopic: 'ISO 9001:2015 Clause 7.1.2, 7.1.3 & 7.1.4',
+    title: 'People, Infrastructure & Environment for the Operation of Processes',
+    coreRequirement: 'Providing necessary personnel, Preventive Maintenance (PM) of equipment/utilities, and suitable work environment (temperature, humidity, lighting, hygiene).',
+    leadAuditorAction: 'Inspect Preventive Maintenance completion vs schedule, breakdown MTBF/MTTR logs, and verify environmental controls in processing and QA labs.',
+    ncrGradingRule: 'Major NCR if recurring machine breakdowns directly cause out-of-specification product release due to suspended preventive maintenance.',
+    capaVerification: 'Implement an automated CMMS Preventive Maintenance schedule, stock critical spares, and monitor line OEE and quality yield.'
+  },
+  {
+    clauseOrTopic: 'ISO 9001:2015 Clause 7.2 & 7.3',
+    title: 'Competence, Training Effectiveness & Quality Awareness',
+    coreRequirement: 'Determining required competence based on education/training/experience, evaluating effectiveness of training taken, and ensuring worker awareness of QMS contribution.',
+    leadAuditorAction: 'Cross-check Skill Matrices against actual operators on the line, review post-training competency tests, and ask operators consequences of non-conformity.',
+    ncrGradingRule: 'Major NCR if an uncertified operator is running a critical laboratory instrument or thermal process step without competency sign-off.',
+    capaVerification: 'Establish role-based Competency Matrices, conduct practical on-the-job evaluation 30 days after training, and retain qualification records.'
+  },
+  {
+    clauseOrTopic: 'ISO 9001:2015 Clause 8.1 & 8.2',
+    title: 'Operational Planning & Requirements for Products and Services (Contract Review)',
+    coreRequirement: 'Determining customer specifications, statutory/regulatory requirements, and conducting formal Contract/Order Review before committing to supply.',
+    leadAuditorAction: 'Trace customer purchase orders and technical specifications through Contract Review sign-off to factory batch manufacturing instructions.',
+    ncrGradingRule: 'Major NCR if an export order was accepted and produced without reviewing destination country regulatory limits or customer shelf-life specs.',
+    capaVerification: 'Implement a mandatory multidisciplinary Contract Review checklist (Sales, QA, Production, R&D) before accepting new or amended orders.'
+  },
+  {
+    clauseOrTopic: 'ISO 9001:2015 Clause 8.3',
+    title: 'Design and Development of Products and Services (NPD Stage-Gate)',
+    coreRequirement: 'Controlling New Product Development (NPD) through design planning, inputs, controls (reviews, verification, validation), outputs, and design changes.',
+    leadAuditorAction: 'Audit NPD project files from concept brief (inputs), lab prototype testing (verification), industrial trial & consumer/shelf-life trial (validation) to launch.',
+    ncrGradingRule: 'Major NCR if a new formulated food product was launched commercially without design validation (shelf-life stability and regulatory label check).',
+    capaVerification: 'Enforce a 5-stage NPD Gate Review protocol requiring QA and Regulatory sign-off on design verification and validation before commercial release.'
+  },
+  {
+    clauseOrTopic: 'ISO 9001:2015 Clause 8.5 & 8.6',
+    title: 'Control of Production, Identification/Traceability, Customer Property & Release of Products',
+    coreRequirement: 'Operating under controlled conditions (work instructions, calibrated monitoring), maintaining lot traceability, and verifying planned arrangements before Positive Release.',
+    leadAuditorAction: 'Observe live production controls, trace batch lot numbers backward/forward, and verify that no finished batch is dispatched without authorized QC Release sign-off.',
+    ncrGradingRule: 'Major NCR if finished goods are shipped to customers while mandatory laboratory or quality release checks are still incomplete without concession.',
+    capaVerification: 'Configure ERP system quality lock so dispatch delivery notes cannot be printed until QA enters Positive Release approval.'
+  },
+  {
+    clauseOrTopic: 'ISO 9001:2015 Clause 9.1.2 & 9.1.3',
+    title: 'Customer Satisfaction, Performance Analysis & Evaluation (SPC / KPIs)',
+    coreRequirement: 'Monitoring customer perceptions (surveys, complaints, returns, on-time delivery) and analyzing data statistically to evaluate QMS performance and supplier trends.',
+    leadAuditorAction: 'Review customer complaint trend Pareto charts, Net Promoter Score (NPS) surveys, Cp/Cpk process capability indices, and Management Review action items.',
+    ncrGradingRule: 'Minor NCR if customer survey data and complaint trends are collected but never analyzed to drive process improvement.',
+    capaVerification: 'Institute monthly Quality Performance Dashboards using Pareto, control charts, and root-cause tracking reviewed by leadership.'
+  },
+  {
+    clauseOrTopic: 'ISO 19011:2018 & ISO/IEC 17021-1 Lead Auditing',
+    title: 'Principles of Auditing, Stage 1 vs Stage 2 Audits, Audit Trails & NCR Writing',
+    coreRequirement: 'Adhering to the 7 Principles of Auditing (Integrity, Fair Presentation, Due Professional Care, Confidentiality, Independence, Evidence-Based, Risk-Based).',
+    leadAuditorAction: 'Conduct Stage 1 (readiness & documented information review) and Stage 2 (on-site implementation effectiveness via interviews, observation, and record sampling).',
+    ncrGradingRule: 'Every Non-Conformity Report (NCR) must state: (1) Exact Standard & Clause requirement, (2) Objective Failure/Gap, and (3) Verifiable Objective Evidence (batch/doc ID).',
+    capaVerification: 'Verify Auditee Correction (immediate fix), Root Cause Analysis (5-Why), and systemic Corrective Action within 30–90 days before certification decision.'
+  }
+];
+
+interface FoodAuthorityRegulatorySpec {
+  authorityOrLaw: string;
+  topicTitle: string;
+  legalStandardOrRule: string;
+  inspectorProcedureOrTest: string;
+  violationOrAdulterationScenario: string;
+  enforcementAction: string;
+}
+
+const FOOD_AUTHORITY_REGULATORY_MATRIX: FoodAuthorityRegulatorySpec[] = [
+  {
+    authorityOrLaw: 'Punjab Food Authority (PFA) Act 2011 & Pure Food Regulations',
+    topicTitle: 'Food Safety Officer (FSO) Legal Sampling & 4-Part Sealing Procedure',
+    legalStandardOrRule: 'When lifting a legal food sample for Public Analyst laboratory testing, the Food Safety Officer must divide the sample into 4 equal, hermetically sealed, tamper-evident parts on the spot.',
+    inspectorProcedureOrTest: 'Issue Form-A notice of intention to analyze, seal 4 parts with official wax/security seal and signatures of FBO & witnesses: Part 1 to Public Analyst, Part 2 to FBO, Part 3 to Authority/Court, Part 4 retained for reference Lab.',
+    violationOrAdulterationScenario: 'FSO lifted a single unsealed sample jar without giving a counterpart sealed portion or Form-A receipt to the Food Business Operator (FBO).',
+    enforcementAction: 'Follow statutory 4-part sampling SOP strictly so Public Analyst certificate holds full evidentiary validity in Food Special Court.'
+  },
+  {
+    authorityOrLaw: 'Food Authority Rapid Adulteration Testing — Liquid Milk',
+    topicTitle: 'Detection of Urea, Detergents, Starch, Formalin, H2O2, Cane Sugar & Added Water in Milk',
+    legalStandardOrRule: 'Milk must be 100% pure mammary secretion meeting minimum Fat (3.5% cow / 5.0% buffalo) and Solids-Not-Fat (SNF ≥8.5%–9.0%) with zero chemical adulterants or neutralizers.',
+    inspectorProcedureOrTest: 'DMAB reagent test (yellow color = Urea); Rosolic acid test (pinkish-red = Sodium Carbonate/Bicarbonate neutralizer); Iodine test (blue = Starch); Hehner sulfuric-ferric test (violet ring = Formalin); Lactometer + Cryoscope (-0.540°C).',
+    violationOrAdulterationScenario: 'Synthetic milk concocted from vegetable oil, detergent, caustic soda, urea, and skim milk powder detected at city entry checkpoint.',
+    enforcementAction: 'Immediate on-spot destruction of adulterated milk under Section 31, seizure of tanker, FIR registration, and business license revocation.'
+  },
+  {
+    authorityOrLaw: 'Food Authority Rapid Adulteration Testing — Spices, Tea & Condiments',
+    topicTitle: 'Detection of Sudan I–IV Dyes, Lead Chromate, Brick Dust, Sawdust & Coal Tar Dyes',
+    legalStandardOrRule: 'Spices (red chili powder, turmeric, coriander, black pepper) and tea leaves must be free from carcinogenic Sudan dyes, mineral pigments, foreign starch, and exhausted dyed leaves.',
+    inspectorProcedureOrTest: 'Hexane-acetonitrile solvent partition / HPLC for Sudan I–IV in chili; concentrated HCl test on turmeric (magenta persisting on dilution = Metanil Yellow / Lead Chromate); CCl4 sedimentation for brick dust/grit; wet filter paper blot test for dyed used tea.',
+    violationOrAdulterationScenario: 'Loose red chili powder tested positive for carcinogenic Sudan III dye and 4.2% acid-insoluble ash (brick powder/sand).',
+    enforcementAction: 'Seize and seal the grinding unit, confiscate adulterated stock, prosecute for hazardous adulteration, and mandate packaged traceable spice sales.'
+  },
+  {
+    authorityOrLaw: 'Food Authority Rapid Adulteration Testing — Edible Oils, Ghee & Honey',
+    topicTitle: 'Detection of Argemone Oil, Rancidity, Mineral Oil, Animal Tallow & C3/C4 Sugar Adulteration',
+    legalStandardOrRule: 'Edible oils and Banaspati Ghee must meet PSQCA/PFA Peroxide Value (<10 meq/kg), Acid Value (<0.5 mg KOH/g), Vitamin A fortification (33,000 IU/kg), and zero rancid/used frying oil.',
+    inspectorProcedureOrTest: 'Kreis Test (phloroglucinol + HCl red color = epihydrin aldehyde rancidity); Nitric acid test for Argemone oil (sanguinarine); Baudouin test (sesame oil marker in vanaspati); Fiehe’s resorcinol-HCl test (cherry red = HMF from inverted sugar syrup in honey).',
+    violationOrAdulterationScenario: 'Commercial fryer oil had Total Polar Compounds (TPC) at 31% (legal max 24%–25%) and Smoke Point dropped to 152°C.',
+    enforcementAction: 'Discard spent frying oil immediately into authorized biodiesel collection drums, issue Improvement Notice/Fine, and log daily TPC meter readings.'
+  },
+  {
+    authorityOrLaw: 'PSQCA (Pakistan Standards & Quality Control Authority) & Mandatory Food Standards',
+    topicTitle: 'Compulsory PSQCA Certification Marks (CM License) for Bottled Water, Fortified Flour/Oil & Dairy',
+    legalStandardOrRule: 'Bottled Drinking Water (PS 4639), Banaspati Ghee/Cooking Oil, Biscuits, Carbonated Beverages, and UHT Milk fall under Compulsory Certification Mark Scheme requiring valid PSQCA license.',
+    inspectorProcedureOrTest: 'Verify valid PSQCA CM License number on label, Bromate ≤10 ppb (0.01 mg/L), TDS 100–500 ppm, pH 6.5–8.5, and zero Coliforms / E. coli / Pseudomonas aeruginosa per 250 mL.',
+    violationOrAdulterationScenario: 'A mineral water bottling plant was operating with an uncalibrated ozonator resulting in 35 ppb Bromate (carcinogenic disinfection byproduct) and counterfeit PSQCA logo.',
+    enforcementAction: 'Seal RO/filling line under Emergency Prohibition Order, recall distributed batches, and adjust ozonation/bromide control to keep Bromate <10 ppb.'
+  },
+  {
+    authorityOrLaw: 'Codex Alimentarius Commission (FAO/WHO) & WTO SPS/TBT Agreements',
+    topicTitle: 'International Food Standards, Risk Analysis (Assessment, Management, Communication) & MRLs',
+    legalStandardOrRule: 'Codex standards (General Standard for Food Additives GSFA CXS 192-1995, General Standard for Contaminants CXS 193-1995, Pesticide/Veterinary MRLs) serve as the benchmark under the WTO SPS Agreement.',
+    inspectorProcedureOrTest: 'Evaluate Acceptable Daily Intake (ADI in mg/kg bw/day established by JECFA/JMPR), Maximum Residue Limits (MRLs), and Codex 8-Step Standard Approval Procedure.',
+    violationOrAdulterationScenario: 'Export mango/rice consignment exceeded Codex/EU MRL for Chlorpyrifos pesticide residue (>0.01 mg/kg) due to harvesting before the Pre-Harvest Interval (PHI).',
+    enforcementAction: 'Enforce GlobalG.A.P. Pre-Harvest Intervals, conduct LC-MS/MS multi-residue pesticide screening prior to export packing, and block non-compliant orchards.'
+  },
+  {
+    authorityOrLaw: 'Food Authority Food Labeling & Nutritional Claims Regulations',
+    topicTitle: 'Mandatory Label Declarations, Date Marking, Ingredient Descending Order & Allergen Highlighting',
+    legalStandardOrRule: 'Pre-packaged foods must declare: Product Name, Ingredients in descending order of ingoing weight (≥2% rule), Net Weight, Batch/Lot Code, Manufacturing & Expiry/Best-Before Date, Nutrition Facts, Halal Logo, and Country of Origin.',
+    inspectorProcedureOrTest: 'Audit artwork against Codex CXS 1-1985 & PFA Labeling Regulations: verify allergens in bold, net weight metrology (OIML R87), and substantiate health/nutrition claims (e.g., "Low Fat" ≤3g/100g solids; "Sugar Free" ≤0.5g/100g).',
+    violationOrAdulterationScenario: 'Imported snack packages had stickered expiry dates covering the original expired manufacturer date and lacked English/Urdu ingredient & allergen declarations.',
+    enforcementAction: 'Confiscate misbranded/relabeled stock under Misbranding & False Labeling sections, impose statutory fine, and mandate printed primary labels.'
+  },
+  {
+    authorityOrLaw: 'Food Authority Enforcement Hierarchy — Improvement Notice, EPO, Fine & Recall',
+    topicTitle: 'Graduated Regulatory Enforcement, Hygiene Rating Scorecards & Emergency Prohibition Orders (EPO)',
+    legalStandardOrRule: 'Food Authorities enforce compliance via: (1) Improvement Notice (time-bound rectification for minor/moderate GMP gaps), (2) Administrative Fine, (3) Emergency Prohibition Order (EPO — immediate sealing for imminent health risk), and (4) Prosecution.',
+    inspectorProcedureOrTest: 'Conduct weighted Hygiene Audit (Premises, Cold Chain, Handler Medical Fitness & Typhoid Vaccination, Pest Proofing, Traceability, Water Reports) and issue A+/A/B/C rating.',
+    violationOrAdulterationScenario: 'Active rodent infestation, sewage backflow in kitchen drain, and holding cooked meat at 28°C ambient temperature were found during an inspection.',
+    enforcementAction: 'Issue immediate Emergency Prohibition Order (EPO) suspending operations until pest eradication, plumbing rectification, and re-inspection clearance.'
+  },
+  {
+    authorityOrLaw: 'US FDA FSMA, EU Reg (EC) 178/2002, Saudi SFDA & Dubai Municipality Food Code',
+    topicTitle: 'International Export Food Law — PCQI, FSVP, HARPC, RASFF Alerts & Halal Accreditation',
+    legalStandardOrRule: 'US FDA FSMA mandates Preventive Controls Qualified Individual (PCQI), HARPC Food Safety Plan, and Foreign Supplier Verification Program (FSVP); EU Reg 178/2002 mandates traceability & RASFF rapid alert notification; GCC/SFDA mandates Halal slaughter & shelf-life compliance.',
+    inspectorProcedureOrTest: 'Verify FDA Food Facility Registration (FFR), HARPC Preventive Controls (Process, Allergen, Sanitation, Supply-Chain), EU health certificates, and GSO 150 shelf-life standards.',
+    violationOrAdulterationScenario: 'A tahini/sesame paste exporter shipped to the US/EU without validated Salmonella roasting kill-step records or FSVP documentation, triggering an FDA Import Alert / EU RASFF border rejection.',
+    enforcementAction: 'Perform 5-log thermal validation of sesame roasting, compile PCQI-signed Food Safety Plan, and submit root-cause corrective dossier to remove Import Alert.'
+  },
+  {
+    authorityOrLaw: 'Pakistan Halal Authority (PHA) & PS 3733 / OIC-SMIIC 1 Halal Management System',
+    topicTitle: 'Halal Assurance System (HAS), Slaughter Critical Control Points & Haram Ingredient Screening',
+    legalStandardOrRule: 'Under PS 3733:2022 and OIC/SMIIC-1, Halal food must be free from Najis/Haram substances (porcine, blood, carrion, intoxicants, carnivorous animals), processed on dedicated/ritually cleansed lines, and slaughtered by a practicing Muslim pronouncing Tasmiyah.',
+    inspectorProcedureOrTest: 'Verify live animal ante-mortem health, surgical sharp knife severing trachea, esophagus, and both carotid arteries & jugular veins without spinal cord severing prior to bleed-out, and screen E-numbers (E120 carmine, E441 gelatin, E471 mono/diglycerides, E920 L-cysteine).',
+    violationOrAdulterationScenario: 'Confectionery marsh-mallows used imported gelatin lacking an accredited Halal Slaughter Certificate and tested positive for porcine DNA via Real-Time PCR.',
+    enforcementAction: 'Immediately revoke Halal certification, quarantine and destroy all affected batches, and switch to PHA/OIC-SMIIC accredited bovine or plant-based hydrocolloids.'
+  }
+];
+
 // ---------------------------------------------------------------------------
-// 2. BUILD EXACTLY 2,000 UNIQUE EXAM MCQs (250 Handcrafted + 1,750 Domain-Generated)
+// 2. BUILD 3,500+ UNIQUE EXAM MCQs (Handcrafted + Domain-Generated Across All Tracks)
 // ---------------------------------------------------------------------------
+
+const TARGET_TOTAL_EXAM_MCQS = 3500;
 
 function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
   const baseSets = [...EXAM_SETS_1_TO_3, ...EXAM_SETS_4_TO_5];
@@ -599,7 +787,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
 
   for (const line of microLines) {
     for (const p of PATHOGEN_MATRIX) {
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -617,7 +805,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       });
       counter++;
 
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -635,7 +823,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       });
       counter++;
 
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -672,15 +860,15 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
   for (const sector of auditSectors) {
     for (const c of STANDARD_CLAUSES_MATRIX) {
       const mappedSubject: ExamSubjectCategory =
-        c.standard === 'ISO 22000:2018'
+        c.standard === 'ISO 9001:2015'
+          ? 'ISO 9001'
+          : c.standard === 'ISO 22000:2018'
           ? 'ISO 22000'
           : c.standard === 'FSSC 22000 v6'
           ? 'FSSC 22000'
-          : c.standard === 'Codex HACCP'
-          ? 'HACCP'
-          : 'Food Safety';
+          : 'HACCP';
 
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -698,7 +886,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       });
       counter++;
 
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -716,7 +904,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       });
       counter++;
 
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -731,6 +919,47 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         ],
         correctAnswerIndex: 0,
         explanation: `"${c.nonConformityExample}" is a direct violation of ${c.standard} ${c.clauseCode} (${c.clauseTitle}).`
+      });
+      counter++;
+    }
+  }
+
+  // B2. Generate Dedicated ISO 9001:2015 Lead Auditor Program MCQs across 10 audit contexts
+  for (const sector of auditSectors) {
+    for (const isoSpec of ISO_9001_LEAD_AUDITOR_MATRIX) {
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
+      result.push({
+        id: `mcq-bank-${counter}`,
+        questionNumber: counter,
+        globalNumber: counter,
+        subject: 'ISO 9001',
+        question: `[ISO 9001 Lead Auditor Exam — ${sector}] When auditing ${isoSpec.clauseOrTopic} (${isoSpec.title}), what is the core standard requirement and Lead Auditor verification method?`,
+        options: [
+          `${isoSpec.coreRequirement} | Lead Auditor Action: ${isoSpec.leadAuditorAction}`,
+          `Only check financial tax returns and ignore operational process controls`,
+          `Allow operators to write their own specifications without document control`,
+          `Skip Stage 2 on-site audit and issue ISO 9001 certificate via email`
+        ],
+        correctAnswerIndex: 0,
+        explanation: `Under ${isoSpec.clauseOrTopic} (${isoSpec.title}): ${isoSpec.coreRequirement} The Lead Auditor verifies this by: ${isoSpec.leadAuditorAction}`
+      });
+      counter++;
+
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
+      result.push({
+        id: `mcq-bank-${counter}`,
+        questionNumber: counter,
+        globalNumber: counter,
+        subject: 'ISO 9001',
+        question: `[ISO 9001 Lead Auditor NCR & CAPA Grading — ${sector}] During an ISO 9001:2015 certification audit of ${isoSpec.clauseOrTopic}, how should the Lead Auditor grade non-conformities and verify CAPA?`,
+        options: [
+          `${isoSpec.ncrGradingRule} | CAPA Verification: ${isoSpec.capaVerification}`,
+          `Never write an NCR if the plant manager promises verbally to fix it next year`,
+          `Close all Major NCRs immediately without checking root cause or objective evidence`,
+          `Cancel the audit opening and closing meetings to save time`
+        ],
+        correctAnswerIndex: 0,
+        explanation: `In ISO 9001 Lead Auditing (${isoSpec.clauseOrTopic}): ${isoSpec.ncrGradingRule} For effective closure: ${isoSpec.capaVerification}`
       });
       counter++;
     }
@@ -752,7 +981,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
 
   for (const ctx of processContexts) {
     for (const fs of FOOD_SCIENCE_MATRIX) {
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -770,7 +999,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       });
       counter++;
 
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -788,7 +1017,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       });
       counter++;
 
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -824,7 +1053,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
 
   for (const comm of commodities) {
     for (const hz of HAZARD_CONTROL_MATRIX) {
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -842,7 +1071,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       });
       counter++;
 
-      if (counter > 2000) break;
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -862,10 +1091,66 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
     }
   }
 
-  // E. Fill remaining up to exactly 2,000 with quantitative Food Engineering, Nutrition, Thermal Kinetics (D/Z/F0), Mass Balance, Brix/Pearson Square, and ISO 9001/22000/FSSC 22000 case calculations
+  // D2. Generate Food Authority Inspector, Food Laws, PSQCA, PFA, SFDA & Adulteration Testing MCQs across 12 Regulatory Jurisdictions
+  const authorityDistricts = [
+    'Punjab Food Authority (PFA) Enforcement Operation',
+    'Sindh Food Authority (SFA) Regulatory Inspection',
+    'KPK Food Safety & Halal Food Authority Raid',
+    'Balochistan Food Authority (BFA) Surveillance',
+    'PSQCA Compulsory Certification Mark Audit',
+    'Saudi SFDA & GCC Export Compliance Inspection',
+    'Dubai Municipality Food Code & Port Health Control',
+    'Codex Alimentarius & WTO SPS Export Clearance',
+    'US FDA FSMA Foreign Supplier & PCQI Audit',
+    'EU Regulation (EC) 178/2002 & RASFF Compliance Check',
+    'Pakistan Halal Authority (PHA) PS 3733 Inspection',
+    'Public Analyst Food Laboratory Legal Sample Review'
+  ];
+
+  for (const dist of authorityDistricts) {
+    for (const fa of FOOD_AUTHORITY_REGULATORY_MATRIX) {
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
+      result.push({
+        id: `mcq-bank-${counter}`,
+        questionNumber: counter,
+        globalNumber: counter,
+        subject: 'Food Authority & Laws',
+        question: `[${dist} — ${fa.topicTitle}] Under ${fa.authorityOrLaw}, what is the mandatory legal standard and official Food Safety Officer testing/inspection procedure?`,
+        options: [
+          `${fa.legalStandardOrRule} | Procedure/Test: ${fa.inspectorProcedureOrTest}`,
+          `No laboratory test or legal notice is required; verbal estimation is sufficient`,
+          `Adulterants up to 25% by weight are permitted if declared on the invoice`,
+          `Samples can be collected in open plastic bags without witness signatures`
+        ],
+        correctAnswerIndex: 0,
+        explanation: `Under ${fa.authorityOrLaw} (${fa.topicTitle}): ${fa.legalStandardOrRule} The official inspection/lab procedure is: ${fa.inspectorProcedureOrTest}`
+      });
+      counter++;
+
+      if (counter > TARGET_TOTAL_EXAM_MCQS) break;
+      result.push({
+        id: `mcq-bank-${counter}`,
+        questionNumber: counter,
+        globalNumber: counter,
+        subject: 'Food Authority & Laws',
+        question: `[${dist} — Violation & Enforcement Case] During an inspection under ${fa.authorityOrLaw}, the Food Safety Officer detects: "${fa.violationOrAdulterationScenario}" What is the correct regulatory enforcement action?`,
+        options: [
+          fa.enforcementAction,
+          'Allow the adulterated batch to be sold at a 20% discount to school canteens',
+          'Ignore the laboratory failure and issue a clean hygiene rating certificate',
+          'Wait 2 years for the business operator to voluntarily dispose of the stock'
+        ],
+        correctAnswerIndex: 0,
+        explanation: `When "${fa.violationOrAdulterationScenario}" is found under ${fa.authorityOrLaw}, the statutory enforcement action is: ${fa.enforcementAction}`
+      });
+      counter++;
+    }
+  }
+
+  // E. Fill remaining up to TARGET_TOTAL_EXAM_MCQS (3,500) with quantitative Food Engineering, Nutrition, Thermal Kinetics (D/Z/F0), Mass Balance, Brix/Pearson Square, ISO 9001 Lead Auditor, FSSC 22000 Lead Auditor, HACCP, and Food Authority case calculations
   let calcSeed = 1;
-  while (counter <= 2000) {
-    const mode = counter % 6;
+  while (counter <= TARGET_TOTAL_EXAM_MCQS) {
+    const mode = counter % 8;
     if (mode === 0) {
       const dVal = Number((0.18 + (calcSeed % 15) * 0.02).toFixed(2));
       const logRed = 6 + (calcSeed % 7); // 6D to 12D
@@ -946,7 +1231,6 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
     } else if (mode === 4) {
       const targetClPpm = 50 + (calcSeed % 4) * 50; // 50, 100, 150, 200 ppm
       const tankLiters = 100 + (calcSeed % 5) * 50;
-      const bleachStrengthPct = 5; // 5% = 50,000 ppm
       const mlNeeded = Math.round((targetClPpm * tankLiters * 1000) / 50000);
       result.push({
         id: `mcq-bank-${counter}`,
@@ -963,7 +1247,7 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         correctAnswerIndex: 0,
         explanation: `Using C₁V₁ = C₂V₂: (50,000 ppm) × V₁ = (${targetClPpm} ppm) × (${tankLiters * 1000} mL) → V₁ = ${mlNeeded} mL. Always verify final concentration with chlorine test strips.`
       });
-    } else {
+    } else if (mode === 5) {
       const defectUnits = 2 + (calcSeed % 6);
       const sampleUnits = 200 + (calcSeed % 4) * 100;
       const defectPct = Number(((defectUnits / sampleUnits) * 100).toFixed(2));
@@ -972,22 +1256,59 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         questionNumber: counter,
         globalNumber: counter,
         subject: 'FSSC 22000',
-        question: `[ISO 9001:2015 Clause 8.6 & FSSC 22000 Quality Control AQL Inspection #${calcSeed}] During pre-dispatch Acceptable Quality Limit (AQL) inspection, a QC inspector examines ${sampleUnits} pouches and finds ${defectUnits} pouches with minor date-code smudging. What is the defect rate percentage, and what action is required under Clause 8.7?`,
+        question: `[FSSC 22000 v6 & ISO 22000 Quality Control AQL Inspection #${calcSeed}] During pre-dispatch Acceptable Quality Limit (AQL) inspection, a QC inspector examines ${sampleUnits} pouches and finds ${defectUnits} pouches with minor date-code smudging. What is the defect rate percentage, and what action is required under FSSC 22000 Additional Requirement 2.5.2 (Product Labeling)?`,
         options: [
           `${defectPct}% defect rate; segregate affected lot on QA Hold, adjust thermal-transfer printer ribbon, and re-inspect 100% of affected pallets`,
           `${defectPct * 5}% defect rate; ship without date codes since expiry dates are optional`,
-          `0% defect rate; date code legibility is not part of ISO 9001 or FSSC 22000`,
+          `0% defect rate; date code legibility is not part of FSSC 22000`,
           `Destroy the entire factory building immediately`
         ],
         correctAnswerIndex: 0,
-        explanation: `Defect rate = (${defectUnits} / ${sampleUnits}) × 100 = ${defectPct}%. Under ISO 9001 Clause 8.7 and FSSC 22000 Labeling Control (2.5.2), illegible date/lot codes break traceability and must be placed on hold and corrected.`
+        explanation: `Defect rate = (${defectUnits} / ${sampleUnits}) × 100 = ${defectPct}%. Under FSSC 22000 Additional Requirement 2.5.2 (Product Labeling) and ISO 22000 Clause 8.9, illegible date/lot codes break traceability and must be placed on hold and corrected.`
+      });
+    } else if (mode === 6) {
+      const totalSuppliers = 40 + (calcSeed % 10) * 5;
+      const auditedSuppliers = Math.round(totalSuppliers * 0.85);
+      const onTimePct = Number(((auditedSuppliers / totalSuppliers) * 100).toFixed(1));
+      result.push({
+        id: `mcq-bank-${counter}`,
+        questionNumber: counter,
+        globalNumber: counter,
+        subject: 'ISO 9001',
+        question: `[ISO 9001:2015 Lead Auditor Case #${calcSeed}] During an ISO 9001:2015 Surveillance Audit under Clause 8.4 (Control of Externally Provided Processes, Products and Services), an organization has ${totalSuppliers} critical raw material suppliers, of which ${auditedSuppliers} have completed annual performance evaluation (${onTimePct}%). The remaining ${totalSuppliers - auditedSuppliers} suppliers were used without re-evaluation. How should the Lead Auditor classify this finding?`,
+        options: [
+          `Raise a Non-Conformity against ISO 9001:2015 Clause 8.4.1 because criteria for periodic re-evaluation of ${totalSuppliers - auditedSuppliers} active critical suppliers were not fulfilled`,
+          `Commend the organization because supplier evaluation is optional in ISO 9001:2015`,
+          `Raise a finding against Clause 4.1 only and ignore purchasing records`,
+          `Terminate the audit immediately without holding a closing meeting`
+        ],
+        correctAnswerIndex: 0,
+        explanation: `ISO 9001:2015 Clause 8.4.1 requires the organization to determine and apply criteria for the evaluation, selection, monitoring of performance, and re-evaluation of external providers, and retain documented information.`
+      });
+    } else {
+      const lactometerReading = 22 + (calcSeed % 5); // Normal is 28-32
+      const estWaterPct = Math.round(((28 - lactometerReading) / 28) * 100);
+      result.push({
+        id: `mcq-bank-${counter}`,
+        questionNumber: counter,
+        globalNumber: counter,
+        subject: 'Food Authority & Laws',
+        question: `[Food Authority Mobile Lab Milk Inspection #${calcSeed}] A Food Safety Officer inspects a commercial milk chiller and records a corrected Lactometer Reading (CLR) of ${lactometerReading} at 20°C (standard pure milk CLR ≥ 28) along with a Cryoscope freezing point of -0.435°C (standard -0.540°C). Approximately ${estWaterPct}% extraneous water adulteration is indicated. Under Food Authority Regulations, what action is required?`,
+        options: [
+          `Divide a legal sample into 4 sealed portions (Form-A), quarantine/discard adulterated milk per statutory protocol, and initiate legal prosecution against the supplier`,
+          `Add common salt and sugar to the chiller tank to artificially raise the lactometer reading back to 28`,
+          `Permit sale of the diluted milk as premium full-cream buffalo milk`,
+          `No action is needed unless extraneous water exceeds 80%`
+        ],
+        correctAnswerIndex: 0,
+        explanation: `A depressed CLR (${lactometerReading} vs ≥28) and elevated freezing point (-0.435°C vs -0.540°C) prove extraneous water adulteration (~${estWaterPct}%), requiring formal 4-part legal sampling and enforcement under Food Authority Pure Food Regulations.`
       });
     }
     calcSeed++;
     counter++;
   }
 
-  return result.slice(0, 2000).map((item) => ({
+  return result.slice(0, TARGET_TOTAL_EXAM_MCQS).map((item) => ({
     ...item,
     question: item.question.replace(/^\[[^\]]+\]\s*/, '').trim()
   }));

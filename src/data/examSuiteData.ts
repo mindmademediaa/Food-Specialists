@@ -352,12 +352,140 @@ const CURATED_HIGH_YIELD_MCQS: Omit<SuiteExamQuestion, 'questionNumber'>[] = [
   }
 ];
 
+export type ExamTrackId =
+  | 'All'
+  | 'ISO 9001 Lead Auditor'
+  | 'FSSC 22000 Lead Auditor'
+  | 'HACCP'
+  | 'Food Safety'
+  | 'Food Science'
+  | 'Food Authority';
+
+export interface ExamTrackMeta {
+  id: ExamTrackId;
+  title: string;
+  shortBadge: string;
+  subtitle: string;
+  description: string;
+  standardsCovered: string[];
+}
+
+export const EXAM_PREP_TRACKS: ExamTrackMeta[] = [
+  {
+    id: 'All',
+    title: 'All Combined Master Exam',
+    shortBadge: 'All Standards & Food Science',
+    subtitle: 'Complete 3,500+ MCQs Mix Across All Certifications & Subjects',
+    description:
+      'Balanced 30-MCQ exam drawn from all Food Science, Food Safety, HACCP, ISO 9001, ISO 22000, FSSC 22000, and Food Authority topics.',
+    standardsCovered: [
+      'ISO 9001',
+      'FSSC 22000 v6',
+      'HACCP',
+      'Food Safety',
+      'Food Science',
+      'Food Authority'
+    ]
+  },
+  {
+    id: 'ISO 9001 Lead Auditor',
+    title: 'ISO 9001 Lead Auditor',
+    shortBadge: 'ISO 9001:2015 + ISO 19011',
+    subtitle: 'Quality Management System (QMS) & IRCA/CQI Lead Auditor Prep',
+    description:
+      'Strictly ISO 9001:2015 Clauses 4–10, 7 QMS Principles, Process Approach, Risk-Based Thinking, ISO 19011 Auditing, Stage 1/2 Audits, NCR Grading & CAPA.',
+    standardsCovered: [
+      'ISO 9001:2015 Clauses 4–10',
+      'ISO 19011:2018 Auditing',
+      'Major/Minor NCR Grading',
+      'CAPA & Root Cause',
+      'Calibration & Supplier QMS'
+    ]
+  },
+  {
+    id: 'FSSC 22000 Lead Auditor',
+    title: 'FSSC 22000 Lead Auditor',
+    shortBadge: 'FSSC 22000 v6 + ISO 22000',
+    subtitle: 'GFSI Food Safety Management System & Lead Auditor Prep',
+    description:
+      'Strictly FSSC 22000 Version 6 Additional Requirements (2.5.1–2.5.17), TACCP, VACCP, Food Safety Culture, EMP Zones 1–4, ISO/TS 22002-1 & ISO 22000:2018.',
+    standardsCovered: [
+      'FSSC 22000 v6 Part 2',
+      'ISO 22000:2018 Clauses 4–10',
+      'ISO/TS 22002-1 PRPs',
+      'TACCP & VACCP',
+      'Critical/Major/Minor NCRs'
+    ]
+  },
+  {
+    id: 'HACCP',
+    title: 'HACCP Certification Exam',
+    shortBadge: 'Codex HACCP Level 3 & 4',
+    subtitle: '12 Codex Steps, 7 Principles, Hazard Analysis & CCP Control',
+    description:
+      'Strictly Codex Alimentarius HACCP (CXC 1-1969): 5 Preliminary Steps, 7 Principles, Biological/Chemical/Physical Hazards, CCP Decision Tree, Critical Limits & Validation.',
+    standardsCovered: [
+      '7 HACCP Principles',
+      '12 Codex Implementation Steps',
+      'CCP Decision Tree',
+      'Critical Limits & Monitoring',
+      'Corrective Action & Validation'
+    ]
+  },
+  {
+    id: 'Food Safety',
+    title: 'Food Safety & Hygiene Exam',
+    shortBadge: 'GMP, GHP, CIP & Pathogens',
+    subtitle: 'Food Safety Officer, Catering Hygiene & Plant Sanitation Prep',
+    description:
+      'Focused on Temperature Danger Zone, Cooking/Cooling/Holding Limits, Cross-Contamination, GMP & GHP, CIP Sanitation, Allergen Control, Pest IPM & Foodborne Pathogens.',
+    standardsCovered: [
+      'Temperature Danger Zone',
+      'GMP, GHP & CIP Sanitation',
+      'Big-9 Allergen Control',
+      'Foodborne Pathogens (Aw/pH)',
+      'Pest Control (IPM)'
+    ]
+  },
+  {
+    id: 'Food Science',
+    title: 'Food Science & Technology',
+    shortBadge: 'All Food Science & Tech',
+    subtitle: 'Comprehensive Food Science, Chemistry, Micro, Dairy, Bakery & Meat',
+    description:
+      'Covers all Food Science & Technology disciplines: Dairy Tech, Cereal/Bakery, Meat/Poultry, Beverage/Canning, Thermal D/Z/F0, Food Chemistry, Microbiology, Preservation & Nutrition.',
+    standardsCovered: [
+      'Dairy, Bakery & Meat Tech',
+      'Food Chemistry & Proximate Lab',
+      'Food Microbiology & Spoilage',
+      'Thermal Processing (D, Z, F0)',
+      'Packaging, Preservation & Nutrition'
+    ]
+  },
+  {
+    id: 'Food Authority',
+    title: 'Food Authority Exam',
+    shortBadge: 'PFA / PSQCA / SFDA / Codex',
+    subtitle: 'Food Safety Officer (FSO) / Assistant Director Food Authority & Laws',
+    description:
+      'Complete preparation for Food Authority exams (PFA, SFA, KPFA, BFA, PSQCA, SFDA, Dubai Municipality, Codex): Food Laws, 4-Part Legal Sampling, Adulteration Rapid Tests + All Food Science & Safety.',
+    standardsCovered: [
+      'PFA / SFA / KPFA / BFA Acts',
+      'PSQCA & Codex Standards',
+      'Milk, Oil & Spice Adulteration Tests',
+      '4-Part Legal Sampling & EPO',
+      'All Food Science & Safety MCQs'
+    ]
+  }
+];
+
 function mapCategoryFromUnifiedSubject(subj: string, idx: number): string {
   const s = subj.toLowerCase();
+  if (s.includes('iso 9001')) return 'ISO 9001 Lead Auditor';
+  if (s.includes('authority') || s.includes('law')) return 'Food Laws and Regulations';
   if (s.includes('haccp')) return 'HACCP';
   if (s.includes('fssc')) return 'FSSC 22000';
   if (s.includes('iso 22000')) return idx % 2 === 0 ? 'ISO 22000' : 'Auditing';
-  if (s.includes('iso 9001')) return idx % 2 === 0 ? 'Quality Management' : 'Auditing';
   if (s.includes('micro')) return 'Microbiology';
   if (s.includes('chem')) {
     return idx % 3 === 0 ? 'Nutrition' : 'Food Chemistry';
@@ -367,7 +495,7 @@ function mapCategoryFromUnifiedSubject(subj: string, idx: number): string {
       'Food Technology',
       'Food Preservation',
       'Food Packaging',
-      'Food Laws and Regulations'
+      'Food Chemistry'
     ];
     return rot[idx % rot.length];
   }
@@ -383,6 +511,16 @@ function mapCategoryFromUnifiedSubject(subj: string, idx: number): string {
 
 function getStandardReferenceForCategory(category: string, idx: number): string {
   const map: Record<string, string[]> = {
+    'ISO 9001 Lead Auditor': [
+      'ISO 9001:2015 Quality Management Systems — Clauses 4 to 10',
+      'ISO 19011:2018 Guidelines for Auditing Management Systems',
+      'ISO/IEC 17021-1 Third-Party QMS Certification Auditing'
+    ],
+    'Food Laws and Regulations': [
+      'Punjab Food Authority (PFA) Act & Pure Food Regulations',
+      'PSQCA Compulsory Food Standards & Codex Alimentarius',
+      'SFDA / Dubai Municipality Food Code & US FDA FSMA'
+    ],
     'Food Safety': [
       'Codex Alimentarius CXC 1-1969 Sec 5',
       'PFA / Gulf GSO Food Hygiene Regulation',
@@ -394,7 +532,7 @@ function getStandardReferenceForCategory(category: string, idx: number): string 
       'HACCP Principle 4 & 5 — Monitoring & Corrective Action'
     ],
     'FSSC 22000': [
-      'FSSC 22000 v6 Additional Requirement 2.5.4 (Food Defense)',
+      'FSSC 22000 v6 Additional Requirement 2.5.3 (Food Defense)',
       'FSSC 22000 v6 Additional Requirement 2.5.6 (Allergens)',
       'ISO/TS 22002-1 Clause 10 — Cross-Contamination'
     ],
@@ -422,35 +560,7 @@ function getStandardReferenceForCategory(category: string, idx: number): string 
   return list[idx % list.length];
 }
 
-/**
- * Dynamically draws 30 unique, non-repeating MCQs (or custom count for Daily Quiz)
- * with randomized option order (A, B, C, D shuffled every attempt) so the user
- * never sees the same sequence twice and the 2,000-question bank is never dumped on screen.
- */
-export function draw30ExamSuiteQuestions(options: {
-  category?: string; // 'All' or specific category
-  difficulty?: 'All' | ExamDifficulty;
-  seenQuestionIds?: string[];
-  onlyQuestionIds?: string[]; // For Wrong Questions Retry or Bookmarks
-  searchKeyword?: string;
-  count?: number;
-}): {
-  questions: SuiteExamQuestion[];
-  nextSeenIds: string[];
-} {
-  const {
-    category = 'All',
-    difficulty = 'All',
-    seenQuestionIds = [],
-    onlyQuestionIds,
-    searchKeyword = '',
-    count = 30
-  } = options;
-
-  const seenSet = new Set(seenQuestionIds);
-  const onlySet = onlyQuestionIds ? new Set(onlyQuestionIds) : null;
-
-  // Build candidate pool from Curated + 2,000 Master Bank
+function buildMasterSuiteQuestionPool(): Omit<SuiteExamQuestion, 'questionNumber'>[] {
   const fullPool: Omit<SuiteExamQuestion, 'questionNumber'>[] = [
     ...CURATED_HIGH_YIELD_MCQS
   ];
@@ -478,16 +588,171 @@ export function draw30ExamSuiteQuestions(options: {
     });
   });
 
-  // Filter pool
+  return fullPool;
+}
+
+function matchesExamTrack(
+  item: Omit<SuiteExamQuestion, 'questionNumber'>,
+  track: ExamTrackId | string
+): boolean {
+  if (!track || track === 'All') return true;
+  const cat = item.category.toLowerCase();
+  const sub = item.subcategory.toLowerCase();
+  const qText = item.questionText.toLowerCase();
+  const expText = item.explanation.toLowerCase();
+
+  if (track === 'ISO 9001 Lead Auditor') {
+    return (
+      sub.includes('iso 9001') ||
+      cat.includes('iso 9001') ||
+      cat === 'quality management' ||
+      qText.includes('iso 9001') ||
+      expText.includes('iso 9001')
+    );
+  }
+
+  if (track === 'FSSC 22000 Lead Auditor') {
+    return (
+      sub.includes('fssc 22000') ||
+      sub.includes('iso 22000') ||
+      cat === 'fssc 22000' ||
+      cat === 'iso 22000' ||
+      cat === 'auditing' ||
+      qText.includes('fssc 22000') ||
+      qText.includes('iso 22000')
+    );
+  }
+
+  if (track === 'HACCP') {
+    return (
+      sub.includes('haccp') ||
+      cat === 'haccp' ||
+      qText.includes('haccp') ||
+      qText.includes('critical control point') ||
+      qText.includes('critical limit')
+    );
+  }
+
+  if (track === 'Food Safety') {
+    return (
+      sub === 'food safety' ||
+      sub === 'food microbiology' ||
+      cat === 'food safety' ||
+      cat === 'gmp and ghp' ||
+      cat === 'allergen management' ||
+      cat === 'pest control' ||
+      cat === 'personal hygiene' ||
+      cat === 'microbiology'
+    );
+  }
+
+  if (track === 'Food Science') {
+    return (
+      sub.includes('food science') ||
+      sub.includes('food chemistry') ||
+      sub.includes('food microbiology') ||
+      cat === 'food technology' ||
+      cat === 'food chemistry' ||
+      cat === 'food preservation' ||
+      cat === 'food packaging' ||
+      cat === 'nutrition' ||
+      cat === 'microbiology'
+    );
+  }
+
+  if (track === 'Food Authority') {
+    // Food Authority exam includes all Food Authority Laws/Adulteration/Standards + all Food Science & Food Safety MCQs
+    return (
+      sub.includes('authority') ||
+      sub.includes('law') ||
+      cat === 'food laws and regulations' ||
+      sub.includes('food science') ||
+      sub.includes('food chemistry') ||
+      sub.includes('food microbiology') ||
+      sub === 'food safety' ||
+      sub === 'haccp'
+    );
+  }
+
+  // Fallback for any other category string
+  return (
+    cat === track.toLowerCase() || sub.includes(track.toLowerCase())
+  );
+}
+
+export function getExamTrackPoolCounts(): Record<ExamTrackId, number> {
+  const pool = buildMasterSuiteQuestionPool();
+  const counts: Record<ExamTrackId, number> = {
+    All: pool.length,
+    'ISO 9001 Lead Auditor': 0,
+    'FSSC 22000 Lead Auditor': 0,
+    HACCP: 0,
+    'Food Safety': 0,
+    'Food Science': 0,
+    'Food Authority': 0
+  };
+
+  for (const item of pool) {
+    if (matchesExamTrack(item, 'ISO 9001 Lead Auditor')) {
+      counts['ISO 9001 Lead Auditor'] += 1;
+    }
+    if (matchesExamTrack(item, 'FSSC 22000 Lead Auditor')) {
+      counts['FSSC 22000 Lead Auditor'] += 1;
+    }
+    if (matchesExamTrack(item, 'HACCP')) {
+      counts['HACCP'] += 1;
+    }
+    if (matchesExamTrack(item, 'Food Safety')) {
+      counts['Food Safety'] += 1;
+    }
+    if (matchesExamTrack(item, 'Food Science')) {
+      counts['Food Science'] += 1;
+    }
+    if (matchesExamTrack(item, 'Food Authority')) {
+      counts['Food Authority'] += 1;
+    }
+  }
+  return counts;
+}
+
+/**
+ * Dynamically draws 30 unique, non-repeating MCQs for the selected Exam Track
+ * with randomized option order (A, B, C, D shuffled every attempt) so the user
+ * never sees the same sequence twice.
+ */
+export function draw30ExamSuiteQuestions(options: {
+  examTrack?: ExamTrackId | string;
+  category?: string; // 'All' or specific category
+  difficulty?: 'All' | ExamDifficulty;
+  seenQuestionIds?: string[];
+  onlyQuestionIds?: string[]; // For Wrong Questions Retry or Bookmarks
+  searchKeyword?: string;
+  count?: number;
+}): {
+  questions: SuiteExamQuestion[];
+  nextSeenIds: string[];
+} {
+  const {
+    examTrack,
+    category = 'All',
+    difficulty = 'All',
+    seenQuestionIds = [],
+    onlyQuestionIds,
+    searchKeyword = '',
+    count = 30
+  } = options;
+
+  const activeTrack = examTrack || category || 'All';
+  const seenSet = new Set(seenQuestionIds);
+  const onlySet = onlyQuestionIds ? new Set(onlyQuestionIds) : null;
+
+  const fullPool = buildMasterSuiteQuestionPool();
+
+  // Filter pool by selected Exam Track / Category
   let filtered = fullPool.filter((item) => {
     if (onlySet && !onlySet.has(item.id)) return false;
-    if (
-      category &&
-      category !== 'All' &&
-      item.category.toLowerCase() !== category.toLowerCase() &&
-      !item.subcategory.toLowerCase().includes(category.toLowerCase())
-    ) {
-      return false;
+    if (activeTrack && activeTrack !== 'All') {
+      if (!matchesExamTrack(item, activeTrack)) return false;
     }
     if (difficulty && difficulty !== 'All' && item.difficulty !== difficulty) {
       return false;
@@ -506,25 +771,47 @@ export function draw30ExamSuiteQuestions(options: {
   });
 
   if (filtered.length < count) {
-    // Fallback to full pool if strict filter had fewer than 30
     filtered = fullPool;
   }
 
-  // Separate into unseen vs seen so every attempt serves 30 different MCQs
-  const unseen = filtered.filter((q) => !seenSet.has(q.id));
-  const seen = filtered.filter((q) => seenSet.has(q.id));
+  // Special balancing for 'Food Authority': ensure at least 18 of the 30 MCQs are direct Food Authority Laws/Adulteration/Standards and 12 are Food Science/Safety
+  let selectedRaw: Omit<SuiteExamQuestion, 'questionNumber'>[] = [];
 
-  // Fisher-Yates shuffle unseen
-  const shuffledUnseen = [...unseen];
-  for (let i = shuffledUnseen.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffledUnseen[i], shuffledUnseen[j]] = [
-      shuffledUnseen[j],
-      shuffledUnseen[i]
-    ];
+  const fisherYates = <T,>(arr: T[]): T[] => {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  };
+
+  if (activeTrack === 'Food Authority') {
+    const unseen = filtered.filter((q) => !seenSet.has(q.id));
+    const poolToUse = unseen.length >= count ? unseen : filtered;
+    const directAuthority = fisherYates(
+      poolToUse.filter(
+        (q) =>
+          q.subcategory.toLowerCase().includes('authority') ||
+          q.category === 'Food Laws and Regulations'
+      )
+    );
+    const otherScienceSafety = fisherYates(
+      poolToUse.filter(
+        (q) =>
+          !q.subcategory.toLowerCase().includes('authority') &&
+          q.category !== 'Food Laws and Regulations'
+      )
+    );
+    const takeAuth = directAuthority.slice(0, Math.min(18, count));
+    const takeSci = otherScienceSafety.slice(0, Math.max(0, count - takeAuth.length));
+    selectedRaw = fisherYates([...takeAuth, ...takeSci]).slice(0, count);
+  } else {
+    // Separate into unseen vs seen so every attempt serves 30 different MCQs
+    const unseen = fisherYates(filtered.filter((q) => !seenSet.has(q.id)));
+    const seen = fisherYates(filtered.filter((q) => seenSet.has(q.id)));
+    selectedRaw = [...unseen, ...seen].slice(0, count);
   }
-
-  const selectedRaw = [...shuffledUnseen, ...seen].slice(0, count);
 
   // Shuffle options A, B, C, D randomly for each selected question
   const letters: OptionLetter[] = ['A', 'B', 'C', 'D'];
@@ -539,16 +826,7 @@ export function draw30ExamSuiteQuestions(options: {
       origPairs.find((p) => p.letter === raw.correctAnswer)?.text ||
       raw.optionB;
 
-    // Shuffle the 4 option texts
-    const shuffledTexts = origPairs.map((p) => p.text);
-    for (let i = shuffledTexts.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledTexts[i], shuffledTexts[j]] = [
-        shuffledTexts[j],
-        shuffledTexts[i]
-      ];
-    }
-
+    const shuffledTexts = fisherYates(origPairs.map((p) => p.text));
     const newCorrectIdx = Math.max(0, shuffledTexts.indexOf(correctText));
     const newCorrectLetter = letters[newCorrectIdx] || 'B';
 
