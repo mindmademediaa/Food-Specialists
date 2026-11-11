@@ -17,12 +17,13 @@ import {
   Sparkles,
   UserCheck,
   Pencil,
-  ExternalLink
+  ExternalLink,
+  Mail,
+  MessageCircle
 } from 'lucide-react';
 import {
   HubUser,
-  ProfileVisibilityMap,
-  VisibilityLevel
+  ProfileVisibilityMap
 } from '../types/hub';
 import { makeAvatarSvg } from '../data/mockHubData';
 import { canViewerSeeField } from './MemberCard';
@@ -57,6 +58,8 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
   const isOwner = Boolean(viewerUid && viewerUid === member.uid);
   const isOwnerOrAdmin = isOwner || isViewerAdmin;
   const ownerIsPremium = Boolean(member.isPremium || member.isPaid);
+  // Only Paid Premium viewers, profile owner, or Admin can view contact details (WhatsApp, Email, Message/Contact)
+  const viewerCanAccessContact = Boolean(viewerIsPremium || isOwnerOrAdmin);
 
   const vis: ProfileVisibilityMap = {
     ...DEFAULT_VISIBILITY_MAP,
@@ -94,20 +97,39 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
     viewerIsPremium,
     isOwnerOrAdmin
   );
-  const canSeeContact = canViewerSeeField(
-    vis.contact,
-    viewerIsPremium,
-    isOwnerOrAdmin
-  );
+  const canSeeContact =
+    (ownerIsPremium || isOwnerOrAdmin) &&
+    canViewerSeeField(vis.contact, viewerIsPremium, isOwnerOrAdmin);
+  const canSeeWhatsapp =
+    (ownerIsPremium || isOwnerOrAdmin) &&
+    canViewerSeeField(
+      vis.whatsapp ?? vis.contact,
+      viewerIsPremium,
+      isOwnerOrAdmin
+    ) &&
+    member.privacySettings?.whatsapp_public !== false &&
+    member.privacySettings?.phone_public !== false;
+  const canSeeEmail =
+    (ownerIsPremium || isOwnerOrAdmin) &&
+    canViewerSeeField(
+      vis.email ?? vis.contact,
+      viewerIsPremium,
+      isOwnerOrAdmin
+    ) &&
+    member.privacySettings?.email_public !== false;
   const canSeeCvField = canViewerSeeField(
     vis.cv,
     viewerIsPremium,
     isOwnerOrAdmin
   );
 
+  const rawWhatsapp = (member.whatsappNumber || member.phone || '').trim();
+  const cleanWhatsappDigits = rawWhatsapp.replace(/[^\d]/g, '');
+  const rawEmail = (member.email || '').trim();
+
   // CV Download Rule:
   // If owner toggled CV ON (canSeeCvField) -> show & enable download
-  const canDownloadCv = canSeeCvField;
+  const canDownloadCv = canSeeCvField && viewerCanAccessContact;
 
   const displayName = canSeeName ? member.name : 'Food Safety Specialist';
   const displayTitle = member.title || member.currentRole || '';
@@ -408,25 +430,83 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
           </div>
         </div>
 
-        {/* MESSAGE & CONTACT BUTTONS (SHOWN WHEN OWNER TOGGLES CONTACT ON) */}
-        {canSeeContact && (
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <button
-              type="button"
-              onClick={() => onMessageOrContact(member, 'message')}
-              className="py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-[15px] shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
-            >
-              <MessageSquare className="w-4 h-4 fill-white/20" />
-              <span>Message</span>
-            </button>
+        {/* DIRECT WHATSAPP BUTTON, EMAIL & CONTACT SECTION (STRICTLY LOCKED FOR FREE VIEWERS) */}
+        {viewerCanAccessContact ? (
+          <div className="space-y-2.5 pt-1">
+            {/* Compact WhatsApp Button with Number & Email Badge */}
+            {((canSeeWhatsapp && rawWhatsapp) || (canSeeEmail && rawEmail)) && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {canSeeWhatsapp && rawWhatsapp && (
+                  <a
+                    href={
+                      cleanWhatsappDigits
+                        ? `https://wa.me/${cleanWhatsappDigits}`
+                        : `tel:${rawWhatsapp}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-[13px] font-extrabold shadow-xs transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-white/20 shrink-0" />
+                    <span>WhatsApp: {rawWhatsapp}</span>
+                  </a>
+                )}
 
+                {canSeeEmail && rawEmail && (
+                  <a
+                    href={`mailto:${rawEmail}`}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#1673B8]/40 text-[#1A2138] text-xs sm:text-[13px] font-extrabold shadow-2xs transition-colors"
+                  >
+                    <Mail className="w-4 h-4 text-[#1673B8] shrink-0" />
+                    <span className="break-all">{rawEmail}</span>
+                  </a>
+                )}
+              </div>
+            )}
+
+            {canSeeContact && (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => onMessageOrContact(member, 'message')}
+                  className="py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-[15px] shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4 fill-white/20" />
+                  <span>Message</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onMessageOrContact(member, 'contact')}
+                  className="py-3 px-4 rounded-2xl bg-white hover:bg-[#F0F6FC] border-[1.5px] border-[#1673B8] text-[#1A2138] font-extrabold text-[15px] shadow-2xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Phone className="w-4 h-4 text-[#1673B8]" />
+                  <span>Contact</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white border-[1.5px] border-[#1673B8]/35 rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#EBF4FC] border border-[#1673B8]/25 flex items-center justify-center text-[#1673B8] shrink-0">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs sm:text-sm font-extrabold text-[#1A2138]">
+                  Contact Information Hidden for Free Users
+                </div>
+                <p className="text-[11px] sm:text-xs font-medium text-slate-600 mt-0.5">
+                  Upgrade to Paid Premium Membership to view this specialist&apos;s WhatsApp number and Email address or contact them directly.
+                </p>
+              </div>
+            </div>
             <button
               type="button"
-              onClick={() => onMessageOrContact(member, 'contact')}
-              className="py-3 px-4 rounded-2xl bg-white hover:bg-[#F0F6FC] border-[1.5px] border-[#1673B8] text-[#1A2138] font-extrabold text-[15px] shadow-2xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              onClick={onRequestUpgradeToPremium}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold whitespace-nowrap shrink-0 cursor-pointer transition-colors"
             >
-              <Phone className="w-4 h-4 text-[#1673B8]" />
-              <span>Contact</span>
+              Upgrade to Contact
             </button>
           </div>
         )}

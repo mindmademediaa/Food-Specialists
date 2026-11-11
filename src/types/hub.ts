@@ -9,6 +9,8 @@ export interface ProfileVisibilityMap {
   linkedin: VisibilityLevel;
   cv: VisibilityLevel;
   contact: VisibilityLevel;
+  email?: VisibilityLevel;
+  whatsapp?: VisibilityLevel;
   education: VisibilityLevel;
   experience: VisibilityLevel;
   certifications: VisibilityLevel;
@@ -61,6 +63,7 @@ export interface PrivacySettings {
   location_public: boolean;
   email_public: boolean;
   phone_public: boolean;
+  whatsapp_public?: boolean;
   hireMe_public?: boolean;
 }
 
@@ -98,6 +101,7 @@ export interface HubUser {
   bio?: string;
   email: string;
   phone: string;
+  whatsappNumber?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
   skills: string[];
@@ -254,6 +258,8 @@ export interface HubPaymentRequest {
   userPhone: string;
   qualification: string;
   currentRole: string;
+  userQualification?: string;
+  userCurrentRole?: string;
   paymentMethod: 'EasyPaisa' | 'JazzCash' | 'Bank Transfer';
   transactionId: string;
   amount: string;
@@ -266,6 +272,7 @@ export interface HubPaymentRequest {
   certificateCourseTitle?: string;
   certificateNumber?: string;
   approvedAt?: string;
+  premiumActivatedAt?: string;
   premiumExpiresAt?: string;
 }
 

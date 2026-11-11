@@ -1,5 +1,4 @@
 import { UserProfile, CvTemplateId } from '../types';
-import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 
 function escapeHtml(str: string): string {
   return String(str || '')
@@ -17,33 +16,6 @@ export function buildCvHtmlDocument(profile: UserProfile, templateId: CvTemplate
   const safeLocation = escapeHtml(profile.location);
   const safeLinkedin = escapeHtml(profile.linkedin);
   const safeSummary = escapeHtml(profile.summary);
-  const initials = (profile.fullName || 'Food Specialist')
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p.charAt(0).toUpperCase())
-    .join('') || 'FS';
-
-  const brandHeaderHtml = `
-    <div class="fsp-top-brand">
-      <div class="fsp-brand-left">
-        <div class="fsp-logo-box">
-          <img src="${FS_PORTAL_LOGO_DATA_URI}" alt="Food Science Portal Logo" class="fsp-logo-img" />
-        </div>
-        <div>
-          <div class="fsp-brand-title">Food Science <span>Portal</span></div>
-          <div class="fsp-brand-sub">Official Verified Specialist Curriculum Vitae</div>
-        </div>
-      </div>
-      <div class="fsp-user-badge">
-        ${
-          profile.avatarUrl
-            ? `<img src="${profile.avatarUrl}" alt="${safeName}" class="fsp-user-photo" />`
-            : `<div class="fsp-user-fallback">${escapeHtml(initials)}</div>`
-        }
-      </div>
-    </div>
-  `;
 
   const baseStyles = `
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap');
@@ -66,90 +38,6 @@ export function buildCvHtmlDocument(profile: UserProfile, templateId: CvTemplate
       padding: 28px 32px;
       background: #ffffff;
     }
-    .fsp-top-brand {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 12px 18px;
-      margin-bottom: 18px;
-      background: linear-gradient(90deg, #1a2138 0%, #105e9a 100%);
-      border-radius: 12px;
-      border-bottom: 3px solid #d97706;
-      color: #ffffff;
-    }
-    .fsp-brand-left {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .fsp-logo-box {
-      width: 56px;
-      height: 56px;
-      border-radius: 12px;
-      background: #ffffff;
-      border: 2px solid #93c5fd;
-      padding: 2px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .fsp-logo-img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      transform: scale(1.06);
-    }
-    .fsp-brand-title {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #ffffff;
-      line-height: 1.15;
-    }
-    .fsp-brand-title span {
-      color: #7dd3fc;
-      border-bottom: 2px solid #7dd3fc;
-    }
-    .fsp-brand-sub {
-      font-size: 11px;
-      font-weight: 600;
-      color: #dbeafe;
-      margin-top: 3px;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-    .fsp-user-badge {
-      width: 56px;
-      height: 56px;
-      border-radius: 12px;
-      border: 2px solid #7dd3fc;
-      background: #ffffff;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .fsp-user-photo {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .fsp-user-fallback {
-      width: 100%;
-      height: 100%;
-      background: #1673b8;
-      color: #ffffff;
-      font-weight: 800;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
     @media print {
       body { background: #ffffff; }
       .page { padding: 14px; max-width: 100%; }
@@ -161,7 +49,7 @@ export function buildCvHtmlDocument(profile: UserProfile, templateId: CvTemplate
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${safeName} — Food Science Portal CV (Modern Clean)</title>
+  <title>${safeName} — Curriculum Vitae</title>
   <style>
     ${baseStyles}
     .grid-modern { display: grid; grid-template-columns: 240px 1fr; gap: 28px; }
@@ -182,7 +70,6 @@ export function buildCvHtmlDocument(profile: UserProfile, templateId: CvTemplate
 </head>
 <body>
   <div class="page">
-    ${brandHeaderHtml}
     <div class="grid-modern">
       <div class="sidebar">
         ${profile.avatarUrl ? `<img class="avatar" src="${profile.avatarUrl}" alt="${safeName}" />` : ''}
@@ -268,7 +155,7 @@ export function buildCvHtmlDocument(profile: UserProfile, templateId: CvTemplate
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${safeName} — Food Science Portal CV (ATS-Standard)</title>
+  <title>${safeName} — Curriculum Vitae</title>
   <style>
     ${baseStyles}
     .header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; }
@@ -284,7 +171,6 @@ export function buildCvHtmlDocument(profile: UserProfile, templateId: CvTemplate
 </head>
 <body>
   <div class="page">
-    ${brandHeaderHtml}
     <div class="header">
       <div class="name">${safeName}</div>
       <div class="role">${safeTitle}</div>
@@ -361,7 +247,7 @@ export function buildCvHtmlDocument(profile: UserProfile, templateId: CvTemplate
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${safeName} — Food Science Portal CV (Executive Specialist)</title>
+  <title>${safeName} — Curriculum Vitae</title>
   <style>
     ${baseStyles}
     .exec-banner { background: #0f172a; color: #ffffff; padding: 24px 28px; border-radius: 8px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
@@ -379,7 +265,6 @@ export function buildCvHtmlDocument(profile: UserProfile, templateId: CvTemplate
 </head>
 <body>
   <div class="page">
-    ${brandHeaderHtml}
     <div class="exec-banner">
       <div>
         <div class="exec-name">${safeName}</div>

@@ -331,10 +331,8 @@ export const AuthScreen: React.FC = () => {
           <h1 className="text-[24px] sm:text-[26px] font-black tracking-tight text-white leading-none">
             Food Science <span className="text-[#38BDF8]">Portal</span>
           </h1>
-          <p className="text-xs font-medium text-sky-100/80 mt-1.5">
-            {mode === 'signin'
-              ? 'Welcome back! Sign in to continue'
-              : 'Create your specialist account'}
+          <p className="text-[11.5px] sm:text-xs font-semibold text-sky-100/95 mt-2 max-w-[330px] leading-relaxed">
+            The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings
           </p>
         </div>
 

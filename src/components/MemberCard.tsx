@@ -6,7 +6,10 @@ import {
   ShieldCheck,
   Sparkles,
   ExternalLink,
-  ArrowRight
+  ArrowRight,
+  Lock,
+  Mail,
+  MessageCircle
 } from 'lucide-react';
 import { HubUser, VisibilityLevel } from '../types/hub';
 import { makeAvatarSvg } from '../data/mockHubData';
@@ -35,6 +38,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
   onClick
 }) => {
   const isOwner = Boolean(viewerUid && viewerUid === member.uid);
+  const ownerIsPremium = Boolean(member.isPremium || member.isPaid);
   const vis = member.visibility;
 
   const canSeeName = canViewerSeeField(vis?.name ?? 'public', viewerIsPremium, isOwner);
@@ -68,6 +72,23 @@ export const MemberCard: React.FC<MemberCardProps> = ({
     viewerIsPremium,
     isOwner
   );
+
+  // Contact details (WhatsApp & Email) can ONLY be published by Paid Members,
+  // and are STRICTLY HIDDEN from Free Users (only Paid viewers or owner can see them).
+  const viewerCanAccessContact = Boolean(viewerIsPremium || isOwner);
+  const ownerAllowsWhatsapp =
+    ownerIsPremium &&
+    (vis?.whatsapp ?? vis?.contact ?? 'public') !== 'private' &&
+    member.privacySettings?.whatsapp_public !== false &&
+    member.privacySettings?.phone_public !== false;
+  const ownerAllowsEmail =
+    ownerIsPremium &&
+    (vis?.email ?? vis?.contact ?? 'public') !== 'private' &&
+    member.privacySettings?.email_public !== false;
+
+  const rawWhatsapp = (member.whatsappNumber || member.phone || '').trim();
+  const cleanWhatsappDigits = rawWhatsapp.replace(/[^\d]/g, '');
+  const rawEmail = (member.email || '').trim();
 
   const displayName = canSeeName ? member.name : 'Food Safety Specialist';
   const displayTitle = member.title || member.currentRole || '';
@@ -168,12 +189,55 @@ export const MemberCard: React.FC<MemberCardProps> = ({
 
           {/* Bio snippet */}
           {canSeeBio && member.bio && (
-            <p className="text-[11px] text-slate-600 pt-0.5 leading-relaxed break-words">
+            <p className="text-[11px] text-slate-600 pt-0.5 leading-relaxed break-words line-clamp-2">
               {member.bio}
             </p>
           )}
         </div>
       </div>
+
+      {/* Contact Row: Shown ONLY to Paid Premium Viewers (Hidden from Free Users) */}
+      {viewerCanAccessContact ? (
+        (ownerAllowsWhatsapp && rawWhatsapp) || (ownerAllowsEmail && rawEmail) ? (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            {ownerAllowsWhatsapp && rawWhatsapp && (
+              <a
+                href={
+                  cleanWhatsappDigits
+                    ? `https://wa.me/${cleanWhatsappDigits}`
+                    : `tel:${rawWhatsapp}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title="Chat on WhatsApp"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10.5px] font-extrabold transition-colors"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600/15 shrink-0" />
+                <span>{rawWhatsapp}</span>
+              </a>
+            )}
+            {ownerAllowsEmail && rawEmail && (
+              <a
+                href={`mailto:${rawEmail}`}
+                onClick={(e) => e.stopPropagation()}
+                title="Send Email"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1A2138] text-[10.5px] font-bold transition-colors truncate max-w-[220px]"
+              >
+                <Mail className="w-3 h-3 text-[#1673B8] shrink-0" />
+                <span className="truncate">{rawEmail}</span>
+              </a>
+            )}
+          </div>
+        ) : null
+      ) : (
+        <div className="flex items-center gap-1.5 pt-1">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-bold">
+            <Lock className="w-3 h-3 text-slate-500 shrink-0" />
+            <span>WhatsApp &amp; Email Hidden for Free Users</span>
+          </span>
+        </div>
+      )}
 
       {/* Bottom Row: Hire Me / LinkedIn / CV Indicator + View Profile Button */}
       <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap">
@@ -184,7 +248,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
             </span>
           )}
 
-          {canSeeLinkedin && linkedinHref && (
+          {canSeeLinkedin && linkedinHref && viewerCanAccessContact && (
             <a
               href={linkedinHref}
               target="_blank"

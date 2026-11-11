@@ -98,6 +98,7 @@ interface ToolsHubViewProps {
   monthlyFeeRs: number;
   yearlyFeeRs: number;
   initialSection?: ActiveToolSection;
+  resetTrigger?: number;
   onSaveToolsData: (updatedToolsData: UserToolsData) => Promise<void>;
   onOpenPremiumModal: () => void;
   onGoToProfileTools?: () => void;
@@ -111,6 +112,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   monthlyFeeRs,
   yearlyFeeRs,
   initialSection = 'hub',
+  resetTrigger = 0,
   onSaveToolsData,
   onOpenPremiumModal,
   onGoToProfileTools,
@@ -166,15 +168,21 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
 
   // Sync activeSection when initialSection changes
   useEffect(() => {
-    if (
-      initialSection &&
-      (isUserPaid || (initialSection !== 'hub' && !hasExpiredPremium))
-    ) {
+    if (initialSection === 'hub') {
+      setActiveSection('hub');
+    } else if (initialSection && (isUserPaid || !hasExpiredPremium)) {
       setActiveSection(initialSection);
     } else if (!isUserPaid && hasExpiredPremium) {
       setActiveSection('hub');
     }
   }, [initialSection, isUserPaid, hasExpiredPremium]);
+
+  // Whenever the user clicks the main "Tools" tab in navbar or bottom bar, reset back to 'hub'
+  useEffect(() => {
+    if (resetTrigger > 0) {
+      setActiveSection('hub');
+    }
+  }, [resetTrigger]);
 
   useEffect(() => {
     onActiveSectionChange?.(activeSection);
@@ -834,13 +842,16 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
         </div>
       )}
 
-      {/* BACK BUTTON ONLY WHEN INSIDE A SPECIFIC TOOL */}
+      {/* BACK BUTTON ONLY WHEN INSIDE A SPECIFIC TOOL (STICKY WHILE SCROLLING) */}
       {activeSection !== 'hub' && (
-        <div className="flex items-center justify-between">
+        <div className="sticky top-16 z-30 flex items-center justify-between py-1">
           <button
             type="button"
-            onClick={() => setActiveSection('hub')}
-            className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+            onClick={() => {
+              setActiveSection('hub');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="px-4 py-2 rounded-xl bg-white/95 backdrop-blur-md hover:bg-[#EBF4FC] border border-[#1673B8]/40 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-md cursor-pointer transition-colors"
           >
             <span>← Back to All Tools</span>
           </button>

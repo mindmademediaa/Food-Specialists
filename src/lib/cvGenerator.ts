@@ -10,12 +10,12 @@ import {
   normalizeEducationArray,
   normalizeExperienceArray
 } from '../components/EditProfileView';
-import { drawPdfBrandLogo, drawPdfUserPhoto } from './pdfBranding';
+import { drawPdfUserPhoto } from './pdfBranding';
 
 /**
  * Generates and downloads a razor-sharp, vector-crisp, executive market-ready PDF CV
- * directly from the user's entered profile information, complete with the official
- * Food Science Portal Logo and the Specialist's Profile Picture.
+ * directly from the user's entered profile information, complete with the
+ * Specialist's Profile Picture (without portal branding).
  */
 export function downloadProfessionalCvPdf(
   user: HubUser,
@@ -54,7 +54,10 @@ export function downloadProfessionalCvPdf(
   const emailText =
     isVisible(vis?.contact) && user.email?.trim() ? user.email.trim() : '';
   const phoneText =
-    isVisible(vis?.contact) && user.phone?.trim() ? user.phone.trim() : '';
+    isVisible(vis?.contact) &&
+    (user.whatsappNumber?.trim() || user.phone?.trim())
+      ? (user.whatsappNumber?.trim() || user.phone?.trim() || '')
+      : '';
   const linkedinText =
     isVisible(vis?.linkedin) && user.linkedinUrl?.trim()
       ? user.linkedinUrl
@@ -88,26 +91,19 @@ export function downloadProfessionalCvPdf(
   // ==================== HEADER BANNER ====================
   // Top deep navy executive banner
   doc.setFillColor(26, 33, 56); // #1A2138
-  doc.rect(0, 0, pageWidth, 46, 'F');
+  doc.rect(0, 0, pageWidth, 44, 'F');
 
   // Subtle gold bottom border on header
   doc.setFillColor(217, 119, 6); // #D97706 Gold accent bar
-  doc.rect(0, 46, pageWidth, 1.4, 'F');
-
-  // Left: Large Official Food Science Portal Logo (28mm x 28mm)
-  drawPdfBrandLogo(doc, 14, 9, 28, {
-    borderColor: [255, 255, 255],
-    bgFill: [255, 255, 255],
-    roundedRadius: 3.8
-  });
+  doc.rect(0, 44, pageWidth, 1.4, 'F');
 
   // Right: Specialist Profile Picture (28mm x 28mm)
   drawPdfUserPhoto(
     doc,
-    user.profilePicUrl,
+    user.profilePicUrl || user.profilePhotoUrl,
     fullName,
-    pageWidth - 42,
-    9,
+    pageWidth - 44,
+    8,
     28,
     {
       borderColor: [186, 230, 253],
@@ -116,36 +112,26 @@ export function downloadProfessionalCvPdf(
     }
   );
 
-  const headerTextX = 46;
-  const headerTextWidth = pageWidth - 92;
-
-  // Top Brand Label
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.setTextColor(253, 224, 71); // Soft gold
-  doc.text(
-    'Food Science Portal  •  Verified Specialist Curriculum Vitae',
-    headerTextX,
-    12.5
-  );
+  const headerTextX = marginX;
+  const headerTextWidth = pageWidth - marginX - 48;
 
   // Full Name
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(fullName.length > 26 ? 15.5 : 18.5);
+  doc.setFontSize(fullName.length > 26 ? 16.5 : 19.5);
   doc.setTextColor(255, 255, 255);
   const nameLine = doc.splitTextToSize(fullName.toUpperCase(), headerTextWidth)[0];
-  doc.text(nameLine, headerTextX, 21);
+  doc.text(nameLine, headerTextX, 16);
 
   // Title & Current Company
   const headlineParts = [roleTitle, companyName].filter(Boolean);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.2);
+  doc.setFontSize(10.5);
   doc.setTextColor(186, 230, 253); // Soft ice-blue
   const headlineLine = doc.splitTextToSize(
     headlineParts.join('  |  '),
     headerTextWidth
   )[0];
-  doc.text(headlineLine, headerTextX, 27.5);
+  doc.text(headlineLine, headerTextX, 23.5);
 
   // Contact Details Row inside Header
   const contactItems = [
@@ -157,35 +143,30 @@ export function downloadProfessionalCvPdf(
 
   if (contactItems.length > 0) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8.8);
     doc.setTextColor(229, 231, 235);
     const contactLine = contactItems.join('   •   ');
     const wrappedContact = doc.splitTextToSize(contactLine, headerTextWidth);
-    doc.text(wrappedContact.slice(0, 2), headerTextX, 34);
+    doc.text(wrappedContact.slice(0, 2), headerTextX, 31);
   }
 
-  let cursorY = 55;
+  let cursorY = 54;
 
   const ensureSpace = (neededMm: number) => {
     if (cursorY + neededMm > pageHeight - 16) {
       doc.addPage();
-      // Top accent bar with Food Science Portal Logo on continuation page
+      // Top accent bar on continuation page (personal name only, no portal logo/words)
       doc.setFillColor(26, 33, 56);
-      doc.rect(0, 0, pageWidth, 16, 'F');
-      drawPdfBrandLogo(doc, marginX, 2, 12, {
-        borderColor: [255, 255, 255],
-        bgFill: [255, 255, 255],
-        roundedRadius: 2
-      });
+      doc.rect(0, 0, pageWidth, 14, 'F');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.5);
       doc.setTextColor(255, 255, 255);
       doc.text(
-        `Food Science Portal  •  ${fullName} — Curriculum Vitae`,
-        marginX + 15,
-        10
+        `${fullName} — Curriculum Vitae`,
+        marginX,
+        9.2
       );
-      cursorY = 24;
+      cursorY = 22;
     }
   };
 
@@ -417,7 +398,7 @@ export function downloadProfessionalCvPdf(
     doc.setFontSize(8);
     doc.setTextColor(107, 114, 128);
     doc.text(
-      `${fullName} — Curriculum Vitae • Generated via Food Science Portal`,
+      `${fullName} — Curriculum Vitae`,
       marginX,
       pageHeight - 6.8
     );

@@ -16,6 +16,7 @@ import {
   Search,
   MapPin,
   Briefcase,
+  ChevronLeft,
   ChevronRight,
   ChevronDown,
   ExternalLink,
@@ -379,6 +380,12 @@ const buildSanitizedPublicUser = (fullProfile: HubUser): HubUser => {
     (item) => item.visibility !== 'private'
   );
 
+  const isPaidMember = Boolean(fullProfile.isPaid || fullProfile.isPremium);
+  const allowEmailPublic =
+    isPaidMember && (vis.email ?? vis.contact) !== 'private';
+  const allowWhatsappPublic =
+    isPaidMember && (vis.whatsapp ?? vis.contact) !== 'private';
+
   return {
     ...fullProfile,
     visibility: vis,
@@ -391,8 +398,13 @@ const buildSanitizedPublicUser = (fullProfile: HubUser): HubUser => {
     linkedinUrl: vis.linkedin === 'private' ? '' : fullProfile.linkedinUrl || '',
     cvUrl: vis.cv === 'private' ? '' : fullProfile.cvUrl || '',
     cvFileName: vis.cv === 'private' ? '' : fullProfile.cvFileName || '',
-    email: vis.contact === 'private' ? '' : fullProfile.email || '',
-    phone: vis.contact === 'private' ? '' : fullProfile.phone || '',
+    email: allowEmailPublic ? fullProfile.email || '' : '',
+    phone: allowWhatsappPublic
+      ? fullProfile.whatsappNumber || fullProfile.phone || ''
+      : '',
+    whatsappNumber: allowWhatsappPublic
+      ? fullProfile.whatsappNumber || fullProfile.phone || ''
+      : '',
     education: vis.education === 'private' ? [] : eduList,
     experience: vis.experience === 'private' ? [] : expList,
     experienceItems: vis.experience === 'private' ? [] : expList,
@@ -402,17 +414,16 @@ const buildSanitizedPublicUser = (fullProfile: HubUser): HubUser => {
 };
 
 export default function App() {
-  // 0.5-second (500ms) Startup Splash Screen with FS Portal Logo
-  const [showSplashLogo, setShowSplashLogo] = useState<boolean>(
-    () => !(auth.currentUser || loadPersistedAuthUser())
-  );
+  // 2.2-second (2200ms) Startup / Reload / Logout Splash Screen with FS Portal Logo
+  const [showSplashLogo, setShowSplashLogo] = useState<boolean>(true);
 
   useEffect(() => {
+    if (!showSplashLogo) return;
     const splashTimer = setTimeout(() => {
       setShowSplashLogo(false);
-    }, 450);
+    }, 2200);
     return () => clearTimeout(splashTimer);
-  }, []);
+  }, [showSplashLogo]);
 
   // Firebase Authentication State (Persisted across tab switches & reloads)
   const [authUser, setAuthUser] = useState<User | null>(
@@ -481,6 +492,7 @@ export default function App() {
 
   // Active Tool Section inside ToolsHubView (used to hide app search bar inside E-Numbers Finder)
   const [activeToolSection, setActiveToolSection] = useState<string>('hub');
+  const [toolsResetKey, setToolsResetKey] = useState<number>(0);
 
   // Read Job Notification IDs (persisted so newly posted jobs trigger unread Bell notifications)
   const [readJobNotificationIds, setReadJobNotificationIds] = useState<string[]>(
@@ -620,7 +632,7 @@ export default function App() {
   // State for /search
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
   const [searchTab, setSearchTab] = useState<
-    'All' | 'Jobs' | 'Scholarships' | 'Trainings' | 'Members'
+    'All' | 'Tools' | 'Jobs' | 'Scholarships' | 'Trainings' | 'Members'
   >('All');
 
   // State for /communities (Directory & Discussions)
@@ -862,6 +874,7 @@ export default function App() {
   const [legalModalTab, setLegalModalTab] = useState<LegalTabType | null>(null);
 
   const handleSignOut = async () => {
+    setShowSplashLogo(true);
     clearPersistedAuthUser();
     setAuthUser(null);
     try {
@@ -1181,6 +1194,35 @@ export default function App() {
           id: d.id
         }));
         setPaymentRequests(list);
+        // If any membership payment request for the current user was verified by Admin,
+        // immediately activate their Premium status across Website and Mobile App
+        const myApprovedMembership = list.find(
+          (r) =>
+            r.uid === authUser.uid &&
+            r.status === 'verified' &&
+            !r.certificateCourseId &&
+            r.subscriptionPlan !== 'certificate_unlock'
+        );
+        if (myApprovedMembership) {
+          setMyProfile((prev) => {
+            if (prev.isPaid && prev.isPremium && prev.paymentStatus === 'verified') {
+              return prev;
+            }
+            return {
+              ...prev,
+              isPaid: true,
+              isPremium: true,
+              plan: 'premium',
+              paymentStatus: 'verified',
+              premiumActivatedAt:
+                myApprovedMembership.premiumActivatedAt ||
+                prev.premiumActivatedAt ||
+                new Date().toISOString(),
+              premiumExpiresAt:
+                myApprovedMembership.premiumExpiresAt || prev.premiumExpiresAt
+            };
+          });
+        }
       },
       () => {}
     );
@@ -1320,7 +1362,11 @@ export default function App() {
     if (section === 'home') setRoute({ name: 'home' });
     if (section === 'jobs') navigateToJobs('All');
     if (section === 'scholarships') navigateToScholarships('All');
-    if (section === 'tools') setRoute({ name: 'tools', initialSection: 'hub' });
+    if (section === 'tools') {
+      setActiveToolSection('hub');
+      setToolsResetKey((k) => k + 1);
+      setRoute({ name: 'tools', initialSection: 'hub' });
+    }
     if (section === 'communities') setRoute({ name: 'communities' });
     if (section === 'trainings') setRoute({ name: 'trainings' });
     if (section === 'profile') setRoute({ name: 'profile' });
@@ -1329,7 +1375,11 @@ export default function App() {
   const handleSelectBottomTab = (tab: NavTab) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tab === 'home') setRoute({ name: 'home' });
-    if (tab === 'tools') setRoute({ name: 'tools', initialSection: 'hub' });
+    if (tab === 'tools') {
+      setActiveToolSection('hub');
+      setToolsResetKey((k) => k + 1);
+      setRoute({ name: 'tools', initialSection: 'hub' });
+    }
     if (tab === 'communities') setRoute({ name: 'communities' });
     if (tab === 'trainings') setRoute({ name: 'trainings' });
     if (tab === 'profile') setRoute({ name: 'profile' });
@@ -1667,22 +1717,117 @@ export default function App() {
     [trainings]
   );
 
-  // Global Search Results for /search
+  // Built-in Specialist Tools Directory for Global Portal Search
+  const searchablePortalTools = useMemo(
+    () => [
+      {
+        id: 'e-numbers' as const,
+        title: 'E-Numbers & Halal Instant Finder',
+        category: 'Additives & Halal Database',
+        description:
+          'Search 400+ Codex E-numbers, INS codes, Halal/Haram/Mushbooh status, ADI limits, and functional classes.'
+      },
+      {
+        id: 'exam' as const,
+        title: 'Food Science & Safety Exam Prep (2,000+ MCQs)',
+        category: 'Exam & PPSC/FPSC Prep',
+        description:
+          'Practice 2,000+ food technology, microbiology, dairy, meat, cereals, and food safety exam questions.'
+      },
+      {
+        id: 'interview' as const,
+        title: 'QA/QC & Food Industry Interview Q&A Bank',
+        category: 'Career & Interview Prep',
+        description:
+          'Master 2,000+ technical interview questions for QA/QC, Production, R&D, HACCP, and ISO 22000 roles.'
+      },
+      {
+        id: 'nutrition' as const,
+        title: 'Clinical Nutrition, BMI, BMR & Meal Planner Suite',
+        category: 'Nutrition & Dietetics',
+        description:
+          'Calculate BMI, BMR, TDEE, macronutrient targets, daily meal plans, and export clinical nutrition PDFs.'
+      },
+      {
+        id: 'lab-formula' as const,
+        title: 'Food Lab Formula & Titration Calculator',
+        category: 'Laboratory Calculators',
+        description:
+          'Compute acidity, Brix-to-acid ratio, protein Kjeldahl factor, salt %, and standard lab formulations.'
+      },
+      {
+        id: 'pearson-square' as const,
+        title: 'Pearson Square Batch & Milk Standardization Tool',
+        category: 'Dairy & Batch Blending',
+        description:
+          'Standardize milk fat/SNF, juice Brix, and two-ingredient batch blending ratios accurately.'
+      },
+      {
+        id: 'molarity-normality' as const,
+        title: 'Lab Solution Molarity, Normality & Dilution Calculator',
+        category: 'Chemical Solutions',
+        description:
+          'Prepare exact molar, normal, and ppm reagent solutions and C1V1 = C2V2 dilutions for food analysis.'
+      },
+      {
+        id: 'moisture-ash' as const,
+        title: 'Moisture, Ash, Dry Matter & Process Yield Calculator',
+        category: 'Proximate Analysis',
+        description:
+          'Calculate wet/dry basis moisture %, total ash %, fat extraction, and production line yield.'
+      },
+      {
+        id: 'production-floor' as const,
+        title: 'Production Floor Sanitizer ppm, Line Speed & OEE Tool',
+        category: 'Plant Operations & Sanitation',
+        description:
+          'Calculate chlorine/QAC sanitizer ppm dosing, CIP flow rates, thermal pasteurization lethality, and OEE.'
+      },
+      {
+        id: 'job-cover-letter' as const,
+        title: 'Food Industry Job Application Email & Cover Letter Generator',
+        category: 'Career Tools',
+        description:
+          'Generate tailored QA/QC, Food Safety, Production, and R&D cover letters and HR application emails.'
+      },
+      {
+        id: 'citation-generator' as const,
+        title: 'Scientific Research Citation & Reference Generator (APA / Harvard)',
+        category: 'Academic & Research',
+        description:
+          'Format food science journal articles, thesis references, and Codex standards in APA, Harvard, and Vancouver styles.'
+      }
+    ],
+    []
+  );
+
+  // Global Search Results for /search (Searches across Tools, Jobs, Scholarships, Trainings & Verified Paid Specialists)
   const searchResults = useMemo(() => {
     const q = globalSearchQuery.trim().toLowerCase();
+    const matchedTools = searchablePortalTools.filter(
+      (tool) =>
+        !q ||
+        tool.title.toLowerCase().includes(q) ||
+        tool.category.toLowerCase().includes(q) ||
+        tool.description.toLowerCase().includes(q)
+    );
     const matchedJobs = visibleJobs.filter(
       (j) =>
         !q ||
         j.title.toLowerCase().includes(q) ||
         j.company.toLowerCase().includes(q) ||
-        j.location.toLowerCase().includes(q)
+        j.location.toLowerCase().includes(q) ||
+        (j.category && j.category.toLowerCase().includes(q)) ||
+        (j.description && j.description.toLowerCase().includes(q))
     );
     const matchedScholarships = visibleScholarships.filter(
       (s) =>
         !q ||
         s.title.toLowerCase().includes(q) ||
         s.organization.toLowerCase().includes(q) ||
-        s.country.toLowerCase().includes(q)
+        s.country.toLowerCase().includes(q) ||
+        (s.fundingType && s.fundingType.toLowerCase().includes(q)) ||
+        (s.description && s.description.toLowerCase().includes(q))
     );
     const matchedTrainings = trainings.filter(
       (t) =>
@@ -1690,16 +1835,36 @@ export default function App() {
         (!q ||
           t.title.toLowerCase().includes(q) ||
           t.category.toLowerCase().includes(q) ||
-          (t.subType && t.subType.toLowerCase().includes(q)))
+          (t.subType && t.subType.toLowerCase().includes(q)) ||
+          (t.description && t.description.toLowerCase().includes(q)))
     );
-    const matchedMembers = paidCommunityMembers.filter(
-      (u) =>
-        !q ||
-        u.name.toLowerCase().includes(q) ||
-        (u.title || u.currentRole || '').toLowerCase().includes(q) ||
-        (u.company || '').toLowerCase().includes(q)
-    );
+    // Strict Free vs Paid Privacy:
+    // 1. Only verified Paid members (paidCommunityMembers) are ever included — free users never appear.
+    // 2. Never match or expose private contact details (email, phone, whatsappNumber) in search!
+    const matchedMembers = paidCommunityMembers.filter((u) => {
+      if (!q) return true;
+      const vis = u.visibility;
+      const canSeeName = (vis?.name ?? 'public') !== 'private';
+      const canSeeTitle =
+        (vis?.title ??
+          (u.privacySettings?.currentRole_public === false
+            ? 'private'
+            : 'public')) !== 'private';
+      const canSeeCompany = (vis?.company ?? 'public') !== 'private';
+      const canSeeLocation =
+        (vis?.location ??
+          (u.privacySettings?.location_public === false
+            ? 'private'
+            : 'public')) !== 'private';
+      return (
+        (canSeeName && u.name.toLowerCase().includes(q)) ||
+        (canSeeTitle && (u.title || u.currentRole || '').toLowerCase().includes(q)) ||
+        (canSeeCompany && (u.company || '').toLowerCase().includes(q)) ||
+        (canSeeLocation && (u.location || '').toLowerCase().includes(q))
+      );
+    });
     return {
+      tools: matchedTools,
       jobs: matchedJobs,
       scholarships: matchedScholarships,
       trainings: matchedTrainings,
@@ -1707,6 +1872,7 @@ export default function App() {
     };
   }, [
     globalSearchQuery,
+    searchablePortalTools,
     visibleJobs,
     visibleScholarships,
     trainings,
@@ -2158,28 +2324,42 @@ export default function App() {
         ? `1 Year (Rs. ${chosenFee.toLocaleString()} - 25% OFF)`
         : `1 Month (Rs. ${chosenFee.toLocaleString()})`;
 
-    if (!payReceiptUrl && !payTransactionId.trim()) {
+    if (!payTransactionId.trim()) {
       setPaySubmitBanner(
-        `Please upload your Payment Screenshot (or enter the Transaction ID) after sending Rs. ${chosenFee.toLocaleString()}.`
+        `Please enter your Transaction ID / Reference No. (TID) after sending Rs. ${chosenFee.toLocaleString()}.`
+      );
+      return;
+    }
+
+    if (!payReceiptUrl) {
+      setPaySubmitBanner(
+        `Please upload your Payment Screenshot along with your Transaction ID / Reference No. (${payTransactionId.trim()}) so the Admin can verify and approve your Premium access.`
       );
       return;
     }
 
     setIsSubmittingPayment(true);
     const reqId = `pay-${authUser.uid.slice(0, 18)}-${Date.now()}`;
+    const contactPhone = (
+      myProfile.whatsappNumber ||
+      myProfile.phone ||
+      ''
+    ).trim();
     const payload: HubPaymentRequest = {
       id: reqId,
       uid: authUser.uid,
       userName: myProfile.name || authUser.displayName || 'Food Specialist',
       userEmail: myProfile.email || authUser.email || '',
-      userPhone: myProfile.phone || '',
+      userPhone: contactPhone,
       qualification: myProfile.qualification || '',
       currentRole: myProfile.title || myProfile.currentRole || '',
+      userQualification: myProfile.qualification || '',
+      userCurrentRole: myProfile.title || myProfile.currentRole || '',
       paymentMethod: payMethod,
-      transactionId: payTransactionId.trim() || 'SCREENSHOT-UPLOADED',
+      transactionId: payTransactionId.trim(),
       amount: chosenAmountLabel,
       notes: payNotes.trim() || `${chosenPlanLabel} Premium Subscription`,
-      receiptImageUrl: payReceiptUrl || '',
+      receiptImageUrl: payReceiptUrl,
       status: 'pending',
       submittedAt: new Date().toISOString().slice(0, 19) + 'Z',
       subscriptionPlan: chosenPlanLabel
@@ -3084,11 +3264,11 @@ export default function App() {
 
   const userInitial = firstName.charAt(0).toUpperCase() || 'G';
 
-  // 0. 0.5-Second (500ms) Startup Splash Screen with Food Science Portal WebP Logo
+  // 0. 2.2-Second Startup / Reload / Logout Splash Screen with Food Science Portal Logo
   if (showSplashLogo) {
     return (
       <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-fade-in">
-        <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md">
           <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white p-1.5 shadow-[0_12px_40px_rgba(26,33,56,0.12)] border border-[#D2DEEA] flex items-center justify-center overflow-hidden">
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
@@ -3096,12 +3276,12 @@ export default function App() {
               className="w-full h-full object-contain select-none"
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-black text-[#0C182D] tracking-tight">
               Food Science <span className="text-[#1673B8]">Portal</span>
             </h1>
-            <p className="text-xs font-bold text-[#1673B8] uppercase tracking-widest">
-              Food Safety &amp; Quality Specialists
+            <p className="text-xs sm:text-sm font-bold text-[#1673B8] leading-relaxed px-2">
+              The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings
             </p>
           </div>
         </div>
@@ -3113,7 +3293,7 @@ export default function App() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#F0F6FC] flex flex-col items-center justify-center p-4">
-        <div className="bg-white border-[1.5px] border-[#BBD6EE] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-xs w-full">
+        <div className="bg-white border-[1.5px] border-[#BBD6EE] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-sm w-full">
           <div className="w-24 h-24 rounded-2xl bg-white p-1 border border-[#D2DEEA] shadow-xs flex items-center justify-center overflow-hidden">
             <img
               src={FS_PORTAL_LOGO_DATA_URI}
@@ -3124,8 +3304,8 @@ export default function App() {
           <h2 className="text-base font-black text-[#0C182D]">
             Food Science <span className="text-[#1673B8]">Portal</span>
           </h2>
-          <p className="text-xs font-medium text-gray-500">
-            Verifying your authentication session...
+          <p className="text-xs font-bold text-[#1673B8] leading-relaxed">
+            The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings
           </p>
         </div>
       </div>
@@ -3315,12 +3495,15 @@ export default function App() {
         <Header
           showBack={route.name !== 'home'}
           hideSearchBar={
-            route.name === 'communities' ||
-            route.name === 'profile' ||
+            route.name === 'search' ||
             (route.name === 'tools' && activeToolSection === 'e-numbers')
           }
           onBack={() => {
-            if (route.name === 'job-detail') setRoute({ name: 'jobs' });
+            if (route.name === 'tools' && activeToolSection !== 'hub') {
+              setActiveToolSection('hub');
+              setToolsResetKey((k) => k + 1);
+              setRoute({ name: 'tools', initialSection: 'hub' });
+            } else if (route.name === 'job-detail') setRoute({ name: 'jobs' });
             else if (route.name === 'scholarship-detail')
               setRoute({ name: 'scholarships' });
             else if (route.name === 'community-member')
@@ -3334,9 +3517,13 @@ export default function App() {
               setRoute({ name: 'trainings' });
             else if (route.name === 'admin') setRoute({ name: 'profile' });
             else setRoute({ name: 'home' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onHomeClick={() => setRoute({ name: 'home' })}
-          onSearchClick={() => setRoute({ name: 'search' })}
+          onSearchClick={() => {
+            setSearchTab('All');
+            setRoute({ name: 'search' });
+          }}
           onBellClick={() => navigateToJobs('All')}
           jobNotifications={activeJobs}
           readJobIds={readJobNotificationIds}
@@ -3364,6 +3551,40 @@ export default function App() {
           isStandaloneApp={isStandaloneApp}
           onInstallAppClick={() => setShowInstallAppModal(true)}
         />
+
+        {/* FLOATING BACK BUTTON THAT MOVES WITH SCROLL ON MOBILE/APP & WEBSITE */}
+        {route.name !== 'home' && (
+          <button
+            type="button"
+            onClick={() => {
+              if (route.name === 'tools' && activeToolSection !== 'hub') {
+                setActiveToolSection('hub');
+                setToolsResetKey((k) => k + 1);
+                setRoute({ name: 'tools', initialSection: 'hub' });
+              } else if (route.name === 'job-detail') setRoute({ name: 'jobs' });
+              else if (route.name === 'scholarship-detail')
+                setRoute({ name: 'scholarships' });
+              else if (route.name === 'community-member')
+                setRoute({ name: 'communities' });
+              else if (route.name === 'training-detail')
+                setRoute({ name: 'trainings' });
+              else if (
+                route.name === 'trainings-highfield' ||
+                route.name === 'trainings-lead-auditor-hub'
+              )
+                setRoute({ name: 'trainings' });
+              else if (route.name === 'admin') setRoute({ name: 'profile' });
+              else setRoute({ name: 'home' });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            aria-label="Go Back"
+            title="Go Back"
+            className="fixed bottom-20 left-3.5 md:bottom-6 md:left-6 z-40 px-3.5 py-2.5 rounded-full bg-[#0C182D]/95 hover:bg-[#1673B8] text-white border border-white/25 shadow-[0_8px_24px_rgba(12,24,45,0.35)] backdrop-blur-md flex items-center gap-1.5 text-xs font-extrabold cursor-pointer transition-all"
+          >
+            <ChevronLeft className="w-4 h-4 stroke-[2.8]" />
+            <span>Back</span>
+          </button>
+        )}
 
         {/* MIDDLE SCROLLABLE PAGE CONTENT AREA — FULL SCREEN WITH CENTERED 1440PX WEBSITE CONTAINER */}
         <main className="flex-1 overflow-y-auto overscroll-contain w-full flex flex-col justify-between">
@@ -4991,33 +5212,58 @@ export default function App() {
               );
             })()}
 
-          {/* ==================== 4. SEARCH PAGE (/search) ==================== */}
+          {/* ==================== 4. GLOBAL PORTAL SEARCH PAGE (/search) ==================== */}
           {route.name === 'search' && (
             <div className="space-y-4 px-1">
-              <div className="relative">
-                <Search className="w-4 h-4 text-[#1673B8] absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  autoFocus
-                  value={globalSearchQuery}
-                  onChange={(e) => setGlobalSearchQuery(e.target.value)}
-                  placeholder="Search jobs, scholarships, trainings, specialists..."
-                  className="w-full pl-10 pr-9 py-3.5 text-sm font-medium bg-white border-[1.5px] border-[#BBD6EE] rounded-[20px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#1673B8] shadow-xs"
-                />
-                {globalSearchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setGlobalSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div>
+                    <h1 className="text-base sm:text-lg font-extrabold text-[#1A2138] tracking-tight">
+                      Global Portal Search
+                    </h1>
+                    <p className="text-xs text-slate-600 font-medium">
+                      Search across Food Science Tools, Calculators, Jobs, Scholarships, Trainings &amp; Verified Specialists
+                    </p>
+                  </div>
+                  {!isCurrentUserPaid && !isUserAdmin && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[10.5px] font-bold">
+                      <span>Free Account View (Contact Info &amp; Paid Content Protected)</span>
+                    </span>
+                  )}
+                </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                {(['All', 'Jobs', 'Scholarships', 'Trainings', 'Members'] as const).map(
-                  (t) => (
+                <div className="relative">
+                  <Search className="w-4 h-4 text-[#1673B8] absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    autoFocus
+                    value={globalSearchQuery}
+                    onChange={(e) => setGlobalSearchQuery(e.target.value)}
+                    placeholder="Search tools, E-numbers, jobs, scholarships, trainings, specialists..."
+                    className="w-full pl-10 pr-9 py-3.5 text-sm font-medium bg-[#F8FAFC] border-[1.5px] border-[#BBD6EE] rounded-[20px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#1673B8] focus:bg-white shadow-2xs"
+                  />
+                  {globalSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setGlobalSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  {(
+                    [
+                      'All',
+                      'Tools',
+                      'Jobs',
+                      'Scholarships',
+                      'Trainings',
+                      'Members'
+                    ] as const
+                  ).map((t) => (
                     <button
                       key={t}
                       type="button"
@@ -5025,23 +5271,67 @@ export default function App() {
                       className={`px-4 py-2 rounded-[14px] text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                         searchTab === t
                           ? 'bg-[#1673B8] text-white'
-                          : 'bg-white border border-[#D2DEEA] text-[#1A2138]'
+                          : 'bg-[#F0F6FC] border border-[#D2DEEA] text-[#1A2138] hover:bg-[#E1EEF9]'
                       }`}
                     >
-                      {t}
+                      {t === 'Members' ? 'Specialists' : t}
                     </button>
-                  )
-                )}
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-5">
-                {(searchTab === 'All' || searchTab === 'Jobs') &&
-                  searchResults.jobs.length > 0 && (
+                {/* 1. SPECIALIST TOOLS & CALCULATORS */}
+                {(searchTab === 'All' || searchTab === 'Tools') &&
+                  searchResults.tools.length > 0 && (
                     <div className="space-y-3">
-                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#105E9A] px-1">
-                        Jobs ({searchResults.jobs.length})
+                      <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A] px-1">
+                        Food Science Tools &amp; Calculators ({searchResults.tools.length})
                       </h2>
-                      {searchResults.jobs.map((j) => (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {searchResults.tools.map((tool) => (
+                          <div
+                            key={tool.id}
+                            onClick={() => {
+                              setActiveToolSection(tool.id);
+                              setRoute({
+                                name: 'tools',
+                                initialSection: tool.id
+                              });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="bg-white border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 flex items-center justify-between gap-3 cursor-pointer shadow-2xs transition-all"
+                          >
+                            <div className="space-y-1 min-w-0">
+                              <div className="text-[10.5px] font-extrabold text-[#1673B8] uppercase tracking-wider">
+                                {tool.category}
+                              </div>
+                              <div className="text-sm sm:text-[15px] font-extrabold text-[#1A2138]">
+                                {tool.title}
+                              </div>
+                              <div className="text-xs text-slate-600 line-clamp-2">
+                                {tool.description}
+                              </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-[#1673B8] shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                {/* 2. JOBS */}
+                {(searchTab === 'All' || searchTab === 'Jobs') && (
+                  <div className="space-y-3">
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A] px-1">
+                      Jobs ({searchResults.jobs.length})
+                    </h2>
+                    {searchResults.jobs.length === 0 ? (
+                      <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 text-xs text-slate-500 font-medium">
+                        No matching job postings found.
+                      </div>
+                    ) : (
+                      searchResults.jobs.map((j) => (
                         <JobCard
                           key={j.id}
                           job={j}
@@ -5051,17 +5341,23 @@ export default function App() {
                             setRoute({ name: 'job-detail', jobId: job.id })
                           }
                         />
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
+                )}
 
-                {(searchTab === 'All' || searchTab === 'Scholarships') &&
-                  searchResults.scholarships.length > 0 && (
-                    <div className="space-y-3">
-                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#105E9A] px-1">
-                        Scholarships ({searchResults.scholarships.length})
-                      </h2>
-                      {searchResults.scholarships.map((s) => (
+                {/* 3. SCHOLARSHIPS */}
+                {(searchTab === 'All' || searchTab === 'Scholarships') && (
+                  <div className="space-y-3">
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A] px-1">
+                      Scholarships ({searchResults.scholarships.length})
+                    </h2>
+                    {searchResults.scholarships.length === 0 ? (
+                      <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 text-xs text-slate-500 font-medium">
+                        No matching scholarships found.
+                      </div>
+                    ) : (
+                      searchResults.scholarships.map((s) => (
                         <div
                           key={s.id}
                           onClick={() =>
@@ -5079,21 +5375,38 @@ export default function App() {
                             <div className="text-base font-bold text-[#1A2138]">
                               {s.title}
                             </div>
-                            <div className="text-xs text-gray-500">{s.organization}</div>
+                            <div className="text-xs text-gray-500">
+                              {s.organization}
+                            </div>
                           </div>
                           <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
+                )}
 
-                {(searchTab === 'All' || searchTab === 'Trainings') &&
-                  searchResults.trainings.length > 0 && (
-                    <div className="space-y-3">
-                      <h2 className="text-xs font-bold uppercase tracking-wider text-[#105E9A] px-1">
-                        Trainings ({searchResults.trainings.length})
-                      </h2>
-                      {searchResults.trainings.map((t) => (
+                {/* 4. TRAININGS */}
+                {(searchTab === 'All' || searchTab === 'Trainings') && (
+                  <div className="space-y-3">
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A] px-1">
+                      Trainings &amp; Courses ({searchResults.trainings.length})
+                    </h2>
+                    {searchResults.trainings.length === 0 ? (
+                      <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 flex items-center justify-between gap-3">
+                        <span className="text-xs text-slate-500 font-medium">
+                          Browse international HACCP, ISO 22000 &amp; Food Safety courses in the Trainings Academy.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setRoute({ name: 'trainings' })}
+                          className="px-3 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold shrink-0 cursor-pointer"
+                        >
+                          Open Academy →
+                        </button>
+                      </div>
+                    ) : (
+                      searchResults.trainings.map((t) => (
                         <div
                           key={t.id}
                           onClick={() =>
@@ -5117,35 +5430,40 @@ export default function App() {
                           </div>
                           <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
+                )}
 
+                {/* 5. VERIFIED PAID SPECIALISTS (CONTACT DETAILS STRICTLY HIDDEN FROM FREE USERS) */}
                 {(searchTab === 'All' || searchTab === 'Members') && (
                   <div className="space-y-3">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-[#105E9A] px-1">
-                      Premium Specialists ({searchResults.members.length})
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A] px-1">
+                      Verified Paid Specialists ({searchResults.members.length})
                     </h2>
-                    {searchResults.members.map((m) => (
-                      <MemberCard
-                        key={m.uid}
-                        member={m}
-                        viewerIsPremium={isCurrentUserPaid}
-                        viewerUid={myProfile.uid}
-                        onClick={(mem) => {
-                          if (
-                            !isCurrentUserPaid &&
-                            !isUserAdmin &&
-                            mem.uid !== myProfile.uid
-                          ) {
-                            setShowCommunityPaywall(true);
-                            return;
-                          }
-                          setRoute({ name: 'community-member', uid: mem.uid });
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                      />
-                    ))}
+                    {searchResults.members.length === 0 ? (
+                      <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 text-xs text-slate-500 font-medium">
+                        No matching verified specialists found.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {searchResults.members.map((m) => (
+                          <MemberCard
+                            key={m.uid}
+                            member={m}
+                            viewerIsPremium={isCurrentUserPaid || isUserAdmin}
+                            viewerUid={myProfile.uid}
+                            onClick={(mem) => {
+                              setRoute({
+                                name: 'community-member',
+                                uid: mem.uid
+                              });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -5234,118 +5552,88 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Buy Premium Membership / Subscription Button (Opens Full Payment Form Modal) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setPaySubmitBanner(null);
-                  setPayMethod('Bank Transfer');
-                  setShowPremiumUpgradeModal(true);
-                }}
-                className="w-full py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs sm:text-[13px] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Crown className="w-4 h-4 text-amber-300 shrink-0" />
-                <span>Buy Premium Membership / Subscription</span>
-              </button>
-
-              {!isCurrentUserPaid && !isUserAdmin ? (
-                /* FREE USER VIEW IN COMMUNITIES: Show Buy Premium Membership / Subscription + Application Status */
-                <div className="bg-white border border-[#D2DEEA] rounded-2xl p-5 shadow-2xs text-center space-y-3.5">
-                  <div className="w-13 h-13 rounded-2xl bg-[#F0F6FC] border border-[#1673B8]/30 text-[#1673B8] flex items-center justify-center mx-auto">
-                    <Crown className="w-6 h-6 text-[#1673B8]" />
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#F0F6FC] text-[#1673B8] text-[10.5px] font-extrabold">
-                      <Sparkles className="w-3 h-3 text-[#1673B8]" />
-                      <span>Premium Community Directory</span>
-                    </span>
-                    <h2 className="text-[16px] sm:text-[18px] font-extrabold text-[#1A2138] leading-snug break-words">
-                      Connect with Verified Food Specialists
-                    </h2>
-                    <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
-                      Upgrade to Premium Membership (Only{' '}
-                      <strong>
-                        Rs. {liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month
-                      </strong>{' '}
-                      or{' '}
-                      <strong>
-                        Rs. {liveGateway.yearlyFeeRs.toLocaleString()} / Full Year
-                        with 25% Discount
-                      </strong>
-                      ) to showcase your profile in the Community, view other paid members&apos; details, connect on LinkedIn, and download CVs.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaySubmitBanner(null);
-                        setPayMethod('Bank Transfer');
-                        setShowPremiumUpgradeModal(true);
-                      }}
-                      className="w-full py-3 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs sm:text-[13px] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
-                    >
-                      <Crown className="w-4 h-4 text-amber-300 shrink-0" />
-                      <span>Buy Premium Membership / Subscription</span>
-                    </button>
-
-                    {(myPaymentApplications.length > 0 ||
-                      (myProfile.paymentStatus &&
-                        myProfile.paymentStatus !== 'none')) && (
-                      <button
-                        type="button"
-                        onClick={() => setShowApplicationStatusModal(true)}
-                        className="w-full py-2.5 px-4 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#1673B8] text-[#1673B8] font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        <Clock className="w-4 h-4 text-[#1673B8] shrink-0" />
-                        <span>
-                          View Application Status (
-                          {myProfile.paymentStatus === 'pending'
-                            ? 'Under Review'
-                            : myProfile.paymentStatus === 'rejected'
-                            ? 'Action Needed'
-                            : 'Check Status'}
-                          )
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* PAID USER VIEW IN COMMUNITIES: Show Other Paid Members' Profiles */
-                <>
-                  {/* PREMIUM PROFILES LIST FOR PAID USERS */}
-                  {filteredMembers.length === 0 ? (
-                    <div className="bg-white border border-[#D2DEEA] rounded-2xl p-6 text-center space-y-2 shadow-2xs">
-                      <div className="w-10 h-10 rounded-full bg-[#F0F6FC] text-[#1673B8] flex items-center justify-center mx-auto">
-                        <Search className="w-5 h-5" />
-                      </div>
-                      <h2 className="text-sm font-extrabold text-[#1A2138]">
-                        No Matching Paid Members Found
+              {/* Free User Banner: Explains that Free Users' own profiles are not listed in Communities, and Paid Members' Contact Info (WhatsApp & Email) is hidden until they upgrade */}
+              {!isCurrentUserPaid && !isUserAdmin && (
+                <div className="bg-white border border-[#1673B8]/35 rounded-2xl p-4 shadow-2xs space-y-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#F0F6FC] text-[#1673B8] text-[10.5px] font-extrabold">
+                        <Crown className="w-3 h-3 text-[#1673B8]" />
+                        <span>Free Account Preview Mode</span>
+                      </span>
+                      <h2 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
+                        Your Profile is Hidden • Paid Members&apos; Contact Info is Locked
                       </h2>
-                      <p className="text-xs text-slate-600">
-                        Paid members who activate their Premium Membership will appear here automatically.
+                      <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                        You can view Paid Specialists&apos; profiles below, but their WhatsApp numbers &amp; Emails are hidden for Free users, and Free users&apos; profiles do not appear in the Community. Upgrade to Paid Membership (Rs. {liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month or Rs. {liveGateway.yearlyFeeRs.toLocaleString()} / Year) to publish your profile and unlock direct WhatsApp &amp; Email contact.
                       </p>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {filteredMembers.map((member) => (
-                        <MemberCard
-                          key={member.uid}
-                          member={member}
-                          viewerIsPremium={isCurrentUserPaid || isUserAdmin}
-                          viewerUid={myProfile.uid}
-                          onClick={(m) => {
-                            setRoute({ name: 'community-member', uid: m.uid });
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                        />
-                      ))}
+                    <div className="flex flex-col gap-2 w-full sm:w-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaySubmitBanner(null);
+                          setPayMethod('Bank Transfer');
+                          setShowPremiumUpgradeModal(true);
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      >
+                        <Crown className="w-4 h-4 text-amber-300 shrink-0" />
+                        <span>Buy Premium Membership</span>
+                      </button>
+                      {(myPaymentApplications.length > 0 ||
+                        (myProfile.paymentStatus &&
+                          myProfile.paymentStatus !== 'none')) && (
+                        <button
+                          type="button"
+                          onClick={() => setShowApplicationStatusModal(true)}
+                          className="px-3.5 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#1673B8] text-[#1673B8] font-extrabold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                        >
+                          <Clock className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                          <span>
+                            Application Status (
+                            {myProfile.paymentStatus === 'pending'
+                              ? 'Under Review'
+                              : myProfile.paymentStatus === 'rejected'
+                              ? 'Action Needed'
+                              : 'Check'}
+                            )
+                          </span>
+                        </button>
+                      )}
                     </div>
-                  )}
-                </>
+                  </div>
+                </div>
+              )}
+
+              {/* PAID MEMBERS PROFILES LIST (Visible to both Paid and Free users; Contact info is hidden for Free users inside MemberCard & PublicProfileView; Free users' profiles never appear here) */}
+              {filteredMembers.length === 0 ? (
+                <div className="bg-white border border-[#D2DEEA] rounded-2xl p-6 text-center space-y-2 shadow-2xs">
+                  <div className="w-10 h-10 rounded-full bg-[#F0F6FC] text-[#1673B8] flex items-center justify-center mx-auto">
+                    <Search className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-sm font-extrabold text-[#1A2138]">
+                    No Matching Paid Members Found
+                  </h2>
+                  <p className="text-xs text-slate-600">
+                    Paid members who activate their Premium Membership will appear here automatically.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {filteredMembers.map((member) => (
+                    <MemberCard
+                      key={member.uid}
+                      member={member}
+                      viewerIsPremium={isCurrentUserPaid || isUserAdmin}
+                      viewerUid={myProfile.uid}
+                      onClick={(m) => {
+                        setRoute({ name: 'community-member', uid: m.uid });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -5430,6 +5718,7 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               initialSection={route.initialSection || 'hub'}
+              resetTrigger={toolsResetKey}
               onActiveSectionChange={(sec) => setActiveToolSection(sec)}
             />
           )}
@@ -5722,8 +6011,7 @@ export default function App() {
                         Premium Subscription Requests ({adminAllPaymentRequests.length})
                       </h2>
                       <p className="text-[11px] text-gray-600">
-                        Verify Rs. {liveGateway.monthlyFeeRs.toLocaleString()} / Rs.{' '}
-                        {liveGateway.yearlyFeeRs.toLocaleString()} payment screenshots and approve to activate Premium Membership
+                        Verify applicant details, Transaction / Reference ID, and Payment Screenshot to approve and activate Premium Membership
                       </p>
                     </div>
                     <span className="px-2.5 py-1 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold shrink-0">
@@ -5742,19 +6030,44 @@ export default function App() {
                           className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2.5"
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <div className="text-sm font-extrabold text-[#1A2138]">
-                                {req.userName}
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="text-sm font-extrabold text-[#1A2138] break-words">
+                                {req.userName || 'Applicant'}
                               </div>
-                              <div className="text-[11px] text-gray-600">
-                                {req.userEmail}
-                                {req.userPhone ? ` • ${req.userPhone}` : ''}
+                              <div className="text-[11.5px] font-semibold text-gray-700 break-all">
+                                📧 {req.userEmail || 'No Email'}
                               </div>
-                              <div className="text-xs font-extrabold text-[#1673B8] mt-0.5">
-                                {req.paymentMethod} •{' '}
-                                {req.amount ||
-                                  `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (1 Month)`}{' '}
-                                • TID: {req.transactionId}
+                              {req.userPhone && (
+                                <div className="text-[11.5px] font-bold text-emerald-800">
+                                  📱 WhatsApp / Phone: {req.userPhone}
+                                </div>
+                              )}
+                              {(req.userCurrentRole ||
+                                req.currentRole ||
+                                req.userQualification ||
+                                req.qualification) && (
+                                <div className="text-[11px] font-semibold text-slate-600">
+                                  👤 {req.userCurrentRole || req.currentRole || 'Specialist'}
+                                  {req.userQualification || req.qualification
+                                    ? ` • ${req.userQualification || req.qualification}`
+                                    : ''}
+                                </div>
+                              )}
+                              <div className="mt-1.5 p-2.5 rounded-xl bg-white border border-[#1673B8]/30 space-y-1">
+                                <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-extrabold text-[#1673B8]">
+                                  <span>Method: {req.paymentMethod}</span>
+                                  <span>
+                                    Plan:{' '}
+                                    {req.amount ||
+                                      `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (1 Month)`}
+                                  </span>
+                                </div>
+                                <div className="text-xs font-black text-[#1A2138] bg-[#EBF4FC] px-2.5 py-1 rounded-lg border border-[#1673B8]/25 break-all">
+                                  TRX / Reference ID:{' '}
+                                  <span className="text-[#1673B8] font-mono">
+                                    {req.transactionId || 'Not Provided'}
+                                  </span>
+                                </div>
                               </div>
                               {req.submittedAt && (
                                 <div className="text-[10.5px] text-gray-500 mt-0.5">
@@ -5763,7 +6076,7 @@ export default function App() {
                               )}
                               {req.status === 'verified' && req.premiumExpiresAt && (
                                 <div className="text-[11px] font-extrabold text-[#105E9A] mt-1">
-                                  ✓ 1-Month Subscription Active Until:{' '}
+                                  ✓ Subscription Active Until:{' '}
                                   {new Date(req.premiumExpiresAt).toLocaleDateString('en-PK', {
                                     day: 'numeric',
                                     month: 'short',
@@ -5773,7 +6086,7 @@ export default function App() {
                               )}
                             </div>
                             <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
+                              className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold shrink-0 ${
                                 req.status === 'verified'
                                   ? 'bg-[#EBF4FC] text-[#105E9A]'
                                   : req.status === 'rejected'
@@ -5782,15 +6095,15 @@ export default function App() {
                               }`}
                             >
                               {req.status === 'verified'
-                                ? 'APPROVED (1 MONTH)'
+                                ? 'APPROVED'
                                 : req.status.toUpperCase()}
                             </span>
                           </div>
 
-                          {req.receiptImageUrl && (
-                            <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2 space-y-1.5">
-                              <div className="text-[10.5px] font-bold text-gray-500 flex items-center justify-between px-1">
-                                <span>Uploaded Payment Screenshot</span>
+                          {req.receiptImageUrl ? (
+                            <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2.5 space-y-1.5">
+                              <div className="text-[11px] font-extrabold text-[#1A2138] flex items-center justify-between px-1">
+                                <span>📸 Uploaded Payment Screenshot</span>
                                 <a
                                   href={req.receiptImageUrl}
                                   target="_blank"
@@ -5803,8 +6116,12 @@ export default function App() {
                               <img
                                 src={req.receiptImageUrl}
                                 alt="Payment Receipt"
-                                className="max-h-56 mx-auto object-contain rounded-lg"
+                                className="max-h-56 mx-auto object-contain rounded-lg border border-slate-100"
                               />
+                            </div>
+                          ) : (
+                            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-900">
+                              ⚠️ No payment screenshot attached
                             </div>
                           )}
 
@@ -5816,7 +6133,7 @@ export default function App() {
                               }
                               className="py-2.5 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors"
                             >
-                              ✓ Approve &amp; Activate 1 Month
+                              ✓ Approve &amp; Activate Premium
                             </button>
                             <button
                               type="button"
@@ -6024,14 +6341,8 @@ export default function App() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Dedicated career ecosystem, international training academy, Halal &amp; Codex additive database, and laboratory calculator suite for Food Safety, QA/QC, and Food Science professionals.
+                    The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings.
                   </p>
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-sky-300 text-[10.5px] font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Cloud Synced Website &amp; Mobile App</span>
-                    </span>
-                  </div>
                 </div>
 
                 {/* Col 2: Portal Navigation */}
@@ -6642,16 +6953,63 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Upload Screenshot & Transaction Details */}
+              {/* Upload Screenshot, Applicant Details & Transaction Details */}
               <div className="space-y-3">
                 <label className="block text-xs font-extrabold text-[#1A2138]">
-                  3. Upload Payment Screenshot After Paying Rs.{' '}
+                  3. Enter Your Details, Transaction / Reference ID &amp; Upload Payment Screenshot (Rs.{' '}
                   {selectedPlanDuration === '1-year'
                     ? liveGateway.yearlyFeeRs.toLocaleString()
                     : liveGateway.monthlyFeeRs.toLocaleString()}
+                  )
                 </label>
 
-                <div className="grid grid-cols-2 gap-2.5">
+                {/* Applicant Details Summary & WhatsApp/Phone Input for Admin Verification */}
+                <div className="p-3 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2">
+                  <div className="text-[11px] font-extrabold text-[#1A2138]">
+                    Applicant Details Sent to Admin:
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                        Full Name *
+                      </span>
+                      <input
+                        type="text"
+                        value={myProfile.name || ''}
+                        onChange={(e) =>
+                          setMyProfile({ ...myProfile, name: e.target.value })
+                        }
+                        placeholder="Your Full Name"
+                        className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#D2DEEA] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                        WhatsApp / Phone Number *
+                      </span>
+                      <input
+                        type="text"
+                        value={
+                          myProfile.whatsappNumber ?? myProfile.phone ?? ''
+                        }
+                        onChange={(e) =>
+                          setMyProfile({
+                            ...myProfile,
+                            whatsappNumber: e.target.value,
+                            phone: e.target.value
+                          })
+                        }
+                        placeholder="e.g. +92 300 1234567"
+                        className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#D2DEEA] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-[10.5px] font-semibold text-slate-600">
+                    Email: <strong>{myProfile.email || authUser.email}</strong>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
                     <span className="block text-[10.5px] font-bold text-gray-500 mb-1">
                       Selected Plan &amp; Fee
@@ -6663,15 +7021,16 @@ export default function App() {
                     </div>
                   </div>
                   <div>
-                    <span className="block text-[10.5px] font-bold text-gray-500 mb-1">
-                      Transaction / Ref ID (Optional)
+                    <span className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                      TRX ID / Reference No. (Required *)
                     </span>
                     <input
                       type="text"
+                      required
                       value={payTransactionId}
                       onChange={(e) => setPayTransactionId(e.target.value)}
-                      placeholder="e.g. TID 839201..."
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#BBD6EE] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#1673B8]"
+                      placeholder="Enter TRX / Reference No..."
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border-2 border-[#1673B8] text-xs font-bold text-gray-900 focus:outline-none focus:bg-white"
                     />
                   </div>
                 </div>
@@ -6685,7 +7044,7 @@ export default function App() {
                         <span className="text-xs font-extrabold text-[#1A2138] block truncate">
                           {payReceiptUrl
                             ? 'Payment Screenshot Uploaded ✓'
-                            : 'Upload Payment Screenshot'}
+                            : 'Upload Payment Screenshot (Required *)'}
                         </span>
                         <span className="text-[10.5px] text-gray-500 block">
                           Attach screenshot of your Rs.{' '}

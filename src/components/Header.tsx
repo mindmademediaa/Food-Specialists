@@ -130,9 +130,9 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="shrink-0 z-30 bg-white border-b border-[#D2DEEA] shadow-2xs">
       {/* Main Header Container — Full-Width Edge-to-Edge with Centered 1440px Website Alignment */}
-      <div className="max-w-[1440px] mx-auto px-3.5 sm:px-6 lg:px-10 py-2.5 md:py-3 flex items-center justify-between gap-3">
-        {/* Left: Back Button + Brand Emblem + Brand Name */}
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="max-w-[1440px] mx-auto px-3.5 sm:px-6 lg:px-10 py-2.5 md:py-3 flex items-center justify-between gap-3 lg:gap-4">
+        {/* Left: Back Button + Brand Emblem + Brand Name (shrink-0 & whitespace-nowrap so it NEVER overlaps) */}
+        <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
           {showBack && onBack && (
             <button
               type="button"
@@ -144,44 +144,38 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Brand Logo */}
+          {/* Brand Logo + Food Science Portal Title */}
           <button
             type="button"
             onClick={onHomeClick}
             aria-label="Food Science Portal Home"
             title="Food Science Portal"
-            className="relative w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white border border-[#1673B8]/30 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs cursor-pointer"
+            className="flex items-center gap-2.5 sm:gap-3 shrink-0 cursor-pointer text-left group"
           >
-            <img
-              src={FS_PORTAL_LOGO_DATA_URI}
-              alt="Food Science Portal"
-              className="w-full h-full object-contain select-none"
-            />
-          </button>
+            <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white border border-[#1673B8]/35 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs group-hover:border-[#1673B8] transition-colors">
+              <img
+                src={FS_PORTAL_LOGO_DATA_URI}
+                alt="Food Science Portal"
+                className="w-full h-full object-contain select-none"
+              />
+            </div>
 
-          {/* Food Science Portal Brand Title */}
-          <div className="flex flex-col">
-            <button
-              type="button"
-              onClick={onHomeClick}
-              className="text-[15.5px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight leading-none flex items-baseline gap-1 shrink-0 cursor-pointer text-left"
-            >
-              <span className="text-[#0C182D]">Food Science</span>
-              <span className="text-[#1673B8] border-b-[2.5px] border-[#1673B8] pb-0.5 leading-none">
+            <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0 leading-none">
+              <span className="text-[16px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight text-[#0C182D]">
+                Food Science
+              </span>
+              <span className="text-[16px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight text-[#1673B8] underline decoration-[#1673B8] decoration-2 underline-offset-4">
                 Portal
               </span>
-            </button>
-            <span className="hidden xl:block text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
-              Global Food Safety, QA/QC &amp; R&amp;D Network
-            </span>
-          </div>
+            </div>
+          </button>
         </div>
 
-        {/* Center: Desktop Horizontal Website Navigation (Visible on lg+ screens) */}
+        {/* Center: Desktop Horizontal Website Navigation (Visible inline on xl+ screens; md–lg uses full-width row below so logo & title never overlap) */}
         {onNavigateWebsiteSection && (
           <nav
             aria-label="Website Main Navigation"
-            className="hidden lg:flex items-center gap-1 bg-[#F4F8FD] border border-[#D2DEEA] rounded-2xl p-1"
+            className="hidden xl:flex items-center gap-1 bg-[#F4F8FD] border border-[#D2DEEA] rounded-2xl p-1 shrink-0"
           >
             {desktopNavItems.map((item) => {
               const Icon = item.icon;
@@ -213,16 +207,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions: Desktop Quick Search Pill, Install App Button, Admin, Bell, User Avatar, 3-Dots Menu */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Desktop Inline Quick Search Button (Shown on md+ when search bar row is hidden or for quick access) */}
+          {/* Desktop Inline Quick Search Button */}
           <button
             type="button"
             onClick={onSearchClick}
-            title="Search Portal"
-            className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F4F8FD] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-slate-600 hover:text-[#1673B8] text-xs font-bold transition-colors cursor-pointer"
+            title="Search Portal (Jobs, Scholarships, Tools, Trainings & Specialists)"
+            className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F4F8FD] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-slate-600 hover:text-[#1673B8] text-xs font-bold transition-colors cursor-pointer shrink-0 whitespace-nowrap"
           >
-            <Search className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.3]" />
-            <span className="hidden xl:inline">Search jobs, grants, tools...</span>
-            <span className="xl:hidden">Search</span>
+            <Search className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.3] shrink-0" />
+            <span className="hidden 2xl:inline">Search jobs, grants, tools...</span>
+            <span className="2xl:hidden">Search</span>
           </button>
 
           {/* Install Mobile App Button (Shown on Website when not already running as installed standalone app) */}
@@ -545,9 +539,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Medium Tablet Navigation Bar (Visible on md screens where lg top bar is compact) */}
+      {/* Medium Tablet & Laptop Navigation Bar (Visible on md–lg screens where xl top bar is compact) */}
       {onNavigateWebsiteSection && (
-        <div className="hidden md:flex lg:hidden items-center justify-between gap-1 px-6 py-1.5 bg-[#F4F8FD] border-t border-[#D2DEEA] overflow-x-auto">
+        <div className="hidden md:flex xl:hidden items-center justify-center gap-1.5 px-6 py-2 bg-[#F4F8FD] border-t border-[#D2DEEA] overflow-x-auto">
           {desktopNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeWebsiteNav === item.id;

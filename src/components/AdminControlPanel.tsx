@@ -1970,19 +1970,43 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-extrabold text-[#1A2138]">
-                            {req.userName}
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="text-sm font-extrabold text-[#1A2138] break-words">
+                            {req.userName || 'Applicant'}
                           </div>
-                          <div className="text-xs text-[#4A5568] font-medium">
-                            {req.userEmail}
-                            {req.userPhone ? ` • ${req.userPhone}` : ''}
+                          <div className="text-xs text-[#4A5568] font-semibold break-all">
+                            📧 {req.userEmail || 'No email'}
                           </div>
-                          <div className="text-xs font-extrabold text-[#1673B8] mt-1">
-                            {req.paymentMethod} •{' '}
-                            {req.amount || 'Rs. 100 (1 Month)'} • TID:{' '}
-                            {req.transactionId}
+                          {req.userPhone && (
+                            <div className="text-xs text-emerald-800 font-bold">
+                              📱 WhatsApp / Phone: {req.userPhone}
+                            </div>
+                          )}
+                          {(req.userCurrentRole || req.userQualification) && (
+                            <div className="text-[11px] text-slate-600 font-semibold">
+                              👤 {req.userCurrentRole || 'Specialist'}
+                              {req.userQualification
+                                ? ` • ${req.userQualification}`
+                                : ''}
+                            </div>
+                          )}
+
+                          {/* Prominent Transaction ID / Reference No. & Plan Box */}
+                          <div className="mt-2 p-2.5 rounded-xl bg-white border border-[#1673B8]/30 space-y-1">
+                            <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-extrabold text-[#1673B8]">
+                              <span>Method: {req.paymentMethod}</span>
+                              <span>
+                                Plan: {req.amount || 'Rs. 100 (1 Month)'}
+                              </span>
+                            </div>
+                            <div className="text-xs font-black text-[#1A2138] bg-[#EBF4FC] px-2.5 py-1 rounded-lg border border-[#1673B8]/25 break-all">
+                              TRX / Reference ID:{' '}
+                              <span className="text-[#1673B8] font-mono">
+                                {req.transactionId || 'Not Provided'}
+                              </span>
+                            </div>
                           </div>
+
                           {(req.certificateCourseTitle ||
                             req.subscriptionPlan === 'certificate_unlock') && (
                             <div className="mt-1.5 px-2.5 py-1 rounded-lg bg-amber-100 border border-amber-300 text-[11px] font-extrabold text-amber-950">
@@ -2001,7 +2025,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
                               req.status === 'verified'
@@ -2026,24 +2050,28 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         </div>
                       </div>
 
-                      {req.receiptImageUrl && (
-                        <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2 space-y-1.5">
-                          <div className="text-[10.5px] font-bold text-gray-500 flex items-center justify-between px-1">
-                            <span>Payment Screenshot</span>
+                      {req.receiptImageUrl ? (
+                        <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2.5 space-y-1.5">
+                          <div className="text-[11px] font-extrabold text-[#1A2138] flex items-center justify-between px-1">
+                            <span>📸 Payment Screenshot / Slip</span>
                             <a
                               href={req.receiptImageUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-[#1673B8] underline font-extrabold"
                             >
-                              Open Full Slip ↗
+                              Open Full Screenshot ↗
                             </a>
                           </div>
                           <img
                             src={req.receiptImageUrl}
-                            alt="Receipt"
-                            className="max-h-44 mx-auto object-contain rounded-lg"
+                            alt="Payment Screenshot"
+                            className="max-h-52 mx-auto object-contain rounded-lg border border-slate-100"
                           />
+                        </div>
+                      ) : (
+                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-900">
+                          ⚠️ No payment screenshot attached
                         </div>
                       )}
 
