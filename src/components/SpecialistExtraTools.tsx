@@ -27,6 +27,7 @@ import {
   HubUser,
   LabFormulaSavedRecord,
   PearsonBatchSavedRecord,
+  PearsonCalculatorMode,
   PearsonCustomProductItem,
   UserToolsData
 } from '../types/hub';
@@ -1699,58 +1700,33 @@ interface PearsonSquareBatchToolProps {
 
 const INDUSTRY_CATEGORIES: {
   industry: string;
-  defaultMode: 'beverage' | 'dairy' | 'classic';
-  sampleProducts: string[];
+  defaultMode: PearsonCalculatorMode;
+  defaultProduct: string;
 }[] = [
   {
     industry: 'Juice, Nectar & Beverage Industry',
     defaultMode: 'beverage',
-    sampleProducts: [
-      'Mango Fruit Drink (13°Brix)',
-      'Orange Nectar (12.5°Brix)',
-      'Apple Juice Drink (11.5°Brix)',
-      'Carbonated Soft Drink (CSD Syrup)',
-      'Red Pomegranate / Guava Nectar',
-      'Lemonade / Citrus Electrolyte Drink',
-      'Concentrated Flavored Squash (45°Brix)'
-    ]
+    defaultProduct: 'Mango Fruit Drink'
   },
   {
     industry: 'Dairy, Milk & Ice Cream Industry',
     defaultMode: 'dairy',
-    sampleProducts: [
-      'Pasteurized Standardized Milk (3.5% Fat, 8.5% SNF)',
-      'UHT Full Cream Milk (3.5% Fat, 8.9% SNF)',
-      'Toned / Low Fat Milk (1.5% Fat, 9.0% SNF)',
-      'Set Yogurt / Dahi Standardized Milk Base',
-      'Ice Cream Mix Standardization Batch',
-      'Flavored Milk Drink Base',
-      'Cheddar / Mozzarella Cheese Vat Milk'
-    ]
+    defaultProduct: 'Pasteurized Standardized Milk'
   },
   {
-    industry: 'Sauces, Ketchup, Jam & Condiments Industry',
-    defaultMode: 'beverage',
-    sampleProducts: [
-      'Tomato Ketchup Batch (28°Brix, 1.2% Acid)',
-      'Chili Garlic Sauce Batch',
-      'Mixed Fruit Jam / Jelly Batch (68°Brix)',
-      'Apple Cider / Synthetic Vinegar Dilution',
-      'Mayonnaise / Salad Dressing Emulsion',
-      'Tamarind / Imli Chutney Sauce'
-    ]
+    industry: 'Sauces, Ketchup, Mayonnaise & Condiments Industry',
+    defaultMode: 'sauces_mayo',
+    defaultProduct: 'Tomato Ketchup Batch'
   },
   {
-    industry: 'Bakery, Confectionery, Oil & General Food Processing',
+    industry: 'Baking, Biscuits & Confectionery Industry',
+    defaultMode: 'baking_biscuits',
+    defaultProduct: 'Sweet Biscuit Dough Batch'
+  },
+  {
+    industry: 'Edible Oil, Meat & General Food Processing (Pearson)',
     defaultMode: 'classic',
-    sampleProducts: [
-      'Invert Sugar Syrup Blending (65°Bx)',
-      'Cocoa / Chocolate Liquor Fat Blending',
-      'High-Protein Flour Gluten Standardization',
-      'Edible Vegetable Oil Blend',
-      'Brine Solution Salt (%) Standardization',
-      'Meat / Poultry Fat-to-Lean Trim Blending'
-    ]
+    defaultProduct: 'Standardized Blended Batch'
   }
 ];
 
@@ -1767,7 +1743,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   );
 
   const [industryMode, setIndustryMode] = useState<
-    'beverage' | 'dairy' | 'classic' | 'directory'
+    PearsonCalculatorMode | 'directory'
   >('beverage');
   const [statusToast, setStatusToast] = useState<string | null>(null);
 
@@ -1789,14 +1765,11 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
     [toolsData?.pearsonBatchData?.savedBatchRecords]
   );
 
-  // Paid Member Industry & Product Selection State
+  // Paid Member Industry & Product Selection State (No Batch/Lot No, No Quick-Select Chips)
   const [selectedIndustry, setSelectedIndustry] = useState<string>(
     INDUSTRY_CATEGORIES[0].industry
   );
-  const [productName, setProductName] = useState<string>(
-    'Mango Fruit Drink (13°Brix)'
-  );
-  const [batchLotCode, setBatchLotCode] = useState<string>('');
+  const [productName, setProductName] = useState<string>('Mango Fruit Drink');
   const [batchNotes, setBatchNotes] = useState<string>('');
 
   // Add Custom Product to Reusable Library State
@@ -1805,29 +1778,17 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   const [newCustomProductIndustry, setNewCustomProductIndustry] =
     useState<string>(INDUSTRY_CATEGORIES[0].industry);
 
-  // Product suggestions for the active industry + custom saved products
-  const availableProductSuggestions = useMemo(() => {
-    const matchedInd = INDUSTRY_CATEGORIES.find(
-      (c) => c.industry === selectedIndustry
-    );
-    const baseList = matchedInd ? matchedInd.sampleProducts : [];
-    const customForInd = customProducts
-      .filter(
-        (cp) =>
-          cp.industryCategory === selectedIndustry ||
-          cp.calculatorMode === industryMode
-      )
-      .map((cp) => cp.productName);
-    return Array.from(new Set([...customForInd, ...baseList]));
-  }, [selectedIndustry, customProducts, industryMode]);
-
-  // MODE 1: BEVERAGE / JUICE / SYRUP BATCH CORRECTION (Current Out-of-Spec Batch -> Exact Water, Sugar & Acid to Add)
+  // =========================================================================
+  // MODE 1: JUICE & BEVERAGE BATCH CORRECTOR (Batch Size, Brix, Acidity & pH)
+  // =========================================================================
   const [bevBatchKg, setBevBatchKg] = useState<string>('500');
   const [bevCurrentBrix, setBevCurrentBrix] = useState<string>('10.2');
   const [bevTargetBrix, setBevTargetBrix] = useState<string>('13.0');
   const [bevCurrentAcid, setBevCurrentAcid] = useState<string>('0.18');
   const [bevTargetAcid, setBevTargetAcid] = useState<string>('0.28');
-  const [bevSugarSourceBrix, setBevSugarSourceBrix] = useState<string>('100'); // 100% crystalline sugar or 65% syrup
+  const [bevCurrentPh, setBevCurrentPh] = useState<string>('3.85');
+  const [bevTargetPh, setBevTargetPh] = useState<string>('3.50');
+  const [bevSugarSourceBrix, setBevSugarSourceBrix] = useState<string>('100');
 
   const beverageCorrection = useMemo(() => {
     const M0 = Math.max(1, Number(bevBatchKg) || 500);
@@ -1835,9 +1796,10 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
     const Bt = Math.max(0.1, Number(bevTargetBrix) || 13);
     const A0 = Math.max(0, Number(bevCurrentAcid) || 0);
     const At = Math.max(0.01, Number(bevTargetAcid) || 0.25);
+    const pH0 = Math.max(1, Number(bevCurrentPh) || 3.85);
+    const pHt = Math.max(1, Number(bevTargetPh) || 3.5);
     const Bs = Math.max(Bt + 1, Number(bevSugarSourceBrix) || 100);
 
-    // Current solids (kg) and current acid (kg) in batch M0
     const currentSolidsKg = M0 * (B0 / 100);
     const currentAcidKg = M0 * (A0 / 100);
 
@@ -1886,9 +1848,18 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         ? `LOW BY ${(At - A0).toFixed(3)}%`
         : `HIGH BY ${(A0 - At).toFixed(3)}% (Dilution Required)`;
 
+    const phDiff = pH0 - pHt;
+    const phStatus =
+      Math.abs(phDiff) <= 0.05
+        ? `ON TARGET (pH ${pH0.toFixed(2)})`
+        : phDiff > 0
+        ? `HIGH BY +${phDiff.toFixed(2)} pH (Citric Acid Addition Lowers pH to ~${pHt.toFixed(2)})`
+        : `LOW BY ${phDiff.toFixed(2)} pH (Dilution / Sodium Citrate Buffer Needed)`;
+
     return {
       brixStatus,
       acidStatus,
+      phStatus,
       currentRatio: A0 > 0 ? (B0 / A0).toFixed(1) : '—',
       targetRatio: At > 0 ? (Bt / At).toFixed(1) : '—',
       addSugarKg: Number(addSugarKg.toFixed(3)),
@@ -1906,10 +1877,14 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
     bevTargetBrix,
     bevCurrentAcid,
     bevTargetAcid,
+    bevCurrentPh,
+    bevTargetPh,
     bevSugarSourceBrix
   ]);
 
+  // =========================================================================
   // MODE 2: DAIRY MILK STANDARDIZATION (Current Milk Batch -> Target Fat % & SNF %)
+  // =========================================================================
   const [dairyBatchKg, setDairyBatchKg] = useState<string>('1000');
   const [dairyCurrentFat, setDairyCurrentFat] = useState<string>('4.8');
   const [dairyTargetFat, setDairyTargetFat] = useState<string>('3.5');
@@ -1928,14 +1903,13 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
     const Fskim = Math.max(0, Number(skimMilkFat) || 0.1);
     const Sskim = Math.max(1, Number(skimMilkSnf) || 8.9);
     const Fcream = Math.max(Ft + 5, Number(creamFat) || 40);
-    const Scream = (100 - Fcream) * 0.09; // SNF in cream ~3.5 - 5.4%
+    const Scream = (100 - Fcream) * 0.09;
 
     let addSkimKg = 0;
     let addCreamKg = 0;
     let addSmpKg = 0;
     let addWaterKg = 0;
 
-    // Step 1: Adjust Fat using Skim Milk (if F0 > Ft) or Cream (if F0 < Ft)
     if (F0 > Ft && Ft > Fskim) {
       addSkimKg = M0 * ((F0 - Ft) / (Ft - Fskim));
     } else if (F0 < Ft && Fcream > Ft) {
@@ -1949,13 +1923,10 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       addCreamKg * (Scream / 100);
     const currentSnfPct = (currentSnfMass / intermediateMass) * 100;
 
-    // Step 2: If SNF is still below target St, calculate Skim Milk Powder (SMP, 96% SNF) to add
     if (currentSnfPct < St) {
-      addSmpKg =
-        (intermediateMass * (St - currentSnfPct)) / (96 - St);
+      addSmpKg = (intermediateMass * (St - currentSnfPct)) / (96 - St);
     } else if (currentSnfPct > St + 0.15 && F0 > Ft) {
-      addWaterKg =
-        (intermediateMass * (currentSnfPct - St)) / St;
+      addWaterKg = (intermediateMass * (currentSnfPct - St)) / St;
     }
 
     const finalMass = intermediateMass + addSmpKg + addWaterKg;
@@ -1978,7 +1949,180 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
     creamFat
   ]);
 
-  // MODE 3: CLASSIC 2-INGREDIENT PEARSON SQUARE
+  // =========================================================================
+  // MODE 3: SAUCES, KETCHUP & MAYONNAISE STANDARDIZER
+  //         (TSS/Brix or Oil Phase %, Acidity %, Salt NaCl %, pH & Vinegar)
+  // =========================================================================
+  const [sauceSubType, setSauceSubType] = useState<
+    'ketchup_sauce' | 'mayo_emulsion'
+  >('ketchup_sauce');
+  const [sauceBatchKg, setSauceBatchKg] = useState<string>('500');
+  const [sauceCurrentTssOrOil, setSauceCurrentTssOrOil] =
+    useState<string>('25.5');
+  const [sauceTargetTssOrOil, setSauceTargetTssOrOil] =
+    useState<string>('29.0');
+  const [sauceCurrentAcid, setSauceCurrentAcid] = useState<string>('0.95');
+  const [sauceTargetAcid, setSauceTargetAcid] = useState<string>('1.25');
+  const [sauceCurrentSalt, setSauceCurrentSalt] = useState<string>('1.70');
+  const [sauceTargetSalt, setSauceTargetSalt] = useState<string>('2.10');
+  const [sauceCurrentPh, setSauceCurrentPh] = useState<string>('4.12');
+  const [sauceTargetPh, setSauceTargetPh] = useState<string>('3.75');
+  const [sauceVinegarStrength, setSauceVinegarStrength] =
+    useState<string>('10'); // 10% distilled vinegar or 100% glacial/citric
+
+  const sauceMayoCorrection = useMemo(() => {
+    const M0 = Math.max(1, Number(sauceBatchKg) || 500);
+    const T0 = Math.max(0, Number(sauceCurrentTssOrOil) || 0);
+    const Tt = Math.max(0.5, Number(sauceTargetTssOrOil) || 28);
+    const A0 = Math.max(0, Number(sauceCurrentAcid) || 0);
+    const At = Math.max(0.05, Number(sauceTargetAcid) || 1.2);
+    const S0 = Math.max(0, Number(sauceCurrentSalt) || 0);
+    const St = Math.max(0.05, Number(sauceTargetSalt) || 2.0);
+    const pH0 = Math.max(1, Number(sauceCurrentPh) || 4.1);
+    const pHt = Math.max(1, Number(sauceTargetPh) || 3.8);
+    const vinPct = Math.max(2, Number(sauceVinegarStrength) || 10);
+
+    const curSolidsOrOilKg = M0 * (T0 / 100);
+    const curAcidKg = M0 * (A0 / 100);
+    const curSaltKg = M0 * (S0 / 100);
+
+    // Minimum final mass if any parameter is over-spec and requires dilution
+    const minMassT = Tt > 0 ? curSolidsOrOilKg / (Tt / 100) : M0;
+    const minMassA = At > 0 ? curAcidKg / (At / 100) : M0;
+    const minMassS = St > 0 ? curSaltKg / (St / 100) : M0;
+
+    // Estimate final batch mass Mf accounting for Vinegar water content
+    const extraAcidNeededBase = Math.max(0, M0 * (At / 100) - curAcidKg);
+    const vinegarEstKg = extraAcidNeededBase / (vinPct / 100);
+    const solidsEstKg = Math.max(0, M0 * (Tt / 100) - curSolidsOrOilKg);
+    const saltEstKg = Math.max(0, M0 * (St / 100) - curSaltKg);
+
+    const Mf = Math.max(
+      M0 + vinegarEstKg + solidsEstKg + saltEstKg,
+      minMassT,
+      minMassA,
+      minMassS
+    );
+
+    const addPureAcidKg = Math.max(0, Mf * (At / 100) - curAcidKg);
+    const addVinegarKg = addPureAcidKg / (vinPct / 100);
+    const addSaltKg = Math.max(0, Mf * (St / 100) - curSaltKg);
+    const addSolidsOrOilKg = Math.max(
+      0,
+      Mf * (Tt / 100) - curSolidsOrOilKg
+    );
+    const addWaterKg = Math.max(
+      0,
+      Mf - M0 - addVinegarKg - addSaltKg - addSolidsOrOilKg
+    );
+    const finalBatchKg =
+      M0 + addSolidsOrOilKg + addVinegarKg + addSaltKg + addWaterKg;
+
+    const phDiff = pH0 - pHt;
+    const phStatus =
+      Math.abs(phDiff) <= 0.05
+        ? `SAFE ON TARGET (pH ${pH0.toFixed(2)})`
+        : phDiff > 0
+        ? `HIGH BY +${phDiff.toFixed(2)} pH (Vinegar/Acid Addition Drops pH to ${pHt.toFixed(2)})`
+        : `LOW BY ${phDiff.toFixed(2)} pH (High Acidity / Dilute slightly)`;
+
+    return {
+      addSolidsOrOilKg: Number(addSolidsOrOilKg.toFixed(2)),
+      addVinegarKg: Number(addVinegarKg.toFixed(2)),
+      addSaltKg: Number(addSaltKg.toFixed(3)),
+      addSaltGrams: Math.round(addSaltKg * 1000),
+      addWaterKg: Number(addWaterKg.toFixed(2)),
+      phStatus,
+      finalBatchKg: Number(finalBatchKg.toFixed(2))
+    };
+  }, [
+    sauceBatchKg,
+    sauceCurrentTssOrOil,
+    sauceTargetTssOrOil,
+    sauceCurrentAcid,
+    sauceTargetAcid,
+    sauceCurrentSalt,
+    sauceTargetSalt,
+    sauceCurrentPh,
+    sauceTargetPh,
+    sauceVinegarStrength
+  ]);
+
+  // =========================================================================
+  // MODE 4: BAKING, BISCUITS & DOUGH STANDARDIZER
+  //         (Flour/Dough Moisture %, Protein/Gluten %, Shortening Fat % & Sugar %)
+  // =========================================================================
+  const [bakingBatchKg, setBakingBatchKg] = useState<string>('500');
+  const [bakingCurrentMoisture, setBakingCurrentMoisture] =
+    useState<string>('13.2');
+  const [bakingTargetMoisture, setBakingTargetMoisture] =
+    useState<string>('18.5');
+  const [bakingCurrentProtein, setBakingCurrentProtein] =
+    useState<string>('9.2');
+  const [bakingTargetProtein, setBakingTargetProtein] =
+    useState<string>('10.8');
+  const [bakingCurrentFat, setBakingCurrentFat] = useState<string>('15.5');
+  const [bakingTargetFat, setBakingTargetFat] = useState<string>('18.0');
+  const [bakingCurrentSugar, setBakingCurrentSugar] = useState<string>('20.0');
+  const [bakingTargetSugar, setBakingTargetSugar] = useState<string>('22.5');
+  const [bakingGlutenSourcePct, setBakingGlutenSourcePct] =
+    useState<string>('75'); // Vital Wheat Gluten (75% protein)
+
+  const bakingCorrection = useMemo(() => {
+    const M0 = Math.max(1, Number(bakingBatchKg) || 500);
+    const W0 = Math.max(0, Number(bakingCurrentMoisture) || 13);
+    const Wt = Math.max(1, Number(bakingTargetMoisture) || 18);
+    const P0 = Math.max(0, Number(bakingCurrentProtein) || 9.2);
+    const Pt = Math.max(1, Number(bakingTargetProtein) || 10.5);
+    const F0 = Math.max(0, Number(bakingCurrentFat) || 15);
+    const Ft = Math.max(0, Number(bakingTargetFat) || 18);
+    const Sug0 = Math.max(0, Number(bakingCurrentSugar) || 20);
+    const SugT = Math.max(0, Number(bakingTargetSugar) || 22);
+    const Gsrc = Math.max(Pt + 5, Number(bakingGlutenSourcePct) || 75);
+
+    // 1. Vital Wheat Gluten needed via Pearson Square on flour mass M0:
+    const addGlutenKg =
+      Pt > P0 ? M0 * ((Pt - P0) / (Gsrc - Pt)) : 0;
+
+    // 2. Water needed to bring moisture from W0% to Wt%:
+    const addWaterLiters =
+      Wt > W0 && Wt < 95 ? M0 * ((Wt - W0) / (100 - Wt)) : 0;
+
+    // 3. Shortening / Bakery Fat needed to raise Fat % from F0% to Ft%:
+    const addShorteningFatKg =
+      Ft > F0 && Ft < 95 ? M0 * ((Ft - F0) / (100 - Ft)) : 0;
+
+    // 4. Sugar / Icing Sugar needed to raise Sugar % from Sug0% to SugT%:
+    const addSugarKg =
+      SugT > Sug0 && SugT < 95 ? M0 * ((SugT - Sug0) / (100 - SugT)) : 0;
+
+    const finalDoughKg =
+      M0 + addWaterLiters + addGlutenKg + addShorteningFatKg + addSugarKg;
+
+    return {
+      addWaterLiters: Number(addWaterLiters.toFixed(2)),
+      addGlutenKg: Number(addGlutenKg.toFixed(2)),
+      addGlutenGrams: Math.round(addGlutenKg * 1000),
+      addShorteningFatKg: Number(addShorteningFatKg.toFixed(2)),
+      addSugarKg: Number(addSugarKg.toFixed(2)),
+      finalDoughKg: Number(finalDoughKg.toFixed(2))
+    };
+  }, [
+    bakingBatchKg,
+    bakingCurrentMoisture,
+    bakingTargetMoisture,
+    bakingCurrentProtein,
+    bakingTargetProtein,
+    bakingCurrentFat,
+    bakingTargetFat,
+    bakingCurrentSugar,
+    bakingTargetSugar,
+    bakingGlutenSourcePct
+  ]);
+
+  // =========================================================================
+  // MODE 5: CLASSIC 2-INGREDIENT PEARSON SQUARE
+  // =========================================================================
   const [psIngredientAName, setPsIngredientAName] = useState<string>(
     'High Concentration Stream (Ingredient A)'
   );
@@ -2018,7 +2162,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   // Directory Search & Filter State
   const [dirSearchQuery, setDirSearchQuery] = useState<string>('');
   const [dirModeFilter, setDirModeFilter] = useState<
-    'all' | 'beverage' | 'dairy' | 'classic'
+    'all' | PearsonCalculatorMode
   >('all');
   const [dirPeriodFilter, setDirPeriodFilter] = useState<
     'all' | 'today' | 'week' | 'month'
@@ -2045,7 +2189,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
           rec.recordCode,
           rec.productName,
           rec.industryCategory,
-          rec.batchLotCode || '',
           rec.notes || '',
           rec.savedDateFormatted
         ]
@@ -2085,7 +2228,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       showToast('Please enter a Product Name to add to your list.');
       return;
     }
-    const activeCalcMode: 'beverage' | 'dairy' | 'classic' =
+    const activeCalcMode: PearsonCalculatorMode =
       industryMode === 'directory' ? 'beverage' : industryMode;
     const newItem: PearsonCustomProductItem = {
       id: `prod-${Date.now()}`,
@@ -2111,7 +2254,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
 
   // Build a PearsonBatchSavedRecord from the active calculator mode
   const buildCurrentBatchRecord = (
-    mode: 'beverage' | 'dairy' | 'classic'
+    mode: PearsonCalculatorMode
   ): PearsonBatchSavedRecord => {
     const now = new Date();
     const formattedDate = now.toLocaleString('en-GB', {
@@ -2126,6 +2269,10 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         ? 'BATCH-BEV'
         : mode === 'dairy'
         ? 'BATCH-DRY'
+        : mode === 'sauces_mayo'
+        ? 'BATCH-SAU'
+        : mode === 'baking_biscuits'
+        ? 'BATCH-BAK'
         : 'BATCH-PRS';
     const recordCode = `${prefix}-${String(
       savedBatchRecords.length + 101
@@ -2136,6 +2283,10 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         ? 'Beverage / Juice Batch'
         : mode === 'dairy'
         ? 'Standardized Milk Batch'
+        : mode === 'sauces_mayo'
+        ? 'Ketchup / Sauce / Mayonnaise Batch'
+        : mode === 'baking_biscuits'
+        ? 'Biscuit / Bakery Dough Batch'
         : 'Pearson Square Standardized Batch');
 
     if (mode === 'beverage') {
@@ -2145,7 +2296,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         calculatorMode: 'beverage',
         industryCategory: selectedIndustry,
         productName: cleanProd,
-        batchLotCode: batchLotCode.trim() || undefined,
         notes: batchNotes.trim() || undefined,
         savedDateFormatted: formattedDate,
         savedAtIso: now.toISOString(),
@@ -2154,9 +2304,12 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         bevTargetBrix: Number(bevTargetBrix) || 0,
         bevCurrentAcid: Number(bevCurrentAcid) || 0,
         bevTargetAcid: Number(bevTargetAcid) || 0,
+        bevCurrentPh: Number(bevCurrentPh) || 3.85,
+        bevTargetPh: Number(bevTargetPh) || 3.5,
         bevSugarSourceBrix: Number(bevSugarSourceBrix) || 100,
         bevBrixStatus: beverageCorrection.brixStatus,
         bevAcidStatus: beverageCorrection.acidStatus,
+        bevPhStatus: beverageCorrection.phStatus,
         bevCurrentRatio: beverageCorrection.currentRatio,
         bevTargetRatio: beverageCorrection.targetRatio,
         bevAddSugarKg: beverageCorrection.addSugarKg,
@@ -2177,7 +2330,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         calculatorMode: 'dairy',
         industryCategory: selectedIndustry,
         productName: cleanProd,
-        batchLotCode: batchLotCode.trim() || undefined,
         notes: batchNotes.trim() || undefined,
         savedDateFormatted: formattedDate,
         savedAtIso: now.toISOString(),
@@ -2197,13 +2349,70 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       };
     }
 
+    if (mode === 'sauces_mayo') {
+      return {
+        id: `pbatch-${Date.now()}`,
+        recordCode,
+        calculatorMode: 'sauces_mayo',
+        industryCategory: selectedIndustry,
+        productName: cleanProd,
+        notes: batchNotes.trim() || undefined,
+        savedDateFormatted: formattedDate,
+        savedAtIso: now.toISOString(),
+        sauceSubType,
+        sauceBatchKg: Number(sauceBatchKg) || 500,
+        sauceCurrentTssOrOil: Number(sauceCurrentTssOrOil) || 0,
+        sauceTargetTssOrOil: Number(sauceTargetTssOrOil) || 0,
+        sauceCurrentAcid: Number(sauceCurrentAcid) || 0,
+        sauceTargetAcid: Number(sauceTargetAcid) || 0,
+        sauceCurrentSalt: Number(sauceCurrentSalt) || 0,
+        sauceTargetSalt: Number(sauceTargetSalt) || 0,
+        sauceCurrentPh: Number(sauceCurrentPh) || 4.1,
+        sauceTargetPh: Number(sauceTargetPh) || 3.75,
+        sauceVinegarStrength: Number(sauceVinegarStrength) || 10,
+        sauceAddSolidsOrOilKg: sauceMayoCorrection.addSolidsOrOilKg,
+        sauceAddVinegarKg: sauceMayoCorrection.addVinegarKg,
+        sauceAddSaltKg: sauceMayoCorrection.addSaltKg,
+        sauceAddWaterKg: sauceMayoCorrection.addWaterKg,
+        saucePhStatus: sauceMayoCorrection.phStatus,
+        sauceFinalBatchKg: sauceMayoCorrection.finalBatchKg
+      };
+    }
+
+    if (mode === 'baking_biscuits') {
+      return {
+        id: `pbatch-${Date.now()}`,
+        recordCode,
+        calculatorMode: 'baking_biscuits',
+        industryCategory: selectedIndustry,
+        productName: cleanProd,
+        notes: batchNotes.trim() || undefined,
+        savedDateFormatted: formattedDate,
+        savedAtIso: now.toISOString(),
+        bakingBatchKg: Number(bakingBatchKg) || 500,
+        bakingCurrentMoisture: Number(bakingCurrentMoisture) || 13,
+        bakingTargetMoisture: Number(bakingTargetMoisture) || 18,
+        bakingCurrentProtein: Number(bakingCurrentProtein) || 9.2,
+        bakingTargetProtein: Number(bakingTargetProtein) || 10.8,
+        bakingCurrentFat: Number(bakingCurrentFat) || 15.5,
+        bakingTargetFat: Number(bakingTargetFat) || 18,
+        bakingCurrentSugar: Number(bakingCurrentSugar) || 20,
+        bakingTargetSugar: Number(bakingTargetSugar) || 22.5,
+        bakingGlutenSourcePct: Number(bakingGlutenSourcePct) || 75,
+        bakingAddWaterLiters: bakingCorrection.addWaterLiters,
+        bakingAddGlutenKg: bakingCorrection.addGlutenKg,
+        bakingAddShorteningFatKg: bakingCorrection.addShorteningFatKg,
+        bakingAddSugarKg: bakingCorrection.addSugarKg,
+        bakingFinalDoughKg: bakingCorrection.finalDoughKg
+      };
+    }
+
     return {
       id: `pbatch-${Date.now()}`,
       recordCode,
       calculatorMode: 'classic',
       industryCategory: selectedIndustry,
       productName: cleanProd,
-      batchLotCode: batchLotCode.trim() || undefined,
       notes: batchNotes.trim() || undefined,
       savedDateFormatted: formattedDate,
       savedAtIso: now.toISOString(),
@@ -2222,9 +2431,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
     };
   };
 
-  const handleSaveBatchToDirectory = async (
-    mode: 'beverage' | 'dairy' | 'classic'
-  ) => {
+  const handleSaveBatchToDirectory = async (mode: PearsonCalculatorMode) => {
     if (!canUsePremium) {
       onOpenPremiumModal?.();
       return;
@@ -2252,7 +2459,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   const handleReloadBatchRecord = (rec: PearsonBatchSavedRecord) => {
     setSelectedIndustry(rec.industryCategory || INDUSTRY_CATEGORIES[0].industry);
     setProductName(rec.productName || '');
-    setBatchLotCode(rec.batchLotCode || '');
     setBatchNotes(rec.notes || '');
 
     if (rec.calculatorMode === 'beverage') {
@@ -2262,6 +2468,8 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       setBevTargetBrix(String(rec.bevTargetBrix ?? 13.0));
       setBevCurrentAcid(String(rec.bevCurrentAcid ?? 0.18));
       setBevTargetAcid(String(rec.bevTargetAcid ?? 0.28));
+      setBevCurrentPh(String(rec.bevCurrentPh ?? 3.85));
+      setBevTargetPh(String(rec.bevTargetPh ?? 3.5));
       setBevSugarSourceBrix(String(rec.bevSugarSourceBrix ?? 100));
     } else if (rec.calculatorMode === 'dairy') {
       setIndustryMode('dairy');
@@ -2273,6 +2481,31 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       setSkimMilkFat(String(rec.skimMilkFat ?? 0.1));
       setSkimMilkSnf(String(rec.skimMilkSnf ?? 8.9));
       setCreamFat(String(rec.creamFat ?? 40));
+    } else if (rec.calculatorMode === 'sauces_mayo') {
+      setIndustryMode('sauces_mayo');
+      setSauceSubType(rec.sauceSubType || 'ketchup_sauce');
+      setSauceBatchKg(String(rec.sauceBatchKg ?? 500));
+      setSauceCurrentTssOrOil(String(rec.sauceCurrentTssOrOil ?? 25.5));
+      setSauceTargetTssOrOil(String(rec.sauceTargetTssOrOil ?? 29.0));
+      setSauceCurrentAcid(String(rec.sauceCurrentAcid ?? 0.95));
+      setSauceTargetAcid(String(rec.sauceTargetAcid ?? 1.25));
+      setSauceCurrentSalt(String(rec.sauceCurrentSalt ?? 1.7));
+      setSauceTargetSalt(String(rec.sauceTargetSalt ?? 2.1));
+      setSauceCurrentPh(String(rec.sauceCurrentPh ?? 4.12));
+      setSauceTargetPh(String(rec.sauceTargetPh ?? 3.75));
+      setSauceVinegarStrength(String(rec.sauceVinegarStrength ?? 10));
+    } else if (rec.calculatorMode === 'baking_biscuits') {
+      setIndustryMode('baking_biscuits');
+      setBakingBatchKg(String(rec.bakingBatchKg ?? 500));
+      setBakingCurrentMoisture(String(rec.bakingCurrentMoisture ?? 13.2));
+      setBakingTargetMoisture(String(rec.bakingTargetMoisture ?? 18.5));
+      setBakingCurrentProtein(String(rec.bakingCurrentProtein ?? 9.2));
+      setBakingTargetProtein(String(rec.bakingTargetProtein ?? 10.8));
+      setBakingCurrentFat(String(rec.bakingCurrentFat ?? 15.5));
+      setBakingTargetFat(String(rec.bakingTargetFat ?? 18.0));
+      setBakingCurrentSugar(String(rec.bakingCurrentSugar ?? 20.0));
+      setBakingTargetSugar(String(rec.bakingTargetSugar ?? 22.5));
+      setBakingGlutenSourcePct(String(rec.bakingGlutenSourcePct ?? 75));
     } else {
       setIndustryMode('classic');
       setPsIngredientAName(rec.psIngredientAName || 'Ingredient A (High)');
@@ -2282,7 +2515,9 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       setPsTargetVal(String(rec.psTargetVal ?? 12));
       setPsTotalBatch(String(rec.psTotalBatch ?? 1000));
     }
-    showToast(`Reloaded batch ${rec.recordCode} (${rec.productName}) into calculator.`);
+    showToast(
+      `Reloaded batch ${rec.recordCode} (${rec.productName}) into calculator.`
+    );
   };
 
   // Generate Single Batch Standardization PDF Report
@@ -2322,8 +2557,12 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         ? 'JUICE & BEVERAGE BATCH CORRECTION CERTIFICATE'
         : rec.calculatorMode === 'dairy'
         ? 'DAIRY FAT & SNF STANDARDIZATION CERTIFICATE'
+        : rec.calculatorMode === 'sauces_mayo'
+        ? 'KETCHUP, SAUCES & MAYONNAISE BATCH CERTIFICATE'
+        : rec.calculatorMode === 'baking_biscuits'
+        ? 'BAKING, BISCUITS & DOUGH STANDARDIZATION CERTIFICATE'
         : 'PEARSON SQUARE MASS BALANCE CERTIFICATE';
-    pdf.setFontSize(13.5);
+    pdf.setFontSize(13);
     pdf.text(modeTitle, 44, 25.5);
 
     pdf.setFont('helvetica', 'normal');
@@ -2341,267 +2580,218 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       fallbackTextColor: [255, 255, 255]
     });
 
-    // Metadata Card (Specialist + Industry + Product Name + Batch Lot)
+    // Metadata Card (Specialist + Industry + Product Name)
     pdf.setFillColor(240, 246, 252);
     pdf.setDrawColor(210, 222, 234);
-    pdf.roundedRect(14, 49, 182, 32, 3, 3, 'FD');
+    pdf.roundedRect(14, 49, 182, 25, 3, 3, 'FD');
 
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(10.5);
-    pdf.text(`Product Name: ${rec.productName}`, 19, 57);
-    pdf.text(`Industry Sector: ${rec.industryCategory}`, 19, 64.5);
-    pdf.text(
-      `Batch / Tank Lot No.: ${rec.batchLotCode || 'Standard Production Batch'}`,
-      19,
-      72
-    );
+    pdf.text(`Product Name: ${rec.productName}`, 19, 58);
+    pdf.text(`Industry Sector: ${rec.industryCategory}`, 19, 66.5);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9.5);
     pdf.setTextColor(74, 85, 104);
-    pdf.text(`Prepared By: ${specialistName} (${specialistRole})`, 115, 57);
+    pdf.text(`Prepared By: ${specialistName} (${specialistRole})`, 112, 58);
 
-    let y = 89;
+    let y = 82;
+
+    const renderSpecTableAndBox = (
+      title1: string,
+      rows: [string, string][],
+      title2: string,
+      bullets: string[],
+      summaryLine: string
+    ) => {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(22, 115, 184);
+      pdf.text(title1, 14, y);
+      y += 5.5;
+
+      rows.forEach(([label, val], idx) => {
+        pdf.setFillColor(
+          idx % 2 === 0 ? 248 : 255,
+          idx % 2 === 0 ? 250 : 255,
+          idx % 2 === 0 ? 252 : 255
+        );
+        pdf.setDrawColor(210, 222, 234);
+        pdf.rect(14, y, 182, 9, 'FD');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9.2);
+        pdf.setTextColor(26, 33, 56);
+        pdf.text(label, 18, y + 6);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(22, 115, 184);
+        pdf.text(String(val), 96, y + 6);
+        y += 9;
+      });
+
+      y += 7;
+      const boxH = 16 + bullets.length * 7.5;
+      pdf.setFillColor(26, 33, 56);
+      pdf.roundedRect(14, y, 182, boxH, 3, 3, 'F');
+      pdf.setTextColor(125, 211, 252);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10.2);
+      pdf.text(title2, 19, y + 8.5);
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(10.5);
+      bullets.forEach((b, i) => {
+        pdf.text(b, 19, y + 16.5 + i * 7.2);
+      });
+
+      pdf.setTextColor(253, 224, 71);
+      pdf.setFontSize(9.8);
+      pdf.text(summaryLine, 19, y + boxH - 4);
+      y += boxH + 8;
+    };
 
     if (rec.calculatorMode === 'beverage') {
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(11.5);
-      pdf.setTextColor(22, 115, 184);
-      pdf.text(
-        '1. INITIAL BATCH LAB ANALYSIS VS. REQUIRED TARGET SPECIFICATION',
-        14,
-        y
-      );
-      y += 6;
-
-      const bevSpecRows = [
-        ['Current Batch Size (Before Adjustment)', `${rec.bevBatchKg} L / kg`],
+      renderSpecTableAndBox(
+        '1. INITIAL JUICE / BEVERAGE BATCH VS. TARGET SPECIFICATION',
         [
-          'Current °Brix vs. Target °Brix',
-          `${rec.bevCurrentBrix} °Brix  -->  Target: ${rec.bevTargetBrix} °Brix (${rec.bevBrixStatus})`
+          ['Current Batch Size (Before Adjustment)', `${rec.bevBatchKg} L / kg`],
+          [
+            'Current °Brix vs. Target °Brix',
+            `${rec.bevCurrentBrix} °Brix  -->  Target: ${rec.bevTargetBrix} °Brix (${rec.bevBrixStatus})`
+          ],
+          [
+            'Current Acidity (%) vs. Target Acidity (%)',
+            `${rec.bevCurrentAcid}%  -->  Target: ${rec.bevTargetAcid}% (${rec.bevAcidStatus})`
+          ],
+          [
+            'Current pH vs. Target pH',
+            `pH ${rec.bevCurrentPh ?? 3.85}  -->  Target pH: ${rec.bevTargetPh ?? 3.5} (${rec.bevPhStatus || 'Checked'})`
+          ],
+          [
+            'Brix : Acid Ratio (Current vs. Target)',
+            `Current ${rec.bevCurrentRatio} : 1   |   Target ${rec.bevTargetRatio} : 1`
+          ]
         ],
-        [
-          'Current Acidity (%) vs. Target Acidity (%)',
-          `${rec.bevCurrentAcid}%  -->  Target: ${rec.bevTargetAcid}% (${rec.bevAcidStatus})`
-        ],
-        [
-          'Brix : Acid Ratio (Current vs. Target)',
-          `Current ${rec.bevCurrentRatio} : 1   |   Target ${rec.bevTargetRatio} : 1`
-        ],
-        [
-          'Sugar / Syrup Source Concentration Used',
-          `${rec.bevSugarSourceBrix} °Brix (${
-            Number(rec.bevSugarSourceBrix) === 100
-              ? 'Dry Crystalline Sugar'
-              : 'Sugar Syrup'
-          })`
-        ]
-      ];
-
-      bevSpecRows.forEach(([label, val], idx) => {
-        pdf.setFillColor(
-          idx % 2 === 0 ? 248 : 255,
-          idx % 2 === 0 ? 250 : 255,
-          idx % 2 === 0 ? 252 : 255
-        );
-        pdf.setDrawColor(210, 222, 234);
-        pdf.rect(14, y, 182, 9.5, 'FD');
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9.5);
-        pdf.setTextColor(26, 33, 56);
-        pdf.text(label, 18, y + 6.3);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(22, 115, 184);
-        pdf.text(String(val), 98, y + 6.3);
-        y += 9.5;
-      });
-
-      y += 8;
-      pdf.setFillColor(26, 33, 56);
-      pdf.roundedRect(14, y, 182, 42, 3, 3, 'F');
-      pdf.setTextColor(125, 211, 252);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10.5);
-      pdf.text(
         `2. EXACT BATCH CORRECTION ADDITIONS (FOR ${rec.bevBatchKg} L/kg BATCH)`,
-        19,
-        y + 9
+        [
+          `• Add Sugar / Syrup (${rec.bevSugarSourceBrix}°Bx):  + ${rec.bevAddSugarKg} kg  (${(rec.bevAddSugarGrams || 0).toLocaleString()} grams)`,
+          `• Add Citric Acid (Anhydrous):  + ${rec.bevAddAcidKg} kg  (${(rec.bevAddAcidGrams || 0).toLocaleString()} grams)`,
+          `• Add Treated Water:  + ${rec.bevAddWaterLiters} Liters`
+        ],
+        `Final Standardized Batch: ${rec.bevFinalBatchKg} L/kg (Verified: ${rec.bevVerifiedBrix}°Bx, ${rec.bevVerifiedAcid}% Acid, Target pH ${rec.bevTargetPh ?? 3.5})`
       );
-
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(11);
-      pdf.text(
-        `• Add Sugar / Syrup (${rec.bevSugarSourceBrix}°Bx):  + ${rec.bevAddSugarKg} kg  (${(
-          rec.bevAddSugarGrams || 0
-        ).toLocaleString()} grams)`,
-        19,
-        y + 18
-      );
-      pdf.text(
-        `• Add Citric Acid (Anhydrous):  + ${rec.bevAddAcidKg} kg  (${(
-          rec.bevAddAcidGrams || 0
-        ).toLocaleString()} grams)`,
-        19,
-        y + 26
-      );
-      pdf.text(
-        `• Add Treated Water:  + ${rec.bevAddWaterLiters} Liters`,
-        19,
-        y + 34
-      );
-      pdf.setTextColor(253, 224, 71);
-      pdf.setFontSize(10);
-      pdf.text(
-        `Final Standardized Batch: ${rec.bevFinalBatchKg} L/kg  (Verified: ${rec.bevVerifiedBrix}°Bx & ${rec.bevVerifiedAcid}% Acid)`,
-        110,
-        y + 34
-      );
-      y += 50;
     } else if (rec.calculatorMode === 'dairy') {
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(11.5);
-      pdf.setTextColor(22, 115, 184);
-      pdf.text(
+      renderSpecTableAndBox(
         '1. RAW MILK BATCH ANALYSIS VS. TARGET STANDARDIZATION SPEC',
-        14,
-        y
-      );
-      y += 6;
-
-      const dairyRows = [
-        ['Initial Raw Milk Batch Mass', `${rec.dairyBatchKg} kg / L`],
         [
-          'Milk Fat (%) — Current vs. Required Target',
-          `Current: ${rec.dairyCurrentFat}% Fat   -->   Target: ${rec.dairyTargetFat}% Fat`
+          ['Initial Raw Milk Batch Mass', `${rec.dairyBatchKg} kg / L`],
+          [
+            'Milk Fat (%) — Current vs. Required Target',
+            `Current: ${rec.dairyCurrentFat}% Fat   -->   Target: ${rec.dairyTargetFat}% Fat`
+          ],
+          [
+            'Milk SNF (%) — Current vs. Required Target',
+            `Current: ${rec.dairyCurrentSnf}% SNF   -->   Target: ${rec.dairyTargetSnf}% SNF`
+          ],
+          [
+            'Available Skim Milk & Cream Specs',
+            `Skim: ${rec.skimMilkFat}% Fat, ${rec.skimMilkSnf}% SNF  |  Cream: ${rec.creamFat}% Fat`
+          ]
         ],
-        [
-          'Milk SNF (%) — Current vs. Required Target',
-          `Current: ${rec.dairyCurrentSnf}% SNF   -->   Target: ${rec.dairyTargetSnf}% SNF`
-        ],
-        [
-          'Available Skim Milk Composition',
-          `${rec.skimMilkFat}% Fat  &  ${rec.skimMilkSnf}% SNF`
-        ],
-        ['Available Cream Fat (%)', `${rec.creamFat}% Fat`]
-      ];
-
-      dairyRows.forEach(([label, val], idx) => {
-        pdf.setFillColor(
-          idx % 2 === 0 ? 248 : 255,
-          idx % 2 === 0 ? 250 : 255,
-          idx % 2 === 0 ? 252 : 255
-        );
-        pdf.setDrawColor(210, 222, 234);
-        pdf.rect(14, y, 182, 9.5, 'FD');
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9.5);
-        pdf.setTextColor(26, 33, 56);
-        pdf.text(label, 18, y + 6.3);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(22, 115, 184);
-        pdf.text(String(val), 102, y + 6.3);
-        y += 9.5;
-      });
-
-      y += 8;
-      pdf.setFillColor(26, 33, 56);
-      pdf.roundedRect(14, y, 182, 42, 3, 3, 'F');
-      pdf.setTextColor(125, 211, 252);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10.5);
-      pdf.text(
         `2. DAIRY STANDARDIZATION PRESCRIPTION (${rec.dairyTargetFat}% FAT & ${rec.dairyTargetSnf}% SNF)`,
-        19,
-        y + 9
+        [
+          `• Add Skim Milk (${rec.skimMilkFat}% Fat / ${rec.skimMilkSnf}% SNF):  + ${rec.dairyAddSkimKg} kg`,
+          `• Add Fresh Cream (${rec.creamFat}% Fat):  + ${rec.dairyAddCreamKg} kg`,
+          `• Add Skim Milk Powder (SMP 96% SNF):  + ${rec.dairyAddSmpKg} kg   |   Water: + ${rec.dairyAddWaterKg} kg`
+        ],
+        `Final Standardized Milk Yield: ${rec.dairyFinalMass} kg`
       );
-
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(11);
-      pdf.text(
-        `• Add Skim Milk (${rec.skimMilkFat}% Fat / ${rec.skimMilkSnf}% SNF):  + ${rec.dairyAddSkimKg} kg`,
-        19,
-        y + 18
+    } else if (rec.calculatorMode === 'sauces_mayo') {
+      const isMayo = rec.sauceSubType === 'mayo_emulsion';
+      renderSpecTableAndBox(
+        `1. ${isMayo ? 'MAYONNAISE / DRESSING' : 'KETCHUP / SAUCE'} BATCH ANALYSIS VS. TARGET SPEC`,
+        [
+          ['Current Batch Weight', `${rec.sauceBatchKg} kg`],
+          [
+            isMayo
+              ? 'Oil / Fat Phase (%) — Current vs. Target'
+              : 'Total Soluble Solids (°Brix) — Current vs. Target',
+            `Current: ${rec.sauceCurrentTssOrOil}%   -->   Target: ${rec.sauceTargetTssOrOil}%`
+          ],
+          [
+            'Acidity (% Acetic) — Current vs. Target',
+            `Current: ${rec.sauceCurrentAcid}%   -->   Target: ${rec.sauceTargetAcid}%`
+          ],
+          [
+            'Salt (% NaCl) — Current vs. Target',
+            `Current: ${rec.sauceCurrentSalt}%   -->   Target: ${rec.sauceTargetSalt}%`
+          ],
+          [
+            'pH — Current vs. Required Target pH',
+            `Current pH: ${rec.sauceCurrentPh}   -->   Target pH: ${rec.sauceTargetPh} (${rec.saucePhStatus})`
+          ]
+        ],
+        `2. EXACT ${isMayo ? 'MAYONNAISE' : 'KETCHUP / SAUCE'} STANDARDIZATION ADDITIONS`,
+        [
+          `• Add ${isMayo ? 'Vegetable Oil Phase' : 'Sugar / Paste Solids'}:  + ${rec.sauceAddSolidsOrOilKg} kg`,
+          `• Add Vinegar / Acidulant (${rec.sauceVinegarStrength}% Strength):  + ${rec.sauceAddVinegarKg} kg`,
+          `• Add Refined Food-Grade Salt (NaCl):  + ${rec.sauceAddSaltKg} kg`,
+          `• Add Treated Water:  + ${rec.sauceAddWaterKg} kg`
+        ],
+        `Final Standardized Batch Weight: ${rec.sauceFinalBatchKg} kg (Target pH ${rec.sauceTargetPh})`
       );
-      pdf.text(
-        `• Add Fresh Cream (${rec.creamFat}% Fat):  + ${rec.dairyAddCreamKg} kg`,
-        19,
-        y + 26
+    } else if (rec.calculatorMode === 'baking_biscuits') {
+      renderSpecTableAndBox(
+        '1. BAKING / BISCUIT DOUGH & FLOUR BATCH VS. TARGET SPEC',
+        [
+          ['Current Flour / Dough Batch Weight', `${rec.bakingBatchKg} kg`],
+          [
+            'Moisture / Dough Hydration (%) — Current vs. Target',
+            `Current: ${rec.bakingCurrentMoisture}%   -->   Target: ${rec.bakingTargetMoisture}%`
+          ],
+          [
+            'Flour Protein / Gluten (%) — Current vs. Target',
+            `Current: ${rec.bakingCurrentProtein}%   -->   Target: ${rec.bakingTargetProtein}%`
+          ],
+          [
+            'Shortening / Bakery Fat (%) — Current vs. Target',
+            `Current: ${rec.bakingCurrentFat}%   -->   Target: ${rec.bakingTargetFat}%`
+          ],
+          [
+            'Sugar (%) — Current vs. Target',
+            `Current: ${rec.bakingCurrentSugar}%   -->   Target: ${rec.bakingTargetSugar}%`
+          ]
+        ],
+        `2. EXACT BAKING / BISCUIT DOUGH CORRECTION ADDITIONS`,
+        [
+          `• Add Hydration Water:  + ${rec.bakingAddWaterLiters} Liters (kg)`,
+          `• Add Vital Wheat Gluten (${rec.bakingGlutenSourcePct}% Protein):  + ${rec.bakingAddGlutenKg} kg`,
+          `• Add Bakery Shortening / Fat:  + ${rec.bakingAddShorteningFatKg} kg`,
+          `• Add Sugar / Icing Sugar:  + ${rec.bakingAddSugarKg} kg`
+        ],
+        `Final Standardized Dough / Biscuit Batch: ${rec.bakingFinalDoughKg} kg`
       );
-      pdf.text(
-        `• Add Skim Milk Powder (SMP 96% SNF):  + ${rec.dairyAddSmpKg} kg   |   Water: + ${rec.dairyAddWaterKg} kg`,
-        19,
-        y + 34
-      );
-      pdf.setTextColor(253, 224, 71);
-      pdf.setFontSize(10.5);
-      pdf.text(
-        `Final Standardized Milk Yield: ${rec.dairyFinalMass} kg`,
-        130,
-        y + 18
-      );
-      y += 50;
     } else {
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(11.5);
-      pdf.setTextColor(22, 115, 184);
-      pdf.text('1. CLASSIC PEARSON SQUARE 2-STREAM INPUT PARAMETERS', 14, y);
-      y += 6;
-
-      const classicRows = [
+      renderSpecTableAndBox(
+        '1. CLASSIC PEARSON SQUARE 2-STREAM INPUT PARAMETERS',
         [
-          `${rec.psIngredientAName || 'Ingredient A (High Stream)'} Concentration`,
-          `${rec.psHighVal}%`
+          [
+            `${rec.psIngredientAName || 'Ingredient A (High Stream)'} Concentration`,
+            `${rec.psHighVal}%`
+          ],
+          [
+            `${rec.psIngredientBName || 'Ingredient B (Low Stream)'} Concentration`,
+            `${rec.psLowVal}%`
+          ],
+          ['Desired Target Concentration (%)', `${rec.psTargetVal}%`],
+          ['Total Required Target Batch Size', `${rec.psTotalBatch} kg / L`]
         ],
-        [
-          `${rec.psIngredientBName || 'Ingredient B (Low Stream)'} Concentration`,
-          `${rec.psLowVal}%`
-        ],
-        ['Desired Target Concentration (%)', `${rec.psTargetVal}%`],
-        ['Total Required Target Batch Size', `${rec.psTotalBatch} kg / L`]
-      ];
-
-      classicRows.forEach(([label, val], idx) => {
-        pdf.setFillColor(
-          idx % 2 === 0 ? 248 : 255,
-          idx % 2 === 0 ? 250 : 255,
-          idx % 2 === 0 ? 252 : 255
-        );
-        pdf.setDrawColor(210, 222, 234);
-        pdf.rect(14, y, 182, 9.5, 'FD');
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9.5);
-        pdf.setTextColor(26, 33, 56);
-        pdf.text(label, 18, y + 6.3);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(22, 115, 184);
-        pdf.text(String(val), 120, y + 6.3);
-        y += 9.5;
-      });
-
-      y += 8;
-      pdf.setFillColor(26, 33, 56);
-      pdf.roundedRect(14, y, 182, 36, 3, 3, 'F');
-      pdf.setTextColor(125, 211, 252);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10.5);
-      pdf.text(
         `2. EXACT PEARSON SQUARE BLENDING QUANTITIES (FOR ${rec.psTotalBatch} kg/L)`,
-        19,
-        y + 9
+        [
+          `• ${rec.psIngredientAName || 'Ingredient A'} (${rec.psHighVal}%):  ${rec.psHighAmount} kg/L  (${rec.psHighParts} parts / ${rec.psHighPct}%)`,
+          `• ${rec.psIngredientBName || 'Ingredient B'} (${rec.psLowVal}%):  ${rec.psLowAmount} kg/L  (${rec.psLowParts} parts / ${rec.psLowPct}%)`
+        ],
+        `Total Standardized Blend: ${rec.psTotalBatch} kg/L @ ${rec.psTargetVal}%`
       );
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(11);
-      pdf.text(
-        `• ${rec.psIngredientAName || 'Ingredient A'} (${rec.psHighVal}%):  ${rec.psHighAmount} kg/L  (${rec.psHighParts} parts / ${rec.psHighPct}%)`,
-        19,
-        y + 19
-      );
-      pdf.text(
-        `• ${rec.psIngredientBName || 'Ingredient B'} (${rec.psLowVal}%):  ${rec.psLowAmount} kg/L  (${rec.psLowParts} parts / ${rec.psLowPct}%)`,
-        19,
-        y + 28
-      );
-      y += 44;
     }
 
     if (rec.notes) {
@@ -2687,7 +2877,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         252
       );
       pdf.setDrawColor(210, 222, 234);
-      pdf.roundedRect(14, y, 182, 29, 2.5, 2.5, 'FD');
+      pdf.roundedRect(14, y, 182, 28, 2.5, 2.5, 'FD');
 
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(9.5);
@@ -2699,29 +2889,53 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       );
 
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(8.7);
+      pdf.setFontSize(8.6);
       pdf.setTextColor(22, 115, 184);
       if (rec.calculatorMode === 'beverage') {
         pdf.text(
-          `Beverage Batch (${rec.bevBatchKg} L/kg): ${rec.bevCurrentBrix}°Bx -> ${rec.bevTargetBrix}°Bx | Acid ${rec.bevCurrentAcid}% -> ${rec.bevTargetAcid}%`,
+          `Beverage (${rec.bevBatchKg} L/kg): Brix ${rec.bevCurrentBrix}°->${rec.bevTargetBrix}° | Acid ${rec.bevCurrentAcid}%->${rec.bevTargetAcid}% | pH ${rec.bevCurrentPh ?? 3.85}->${rec.bevTargetPh ?? 3.5}`,
           18,
           y + 14
         );
         pdf.setTextColor(26, 33, 56);
         pdf.text(
-          `Prescription: Add Sugar +${rec.bevAddSugarKg} kg, Add Acid +${rec.bevAddAcidKg} kg, Add Water +${rec.bevAddWaterLiters} L => Final: ${rec.bevFinalBatchKg} kg`,
+          `Prescription: +${rec.bevAddSugarKg} kg Sugar, +${rec.bevAddAcidKg} kg Citric Acid, +${rec.bevAddWaterLiters} L Water => Final: ${rec.bevFinalBatchKg} kg`,
           18,
           y + 20.5
         );
       } else if (rec.calculatorMode === 'dairy') {
         pdf.text(
-          `Dairy Batch (${rec.dairyBatchKg} kg): Fat ${rec.dairyCurrentFat}% -> ${rec.dairyTargetFat}% | SNF ${rec.dairyCurrentSnf}% -> ${rec.dairyTargetSnf}%`,
+          `Dairy (${rec.dairyBatchKg} kg): Fat ${rec.dairyCurrentFat}%->${rec.dairyTargetFat}% | SNF ${rec.dairyCurrentSnf}%->${rec.dairyTargetSnf}%`,
           18,
           y + 14
         );
         pdf.setTextColor(26, 33, 56);
         pdf.text(
-          `Prescription: Add Skim +${rec.dairyAddSkimKg} kg, Cream +${rec.dairyAddCreamKg} kg, SMP +${rec.dairyAddSmpKg} kg, Water +${rec.dairyAddWaterKg} kg => Final: ${rec.dairyFinalMass} kg`,
+          `Prescription: +${rec.dairyAddSkimKg} kg Skim, +${rec.dairyAddCreamKg} kg Cream, +${rec.dairyAddSmpKg} kg SMP, +${rec.dairyAddWaterKg} kg Water => Final: ${rec.dairyFinalMass} kg`,
+          18,
+          y + 20.5
+        );
+      } else if (rec.calculatorMode === 'sauces_mayo') {
+        pdf.text(
+          `Ketchup/Mayo (${rec.sauceBatchKg} kg): TSS/Oil ${rec.sauceCurrentTssOrOil}%->${rec.sauceTargetTssOrOil}% | Acid ${rec.sauceCurrentAcid}%->${rec.sauceTargetAcid}% | Salt ${rec.sauceCurrentSalt}%->${rec.sauceTargetSalt}% | pH ${rec.sauceCurrentPh}->${rec.sauceTargetPh}`,
+          18,
+          y + 14
+        );
+        pdf.setTextColor(26, 33, 56);
+        pdf.text(
+          `Prescription: +${rec.sauceAddSolidsOrOilKg} kg Solids/Oil, +${rec.sauceAddVinegarKg} kg Vinegar, +${rec.sauceAddSaltKg} kg Salt, +${rec.sauceAddWaterKg} kg Water => Final: ${rec.sauceFinalBatchKg} kg`,
+          18,
+          y + 20.5
+        );
+      } else if (rec.calculatorMode === 'baking_biscuits') {
+        pdf.text(
+          `Baking/Biscuit (${rec.bakingBatchKg} kg): Moisture ${rec.bakingCurrentMoisture}%->${rec.bakingTargetMoisture}% | Protein ${rec.bakingCurrentProtein}%->${rec.bakingTargetProtein}% | Fat ${rec.bakingCurrentFat}%->${rec.bakingTargetFat}% | Sugar ${rec.bakingCurrentSugar}%->${rec.bakingTargetSugar}%`,
+          18,
+          y + 14
+        );
+        pdf.setTextColor(26, 33, 56);
+        pdf.text(
+          `Prescription: +${rec.bakingAddWaterLiters} L Water, +${rec.bakingAddGlutenKg} kg Gluten, +${rec.bakingAddShorteningFatKg} kg Fat, +${rec.bakingAddSugarKg} kg Sugar => Final: ${rec.bakingFinalDoughKg} kg`,
           18,
           y + 20.5
         );
@@ -2739,17 +2953,11 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         );
       }
 
-      if (rec.batchLotCode || rec.notes) {
+      if (rec.notes) {
         pdf.setTextColor(90, 108, 132);
-        pdf.text(
-          `${rec.batchLotCode ? `Lot: ${rec.batchLotCode}  ` : ''}${
-            rec.notes ? `Notes: ${rec.notes.slice(0, 75)}` : ''
-          }`,
-          18,
-          y + 26.5
-        );
+        pdf.text(`Notes: ${rec.notes.slice(0, 85)}`, 18, y + 26);
       }
-      y += 33;
+      y += 32;
     });
 
     pdf.save(`Batch_Standardization_Directory_Logbook_${Date.now()}.pdf`);
@@ -2766,37 +2974,48 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         </div>
       )}
 
-      {/* Header & Sub-Mode Tabs */}
-      <div className="border-b border-[#D2DEEA] pb-3.5 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-[#1A2138] text-white flex items-center justify-center shrink-0">
-            <Scale className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
-                Pearson Square &amp; Batch Standardization Calculator
-              </h2>
-              <span className="text-[11px] font-extrabold text-[#1673B8]">
-                {canUsePremium
-                  ? '· Paid Pro Mode (Product Directory & Batch Logbook Active)'
-                  : '· Free Standard Calculator'}
-              </span>
+      {/* Header & Industry Calculator Tabs */}
+      <div className="border-b border-[#D2DEEA] pb-3.5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#1A2138] text-white flex items-center justify-center shrink-0">
+              <Scale className="w-6 h-6" />
             </div>
-            <p className="text-xs text-[#4A5568] font-medium">
-              Compare Current Sample vs. Required Spec — Get Exact Water, Sugar,
-              Acid, Cream or Skim Milk to Add
-            </p>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                  Pearson Square &amp; Batch Standardization Calculator
+                </h2>
+                <span className="text-[11px] font-extrabold text-[#1673B8]">
+                  {canUsePremium
+                    ? '· Paid Pro Mode (Industry Batch Logbook & PDF Active)'
+                    : '· Free Standard Calculator'}
+                </span>
+              </div>
+              <p className="text-xs text-[#4A5568] font-medium">
+                Industry-Specific Batch Standardization: Juice &amp; Beverage
+                (Brix, Acidity, pH), Dairy (Fat &amp; SNF), Sauces/Ketchup/Mayo,
+                Baking/Biscuits &amp; Classic Pearson
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 bg-[#F0F6FC] p-1 rounded-xl border border-[#D2DEEA]">
+        <div className="flex flex-wrap gap-1.5 bg-[#F0F6FC] p-1.5 rounded-xl border border-[#D2DEEA]">
           {[
             {
               id: 'beverage' as const,
-              label: 'Juice & Beverage Batch Corrector'
+              label: 'Juice & Beverage (Brix, Acid & pH)'
             },
             { id: 'dairy' as const, label: 'Dairy Fat & SNF Standardizer' },
+            {
+              id: 'sauces_mayo' as const,
+              label: 'Ketchup, Sauces & Mayonnaise'
+            },
+            {
+              id: 'baking_biscuits' as const,
+              label: 'Baking, Biscuits & Dough'
+            },
             { id: 'classic' as const, label: 'Classic Pearson Square' },
             ...(canUsePremium
               ? [
@@ -2810,7 +3029,17 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
             <button
               key={m.id}
               type="button"
-              onClick={() => setIndustryMode(m.id)}
+              onClick={() => {
+                setIndustryMode(m.id);
+                if (m.id !== 'directory') {
+                  const matchedCat = INDUSTRY_CATEGORIES.find(
+                    (c) => c.defaultMode === m.id
+                  );
+                  if (matchedCat) {
+                    setSelectedIndustry(matchedCat.industry);
+                  }
+                }
+              }}
               className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
                 industryMode === m.id
                   ? 'bg-[#1673B8] text-white shadow-2xs'
@@ -2825,19 +3054,19 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
 
       {/* =====================================================================
           PAID MEMBER INDUSTRY & PRODUCT IDENTIFICATION HEADER
-          (Displayed right above the active calculator for Paid Premium Users)
+          (No Quick-Select Chips, No Batch/Tank Lot No — Clean Industry + Product Input)
          ===================================================================== */}
       {canUsePremium && industryMode !== 'directory' && (
         <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#94B8D7] space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="text-xs font-extrabold text-[#1673B8]">
-                Step 1: Select Your Industry &amp; Enter Product Name for Batch Record
+                Step 1: Select Industry &amp; Enter Product Name for Batch Record
               </div>
               <p className="text-[11px] text-[#5A6C84]">
-                Choose your food industry sector and product name below (or add
-                your own custom product), then adjust your batch using the
-                calculator to save &amp; download its standardization report.
+                Selecting an industry automatically loads its specification
+                parameters below. Enter your Product Name to save and download
+                your batch standardization record.
               </p>
             </div>
             <button
@@ -2857,7 +3086,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
             </button>
           </div>
 
-          {/* Optional Form to Save Custom Product Permanently */}
           {showAddProductForm && (
             <div className="p-3.5 rounded-xl bg-white border border-[#1673B8]/40 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
               <div className="sm:col-span-4">
@@ -2882,7 +3110,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g., Lychee Nectar 14°Brix / Buffalo Standardized Milk / Plum Jam"
+                  placeholder="e.g., Mango Nectar / Standardized Milk / Garlic Mayo / Marie Biscuit"
                   value={newCustomProductName}
                   onChange={(e) => setNewCustomProductName(e.target.value)}
                   className="w-full px-3.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
@@ -2900,8 +3128,8 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
             </div>
           )}
 
-          {/* Industry Sector + Product Name + Batch Lot Code + Notes */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Industry Sector + Product Name + Optional QA Notes */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                 Your Industry Sector
@@ -2914,8 +3142,9 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   const found = INDUSTRY_CATEGORIES.find(
                     (c) => c.industry === nextInd
                   );
-                  if (found && found.sampleProducts.length > 0) {
-                    setProductName(found.sampleProducts[0]);
+                  if (found) {
+                    setIndustryMode(found.defaultMode);
+                    setProductName(found.defaultProduct);
                   }
                 }}
                 className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
@@ -2930,27 +3159,14 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
 
             <div>
               <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                Product Name (Type Any or Pick Below)
+                Product Name
               </label>
               <input
                 type="text"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
-                placeholder="Enter Product Name (e.g., Mango Nectar, Standardized Milk)"
+                placeholder="Enter Product Name (e.g., Mango Nectar, Tomato Ketchup, Biscuit Dough)"
                 className="w-full px-3 py-2 rounded-xl bg-white border border-[#1673B8] text-xs font-bold text-[#1A2138]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                Batch / Tank / Lot No. (Optional)
-              </label>
-              <input
-                type="text"
-                value={batchLotCode}
-                onChange={(e) => setBatchLotCode(e.target.value)}
-                placeholder="e.g., Tank-03 / Batch #B-209"
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
               />
             </div>
 
@@ -2962,37 +3178,16 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                 type="text"
                 value={batchNotes}
                 onChange={(e) => setBatchNotes(e.target.value)}
-                placeholder="e.g., Checked before pasteurization"
+                placeholder="e.g., Adjusted before pasteurization / baking"
                 className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
               />
             </div>
           </div>
 
-          {/* Quick-Select Product Chips for Selected Industry */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <span className="text-[11px] font-extrabold text-[#5A6C84]">
-              Quick Select Product:
-            </span>
-            {availableProductSuggestions.map((prod) => (
-              <button
-                key={prod}
-                type="button"
-                onClick={() => setProductName(prod)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer border transition-colors ${
-                  productName === prod
-                    ? 'bg-[#1673B8] text-white border-[#1673B8]'
-                    : 'bg-white text-[#1A2138] border-[#D2DEEA] hover:border-[#1673B8]'
-                }`}
-              >
-                {prod}
-              </button>
-            ))}
-          </div>
-
           {customProducts.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#E4EDF7] text-[11px]">
               <span className="font-extrabold text-[#1673B8]">
-                Your Saved Products:
+                Your Saved Custom Products:
               </span>
               {customProducts.map((cp) => (
                 <span
@@ -3003,6 +3198,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                     type="button"
                     onClick={() => {
                       setSelectedIndustry(cp.industryCategory);
+                      setIndustryMode(cp.calculatorMode);
                       setProductName(cp.productName);
                     }}
                     className="hover:text-[#1673B8] cursor-pointer"
@@ -3025,7 +3221,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       )}
 
       {/* =====================================================================
-          MODE 1: JUICE & BEVERAGE BATCH CORRECTOR
+          MODE 1: JUICE & BEVERAGE BATCH CORRECTOR (Batch Size, Brix, Acidity & pH)
          ===================================================================== */}
       {industryMode === 'beverage' && (
         <div className="space-y-4">
@@ -3035,7 +3231,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
               <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider border-b border-[#D2DEEA] pb-2">
                 1. Current Batch / Lab Sample Details (Out-of-Spec)
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     Current Batch Size (L / kg)
@@ -3071,11 +3267,29 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                   />
                 </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current pH
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={bevCurrentPh}
+                    onChange={(e) => setBevCurrentPh(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
               </div>
-              <div className="text-[11px] font-bold text-[#4A5568]">
-                Current Brix:Acid Ratio:{' '}
-                <span className="text-[#1A2138] font-extrabold">
-                  {beverageCorrection.currentRatio} : 1
+              <div className="text-[11px] font-bold text-[#4A5568] flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  Current Brix:Acid Ratio:{' '}
+                  <strong className="text-[#1A2138]">
+                    {beverageCorrection.currentRatio} : 1
+                  </strong>
+                </span>
+                <span>
+                  Current Sample pH:{' '}
+                  <strong className="text-[#1673B8]">{bevCurrentPh}</strong>
                 </span>
               </div>
             </div>
@@ -3085,7 +3299,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
               <div className="text-xs font-extrabold text-[#105E9A] uppercase tracking-wider border-b border-[#D2DEEA] pb-2">
                 2. Required Target Product Specification
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     Target °Brix (%)
@@ -3112,6 +3326,18 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                 </div>
                 <div>
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Target pH
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={bevTargetPh}
+                    onChange={(e) => setBevTargetPh(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     Sugar / Syrup °Brix
                   </label>
                   <input
@@ -3124,12 +3350,12 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   />
                 </div>
               </div>
-              <div className="text-[11px] font-bold text-[#105E9A]">
-                Target Brix:Acid Ratio:{' '}
-                <span className="font-extrabold">
-                  {beverageCorrection.targetRatio} : 1
-                </span>{' '}
-                (100 = Dry Sugar, 65 = 65°Bx Syrup)
+              <div className="text-[11px] font-bold text-[#105E9A] flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  Target Brix:Acid Ratio:{' '}
+                  <strong>{beverageCorrection.targetRatio} : 1</strong>
+                </span>
+                <span>Target pH: {bevTargetPh} (100 = Dry Sugar, 65 = Syrup)</span>
               </div>
             </div>
           </div>
@@ -3144,9 +3370,11 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   {canUsePremium && productName ? ` — ${productName}` : ''})
                 </div>
                 <div className="text-xs text-slate-200 mt-0.5">
-                  Brix Status: <strong>{beverageCorrection.brixStatus}</strong>{' '}
-                  · Acidity Status:{' '}
-                  <strong>{beverageCorrection.acidStatus}</strong>
+                  Brix: <strong>{beverageCorrection.brixStatus}</strong> ·
+                  Acidity: <strong>{beverageCorrection.acidStatus}</strong> · pH:{' '}
+                  <strong className="text-sky-300">
+                    {beverageCorrection.phStatus}
+                  </strong>
                 </div>
               </div>
               <div className="text-xs font-extrabold text-amber-300">
@@ -3175,7 +3403,8 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   + {beverageCorrection.addAcidKg} kg
                 </div>
                 <div className="text-[11px] text-slate-300 mt-0.5">
-                  ({beverageCorrection.addAcidGrams.toLocaleString()} grams)
+                  ({beverageCorrection.addAcidGrams.toLocaleString()} grams ·
+                  Target pH {bevTargetPh})
                 </div>
               </div>
 
@@ -3187,8 +3416,8 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   + {beverageCorrection.addWaterLiters} Liters
                 </div>
                 <div className="text-[11px] text-slate-300 mt-0.5">
-                  Verified Output: {beverageCorrection.verifiedBrix}°Bx &amp;{' '}
-                  {beverageCorrection.verifiedAcid}% Acid
+                  Verified Output: {beverageCorrection.verifiedBrix}°Bx,{' '}
+                  {beverageCorrection.verifiedAcid}% Acid &amp; pH {bevTargetPh}
                 </div>
               </div>
             </div>
@@ -3387,7 +3616,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
               </div>
             </div>
 
-            {/* Save & Download Action Bar */}
             {canUsePremium ? (
               <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
                 <div className="text-[11px] text-slate-300">
@@ -3437,7 +3665,560 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       )}
 
       {/* =====================================================================
-          MODE 3: CLASSIC 2-STREAM PEARSON SQUARE
+          MODE 3: KETCHUP, SAUCES & MAYONNAISE STANDARDIZER
+         ===================================================================== */}
+      {industryMode === 'sauces_mayo' && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-[#F8FAFC] p-3 rounded-xl border border-[#D2DEEA]">
+            <div className="text-xs font-extrabold text-[#1A2138]">
+              Select Product Sub-Type Parameters:
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSauceSubType('ketchup_sauce');
+                  setSauceCurrentTssOrOil('25.5');
+                  setSauceTargetTssOrOil('29.0');
+                  setSauceCurrentAcid('0.95');
+                  setSauceTargetAcid('1.25');
+                  setSauceCurrentSalt('1.70');
+                  setSauceTargetSalt('2.10');
+                  setSauceCurrentPh('4.12');
+                  setSauceTargetPh('3.75');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
+                  sauceSubType === 'ketchup_sauce'
+                    ? 'bg-[#1673B8] text-white'
+                    : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
+                }`}
+              >
+                Tomato Ketchup / Chili &amp; Culinary Sauces (TSS °Brix, Acid,
+                Salt, pH)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSauceSubType('mayo_emulsion');
+                  setSauceCurrentTssOrOil('61.5');
+                  setSauceTargetTssOrOil('65.0');
+                  setSauceCurrentAcid('0.45');
+                  setSauceTargetAcid('0.65');
+                  setSauceCurrentSalt('1.30');
+                  setSauceTargetSalt('1.60');
+                  setSauceCurrentPh('4.25');
+                  setSauceTargetPh('3.85');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
+                  sauceSubType === 'mayo_emulsion'
+                    ? 'bg-[#1673B8] text-white'
+                    : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
+                }`}
+              >
+                Mayonnaise &amp; Emulsified Dressings (Oil Phase %, Acid, Salt,
+                pH)
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Current Out-of-Spec Batch */}
+            <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+              <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider border-b border-[#D2DEEA] pb-2">
+                1. Current {sauceSubType === 'mayo_emulsion' ? 'Mayonnaise' : 'Ketchup / Sauce'} Batch (Out-of-Spec)
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current Batch Weight (kg)
+                  </label>
+                  <input
+                    type="number"
+                    value={sauceBatchKg}
+                    onChange={(e) => setSauceBatchKg(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    {sauceSubType === 'mayo_emulsion'
+                      ? 'Current Oil Phase (%)'
+                      : 'Current TSS / °Brix (%)'}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={sauceCurrentTssOrOil}
+                    onChange={(e) => setSauceCurrentTssOrOil(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current Acidity (% Acetic)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={sauceCurrentAcid}
+                    onChange={(e) => setSauceCurrentAcid(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current Salt (% NaCl)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    value={sauceCurrentSalt}
+                    onChange={(e) => setSauceCurrentSalt(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current pH
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={sauceCurrentPh}
+                    onChange={(e) => setSauceCurrentPh(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Required Target Spec */}
+            <div className="p-4 rounded-2xl bg-[#EBF4FC] border border-[#1673B8]/40 space-y-3">
+              <div className="text-xs font-extrabold text-[#105E9A] uppercase tracking-wider border-b border-[#D2DEEA] pb-2">
+                2. Required Target Specification
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    {sauceSubType === 'mayo_emulsion'
+                      ? 'Target Oil Phase (%)'
+                      : 'Target TSS / °Brix (%)'}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={sauceTargetTssOrOil}
+                    onChange={(e) => setSauceTargetTssOrOil(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Target Acidity (% Acetic)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={sauceTargetAcid}
+                    onChange={(e) => setSauceTargetAcid(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Target Salt (% NaCl)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    value={sauceTargetSalt}
+                    onChange={(e) => setSauceTargetSalt(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Target pH
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={sauceTargetPh}
+                    onChange={(e) => setSauceTargetPh(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Vinegar / Acid Strength (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={sauceVinegarStrength}
+                    onChange={(e) => setSauceVinegarStrength(e.target.value)}
+                    title="e.g. 10% for Distilled Vinegar or 100% for Glacial/Citric Acid"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#1A2138] text-white space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/15 pb-2.5">
+              <div>
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
+                  {sauceSubType === 'mayo_emulsion'
+                    ? 'Mayonnaise & Emulsion Standardization Prescription'
+                    : 'Ketchup & Sauce Standardization Prescription'}
+                  {canUsePremium && productName ? ` — ${productName}` : ''}
+                </div>
+                <div className="text-xs text-slate-200 mt-0.5">
+                  pH Safety Check: <strong>{sauceMayoCorrection.phStatus}</strong>
+                </div>
+              </div>
+              <div className="text-xs font-extrabold text-amber-300">
+                Final Standardized Batch: {sauceMayoCorrection.finalBatchKg} kg
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  1. Add{' '}
+                  {sauceSubType === 'mayo_emulsion'
+                    ? 'Vegetable Oil Phase'
+                    : 'Sugar / Paste Solids'}
+                </div>
+                <div className="text-lg font-extrabold font-mono mt-0.5">
+                  + {sauceMayoCorrection.addSolidsOrOilKg} kg
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  2. Add Vinegar ({sauceVinegarStrength}%)
+                </div>
+                <div className="text-lg font-extrabold text-amber-300 font-mono mt-0.5">
+                  + {sauceMayoCorrection.addVinegarKg} kg
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  3. Add Refined Salt (NaCl)
+                </div>
+                <div className="text-lg font-extrabold font-mono mt-0.5">
+                  + {sauceMayoCorrection.addSaltKg} kg
+                </div>
+                <div className="text-[10px] text-slate-300">
+                  ({sauceMayoCorrection.addSaltGrams.toLocaleString()} g)
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  4. Add Treated Water
+                </div>
+                <div className="text-lg font-extrabold text-emerald-300 font-mono mt-0.5">
+                  + {sauceMayoCorrection.addWaterKg} kg
+                </div>
+              </div>
+            </div>
+
+            {canUsePremium ? (
+              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                <div className="text-[11px] text-slate-300">
+                  Save this Ketchup / Sauce / Mayonnaise batch record to your
+                  directory or download its PDF report.
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveBatchToDirectory('sauces_mayo')}
+                    className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Batch Record to Directory</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingleBatchPdf(
+                        buildCurrentBatchRecord('sauces_mayo')
+                      )
+                    }
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Report PDF</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-slate-200">
+                  Want to save Ketchup, Sauce &amp; Mayonnaise batches and
+                  download PDF reports?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onOpenPremiumModal?.()}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                >
+                  Unlock Paid Batch Directory &amp; PDF
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODE 4: BAKING, BISCUITS & DOUGH STANDARDIZER
+         ===================================================================== */}
+      {industryMode === 'baking_biscuits' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Current Dough / Flour Batch */}
+            <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+              <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider border-b border-[#D2DEEA] pb-2">
+                1. Current Flour / Biscuit Dough Batch Details
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current Flour / Dough (kg)
+                  </label>
+                  <input
+                    type="number"
+                    value={bakingBatchKg}
+                    onChange={(e) => setBakingBatchKg(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current Moisture (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bakingCurrentMoisture}
+                    onChange={(e) => setBakingCurrentMoisture(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current Flour Protein (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bakingCurrentProtein}
+                    onChange={(e) => setBakingCurrentProtein(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current Shortening Fat (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bakingCurrentFat}
+                    onChange={(e) => setBakingCurrentFat(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Current Sugar (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bakingCurrentSugar}
+                    onChange={(e) => setBakingCurrentSugar(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Target Baking / Biscuit Specification */}
+            <div className="p-4 rounded-2xl bg-[#EBF4FC] border border-[#1673B8]/40 space-y-3">
+              <div className="text-xs font-extrabold text-[#105E9A] uppercase tracking-wider border-b border-[#D2DEEA] pb-2">
+                2. Required Target Baking / Biscuit Specification
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Target Dough Moisture (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bakingTargetMoisture}
+                    onChange={(e) => setBakingTargetMoisture(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Target Flour Protein (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bakingTargetProtein}
+                    onChange={(e) => setBakingTargetProtein(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Target Shortening Fat (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bakingTargetFat}
+                    onChange={(e) => setBakingTargetFat(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Target Sugar (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={bakingTargetSugar}
+                    onChange={(e) => setBakingTargetSugar(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Vital Wheat Gluten (% Prot)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={bakingGlutenSourcePct}
+                    onChange={(e) => setBakingGlutenSourcePct(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#1A2138] text-white space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/15 pb-2.5">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
+                Baking &amp; Biscuit Dough Standardization Prescription (For{' '}
+                {bakingBatchKg} kg Batch
+                {canUsePremium && productName ? ` — ${productName}` : ''})
+              </div>
+              <div className="text-xs font-extrabold text-amber-300">
+                Final Standardized Dough Batch: {bakingCorrection.finalDoughKg}{' '}
+                kg
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  1. Add Hydration Water
+                </div>
+                <div className="text-lg font-extrabold text-emerald-300 font-mono mt-0.5">
+                  + {bakingCorrection.addWaterLiters} L / kg
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  2. Add Vital Wheat Gluten ({bakingGlutenSourcePct}%)
+                </div>
+                <div className="text-lg font-extrabold text-amber-300 font-mono mt-0.5">
+                  + {bakingCorrection.addGlutenKg} kg
+                </div>
+                <div className="text-[10px] text-slate-300">
+                  ({bakingCorrection.addGlutenGrams.toLocaleString()} g)
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  3. Add Shortening / Bakery Fat
+                </div>
+                <div className="text-lg font-extrabold font-mono mt-0.5">
+                  + {bakingCorrection.addShorteningFatKg} kg
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white/10 border border-white/15">
+                <div className="text-[11px] text-sky-200 font-bold">
+                  4. Add Sugar / Icing Sugar
+                </div>
+                <div className="text-lg font-extrabold font-mono mt-0.5">
+                  + {bakingCorrection.addSugarKg} kg
+                </div>
+              </div>
+            </div>
+
+            {canUsePremium ? (
+              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                <div className="text-[11px] text-slate-300">
+                  Save this Baking / Biscuit dough standardization batch to your
+                  directory or download its PDF report.
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleSaveBatchToDirectory('baking_biscuits')
+                    }
+                    className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Batch Record to Directory</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingleBatchPdf(
+                        buildCurrentBatchRecord('baking_biscuits')
+                      )
+                    }
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Report PDF</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-slate-200">
+                  Want to save Baking &amp; Biscuit dough batches and download
+                  PDF reports?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onOpenPremiumModal?.()}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                >
+                  Unlock Paid Batch Directory &amp; PDF
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODE 5: CLASSIC 2-STREAM PEARSON SQUARE
          ===================================================================== */}
       {industryMode === 'classic' && (
         <div className="space-y-4">
@@ -3559,7 +4340,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                 </div>
               </div>
 
-              {/* Save & Download Action Bar */}
               {canUsePremium ? (
                 <div className="pt-2 border-t border-[#D2DEEA] flex flex-wrap items-center justify-between gap-2">
                   <div className="text-[11px] text-[#4A5568] font-medium">
@@ -3611,7 +4391,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
 
       {/* =====================================================================
           PAID MEMBER SAVED BATCH STANDARDIZATION DIRECTORY
-          (Shown in 'directory' tab AND below the active calculator for Paid Users)
          ===================================================================== */}
       {canUsePremium && (
         <div className="pt-4 border-t-2 border-[#E4EDF7] space-y-4">
@@ -3624,9 +4403,9 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                 Saved Batch Standardization Directory ({savedBatchRecords.length})
               </h3>
               <p className="text-xs text-[#5A6C84]">
-                Complete history of all Juice &amp; Beverage, Dairy Fat &amp;
-                SNF, and Classic Pearson Square batches adjusted by product,
-                industry, and date.
+                Complete history of all Juice &amp; Beverage, Dairy,
+                Sauces/Ketchup/Mayonnaise, Baking/Biscuits, and Pearson Square
+                batches adjusted by product, industry, and date.
               </p>
             </div>
 
@@ -3646,23 +4425,25 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
 
           {/* Search & Filters Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center bg-[#F8FAFC] p-3 rounded-2xl border border-[#D2DEEA]">
-            <div className="sm:col-span-5 relative">
+            <div className="sm:col-span-4 relative">
               <Search className="w-4 h-4 text-[#5A6C84] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search by product name, industry, batch code or date..."
+                placeholder="Search by product name, industry or date..."
                 value={dirSearchQuery}
                 onChange={(e) => setDirSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-bold text-[#1A2138]"
               />
             </div>
 
-            <div className="sm:col-span-4 flex flex-wrap gap-1">
+            <div className="sm:col-span-5 flex flex-wrap gap-1">
               {[
-                { id: 'all' as const, label: 'All Batches' },
-                { id: 'beverage' as const, label: 'Juice & Beverage' },
-                { id: 'dairy' as const, label: 'Dairy Fat & SNF' },
-                { id: 'classic' as const, label: 'Classic Pearson' }
+                { id: 'all' as const, label: 'All' },
+                { id: 'beverage' as const, label: 'Juice/Bev' },
+                { id: 'dairy' as const, label: 'Dairy' },
+                { id: 'sauces_mayo' as const, label: 'Ketchup/Mayo' },
+                { id: 'baking_biscuits' as const, label: 'Baking/Biscuits' },
+                { id: 'classic' as const, label: 'Pearson' }
               ].map((f) => (
                 <button
                   key={f.id}
@@ -3729,6 +4510,10 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                           ? 'Juice & Beverage Batch'
                           : rec.calculatorMode === 'dairy'
                           ? 'Dairy Fat & SNF Batch'
+                          : rec.calculatorMode === 'sauces_mayo'
+                          ? 'Ketchup / Sauce / Mayo Batch'
+                          : rec.calculatorMode === 'baking_biscuits'
+                          ? 'Baking & Biscuit Dough Batch'
                           : 'Classic Pearson Batch'}
                       </span>
                       <span className="text-[#5A6C84]">
@@ -3742,7 +4527,6 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                       </h4>
                       <div className="text-[11px] font-bold text-[#5A6C84]">
                         Industry: {rec.industryCategory}
-                        {rec.batchLotCode ? ` · Lot: ${rec.batchLotCode}` : ''}
                       </div>
                     </div>
 
@@ -3755,7 +4539,9 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                           <span className="font-extrabold text-[#1A2138]">
                             {rec.bevBatchKg} L/kg | Brix {rec.bevCurrentBrix}° →{' '}
                             {rec.bevTargetBrix}° | Acid {rec.bevCurrentAcid}% →{' '}
-                            {rec.bevTargetAcid}%
+                            {rec.bevTargetAcid}% | pH{' '}
+                            {rec.bevCurrentPh ?? 3.85} →{' '}
+                            {rec.bevTargetPh ?? 3.5}
                           </span>
                         </div>
                         <div className="text-[#1673B8] font-extrabold">
@@ -3784,6 +4570,57 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                           {rec.dairyAddCreamKg} kg Cream ({rec.creamFat}%) · +
                           {rec.dairyAddSmpKg} kg SMP · +{rec.dairyAddWaterKg} kg
                           Water → Final: {rec.dairyFinalMass} kg
+                        </div>
+                      </div>
+                    )}
+
+                    {rec.calculatorMode === 'sauces_mayo' && (
+                      <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA] text-xs space-y-1">
+                        <div>
+                          <span className="font-bold text-[#5A6C84]">
+                            Initial vs. Target:
+                          </span>{' '}
+                          <span className="font-extrabold text-[#1A2138]">
+                            {rec.sauceBatchKg} kg | TSS/Oil{' '}
+                            {rec.sauceCurrentTssOrOil}% →{' '}
+                            {rec.sauceTargetTssOrOil}% | Acid{' '}
+                            {rec.sauceCurrentAcid}% → {rec.sauceTargetAcid}% |
+                            Salt {rec.sauceCurrentSalt}% → {rec.sauceTargetSalt}
+                            % | pH {rec.sauceCurrentPh} → {rec.sauceTargetPh}
+                          </span>
+                        </div>
+                        <div className="text-[#1673B8] font-extrabold">
+                          Added: +{rec.sauceAddSolidsOrOilKg} kg Solids/Oil · +
+                          {rec.sauceAddVinegarKg} kg Vinegar · +
+                          {rec.sauceAddSaltKg} kg Salt · +{rec.sauceAddWaterKg}{' '}
+                          kg Water → Final: {rec.sauceFinalBatchKg} kg
+                        </div>
+                      </div>
+                    )}
+
+                    {rec.calculatorMode === 'baking_biscuits' && (
+                      <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA] text-xs space-y-1">
+                        <div>
+                          <span className="font-bold text-[#5A6C84]">
+                            Initial vs. Target:
+                          </span>{' '}
+                          <span className="font-extrabold text-[#1A2138]">
+                            {rec.bakingBatchKg} kg | Moisture{' '}
+                            {rec.bakingCurrentMoisture}% →{' '}
+                            {rec.bakingTargetMoisture}% | Protein{' '}
+                            {rec.bakingCurrentProtein}% →{' '}
+                            {rec.bakingTargetProtein}% | Fat{' '}
+                            {rec.bakingCurrentFat}% → {rec.bakingTargetFat}% |
+                            Sugar {rec.bakingCurrentSugar}% →{' '}
+                            {rec.bakingTargetSugar}%
+                          </span>
+                        </div>
+                        <div className="text-[#1673B8] font-extrabold">
+                          Added: +{rec.bakingAddWaterLiters} L Water · +
+                          {rec.bakingAddGlutenKg} kg Gluten · +
+                          {rec.bakingAddShorteningFatKg} kg Fat · +
+                          {rec.bakingAddSugarKg} kg Sugar → Final:{' '}
+                          {rec.bakingFinalDoughKg} kg
                         </div>
                       </div>
                     )}

@@ -317,34 +317,43 @@ export interface LabFormulaUserData {
   savedRecords: LabFormulaSavedRecord[];
 }
 
+export type PearsonCalculatorMode =
+  | 'beverage'
+  | 'dairy'
+  | 'sauces_mayo'
+  | 'baking_biscuits'
+  | 'classic';
+
 export interface PearsonCustomProductItem {
   id: string;
   productName: string;
   industryCategory: string;
-  calculatorMode: 'beverage' | 'dairy' | 'classic';
+  calculatorMode: PearsonCalculatorMode;
   createdAt: string;
 }
 
 export interface PearsonBatchSavedRecord {
   id: string;
   recordCode: string;
-  calculatorMode: 'beverage' | 'dairy' | 'classic';
+  calculatorMode: PearsonCalculatorMode;
   industryCategory: string;
   productName: string;
-  batchLotCode?: string;
   notes?: string;
   savedDateFormatted: string;
   savedAtIso: string;
 
-  // Mode 1: Juice & Beverage Batch Corrector
+  // Mode 1: Juice & Beverage Batch Corrector (Brix, Acidity, pH)
   bevBatchKg?: number;
   bevCurrentBrix?: number;
   bevTargetBrix?: number;
   bevCurrentAcid?: number;
   bevTargetAcid?: number;
+  bevCurrentPh?: number;
+  bevTargetPh?: number;
   bevSugarSourceBrix?: number;
   bevBrixStatus?: string;
   bevAcidStatus?: string;
+  bevPhStatus?: string;
   bevCurrentRatio?: string;
   bevTargetRatio?: string;
   bevAddSugarKg?: number;
@@ -371,7 +380,43 @@ export interface PearsonBatchSavedRecord {
   dairyAddWaterKg?: number;
   dairyFinalMass?: number;
 
-  // Mode 3: Classic Pearson Square
+  // Mode 3: Sauces, Ketchup & Mayonnaise Batch Standardizer
+  sauceSubType?: 'ketchup_sauce' | 'mayo_emulsion';
+  sauceBatchKg?: number;
+  sauceCurrentTssOrOil?: number;
+  sauceTargetTssOrOil?: number;
+  sauceCurrentAcid?: number;
+  sauceTargetAcid?: number;
+  sauceCurrentSalt?: number;
+  sauceTargetSalt?: number;
+  sauceCurrentPh?: number;
+  sauceTargetPh?: number;
+  sauceVinegarStrength?: number;
+  sauceAddSolidsOrOilKg?: number;
+  sauceAddVinegarKg?: number;
+  sauceAddSaltKg?: number;
+  sauceAddWaterKg?: number;
+  saucePhStatus?: string;
+  sauceFinalBatchKg?: number;
+
+  // Mode 4: Baking, Biscuits & Dough Batch Standardizer
+  bakingBatchKg?: number;
+  bakingCurrentMoisture?: number;
+  bakingTargetMoisture?: number;
+  bakingCurrentProtein?: number;
+  bakingTargetProtein?: number;
+  bakingCurrentFat?: number;
+  bakingTargetFat?: number;
+  bakingCurrentSugar?: number;
+  bakingTargetSugar?: number;
+  bakingGlutenSourcePct?: number;
+  bakingAddWaterLiters?: number;
+  bakingAddGlutenKg?: number;
+  bakingAddShorteningFatKg?: number;
+  bakingAddSugarKg?: number;
+  bakingFinalDoughKg?: number;
+
+  // Mode 5: Classic Pearson Square
   psIngredientAName?: string;
   psIngredientBName?: string;
   psHighVal?: number;
