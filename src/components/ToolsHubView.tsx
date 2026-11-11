@@ -73,9 +73,9 @@ import {
   MoistureAshYieldTool,
   ProductionFloorWorkersTool,
   ENumbersInstantFinderTool,
-  JobEmailCoverLetterTool,
-  CitationReferenceGeneratorTool
+  JobEmailCoverLetterTool
 } from './SpecialistExtraTools';
+import { CitationReferenceGeneratorTool } from './ResearchSuiteTool';
 
 export type ActiveToolSection =
   | 'hub'
@@ -171,6 +171,12 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       productionFloorData: {
         defaultPlantName: saved.productionFloorData?.defaultPlantName || '',
         savedRecords: saved.productionFloorData?.savedRecords || []
+      },
+      researchSuiteData: {
+        customJournals: saved.researchSuiteData?.customJournals || [],
+        customAnovaPresets: saved.researchSuiteData?.customAnovaPresets || [],
+        customCitationStyles: saved.researchSuiteData?.customCitationStyles || [],
+        savedRecords: saved.researchSuiteData?.savedRecords || []
       }
     };
   }, [user.toolsData]);
@@ -1198,7 +1204,14 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           VIEW 10: CITATION & REFERENCE GENERATOR
          ===================================================================== */}
       {activeSection === 'citation-generator' && (
-        <CitationReferenceGeneratorTool user={user} />
+        <CitationReferenceGeneratorTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          toolsData={toolsData}
+          onSaveToolsData={onSaveToolsData}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
       )}
     </div>
   );

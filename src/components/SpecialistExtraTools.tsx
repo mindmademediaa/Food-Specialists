@@ -23,6 +23,9 @@ import {
 } from 'lucide-react';
 import {
   CustomAcidFactorItem,
+  CustomAnovaRequirementItem,
+  CustomCitationRequirementItem,
+  CustomJournalRequirementItem,
   CustomSanitizerItem,
   HubUser,
   LabFormulaSavedRecord,
@@ -33,6 +36,8 @@ import {
   PearsonCalculatorMode,
   PearsonCustomProductItem,
   ProductionFloorSavedRecord,
+  ResearchSuiteSavedRecord,
+  ResearchSuiteSavedStatRow,
   UserToolsData
 } from '../types/hub';
 import { E_NUMBERS_DATABASE, ENumberAdditive } from '../data/eNumbersData';

@@ -584,6 +584,124 @@ export interface ProductionFloorUserData {
   savedRecords: ProductionFloorSavedRecord[];
 }
 
+export interface CustomJournalRequirementItem {
+  id: string;
+  label: string;
+  shortName: string;
+  hecCategoryOrImpact: string;
+  abstractWordLimit: number;
+  abstractStructured: boolean;
+  keywordsLimit: number;
+  headingNumbering: 'numbered' | 'roman' | 'unnumbered';
+  includeLiteratureReview: boolean;
+  separateResultsAndDiscussion: boolean;
+  includeHighlights: boolean;
+  includePracticalApplication: boolean;
+  includeStatTableInManuscript: boolean;
+  inTextFormat: '(Author et al., Year)' | '(Author, Year)' | '[1]' | '(1)';
+  referenceStyleId: string;
+  customReferenceTemplate: string;
+  sortReferencesAlphabetically: boolean;
+  sectionOrder: string[];
+  guidelinesSummary: string;
+  createdAt: string;
+}
+
+export interface CustomAnovaRequirementItem {
+  id: string;
+  name: string;
+  designType: 'crd_one_way' | 'rcbd_two_way';
+  alphaLevel: '0.05' | '0.01';
+  postHocTest: 'LSD' | 'Tukey_HSD' | 'Duncan_DMR';
+  summaryFormat: 'mean_sd' | 'mean_se' | 'mean_only';
+  decimalPlaces: number;
+  replicationsCount: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface CustomCitationRequirementItem {
+  id: string;
+  name: string;
+  shortName: string;
+  templatePattern: string;
+  inTextFormat: '(Author et al., Year)' | '(Author, Year)' | '[1]' | '(1)';
+  numberingStyle: 'none' | 'dot_number' | 'bracket_number';
+  authorFormat: 'as_entered' | 'uppercase';
+  sortAlphabetically: boolean;
+  includeDoi: boolean;
+  createdAt: string;
+}
+
+export interface ResearchSuiteSavedStatRow {
+  id: string;
+  treatmentName: string;
+  rep1: string;
+  rep2: string;
+  rep3: string;
+  rep4: string;
+  rep5?: string;
+  rep6?: string;
+}
+
+export interface ResearchSuiteSavedRecord {
+  id: string;
+  recordCode: string;
+  recordType: 'extracted_paper' | 'journal_manuscript' | 'anova_analysis' | 'reference_list';
+  title: string;
+  subtitle?: string;
+  savedDateFormatted: string;
+  savedAtIso: string;
+  notes?: string;
+
+  // Extracted Paper / Manuscript fields
+  rawPaperText?: string;
+  extractedTitle?: string;
+  extractedAuthors?: string;
+  extractedAbstract?: string;
+  extractedKeywords?: string;
+  extractedIntro?: string;
+  extractedLitReview?: string;
+  extractedMethods?: string;
+  extractedResults?: string;
+  extractedConclusion?: string;
+  extractedReferences?: string;
+
+  // Journal Manuscript fields
+  targetJournalName?: string;
+  targetJournalShortName?: string;
+  manuscriptTitle?: string;
+  manuscriptAuthors?: string;
+  compiledManuscriptText?: string;
+
+  // ANOVA Statistical Analysis fields
+  statParameterName?: string;
+  statFactorName?: string;
+  anovaRequirementName?: string;
+  designType?: 'crd_one_way' | 'rcbd_two_way';
+  alphaLevel?: '0.05' | '0.01';
+  postHocTest?: 'LSD' | 'Tukey_HSD' | 'Duncan_DMR';
+  statRows?: ResearchSuiteSavedStatRow[];
+  grandMean?: number;
+  fCalculated?: number;
+  significanceBadge?: string;
+  lsdValue?: number;
+  cvPct?: number;
+
+  // Reference / Citation List fields
+  citationStyleName?: string;
+  rawReferencesText?: string;
+  formattedReferencesText?: string;
+  referencesCount?: number;
+}
+
+export interface ResearchSuiteUserData {
+  customJournals: CustomJournalRequirementItem[];
+  customAnovaPresets: CustomAnovaRequirementItem[];
+  customCitationStyles: CustomCitationRequirementItem[];
+  savedRecords: ResearchSuiteSavedRecord[];
+}
+
 export interface UserToolsData {
   nutrition: NutritionProfileData;
   examAttempts: UserExamAttempt[];
@@ -598,6 +716,7 @@ export interface UserToolsData {
   molarityData?: LabMolarityUserData;
   moistureAshData?: MoistureAshUserData;
   productionFloorData?: ProductionFloorUserData;
+  researchSuiteData?: ResearchSuiteUserData;
   lastActiveCourseId?: string;
   lastActiveTool?: 'nutrition' | 'exam' | 'interview';
   updatedAt: string;
