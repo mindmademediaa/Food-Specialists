@@ -26,6 +26,8 @@ import {
   CustomSanitizerItem,
   HubUser,
   LabFormulaSavedRecord,
+  PearsonBatchSavedRecord,
+  PearsonCustomProductItem,
   UserToolsData
 } from '../types/hub';
 import { E_NUMBERS_DATABASE, ENumberAdditive } from '../data/eNumbersData';
@@ -1683,10 +1685,141 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
 
 // ============================================================================
 // 2. PEARSON SQUARE & BATCH STANDARDIZATION / CORRECTION CALCULATOR
-//    (BEVERAGE / JUICE BRIX + ACIDITY + WATER CORRECTOR & DAIRY FAT/SNF STANDARDIZER)
+//    (BEVERAGE / JUICE BRIX + ACIDITY + WATER CORRECTOR, DAIRY FAT/SNF STANDARDIZER
+//     & CLASSIC PEARSON SQUARE — WITH PAID MEMBER PRODUCT DIRECTORY & PDF REPORTS)
 // ============================================================================
-export const PearsonSquareBatchTool: React.FC = () => {
-  const [industryMode, setIndustryMode] = useState<'beverage' | 'dairy' | 'classic'>('beverage');
+interface PearsonSquareBatchToolProps {
+  user?: HubUser;
+  isUserPaid?: boolean;
+  hasExpiredPremium?: boolean;
+  toolsData?: UserToolsData;
+  onSaveToolsData?: (updated: UserToolsData) => Promise<void>;
+  onOpenPremiumModal?: () => void;
+}
+
+const INDUSTRY_CATEGORIES: {
+  industry: string;
+  defaultMode: 'beverage' | 'dairy' | 'classic';
+  sampleProducts: string[];
+}[] = [
+  {
+    industry: 'Juice, Nectar & Beverage Industry',
+    defaultMode: 'beverage',
+    sampleProducts: [
+      'Mango Fruit Drink (13°Brix)',
+      'Orange Nectar (12.5°Brix)',
+      'Apple Juice Drink (11.5°Brix)',
+      'Carbonated Soft Drink (CSD Syrup)',
+      'Red Pomegranate / Guava Nectar',
+      'Lemonade / Citrus Electrolyte Drink',
+      'Concentrated Flavored Squash (45°Brix)'
+    ]
+  },
+  {
+    industry: 'Dairy, Milk & Ice Cream Industry',
+    defaultMode: 'dairy',
+    sampleProducts: [
+      'Pasteurized Standardized Milk (3.5% Fat, 8.5% SNF)',
+      'UHT Full Cream Milk (3.5% Fat, 8.9% SNF)',
+      'Toned / Low Fat Milk (1.5% Fat, 9.0% SNF)',
+      'Set Yogurt / Dahi Standardized Milk Base',
+      'Ice Cream Mix Standardization Batch',
+      'Flavored Milk Drink Base',
+      'Cheddar / Mozzarella Cheese Vat Milk'
+    ]
+  },
+  {
+    industry: 'Sauces, Ketchup, Jam & Condiments Industry',
+    defaultMode: 'beverage',
+    sampleProducts: [
+      'Tomato Ketchup Batch (28°Brix, 1.2% Acid)',
+      'Chili Garlic Sauce Batch',
+      'Mixed Fruit Jam / Jelly Batch (68°Brix)',
+      'Apple Cider / Synthetic Vinegar Dilution',
+      'Mayonnaise / Salad Dressing Emulsion',
+      'Tamarind / Imli Chutney Sauce'
+    ]
+  },
+  {
+    industry: 'Bakery, Confectionery, Oil & General Food Processing',
+    defaultMode: 'classic',
+    sampleProducts: [
+      'Invert Sugar Syrup Blending (65°Bx)',
+      'Cocoa / Chocolate Liquor Fat Blending',
+      'High-Protein Flour Gluten Standardization',
+      'Edible Vegetable Oil Blend',
+      'Brine Solution Salt (%) Standardization',
+      'Meat / Poultry Fat-to-Lean Trim Blending'
+    ]
+  }
+];
+
+export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
+  user,
+  isUserPaid = false,
+  hasExpiredPremium = false,
+  toolsData,
+  onSaveToolsData,
+  onOpenPremiumModal
+}) => {
+  const canUsePremium = Boolean(
+    (isUserPaid && !hasExpiredPremium) || user?.isAdmin
+  );
+
+  const [industryMode, setIndustryMode] = useState<
+    'beverage' | 'dairy' | 'classic' | 'directory'
+  >('beverage');
+  const [statusToast, setStatusToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setStatusToast(msg);
+    window.setTimeout(() => {
+      setStatusToast((prev) => (prev === msg ? null : prev));
+    }, 3200);
+  };
+
+  // Saved Custom Products & Saved Batch Records from toolsData
+  const customProducts: PearsonCustomProductItem[] = useMemo(
+    () => toolsData?.pearsonBatchData?.customProducts || [],
+    [toolsData?.pearsonBatchData?.customProducts]
+  );
+
+  const savedBatchRecords: PearsonBatchSavedRecord[] = useMemo(
+    () => toolsData?.pearsonBatchData?.savedBatchRecords || [],
+    [toolsData?.pearsonBatchData?.savedBatchRecords]
+  );
+
+  // Paid Member Industry & Product Selection State
+  const [selectedIndustry, setSelectedIndustry] = useState<string>(
+    INDUSTRY_CATEGORIES[0].industry
+  );
+  const [productName, setProductName] = useState<string>(
+    'Mango Fruit Drink (13°Brix)'
+  );
+  const [batchLotCode, setBatchLotCode] = useState<string>('');
+  const [batchNotes, setBatchNotes] = useState<string>('');
+
+  // Add Custom Product to Reusable Library State
+  const [showAddProductForm, setShowAddProductForm] = useState<boolean>(false);
+  const [newCustomProductName, setNewCustomProductName] = useState<string>('');
+  const [newCustomProductIndustry, setNewCustomProductIndustry] =
+    useState<string>(INDUSTRY_CATEGORIES[0].industry);
+
+  // Product suggestions for the active industry + custom saved products
+  const availableProductSuggestions = useMemo(() => {
+    const matchedInd = INDUSTRY_CATEGORIES.find(
+      (c) => c.industry === selectedIndustry
+    );
+    const baseList = matchedInd ? matchedInd.sampleProducts : [];
+    const customForInd = customProducts
+      .filter(
+        (cp) =>
+          cp.industryCategory === selectedIndustry ||
+          cp.calculatorMode === industryMode
+      )
+      .map((cp) => cp.productName);
+    return Array.from(new Set([...customForInd, ...baseList]));
+  }, [selectedIndustry, customProducts, industryMode]);
 
   // MODE 1: BEVERAGE / JUICE / SYRUP BATCH CORRECTION (Current Out-of-Spec Batch -> Exact Water, Sugar & Acid to Add)
   const [bevBatchKg, setBevBatchKg] = useState<string>('500');
@@ -1708,29 +1841,13 @@ export const PearsonSquareBatchTool: React.FC = () => {
     const currentSolidsKg = M0 * (B0 / 100);
     const currentAcidKg = M0 * (A0 / 100);
 
-    // Determine minimum final batch mass needed so we never have to remove water, sugar, or acid:
-    // 1) Final mass must be >= M0
-    // 2) If currentAcidKg > M_final * (At/100), we need M_final >= currentAcidKg / (At/100)
-    // 3) If currentSolidsKg > M_final * (Bt/100), we need M_final >= currentSolidsKg / (Bt/100)
     const minMassForAcid = At > 0 ? currentAcidKg / (At / 100) : M0;
     const minMassForBrix = Bt > 0 ? currentSolidsKg / (Bt / 100) : M0;
 
-    // Solve simultaneous mass balance when adding S kg of Sugar Source (Brix Bs), C kg of Anhydrous Citric Acid (100% solids), and W kg of Water (0% solids):
-    // Target equations for final mass Mf = M0 + S + C + W:
-    // Acid balance: currentAcidKg + C = Mf * (At / 100)  => C = Mf*(At/100) - currentAcidKg
-    // Brix/Solids balance: currentSolidsKg + S*(Bs/100) + C = Mf * (Bt / 100)
-    // Water >= 0 means Mf >= M0 + S + C
-
-    // First check minimum Mf assuming W = 0:
-    // If W = 0, Mf = M0 + S + C.
-    // Substitute C = Mf*(At/100) - currentAcidKg and S = [Mf*(Bt/100) - currentSolidsKg - C] / (Bs/100):
     const bsFrac = Bs / 100;
     const btFrac = Bt / 100;
     const atFrac = At / 100;
 
-    // With W = 0: Mf - M0 = C + [Mf*btFrac - currentSolidsKg - C] / bsFrac
-    // Multiply by bsFrac: bsFrac*(Mf - M0) = bsFrac*C + Mf*btFrac - currentSolidsKg - C
-    // Let's compute Mf_noWater directly:
     const denom = bsFrac - btFrac - atFrac * (bsFrac - 1);
     let Mf_noWater = M0;
     if (denom > 0.0001) {
@@ -1820,7 +1937,6 @@ export const PearsonSquareBatchTool: React.FC = () => {
 
     // Step 1: Adjust Fat using Skim Milk (if F0 > Ft) or Cream (if F0 < Ft)
     if (F0 > Ft && Ft > Fskim) {
-      // Pearson Square with Skim Milk: Skim needed per part of M0 = (F0 - Ft) / (Ft - Fskim)
       addSkimKg = M0 * ((F0 - Ft) / (Ft - Fskim));
     } else if (F0 < Ft && Fcream > Ft) {
       addCreamKg = M0 * ((Ft - F0) / (Fcream - Ft));
@@ -1838,7 +1954,6 @@ export const PearsonSquareBatchTool: React.FC = () => {
       addSmpKg =
         (intermediateMass * (St - currentSnfPct)) / (96 - St);
     } else if (currentSnfPct > St + 0.15 && F0 > Ft) {
-      // Water needed if both Fat and SNF were too high
       addWaterKg =
         (intermediateMass * (currentSnfPct - St)) / St;
     }
@@ -1864,6 +1979,12 @@ export const PearsonSquareBatchTool: React.FC = () => {
   ]);
 
   // MODE 3: CLASSIC 2-INGREDIENT PEARSON SQUARE
+  const [psIngredientAName, setPsIngredientAName] = useState<string>(
+    'High Concentration Stream (Ingredient A)'
+  );
+  const [psIngredientBName, setPsIngredientBName] = useState<string>(
+    'Low Concentration / Diluent (Ingredient B)'
+  );
   const [psHighVal, setPsHighVal] = useState<string>('65');
   const [psLowVal, setPsLowVal] = useState<string>('0');
   const [psTargetVal, setPsTargetVal] = useState<string>('12');
@@ -1894,28 +2015,797 @@ export const PearsonSquareBatchTool: React.FC = () => {
     };
   }, [psHighVal, psLowVal, psTargetVal, psTotalBatch]);
 
+  // Directory Search & Filter State
+  const [dirSearchQuery, setDirSearchQuery] = useState<string>('');
+  const [dirModeFilter, setDirModeFilter] = useState<
+    'all' | 'beverage' | 'dairy' | 'classic'
+  >('all');
+  const [dirPeriodFilter, setDirPeriodFilter] = useState<
+    'all' | 'today' | 'week' | 'month'
+  >('all');
+
+  const filteredBatchRecords = useMemo(() => {
+    const now = Date.now();
+    return savedBatchRecords.filter((rec) => {
+      if (dirModeFilter !== 'all' && rec.calculatorMode !== dirModeFilter) {
+        return false;
+      }
+      if (dirPeriodFilter !== 'all') {
+        const recTime = new Date(rec.savedAtIso).getTime();
+        if (!Number.isNaN(recTime)) {
+          const diffDays = (now - recTime) / (1000 * 60 * 60 * 24);
+          if (dirPeriodFilter === 'today' && diffDays > 1) return false;
+          if (dirPeriodFilter === 'week' && diffDays > 7) return false;
+          if (dirPeriodFilter === 'month' && diffDays > 31) return false;
+        }
+      }
+      if (dirSearchQuery.trim()) {
+        const q = dirSearchQuery.toLowerCase();
+        const hay = [
+          rec.recordCode,
+          rec.productName,
+          rec.industryCategory,
+          rec.batchLotCode || '',
+          rec.notes || '',
+          rec.savedDateFormatted
+        ]
+          .join(' ')
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [savedBatchRecords, dirModeFilter, dirPeriodFilter, dirSearchQuery]);
+
+  // Persist helper for pearsonBatchData
+  const persistPearsonData = async (
+    nextProducts: PearsonCustomProductItem[],
+    nextRecords: PearsonBatchSavedRecord[]
+  ) => {
+    if (!toolsData || !onSaveToolsData) return;
+    const updated: UserToolsData = {
+      ...toolsData,
+      pearsonBatchData: {
+        customProducts: nextProducts,
+        savedBatchRecords: nextRecords
+      },
+      updatedAt: new Date().toISOString()
+    };
+    await onSaveToolsData(updated);
+  };
+
+  // Save a custom product name to reusable product list
+  const handleSaveCustomProduct = async () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    const cleanName = newCustomProductName.trim();
+    if (!cleanName) {
+      showToast('Please enter a Product Name to add to your list.');
+      return;
+    }
+    const activeCalcMode: 'beverage' | 'dairy' | 'classic' =
+      industryMode === 'directory' ? 'beverage' : industryMode;
+    const newItem: PearsonCustomProductItem = {
+      id: `prod-${Date.now()}`,
+      productName: cleanName,
+      industryCategory: newCustomProductIndustry || selectedIndustry,
+      calculatorMode: activeCalcMode,
+      createdAt: new Date().toISOString()
+    };
+    const nextProducts = [newItem, ...customProducts];
+    await persistPearsonData(nextProducts, savedBatchRecords);
+    setSelectedIndustry(newItem.industryCategory);
+    setProductName(cleanName);
+    setNewCustomProductName('');
+    setShowAddProductForm(false);
+    showToast(`Added "${cleanName}" to your custom Product List!`);
+  };
+
+  const handleDeleteCustomProduct = async (id: string) => {
+    const nextProducts = customProducts.filter((p) => p.id !== id);
+    await persistPearsonData(nextProducts, savedBatchRecords);
+    showToast('Removed custom product from your list.');
+  };
+
+  // Build a PearsonBatchSavedRecord from the active calculator mode
+  const buildCurrentBatchRecord = (
+    mode: 'beverage' | 'dairy' | 'classic'
+  ): PearsonBatchSavedRecord => {
+    const now = new Date();
+    const formattedDate = now.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const prefix =
+      mode === 'beverage'
+        ? 'BATCH-BEV'
+        : mode === 'dairy'
+        ? 'BATCH-DRY'
+        : 'BATCH-PRS';
+    const recordCode = `${prefix}-${String(
+      savedBatchRecords.length + 101
+    ).padStart(4, '0')}`;
+    const cleanProd =
+      productName.trim() ||
+      (mode === 'beverage'
+        ? 'Beverage / Juice Batch'
+        : mode === 'dairy'
+        ? 'Standardized Milk Batch'
+        : 'Pearson Square Standardized Batch');
+
+    if (mode === 'beverage') {
+      return {
+        id: `pbatch-${Date.now()}`,
+        recordCode,
+        calculatorMode: 'beverage',
+        industryCategory: selectedIndustry,
+        productName: cleanProd,
+        batchLotCode: batchLotCode.trim() || undefined,
+        notes: batchNotes.trim() || undefined,
+        savedDateFormatted: formattedDate,
+        savedAtIso: now.toISOString(),
+        bevBatchKg: Number(bevBatchKg) || 500,
+        bevCurrentBrix: Number(bevCurrentBrix) || 0,
+        bevTargetBrix: Number(bevTargetBrix) || 0,
+        bevCurrentAcid: Number(bevCurrentAcid) || 0,
+        bevTargetAcid: Number(bevTargetAcid) || 0,
+        bevSugarSourceBrix: Number(bevSugarSourceBrix) || 100,
+        bevBrixStatus: beverageCorrection.brixStatus,
+        bevAcidStatus: beverageCorrection.acidStatus,
+        bevCurrentRatio: beverageCorrection.currentRatio,
+        bevTargetRatio: beverageCorrection.targetRatio,
+        bevAddSugarKg: beverageCorrection.addSugarKg,
+        bevAddSugarGrams: beverageCorrection.addSugarGrams,
+        bevAddAcidKg: beverageCorrection.addAcidKg,
+        bevAddAcidGrams: beverageCorrection.addAcidGrams,
+        bevAddWaterLiters: beverageCorrection.addWaterLiters,
+        bevFinalBatchKg: beverageCorrection.finalBatchKg,
+        bevVerifiedBrix: beverageCorrection.verifiedBrix,
+        bevVerifiedAcid: beverageCorrection.verifiedAcid
+      };
+    }
+
+    if (mode === 'dairy') {
+      return {
+        id: `pbatch-${Date.now()}`,
+        recordCode,
+        calculatorMode: 'dairy',
+        industryCategory: selectedIndustry,
+        productName: cleanProd,
+        batchLotCode: batchLotCode.trim() || undefined,
+        notes: batchNotes.trim() || undefined,
+        savedDateFormatted: formattedDate,
+        savedAtIso: now.toISOString(),
+        dairyBatchKg: Number(dairyBatchKg) || 1000,
+        dairyCurrentFat: Number(dairyCurrentFat) || 0,
+        dairyTargetFat: Number(dairyTargetFat) || 0,
+        dairyCurrentSnf: Number(dairyCurrentSnf) || 0,
+        dairyTargetSnf: Number(dairyTargetSnf) || 0,
+        skimMilkFat: Number(skimMilkFat) || 0.1,
+        skimMilkSnf: Number(skimMilkSnf) || 8.9,
+        creamFat: Number(creamFat) || 40,
+        dairyAddSkimKg: dairyCorrection.addSkimKg,
+        dairyAddCreamKg: dairyCorrection.addCreamKg,
+        dairyAddSmpKg: dairyCorrection.addSmpKg,
+        dairyAddWaterKg: dairyCorrection.addWaterKg,
+        dairyFinalMass: dairyCorrection.finalMass
+      };
+    }
+
+    return {
+      id: `pbatch-${Date.now()}`,
+      recordCode,
+      calculatorMode: 'classic',
+      industryCategory: selectedIndustry,
+      productName: cleanProd,
+      batchLotCode: batchLotCode.trim() || undefined,
+      notes: batchNotes.trim() || undefined,
+      savedDateFormatted: formattedDate,
+      savedAtIso: now.toISOString(),
+      psIngredientAName: psIngredientAName.trim() || 'Ingredient A (High)',
+      psIngredientBName: psIngredientBName.trim() || 'Ingredient B (Low)',
+      psHighVal: Number(psHighVal) || 0,
+      psLowVal: Number(psLowVal) || 0,
+      psTargetVal: Number(psTargetVal) || 0,
+      psTotalBatch: Number(psTotalBatch) || 100,
+      psHighParts: classicPearson.highParts,
+      psLowParts: classicPearson.lowParts,
+      psHighPct: classicPearson.highPct,
+      psLowPct: classicPearson.lowPct,
+      psHighAmount: classicPearson.highAmount,
+      psLowAmount: classicPearson.lowAmount
+    };
+  };
+
+  const handleSaveBatchToDirectory = async (
+    mode: 'beverage' | 'dairy' | 'classic'
+  ) => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    if (mode === 'classic' && !classicPearson.isValid) {
+      showToast(
+        'Target concentration must be between Ingredient A and Ingredient B before saving.'
+      );
+      return;
+    }
+    const newRecord = buildCurrentBatchRecord(mode);
+    const nextRecords = [newRecord, ...savedBatchRecords];
+    await persistPearsonData(customProducts, nextRecords);
+    showToast(
+      `Saved "${newRecord.productName}" (${newRecord.recordCode}) to Batch Directory!`
+    );
+  };
+
+  const handleDeleteBatchRecord = async (id: string) => {
+    const nextRecords = savedBatchRecords.filter((r) => r.id !== id);
+    await persistPearsonData(customProducts, nextRecords);
+    showToast('Batch record removed from directory.');
+  };
+
+  const handleReloadBatchRecord = (rec: PearsonBatchSavedRecord) => {
+    setSelectedIndustry(rec.industryCategory || INDUSTRY_CATEGORIES[0].industry);
+    setProductName(rec.productName || '');
+    setBatchLotCode(rec.batchLotCode || '');
+    setBatchNotes(rec.notes || '');
+
+    if (rec.calculatorMode === 'beverage') {
+      setIndustryMode('beverage');
+      setBevBatchKg(String(rec.bevBatchKg ?? 500));
+      setBevCurrentBrix(String(rec.bevCurrentBrix ?? 10.2));
+      setBevTargetBrix(String(rec.bevTargetBrix ?? 13.0));
+      setBevCurrentAcid(String(rec.bevCurrentAcid ?? 0.18));
+      setBevTargetAcid(String(rec.bevTargetAcid ?? 0.28));
+      setBevSugarSourceBrix(String(rec.bevSugarSourceBrix ?? 100));
+    } else if (rec.calculatorMode === 'dairy') {
+      setIndustryMode('dairy');
+      setDairyBatchKg(String(rec.dairyBatchKg ?? 1000));
+      setDairyCurrentFat(String(rec.dairyCurrentFat ?? 4.8));
+      setDairyTargetFat(String(rec.dairyTargetFat ?? 3.5));
+      setDairyCurrentSnf(String(rec.dairyCurrentSnf ?? 8.3));
+      setDairyTargetSnf(String(rec.dairyTargetSnf ?? 8.5));
+      setSkimMilkFat(String(rec.skimMilkFat ?? 0.1));
+      setSkimMilkSnf(String(rec.skimMilkSnf ?? 8.9));
+      setCreamFat(String(rec.creamFat ?? 40));
+    } else {
+      setIndustryMode('classic');
+      setPsIngredientAName(rec.psIngredientAName || 'Ingredient A (High)');
+      setPsIngredientBName(rec.psIngredientBName || 'Ingredient B (Low)');
+      setPsHighVal(String(rec.psHighVal ?? 65));
+      setPsLowVal(String(rec.psLowVal ?? 0));
+      setPsTargetVal(String(rec.psTargetVal ?? 12));
+      setPsTotalBatch(String(rec.psTotalBatch ?? 1000));
+    }
+    showToast(`Reloaded batch ${rec.recordCode} (${rec.productName}) into calculator.`);
+  };
+
+  // Generate Single Batch Standardization PDF Report
+  const handleDownloadSingleBatchPdf = (rec: PearsonBatchSavedRecord) => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+    const specialistRole = (
+      user?.currentRole ||
+      user?.qualification ||
+      'Quality Assurance & Production Specialist'
+    ).trim();
+
+    // Header Banner
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 42, 'F');
+    pdf.setFillColor(22, 115, 184);
+    pdf.rect(0, 39, 210, 3, 'F');
+
+    drawPdfBrandLogo(pdf, 14, 8, 25, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('Food Science Portal — Batch Standardization Report', 44, 17);
+
+    const modeTitle =
+      rec.calculatorMode === 'beverage'
+        ? 'JUICE & BEVERAGE BATCH CORRECTION CERTIFICATE'
+        : rec.calculatorMode === 'dairy'
+        ? 'DAIRY FAT & SNF STANDARDIZATION CERTIFICATE'
+        : 'PEARSON SQUARE MASS BALANCE CERTIFICATE';
+    pdf.setFontSize(13.5);
+    pdf.text(modeTitle, 44, 25.5);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Record ID: ${rec.recordCode}   •   Date & Time: ${rec.savedDateFormatted}`,
+      44,
+      33.5
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 172, 8, 24, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    // Metadata Card (Specialist + Industry + Product Name + Batch Lot)
+    pdf.setFillColor(240, 246, 252);
+    pdf.setDrawColor(210, 222, 234);
+    pdf.roundedRect(14, 49, 182, 32, 3, 3, 'FD');
+
+    pdf.setTextColor(26, 33, 56);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(10.5);
+    pdf.text(`Product Name: ${rec.productName}`, 19, 57);
+    pdf.text(`Industry Sector: ${rec.industryCategory}`, 19, 64.5);
+    pdf.text(
+      `Batch / Tank Lot No.: ${rec.batchLotCode || 'Standard Production Batch'}`,
+      19,
+      72
+    );
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(74, 85, 104);
+    pdf.text(`Prepared By: ${specialistName} (${specialistRole})`, 115, 57);
+
+    let y = 89;
+
+    if (rec.calculatorMode === 'beverage') {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11.5);
+      pdf.setTextColor(22, 115, 184);
+      pdf.text(
+        '1. INITIAL BATCH LAB ANALYSIS VS. REQUIRED TARGET SPECIFICATION',
+        14,
+        y
+      );
+      y += 6;
+
+      const bevSpecRows = [
+        ['Current Batch Size (Before Adjustment)', `${rec.bevBatchKg} L / kg`],
+        [
+          'Current °Brix vs. Target °Brix',
+          `${rec.bevCurrentBrix} °Brix  -->  Target: ${rec.bevTargetBrix} °Brix (${rec.bevBrixStatus})`
+        ],
+        [
+          'Current Acidity (%) vs. Target Acidity (%)',
+          `${rec.bevCurrentAcid}%  -->  Target: ${rec.bevTargetAcid}% (${rec.bevAcidStatus})`
+        ],
+        [
+          'Brix : Acid Ratio (Current vs. Target)',
+          `Current ${rec.bevCurrentRatio} : 1   |   Target ${rec.bevTargetRatio} : 1`
+        ],
+        [
+          'Sugar / Syrup Source Concentration Used',
+          `${rec.bevSugarSourceBrix} °Brix (${
+            Number(rec.bevSugarSourceBrix) === 100
+              ? 'Dry Crystalline Sugar'
+              : 'Sugar Syrup'
+          })`
+        ]
+      ];
+
+      bevSpecRows.forEach(([label, val], idx) => {
+        pdf.setFillColor(
+          idx % 2 === 0 ? 248 : 255,
+          idx % 2 === 0 ? 250 : 255,
+          idx % 2 === 0 ? 252 : 255
+        );
+        pdf.setDrawColor(210, 222, 234);
+        pdf.rect(14, y, 182, 9.5, 'FD');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(26, 33, 56);
+        pdf.text(label, 18, y + 6.3);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(22, 115, 184);
+        pdf.text(String(val), 98, y + 6.3);
+        y += 9.5;
+      });
+
+      y += 8;
+      pdf.setFillColor(26, 33, 56);
+      pdf.roundedRect(14, y, 182, 42, 3, 3, 'F');
+      pdf.setTextColor(125, 211, 252);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10.5);
+      pdf.text(
+        `2. EXACT BATCH CORRECTION ADDITIONS (FOR ${rec.bevBatchKg} L/kg BATCH)`,
+        19,
+        y + 9
+      );
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(11);
+      pdf.text(
+        `• Add Sugar / Syrup (${rec.bevSugarSourceBrix}°Bx):  + ${rec.bevAddSugarKg} kg  (${(
+          rec.bevAddSugarGrams || 0
+        ).toLocaleString()} grams)`,
+        19,
+        y + 18
+      );
+      pdf.text(
+        `• Add Citric Acid (Anhydrous):  + ${rec.bevAddAcidKg} kg  (${(
+          rec.bevAddAcidGrams || 0
+        ).toLocaleString()} grams)`,
+        19,
+        y + 26
+      );
+      pdf.text(
+        `• Add Treated Water:  + ${rec.bevAddWaterLiters} Liters`,
+        19,
+        y + 34
+      );
+      pdf.setTextColor(253, 224, 71);
+      pdf.setFontSize(10);
+      pdf.text(
+        `Final Standardized Batch: ${rec.bevFinalBatchKg} L/kg  (Verified: ${rec.bevVerifiedBrix}°Bx & ${rec.bevVerifiedAcid}% Acid)`,
+        110,
+        y + 34
+      );
+      y += 50;
+    } else if (rec.calculatorMode === 'dairy') {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11.5);
+      pdf.setTextColor(22, 115, 184);
+      pdf.text(
+        '1. RAW MILK BATCH ANALYSIS VS. TARGET STANDARDIZATION SPEC',
+        14,
+        y
+      );
+      y += 6;
+
+      const dairyRows = [
+        ['Initial Raw Milk Batch Mass', `${rec.dairyBatchKg} kg / L`],
+        [
+          'Milk Fat (%) — Current vs. Required Target',
+          `Current: ${rec.dairyCurrentFat}% Fat   -->   Target: ${rec.dairyTargetFat}% Fat`
+        ],
+        [
+          'Milk SNF (%) — Current vs. Required Target',
+          `Current: ${rec.dairyCurrentSnf}% SNF   -->   Target: ${rec.dairyTargetSnf}% SNF`
+        ],
+        [
+          'Available Skim Milk Composition',
+          `${rec.skimMilkFat}% Fat  &  ${rec.skimMilkSnf}% SNF`
+        ],
+        ['Available Cream Fat (%)', `${rec.creamFat}% Fat`]
+      ];
+
+      dairyRows.forEach(([label, val], idx) => {
+        pdf.setFillColor(
+          idx % 2 === 0 ? 248 : 255,
+          idx % 2 === 0 ? 250 : 255,
+          idx % 2 === 0 ? 252 : 255
+        );
+        pdf.setDrawColor(210, 222, 234);
+        pdf.rect(14, y, 182, 9.5, 'FD');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(26, 33, 56);
+        pdf.text(label, 18, y + 6.3);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(22, 115, 184);
+        pdf.text(String(val), 102, y + 6.3);
+        y += 9.5;
+      });
+
+      y += 8;
+      pdf.setFillColor(26, 33, 56);
+      pdf.roundedRect(14, y, 182, 42, 3, 3, 'F');
+      pdf.setTextColor(125, 211, 252);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10.5);
+      pdf.text(
+        `2. DAIRY STANDARDIZATION PRESCRIPTION (${rec.dairyTargetFat}% FAT & ${rec.dairyTargetSnf}% SNF)`,
+        19,
+        y + 9
+      );
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(11);
+      pdf.text(
+        `• Add Skim Milk (${rec.skimMilkFat}% Fat / ${rec.skimMilkSnf}% SNF):  + ${rec.dairyAddSkimKg} kg`,
+        19,
+        y + 18
+      );
+      pdf.text(
+        `• Add Fresh Cream (${rec.creamFat}% Fat):  + ${rec.dairyAddCreamKg} kg`,
+        19,
+        y + 26
+      );
+      pdf.text(
+        `• Add Skim Milk Powder (SMP 96% SNF):  + ${rec.dairyAddSmpKg} kg   |   Water: + ${rec.dairyAddWaterKg} kg`,
+        19,
+        y + 34
+      );
+      pdf.setTextColor(253, 224, 71);
+      pdf.setFontSize(10.5);
+      pdf.text(
+        `Final Standardized Milk Yield: ${rec.dairyFinalMass} kg`,
+        130,
+        y + 18
+      );
+      y += 50;
+    } else {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11.5);
+      pdf.setTextColor(22, 115, 184);
+      pdf.text('1. CLASSIC PEARSON SQUARE 2-STREAM INPUT PARAMETERS', 14, y);
+      y += 6;
+
+      const classicRows = [
+        [
+          `${rec.psIngredientAName || 'Ingredient A (High Stream)'} Concentration`,
+          `${rec.psHighVal}%`
+        ],
+        [
+          `${rec.psIngredientBName || 'Ingredient B (Low Stream)'} Concentration`,
+          `${rec.psLowVal}%`
+        ],
+        ['Desired Target Concentration (%)', `${rec.psTargetVal}%`],
+        ['Total Required Target Batch Size', `${rec.psTotalBatch} kg / L`]
+      ];
+
+      classicRows.forEach(([label, val], idx) => {
+        pdf.setFillColor(
+          idx % 2 === 0 ? 248 : 255,
+          idx % 2 === 0 ? 250 : 255,
+          idx % 2 === 0 ? 252 : 255
+        );
+        pdf.setDrawColor(210, 222, 234);
+        pdf.rect(14, y, 182, 9.5, 'FD');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(26, 33, 56);
+        pdf.text(label, 18, y + 6.3);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(22, 115, 184);
+        pdf.text(String(val), 120, y + 6.3);
+        y += 9.5;
+      });
+
+      y += 8;
+      pdf.setFillColor(26, 33, 56);
+      pdf.roundedRect(14, y, 182, 36, 3, 3, 'F');
+      pdf.setTextColor(125, 211, 252);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10.5);
+      pdf.text(
+        `2. EXACT PEARSON SQUARE BLENDING QUANTITIES (FOR ${rec.psTotalBatch} kg/L)`,
+        19,
+        y + 9
+      );
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(11);
+      pdf.text(
+        `• ${rec.psIngredientAName || 'Ingredient A'} (${rec.psHighVal}%):  ${rec.psHighAmount} kg/L  (${rec.psHighParts} parts / ${rec.psHighPct}%)`,
+        19,
+        y + 19
+      );
+      pdf.text(
+        `• ${rec.psIngredientBName || 'Ingredient B'} (${rec.psLowVal}%):  ${rec.psLowAmount} kg/L  (${rec.psLowParts} parts / ${rec.psLowPct}%)`,
+        19,
+        y + 28
+      );
+      y += 44;
+    }
+
+    if (rec.notes) {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text('QA / Production Batch Adjustment Notes:', 14, y);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(74, 85, 104);
+      const splitNotes = pdf.splitTextToSize(rec.notes, 180);
+      pdf.text(splitNotes, 14, y + 6);
+    }
+
+    // Footer
+    pdf.setDrawColor(210, 222, 234);
+    pdf.line(14, 277, 196, 277);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(90, 108, 132);
+    pdf.text(
+      'Food Science Portal — Official Industrial Batch Standardization & Mass Balance Record',
+      14,
+      283
+    );
+
+    pdf.save(
+      `${rec.recordCode}_${rec.productName.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`
+    );
+    showToast(`Downloaded PDF report for ${rec.productName}!`);
+  };
+
+  // Download Full Directory Logbook PDF (All Filtered Batch Records)
+  const handleDownloadDirectoryLogbookPdf = () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+    if (filteredBatchRecords.length === 0) {
+      showToast('No saved batch records to export.');
+      return;
+    }
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, 210, 42, 'F');
+    drawPdfBrandLogo(pdf, 14, 8, 25, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 4
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.text('Food Science Portal — Batch Standardization Logbook', 44, 17);
+    pdf.setFontSize(15);
+    pdf.text('SAVED BATCH STANDARDIZATION DIRECTORY REPORT', 44, 26);
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `Specialist: ${specialistName}   •   Total Saved Batches: ${filteredBatchRecords.length}`,
+      44,
+      34
+    );
+
+    drawPdfUserPhoto(pdf, user?.profilePicUrl, specialistName, 172, 8, 24, {
+      borderColor: [255, 255, 255],
+      fallbackBgColor: [22, 115, 184],
+      fallbackTextColor: [255, 255, 255]
+    });
+
+    let y = 50;
+    filteredBatchRecords.forEach((rec, idx) => {
+      if (y > 250) {
+        pdf.addPage();
+        y = 20;
+      }
+      pdf.setFillColor(
+        idx % 2 === 0 ? 248 : 240,
+        idx % 2 === 0 ? 250 : 246,
+        252
+      );
+      pdf.setDrawColor(210, 222, 234);
+      pdf.roundedRect(14, y, 182, 29, 2.5, 2.5, 'FD');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(26, 33, 56);
+      pdf.text(
+        `${idx + 1}. [${rec.recordCode}] ${rec.productName} — ${rec.industryCategory} (${rec.savedDateFormatted})`,
+        18,
+        y + 7
+      );
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.7);
+      pdf.setTextColor(22, 115, 184);
+      if (rec.calculatorMode === 'beverage') {
+        pdf.text(
+          `Beverage Batch (${rec.bevBatchKg} L/kg): ${rec.bevCurrentBrix}°Bx -> ${rec.bevTargetBrix}°Bx | Acid ${rec.bevCurrentAcid}% -> ${rec.bevTargetAcid}%`,
+          18,
+          y + 14
+        );
+        pdf.setTextColor(26, 33, 56);
+        pdf.text(
+          `Prescription: Add Sugar +${rec.bevAddSugarKg} kg, Add Acid +${rec.bevAddAcidKg} kg, Add Water +${rec.bevAddWaterLiters} L => Final: ${rec.bevFinalBatchKg} kg`,
+          18,
+          y + 20.5
+        );
+      } else if (rec.calculatorMode === 'dairy') {
+        pdf.text(
+          `Dairy Batch (${rec.dairyBatchKg} kg): Fat ${rec.dairyCurrentFat}% -> ${rec.dairyTargetFat}% | SNF ${rec.dairyCurrentSnf}% -> ${rec.dairyTargetSnf}%`,
+          18,
+          y + 14
+        );
+        pdf.setTextColor(26, 33, 56);
+        pdf.text(
+          `Prescription: Add Skim +${rec.dairyAddSkimKg} kg, Cream +${rec.dairyAddCreamKg} kg, SMP +${rec.dairyAddSmpKg} kg, Water +${rec.dairyAddWaterKg} kg => Final: ${rec.dairyFinalMass} kg`,
+          18,
+          y + 20.5
+        );
+      } else {
+        pdf.text(
+          `Classic Pearson (${rec.psTotalBatch} kg/L @ Target ${rec.psTargetVal}%): ${rec.psIngredientAName} (${rec.psHighVal}%) + ${rec.psIngredientBName} (${rec.psLowVal}%)`,
+          18,
+          y + 14
+        );
+        pdf.setTextColor(26, 33, 56);
+        pdf.text(
+          `Prescription: ${rec.psIngredientAName}: ${rec.psHighAmount} kg/L (${rec.psHighPct}%)  |  ${rec.psIngredientBName}: ${rec.psLowAmount} kg/L (${rec.psLowPct}%)`,
+          18,
+          y + 20.5
+        );
+      }
+
+      if (rec.batchLotCode || rec.notes) {
+        pdf.setTextColor(90, 108, 132);
+        pdf.text(
+          `${rec.batchLotCode ? `Lot: ${rec.batchLotCode}  ` : ''}${
+            rec.notes ? `Notes: ${rec.notes.slice(0, 75)}` : ''
+          }`,
+          18,
+          y + 26.5
+        );
+      }
+      y += 33;
+    });
+
+    pdf.save(`Batch_Standardization_Directory_Logbook_${Date.now()}.pdf`);
+    showToast('Downloaded Complete Batch Standardization Logbook PDF!');
+  };
+
   return (
     <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
+      {/* Toast Notification */}
+      {statusToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+          <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
+          <span>{statusToast}</span>
+        </div>
+      )}
+
+      {/* Header & Sub-Mode Tabs */}
       <div className="border-b border-[#D2DEEA] pb-3.5 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-[#1A2138] text-white flex items-center justify-center shrink-0">
             <Scale className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
-              Pearson Square &amp; Batch Standardization Calculator
-            </h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                Pearson Square &amp; Batch Standardization Calculator
+              </h2>
+              <span className="text-[11px] font-extrabold text-[#1673B8]">
+                {canUsePremium
+                  ? '· Paid Pro Mode (Product Directory & Batch Logbook Active)'
+                  : '· Free Standard Calculator'}
+              </span>
+            </div>
             <p className="text-xs text-[#4A5568] font-medium">
-              Compare Current Sample vs. Required Spec — Get Exact Water, Sugar, Acid, Cream or Skim Milk to Add
+              Compare Current Sample vs. Required Spec — Get Exact Water, Sugar,
+              Acid, Cream or Skim Milk to Add
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-1.5 bg-[#F0F6FC] p-1 rounded-xl border border-[#D2DEEA]">
           {[
-            { id: 'beverage' as const, label: 'Juice & Beverage Batch Corrector' },
+            {
+              id: 'beverage' as const,
+              label: 'Juice & Beverage Batch Corrector'
+            },
             { id: 'dairy' as const, label: 'Dairy Fat & SNF Standardizer' },
-            { id: 'classic' as const, label: 'Classic Pearson Square' }
+            { id: 'classic' as const, label: 'Classic Pearson Square' },
+            ...(canUsePremium
+              ? [
+                  {
+                    id: 'directory' as const,
+                    label: `Saved Batch Directory (${savedBatchRecords.length})`
+                  }
+                ]
+              : [])
           ].map((m) => (
             <button
               key={m.id}
@@ -1933,7 +2823,210 @@ export const PearsonSquareBatchTool: React.FC = () => {
         </div>
       </div>
 
-      {/* MODE 1: JUICE & BEVERAGE BATCH CORRECTOR */}
+      {/* =====================================================================
+          PAID MEMBER INDUSTRY & PRODUCT IDENTIFICATION HEADER
+          (Displayed right above the active calculator for Paid Premium Users)
+         ===================================================================== */}
+      {canUsePremium && industryMode !== 'directory' && (
+        <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#94B8D7] space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="text-xs font-extrabold text-[#1673B8]">
+                Step 1: Select Your Industry &amp; Enter Product Name for Batch Record
+              </div>
+              <p className="text-[11px] text-[#5A6C84]">
+                Choose your food industry sector and product name below (or add
+                your own custom product), then adjust your batch using the
+                calculator to save &amp; download its standardization report.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setNewCustomProductIndustry(selectedIndustry);
+                setShowAddProductForm((prev) => !prev);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>
+                {showAddProductForm
+                  ? 'Close Product Form'
+                  : '+ Add Custom Product to List'}
+              </span>
+            </button>
+          </div>
+
+          {/* Optional Form to Save Custom Product Permanently */}
+          {showAddProductForm && (
+            <div className="p-3.5 rounded-xl bg-white border border-[#1673B8]/40 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+              <div className="sm:col-span-4">
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Industry Sector
+                </label>
+                <select
+                  value={newCustomProductIndustry}
+                  onChange={(e) => setNewCustomProductIndustry(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                >
+                  {INDUSTRY_CATEGORIES.map((c) => (
+                    <option key={c.industry} value={c.industry}>
+                      {c.industry}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:col-span-5">
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  New Custom Product Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Lychee Nectar 14°Brix / Buffalo Standardized Milk / Plum Jam"
+                  value={newCustomProductName}
+                  onChange={(e) => setNewCustomProductName(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div className="sm:col-span-3">
+                <button
+                  type="button"
+                  onClick={handleSaveCustomProduct}
+                  className="w-full py-2 px-4 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                >
+                  Save Product to List ✓
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Industry Sector + Product Name + Batch Lot Code + Notes */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                Your Industry Sector
+              </label>
+              <select
+                value={selectedIndustry}
+                onChange={(e) => {
+                  const nextInd = e.target.value;
+                  setSelectedIndustry(nextInd);
+                  const found = INDUSTRY_CATEGORIES.find(
+                    (c) => c.industry === nextInd
+                  );
+                  if (found && found.sampleProducts.length > 0) {
+                    setProductName(found.sampleProducts[0]);
+                  }
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              >
+                {INDUSTRY_CATEGORIES.map((c) => (
+                  <option key={c.industry} value={c.industry}>
+                    {c.industry}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                Product Name (Type Any or Pick Below)
+              </label>
+              <input
+                type="text"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                placeholder="Enter Product Name (e.g., Mango Nectar, Standardized Milk)"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#1673B8] text-xs font-bold text-[#1A2138]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                Batch / Tank / Lot No. (Optional)
+              </label>
+              <input
+                type="text"
+                value={batchLotCode}
+                onChange={(e) => setBatchLotCode(e.target.value)}
+                placeholder="e.g., Tank-03 / Batch #B-209"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                QA / Production Notes (Optional)
+              </label>
+              <input
+                type="text"
+                value={batchNotes}
+                onChange={(e) => setBatchNotes(e.target.value)}
+                placeholder="e.g., Checked before pasteurization"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+              />
+            </div>
+          </div>
+
+          {/* Quick-Select Product Chips for Selected Industry */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <span className="text-[11px] font-extrabold text-[#5A6C84]">
+              Quick Select Product:
+            </span>
+            {availableProductSuggestions.map((prod) => (
+              <button
+                key={prod}
+                type="button"
+                onClick={() => setProductName(prod)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer border transition-colors ${
+                  productName === prod
+                    ? 'bg-[#1673B8] text-white border-[#1673B8]'
+                    : 'bg-white text-[#1A2138] border-[#D2DEEA] hover:border-[#1673B8]'
+                }`}
+              >
+                {prod}
+              </button>
+            ))}
+          </div>
+
+          {customProducts.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#E4EDF7] text-[11px]">
+              <span className="font-extrabold text-[#1673B8]">
+                Your Saved Products:
+              </span>
+              {customProducts.map((cp) => (
+                <span
+                  key={cp.id}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-white border border-[#D2DEEA] text-[#1A2138] font-bold"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedIndustry(cp.industryCategory);
+                      setProductName(cp.productName);
+                    }}
+                    className="hover:text-[#1673B8] cursor-pointer"
+                  >
+                    ★ {cp.productName}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCustomProduct(cp.id)}
+                    className="text-red-500 hover:text-red-700 cursor-pointer"
+                    title="Delete custom product"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODE 1: JUICE & BEVERAGE BATCH CORRECTOR
+         ===================================================================== */}
       {industryMode === 'beverage' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1980,7 +3073,10 @@ export const PearsonSquareBatchTool: React.FC = () => {
                 </div>
               </div>
               <div className="text-[11px] font-bold text-[#4A5568]">
-                Current Brix:Acid Ratio: <span className="text-[#1A2138] font-extrabold">{beverageCorrection.currentRatio} : 1</span>
+                Current Brix:Acid Ratio:{' '}
+                <span className="text-[#1A2138] font-extrabold">
+                  {beverageCorrection.currentRatio} : 1
+                </span>
               </div>
             </div>
 
@@ -2029,7 +3125,11 @@ export const PearsonSquareBatchTool: React.FC = () => {
                 </div>
               </div>
               <div className="text-[11px] font-bold text-[#105E9A]">
-                Target Brix:Acid Ratio: <span className="font-extrabold">{beverageCorrection.targetRatio} : 1</span> (100 = Dry Sugar, 65 = 65°Bx Syrup)
+                Target Brix:Acid Ratio:{' '}
+                <span className="font-extrabold">
+                  {beverageCorrection.targetRatio} : 1
+                </span>{' '}
+                (100 = Dry Sugar, 65 = 65°Bx Syrup)
               </div>
             </div>
           </div>
@@ -2039,10 +3139,14 @@ export const PearsonSquareBatchTool: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/15 pb-2.5">
               <div>
                 <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
-                  Batch Standardization Prescription (Add to Current {bevBatchKg} L/kg Batch)
+                  Batch Standardization Prescription (Add to Current{' '}
+                  {bevBatchKg} L/kg Batch
+                  {canUsePremium && productName ? ` — ${productName}` : ''})
                 </div>
                 <div className="text-xs text-slate-200 mt-0.5">
-                  Brix Status: <strong>{beverageCorrection.brixStatus}</strong> · Acidity Status: <strong>{beverageCorrection.acidStatus}</strong>
+                  Brix Status: <strong>{beverageCorrection.brixStatus}</strong>{' '}
+                  · Acidity Status:{' '}
+                  <strong>{beverageCorrection.acidStatus}</strong>
                 </div>
               </div>
               <div className="text-xs font-extrabold text-amber-300">
@@ -2083,15 +3187,64 @@ export const PearsonSquareBatchTool: React.FC = () => {
                   + {beverageCorrection.addWaterLiters} Liters
                 </div>
                 <div className="text-[11px] text-slate-300 mt-0.5">
-                  Verified Output: {beverageCorrection.verifiedBrix}°Bx &amp; {beverageCorrection.verifiedAcid}% Acid
+                  Verified Output: {beverageCorrection.verifiedBrix}°Bx &amp;{' '}
+                  {beverageCorrection.verifiedAcid}% Acid
                 </div>
               </div>
             </div>
+
+            {/* Save & Download Action Bar */}
+            {canUsePremium ? (
+              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                <div className="text-[11px] text-slate-300">
+                  Save this adjusted Juice / Beverage batch to your directory or
+                  download its official PDF standardization report.
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveBatchToDirectory('beverage')}
+                    className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Batch Record to Directory</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingleBatchPdf(
+                        buildCurrentBatchRecord('beverage')
+                      )
+                    }
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Report PDF</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-slate-200">
+                  Want to save adjusted batches by Product Name &amp; Industry
+                  and download PDF Batch Standardization Reports?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onOpenPremiumModal?.()}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                >
+                  Unlock Paid Batch Directory &amp; PDF
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* MODE 2: DAIRY FAT & SNF STANDARDIZATION */}
+      {/* =====================================================================
+          MODE 2: DAIRY FAT & SNF STANDARDIZATION
+         ===================================================================== */}
       {industryMode === 'dairy' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2193,43 +3346,130 @@ export const PearsonSquareBatchTool: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#1A2138] text-white space-y-3">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#1A2138] text-white space-y-3.5">
             <div className="text-xs font-extrabold text-sky-300 uppercase tracking-wider">
-              Dairy Standardization Prescription (To Achieve {dairyTargetFat}% Fat &amp; {dairyTargetSnf}% SNF)
+              Dairy Standardization Prescription (To Achieve {dairyTargetFat}%
+              Fat &amp; {dairyTargetSnf}% SNF
+              {canUsePremium && productName ? ` — ${productName}` : ''})
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 rounded-xl bg-white/10 border border-white/15">
-                <div className="text-[11px] text-sky-200 font-bold">Add Skim Milk</div>
+                <div className="text-[11px] text-sky-200 font-bold">
+                  Add Skim Milk
+                </div>
                 <div className="text-lg font-extrabold font-mono mt-0.5">
                   + {dairyCorrection.addSkimKg} kg
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-white/10 border border-white/15">
-                <div className="text-[11px] text-sky-200 font-bold">Add Cream ({creamFat}%)</div>
+                <div className="text-[11px] text-sky-200 font-bold">
+                  Add Cream ({creamFat}%)
+                </div>
                 <div className="text-lg font-extrabold font-mono mt-0.5">
                   + {dairyCorrection.addCreamKg} kg
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-white/10 border border-white/15">
-                <div className="text-[11px] text-sky-200 font-bold">Add Skim Milk Powder (SMP)</div>
+                <div className="text-[11px] text-sky-200 font-bold">
+                  Add Skim Milk Powder (SMP)
+                </div>
                 <div className="text-lg font-extrabold text-amber-300 font-mono mt-0.5">
                   + {dairyCorrection.addSmpKg} kg
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-white/10 border border-white/15">
-                <div className="text-[11px] text-sky-200 font-bold">Final Standardized Milk</div>
+                <div className="text-[11px] text-sky-200 font-bold">
+                  Final Standardized Milk
+                </div>
                 <div className="text-lg font-extrabold text-emerald-300 font-mono mt-0.5">
                   {dairyCorrection.finalMass} kg
                 </div>
               </div>
             </div>
+
+            {/* Save & Download Action Bar */}
+            {canUsePremium ? (
+              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                <div className="text-[11px] text-slate-300">
+                  Save this Dairy Fat &amp; SNF standardization batch to your
+                  directory or download its PDF report.
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveBatchToDirectory('dairy')}
+                    className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Dairy Batch to Directory</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingleBatchPdf(
+                        buildCurrentBatchRecord('dairy')
+                      )
+                    }
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Report PDF</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-slate-200">
+                  Want to save Dairy Standardization batches and download
+                  official PDF certificates?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onOpenPremiumModal?.()}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                >
+                  Unlock Paid Batch Directory &amp; PDF
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* MODE 3: CLASSIC 2-STREAM PEARSON SQUARE */}
+      {/* =====================================================================
+          MODE 3: CLASSIC 2-STREAM PEARSON SQUARE
+         ===================================================================== */}
       {industryMode === 'classic' && (
         <div className="space-y-4">
+          {canUsePremium && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Ingredient A Name (High Concentration Stream)
+                </label>
+                <input
+                  type="text"
+                  value={psIngredientAName}
+                  onChange={(e) => setPsIngredientAName(e.target.value)}
+                  placeholder="e.g., 65°Brix Sugar Syrup / 40% Cream / High-Fat Trim"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                  Ingredient B Name (Low Concentration / Diluent Stream)
+                </label>
+                <input
+                  type="text"
+                  value={psIngredientBName}
+                  onChange={(e) => setPsIngredientBName(e.target.value)}
+                  placeholder="e.g., Treated Water (0%) / Skim Milk / Lean Trim"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
@@ -2283,32 +3523,328 @@ export const PearsonSquareBatchTool: React.FC = () => {
 
           {!classicPearson.isValid ? (
             <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-700">
-              Target concentration ({psTargetVal}%) must lie between Ingredient A ({psHighVal}%) and Ingredient B ({psLowVal}%).
+              Target concentration ({psTargetVal}%) must lie between Ingredient
+              A ({psHighVal}%) and Ingredient B ({psLowVal}%).
             </div>
           ) : (
-            <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
-                <div className="text-[11px] font-bold text-[#4A5568]">
-                  Ingredient A ({psHighVal}%) Required
+            <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] space-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
+                  <div className="text-[11px] font-bold text-[#4A5568]">
+                    {canUsePremium && psIngredientAName
+                      ? `${psIngredientAName} (${psHighVal}%) Required`
+                      : `Ingredient A (${psHighVal}%) Required`}
+                  </div>
+                  <div className="text-2xl font-extrabold text-[#1673B8] font-mono mt-0.5">
+                    {classicPearson.highAmount} kg/L
+                  </div>
+                  <div className="text-[11px] text-[#4A5568] mt-0.5">
+                    {classicPearson.highParts} parts ({classicPearson.highPct}%
+                    of batch)
+                  </div>
                 </div>
-                <div className="text-2xl font-extrabold text-[#1673B8] font-mono mt-0.5">
-                  {classicPearson.highAmount} kg/L
-                </div>
-                <div className="text-[11px] text-[#4A5568] mt-0.5">
-                  {classicPearson.highParts} parts ({classicPearson.highPct}% of batch)
+                <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
+                  <div className="text-[11px] font-bold text-[#4A5568]">
+                    {canUsePremium && psIngredientBName
+                      ? `${psIngredientBName} (${psLowVal}%) Required`
+                      : `Ingredient B (${psLowVal}%) Required`}
+                  </div>
+                  <div className="text-2xl font-extrabold text-[#1A2138] font-mono mt-0.5">
+                    {classicPearson.lowAmount} kg/L
+                  </div>
+                  <div className="text-[11px] text-[#4A5568] mt-0.5">
+                    {classicPearson.lowParts} parts ({classicPearson.lowPct}% of
+                    batch)
+                  </div>
                 </div>
               </div>
-              <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA]">
-                <div className="text-[11px] font-bold text-[#4A5568]">
-                  Ingredient B ({psLowVal}%) Required
+
+              {/* Save & Download Action Bar */}
+              {canUsePremium ? (
+                <div className="pt-2 border-t border-[#D2DEEA] flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-[11px] text-[#4A5568] font-medium">
+                    Save this Classic Pearson Square batch record to your
+                    directory or download its official PDF report.
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveBatchToDirectory('classic')}
+                      className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Save Pearson Batch to Directory</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDownloadSingleBatchPdf(
+                          buildCurrentBatchRecord('classic')
+                        )
+                      }
+                      className="px-4 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download Report PDF</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="text-2xl font-extrabold text-[#1A2138] font-mono mt-0.5">
-                  {classicPearson.lowAmount} kg/L
+              ) : (
+                <div className="pt-2 border-t border-[#D2DEEA] flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-[#1A2138]">
+                    Want to save Classic Pearson Square batches by Product Name
+                    and download official PDF reports?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onOpenPremiumModal?.()}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
+                  >
+                    Unlock Paid Batch Directory &amp; PDF
+                  </button>
                 </div>
-                <div className="text-[11px] text-[#4A5568] mt-0.5">
-                  {classicPearson.lowParts} parts ({classicPearson.lowPct}% of batch)
-                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =====================================================================
+          PAID MEMBER SAVED BATCH STANDARDIZATION DIRECTORY
+          (Shown in 'directory' tab AND below the active calculator for Paid Users)
+         ===================================================================== */}
+      {canUsePremium && (
+        <div className="pt-4 border-t-2 border-[#E4EDF7] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-extrabold text-[#1673B8]">
+                Paid Member Batch Standardization Logbook &amp; Directory
               </div>
+              <h3 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                Saved Batch Standardization Directory ({savedBatchRecords.length})
+              </h3>
+              <p className="text-xs text-[#5A6C84]">
+                Complete history of all Juice &amp; Beverage, Dairy Fat &amp;
+                SNF, and Classic Pearson Square batches adjusted by product,
+                industry, and date.
+              </p>
+            </div>
+
+            {savedBatchRecords.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDownloadDirectoryLogbookPdf}
+                className="px-4 py-2.5 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shrink-0 shadow-xs"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>
+                  Download All Directory PDF ({filteredBatchRecords.length})
+                </span>
+              </button>
+            )}
+          </div>
+
+          {/* Search & Filters Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center bg-[#F8FAFC] p-3 rounded-2xl border border-[#D2DEEA]">
+            <div className="sm:col-span-5 relative">
+              <Search className="w-4 h-4 text-[#5A6C84] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by product name, industry, batch code or date..."
+                value={dirSearchQuery}
+                onChange={(e) => setDirSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-bold text-[#1A2138]"
+              />
+            </div>
+
+            <div className="sm:col-span-4 flex flex-wrap gap-1">
+              {[
+                { id: 'all' as const, label: 'All Batches' },
+                { id: 'beverage' as const, label: 'Juice & Beverage' },
+                { id: 'dairy' as const, label: 'Dairy Fat & SNF' },
+                { id: 'classic' as const, label: 'Classic Pearson' }
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setDirModeFilter(f.id)}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
+                    dirModeFilter === f.id
+                      ? 'bg-[#1673B8] text-white'
+                      : 'bg-white text-[#5A6C84] border border-[#D2DEEA]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="sm:col-span-3 flex flex-wrap gap-1 sm:justify-end">
+              {[
+                { id: 'all' as const, label: 'All Time' },
+                { id: 'today' as const, label: 'Today' },
+                { id: 'week' as const, label: 'Week' },
+                { id: 'month' as const, label: 'Month' }
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setDirPeriodFilter(p.id)}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold cursor-pointer ${
+                    dirPeriodFilter === p.id
+                      ? 'bg-[#1A2138] text-white'
+                      : 'bg-white text-[#5A6C84] border border-[#D2DEEA]'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Saved Batch Cards */}
+          {filteredBatchRecords.length === 0 ? (
+            <div className="p-6 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] text-center space-y-1">
+              <div className="text-xs font-extrabold text-[#1A2138]">
+                No Saved Batch Standardization Records Found
+              </div>
+              <p className="text-[11px] text-[#5A6C84]">
+                Enter your product name and batch parameters above, then click
+                &ldquo;Save Batch Record to Directory&rdquo; to store your
+                adjusted batch history.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredBatchRecords.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="p-4 rounded-2xl bg-[#F8FAFC] hover:bg-white border border-[#D2DEEA] hover:border-[#1673B8] transition-all space-y-2.5 flex flex-col justify-between"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-[11px] font-extrabold">
+                      <span className="text-[#1673B8]">
+                        {rec.recordCode} ·{' '}
+                        {rec.calculatorMode === 'beverage'
+                          ? 'Juice & Beverage Batch'
+                          : rec.calculatorMode === 'dairy'
+                          ? 'Dairy Fat & SNF Batch'
+                          : 'Classic Pearson Batch'}
+                      </span>
+                      <span className="text-[#5A6C84]">
+                        {rec.savedDateFormatted}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-extrabold text-[#1A2138]">
+                        {rec.productName}
+                      </h4>
+                      <div className="text-[11px] font-bold text-[#5A6C84]">
+                        Industry: {rec.industryCategory}
+                        {rec.batchLotCode ? ` · Lot: ${rec.batchLotCode}` : ''}
+                      </div>
+                    </div>
+
+                    {rec.calculatorMode === 'beverage' && (
+                      <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA] text-xs space-y-1">
+                        <div>
+                          <span className="font-bold text-[#5A6C84]">
+                            Initial vs. Target:
+                          </span>{' '}
+                          <span className="font-extrabold text-[#1A2138]">
+                            {rec.bevBatchKg} L/kg | Brix {rec.bevCurrentBrix}° →{' '}
+                            {rec.bevTargetBrix}° | Acid {rec.bevCurrentAcid}% →{' '}
+                            {rec.bevTargetAcid}%
+                          </span>
+                        </div>
+                        <div className="text-[#1673B8] font-extrabold">
+                          Added: +{rec.bevAddSugarKg} kg Sugar (
+                          {rec.bevSugarSourceBrix}°Bx) · +{rec.bevAddAcidKg} kg
+                          Citric Acid · +{rec.bevAddWaterLiters} L Water → Final:{' '}
+                          {rec.bevFinalBatchKg} kg
+                        </div>
+                      </div>
+                    )}
+
+                    {rec.calculatorMode === 'dairy' && (
+                      <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA] text-xs space-y-1">
+                        <div>
+                          <span className="font-bold text-[#5A6C84]">
+                            Initial vs. Target:
+                          </span>{' '}
+                          <span className="font-extrabold text-[#1A2138]">
+                            {rec.dairyBatchKg} kg Milk | Fat{' '}
+                            {rec.dairyCurrentFat}% → {rec.dairyTargetFat}% | SNF{' '}
+                            {rec.dairyCurrentSnf}% → {rec.dairyTargetSnf}%
+                          </span>
+                        </div>
+                        <div className="text-[#1673B8] font-extrabold">
+                          Added: +{rec.dairyAddSkimKg} kg Skim · +
+                          {rec.dairyAddCreamKg} kg Cream ({rec.creamFat}%) · +
+                          {rec.dairyAddSmpKg} kg SMP · +{rec.dairyAddWaterKg} kg
+                          Water → Final: {rec.dairyFinalMass} kg
+                        </div>
+                      </div>
+                    )}
+
+                    {rec.calculatorMode === 'classic' && (
+                      <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA] text-xs space-y-1">
+                        <div>
+                          <span className="font-bold text-[#5A6C84]">
+                            Streams &amp; Target:
+                          </span>{' '}
+                          <span className="font-extrabold text-[#1A2138]">
+                            {rec.psIngredientAName} ({rec.psHighVal}%) +{' '}
+                            {rec.psIngredientBName} ({rec.psLowVal}%) → Target{' '}
+                            {rec.psTargetVal}% ({rec.psTotalBatch} kg/L)
+                          </span>
+                        </div>
+                        <div className="text-[#1673B8] font-extrabold">
+                          Blend: {rec.psHighAmount} kg/L ({rec.psHighPct}%){' '}
+                          {rec.psIngredientAName} + {rec.psLowAmount} kg/L (
+                          {rec.psLowPct}%) {rec.psIngredientBName}
+                        </div>
+                      </div>
+                    )}
+
+                    {rec.notes && (
+                      <p className="text-[11px] text-[#5A6C84] italic">
+                        Notes: {rec.notes}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-[#E4EDF7] flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleReloadBatchRecord(rec)}
+                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] text-[11px] font-extrabold cursor-pointer"
+                    >
+                      Reload Batch
+                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadSingleBatchPdf(rec)}
+                        className="px-3 py-1.5 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Download Report</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBatchRecord(rec.id)}
+                        className="p-1.5 rounded-lg bg-white hover:bg-red-50 border border-[#D2DEEA] text-red-600 cursor-pointer"
+                        title="Delete Batch Record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

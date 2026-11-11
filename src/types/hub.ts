@@ -317,6 +317,80 @@ export interface LabFormulaUserData {
   savedRecords: LabFormulaSavedRecord[];
 }
 
+export interface PearsonCustomProductItem {
+  id: string;
+  productName: string;
+  industryCategory: string;
+  calculatorMode: 'beverage' | 'dairy' | 'classic';
+  createdAt: string;
+}
+
+export interface PearsonBatchSavedRecord {
+  id: string;
+  recordCode: string;
+  calculatorMode: 'beverage' | 'dairy' | 'classic';
+  industryCategory: string;
+  productName: string;
+  batchLotCode?: string;
+  notes?: string;
+  savedDateFormatted: string;
+  savedAtIso: string;
+
+  // Mode 1: Juice & Beverage Batch Corrector
+  bevBatchKg?: number;
+  bevCurrentBrix?: number;
+  bevTargetBrix?: number;
+  bevCurrentAcid?: number;
+  bevTargetAcid?: number;
+  bevSugarSourceBrix?: number;
+  bevBrixStatus?: string;
+  bevAcidStatus?: string;
+  bevCurrentRatio?: string;
+  bevTargetRatio?: string;
+  bevAddSugarKg?: number;
+  bevAddSugarGrams?: number;
+  bevAddAcidKg?: number;
+  bevAddAcidGrams?: number;
+  bevAddWaterLiters?: number;
+  bevFinalBatchKg?: number;
+  bevVerifiedBrix?: number;
+  bevVerifiedAcid?: number;
+
+  // Mode 2: Dairy Fat & SNF Standardizer
+  dairyBatchKg?: number;
+  dairyCurrentFat?: number;
+  dairyTargetFat?: number;
+  dairyCurrentSnf?: number;
+  dairyTargetSnf?: number;
+  skimMilkFat?: number;
+  skimMilkSnf?: number;
+  creamFat?: number;
+  dairyAddSkimKg?: number;
+  dairyAddCreamKg?: number;
+  dairyAddSmpKg?: number;
+  dairyAddWaterKg?: number;
+  dairyFinalMass?: number;
+
+  // Mode 3: Classic Pearson Square
+  psIngredientAName?: string;
+  psIngredientBName?: string;
+  psHighVal?: number;
+  psLowVal?: number;
+  psTargetVal?: number;
+  psTotalBatch?: number;
+  psHighParts?: number;
+  psLowParts?: number;
+  psHighPct?: number;
+  psLowPct?: number;
+  psHighAmount?: number;
+  psLowAmount?: number;
+}
+
+export interface PearsonBatchUserData {
+  customProducts: PearsonCustomProductItem[];
+  savedBatchRecords: PearsonBatchSavedRecord[];
+}
+
 export interface UserToolsData {
   nutrition: NutritionProfileData;
   examAttempts: UserExamAttempt[];
@@ -327,6 +401,7 @@ export interface UserToolsData {
   bookmarkedInterviewIds: string[];
   courseProgress?: Record<string, UserCourseProgress>;
   labFormulaData?: LabFormulaUserData;
+  pearsonBatchData?: PearsonBatchUserData;
   lastActiveCourseId?: string;
   lastActiveTool?: 'nutrition' | 'exam' | 'interview';
   updatedAt: string;

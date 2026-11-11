@@ -156,6 +156,10 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
         customSanitizers: saved.labFormulaData?.customSanitizers || [],
         customAcids: saved.labFormulaData?.customAcids || [],
         savedRecords: saved.labFormulaData?.savedRecords || []
+      },
+      pearsonBatchData: {
+        customProducts: saved.pearsonBatchData?.customProducts || [],
+        savedBatchRecords: saved.pearsonBatchData?.savedBatchRecords || []
       }
     };
   }, [user.toolsData]);
@@ -1114,7 +1118,16 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       {/* =====================================================================
           VIEW 4: PEARSON SQUARE & BATCH STANDARDIZATION CALCULATOR
          ===================================================================== */}
-      {activeSection === 'pearson-square' && <PearsonSquareBatchTool />}
+      {activeSection === 'pearson-square' && (
+        <PearsonSquareBatchTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          toolsData={toolsData}
+          onSaveToolsData={onSaveToolsData}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
+      )}
 
       {/* =====================================================================
           VIEW 5: LAB SOLUTION & MOLARITY / NORMALITY CALCULATOR
