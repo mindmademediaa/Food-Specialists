@@ -128,6 +128,11 @@ import {
 } from './components/LegalComplianceModal';
 import { ToolsHubView, ActiveToolSection } from './components/ToolsHubView';
 import { TrainingsAcademyView } from './components/TrainingsAcademyView';
+import { SEOManager, SEODirectoryFooter } from './components/SEOManager';
+import {
+  FreeVsPremiumComparisonCard,
+  CertificateBundleOffersCard
+} from './components/PricingAndBundlesSection';
 
 // Custom Duotone SVGs & Botanical Watermarks for the Home Screen Cards
 const DuotoneBriefcaseIcon = () => (
@@ -433,17 +438,30 @@ export default function App() {
     () => !(auth.currentUser || loadPersistedAuthUser())
   );
 
-  // Navigation & Route Stack (auto-routes to Trainings Verification Portal if QR code ?verify= is scanned)
+  const [showGuestAuthModal, setShowGuestAuthModal] = useState<boolean>(false);
+
+  // Navigation & Route Stack (supports SEO query parameters: ?section=tools&tool=..., ?section=trainings&course=..., ?verify=...)
   const [route, setRoute] = useState<RouteView>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (
         params.get('verify') ||
         params.get('cert') ||
-        params.get('tab') === 'verify-portal'
+        params.get('tab') === 'verify-portal' ||
+        params.get('course') ||
+        params.get('section') === 'trainings'
       ) {
         return { name: 'trainings' };
       }
+      const section = (params.get('section') || '').toLowerCase();
+      const toolParam = params.get('tool') as ActiveToolSection | null;
+      if (section === 'tools' || toolParam) {
+        return { name: 'tools', initialSection: toolParam || 'hub' };
+      }
+      if (section === 'jobs') return { name: 'jobs' };
+      if (section === 'scholarships') return { name: 'scholarships' };
+      if (section === 'communities') return { name: 'communities' };
+      if (section === 'search' || params.get('q')) return { name: 'search' };
     }
     return { name: 'home' };
   });
@@ -490,8 +508,14 @@ export default function App() {
   );
   const [savedScholarshipIds, setSavedScholarshipIds] = useState<string[]>([]);
 
-  // Active Tool Section inside ToolsHubView (used to hide app search bar inside E-Numbers Finder)
-  const [activeToolSection, setActiveToolSection] = useState<string>('hub');
+  // Active Tool Section inside ToolsHubView (initialized from ?tool= URL param for SEO deep-linking)
+  const [activeToolSection, setActiveToolSection] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('tool') || 'hub';
+    }
+    return 'hub';
+  });
   const [toolsResetKey, setToolsResetKey] = useState<number>(0);
 
   // Read Job Notification IDs (persisted so newly posted jobs trigger unread Bell notifications)
@@ -1909,6 +1933,10 @@ export default function App() {
       return [sanitizedPublic, ...prev];
     });
 
+    if (!authUser || !auth.currentUser) {
+      return;
+    }
+
     try {
       await Promise.all([
         setDoc(
@@ -2019,6 +2047,10 @@ export default function App() {
     receiptImageUrl: string;
     notes: string;
   }) => {
+    if (!authUser) {
+      setShowGuestAuthModal(true);
+      return;
+    }
     const cleanUid = authUser?.uid || myProfile.uid;
     if (!cleanUid) return;
     const nowIso = new Date().toISOString().slice(0, 19) + 'Z';
@@ -2327,7 +2359,12 @@ export default function App() {
   }, [isCurrentUserPaid, myProfile.premiumExpiresAt]);
 
   const handleSubmitPaymentVerification = async () => {
-    if (!authUser || isSubmittingPayment) return;
+    if (!authUser) {
+      setShowPremiumUpgradeModal(false);
+      setShowGuestAuthModal(true);
+      return;
+    }
+    if (isSubmittingPayment) return;
     const chosenFee =
       selectedPlanDuration === '1-year'
         ? liveGateway.yearlyFeeRs
@@ -2475,6 +2512,27 @@ export default function App() {
           existingCourseProg?.certificateNumber ||
           `FSP-${matchedCourse?.code || 'CERT'}-${req.uid.slice(0, 5).toUpperCase()}`;
 
+        const isAllCertBundle =
+          (req.certificateCourseTitle || '').toLowerCase().includes('all 13') ||
+          (req.notes || '').toLowerCase().includes('all 13') ||
+          (req.notes || '').includes('9,500') ||
+          (req.notes || '').includes('9500') ||
+          (req.amount || '').includes('9,500') ||
+          (req.amount || '').includes('9500');
+
+        const bonusDays = isAllCertBundle ? 365 : 30;
+        const existingExpMs = baseUser.premiumExpiresAt
+          ? new Date(baseUser.premiumExpiresAt).getTime()
+          : 0;
+        const baseStartMs =
+          !isNaN(existingExpMs) && existingExpMs > now.getTime()
+            ? existingExpMs
+            : now.getTime();
+        const bonusExpiresIso =
+          new Date(baseStartMs + bonusDays * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .slice(0, 19) + 'Z';
+
         const updatedCourseProg: UserCourseProgress = {
           courseId,
           courseTitle:
@@ -2496,73 +2554,163 @@ export default function App() {
           certificateNumber: certNumber,
           certificateFeePaid: decision === 'verified',
           certificateFeePending: false,
-          certificateUnlockedAt: decision === 'verified' ? nowIso : undefined
+          ...(decision === 'verified' ? { certificateUnlockedAt: nowIso } : {})
         };
+
+        const nextCourseProgressMap: Record<string, UserCourseProgress> = {
+          ...(baseTools.courseProgress || {}),
+          [courseId]: updatedCourseProg
+        };
+
+        if (decision === 'verified' && isAllCertBundle) {
+          for (const c of INTERNATIONAL_TRAINING_COURSES) {
+            const prevProg = nextCourseProgressMap[c.id];
+            const cCertNo =
+              prevProg?.certificateNumber ||
+              `FSP-${c.code.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()}-${req.uid
+                .replace(/[^a-zA-Z0-9]/g, '')
+                .toUpperCase()
+                .slice(0, 5)}`;
+            nextCourseProgressMap[c.id] = {
+              courseId: c.id,
+              courseTitle: c.title,
+              completedModuleIds:
+                prevProg?.completedModuleIds && prevProg.completedModuleIds.length > 0
+                  ? prevProg.completedModuleIds
+                  : c.modules.map((m) => m.id),
+              lastModuleIndex: prevProg?.lastModuleIndex || 0,
+              lastAccessedAt: prevProg?.lastAccessedAt || nowIso,
+              bestExamScore: prevProg?.bestExamScore || 34,
+              bestExamTotal: 40,
+              bestExamPercentage: prevProg?.bestExamPercentage || 85,
+              examPassed: true,
+              distinctionEarned: true,
+              examCompletedAt: prevProg?.examCompletedAt || nowIso,
+              certificateNumber: cCertNo,
+              certificateFeePaid: true,
+              certificateFeePending: false,
+              certificateUnlockedAt: nowIso
+            };
+          }
+        }
 
         const updatedUser: HubUser = {
           ...baseUser,
           uid: req.uid,
           name: baseUser.name || req.userName || 'Food Specialist',
+          ...(decision === 'verified'
+            ? {
+                isPaid: true,
+                isPremium: true,
+                plan: 'premium',
+                paymentStatus: 'verified',
+                premiumActivatedAt: nowIso,
+                premiumExpiresAt: bonusExpiresIso,
+                subscriptionPlan: isAllCertBundle
+                  ? '1 Year Free Paid Membership (All-13 Certificates Bundle)'
+                  : '1 Month Free Paid Membership (Certificate Unlock Bonus)'
+              }
+            : {}),
           toolsData: {
             ...baseTools,
-            courseProgress: {
-              ...(baseTools.courseProgress || {}),
-              [courseId]: updatedCourseProg
-            }
+            courseProgress: nextCourseProgressMap
           }
         };
 
         setUsers((prev) =>
           prev.map((u) => (u.uid === req.uid ? updatedUser : u))
         );
+        if (myProfile.uid === req.uid) {
+          setMyProfile(updatedUser);
+        }
 
+        const cleanUserForFirestore = stripUndefinedDeep(updatedUser);
         await Promise.all([
-          setDoc(doc(db, 'users', req.uid), updatedUser, { merge: true }),
-          setDoc(doc(db, 'users', req.uid, 'private', 'profile'), updatedUser, {
+          setDoc(doc(db, 'users', req.uid), cleanUserForFirestore, { merge: true }),
+          setDoc(doc(db, 'users', req.uid, 'private', 'profile'), cleanUserForFirestore, {
             merge: true
           }),
-          setDoc(doc(db, 'users', req.uid, 'profile', 'main'), updatedUser, {
+          setDoc(doc(db, 'users', req.uid, 'profile', 'main'), cleanUserForFirestore, {
             merge: true
           })
         ]);
 
         if (decision === 'verified') {
-          const cleanCertDocId = `cert-${certNumber.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-          const newCertRecord: HubCertificate = {
-            id: cleanCertDocId,
-            certificateNumber: certNumber,
-            recipientUid: req.uid,
-            recipientName:
-              updatedUser.name || req.userName || 'Food Specialist',
-            recipientEmail: updatedUser.email || req.userEmail || '',
-            trainingCategory: 'International Certification',
-            trainingTitle:
-              req.certificateCourseTitle ||
-              matchedCourse?.title ||
-              'International Certification',
-            accreditationBody:
-              matchedCourse?.accreditationStandard ||
-              'Food Science Portal International Academy',
-            issueDate: nowIso.slice(0, 10),
-            issuedBy: 'Food Science Portal International Academy',
-            verificationStatus: 'valid',
-            createdAt: nowIso,
-            scorePercentage: updatedCourseProg.bestExamPercentage,
-            distinction: updatedCourseProg.distinctionEarned
-          };
+          if (isAllCertBundle) {
+            const bundleCertRecords: HubCertificate[] = [];
+            for (const c of INTERNATIONAL_TRAINING_COURSES) {
+              const progForC = nextCourseProgressMap[c.id];
+              const cCertNo = progForC?.certificateNumber || `FSP-CERT-${c.code}-${req.uid.slice(0, 6).toUpperCase()}`;
+              const cleanCertDocId = `cert-${cCertNo.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+              const recObj: HubCertificate = {
+                id: cleanCertDocId,
+                certificateNumber: cCertNo,
+                recipientUid: req.uid,
+                recipientName:
+                  updatedUser.name || req.userName || 'Food Specialist',
+                recipientEmail: updatedUser.email || req.userEmail || '',
+                courseId: c.id,
+                trainingCategory: 'International Certification',
+                trainingTitle: c.title,
+                accreditationBody: c.accreditationStandard,
+                issueDate: nowIso.slice(0, 10),
+                issuedBy: 'Food Science Portal International Academy',
+                verificationStatus: 'valid',
+                createdAt: nowIso,
+                scorePercentage: progForC.bestExamPercentage || 85,
+                distinction: true
+              };
+              bundleCertRecords.push(recObj);
+              await setDoc(doc(db, 'certificates', cleanCertDocId), recObj, {
+                merge: true
+              });
+            }
+            setCertificates((prev) => {
+              const newIds = new Set(bundleCertRecords.map((b) => b.id));
+              return [
+                ...bundleCertRecords,
+                ...prev.filter((c) => !newIds.has(c.id))
+              ];
+            });
+          } else {
+            const cleanCertDocId = `cert-${certNumber.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+            const newCertRecord: HubCertificate = {
+              id: cleanCertDocId,
+              certificateNumber: certNumber,
+              recipientUid: req.uid,
+              recipientName:
+                updatedUser.name || req.userName || 'Food Specialist',
+              recipientEmail: updatedUser.email || req.userEmail || '',
+              courseId,
+              trainingCategory: 'International Certification',
+              trainingTitle:
+                req.certificateCourseTitle ||
+                matchedCourse?.title ||
+                'International Certification',
+              accreditationBody:
+                matchedCourse?.accreditationStandard ||
+                'Food Science Portal International Academy',
+              issueDate: nowIso.slice(0, 10),
+              issuedBy: 'Food Science Portal International Academy',
+              verificationStatus: 'valid',
+              createdAt: nowIso,
+              scorePercentage: updatedCourseProg.bestExamPercentage,
+              distinction: updatedCourseProg.distinctionEarned
+            };
 
-          await setDoc(doc(db, 'certificates', cleanCertDocId), newCertRecord, {
-            merge: true
-          });
-          setCertificates((prev) => [
-            newCertRecord,
-            ...prev.filter((c) => c.id !== cleanCertDocId)
-          ]);
+            await setDoc(doc(db, 'certificates', cleanCertDocId), newCertRecord, {
+              merge: true
+            });
+            setCertificates((prev) => [
+              newCertRecord,
+              ...prev.filter((c) => c.id !== cleanCertDocId)
+            ]);
+          }
         }
 
         setAdminStatusBanner(
           decision === 'verified'
-            ? `Allowed Certificate Download for ${req.userName} (${req.certificateCourseTitle || 'Course'})! PDF Download & Online Verification Portal are now LIVE.`
+            ? `Approved Certificate & Activated ${isAllCertBundle ? '1-Year' : '1-Month'} Free Paid Membership for ${req.userName}! PDF Download & Online Website Verification are now LIVE.`
             : `Rejected Certificate Download request for ${req.userName}.`
         );
         setTimeout(() => setAdminStatusBanner(null), 5000);
@@ -3329,128 +3477,44 @@ export default function App() {
     );
   }
 
-  // 2. Strict Authentication Gate: If NOT signed in, show Instant QR Certificate Verification if ?verify= is scanned, plus AuthScreen
+  // 2. Public SEO Mode & Instant QR Certificate Verification:
+  // 2. Public Website Mode:
+  // Unauthenticated visitors and Googlebot can browse Home, Tools, Trainings, Certificate Verification (?verify=), Jobs, Scholarships & Communities publicly.
+  // AuthScreen is shown only when the user clicks Sign In / Profile or attempts a Paid/Registration-required action.
   if (!authUser) {
-    const searchParams =
-      typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search)
-        : null;
-    const scannedCertNo = (
-      searchParams?.get('verify') ||
-      searchParams?.get('cert') ||
-      ''
-    )
-      .trim()
-      .toUpperCase();
-
-    if (scannedCertNo) {
-      const scannedName =
-        (searchParams?.get('name') || '').trim() || 'Certified Professional';
-      const scannedCourse =
-        (searchParams?.get('course') || '').trim() ||
-        'International Food Safety & HACCP Certification';
-      const scannedCode =
-        (searchParams?.get('code') || '').trim() || 'FS-CERT-INTL';
-      const scannedStd =
-        (searchParams?.get('std') || '').trim() ||
-        'Codex Alimentarius & GFSI International Standard';
-      const scannedScore = Number(searchParams?.get('score') || '85') || 85;
-      const scannedDate =
-        (searchParams?.get('date') || '').trim() ||
-        new Date().toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric'
-        });
-
+    if (showGuestAuthModal || route.name === 'profile') {
       return (
-        <div className="min-h-screen bg-[#F0F6FC] p-4 flex flex-col items-center justify-start space-y-4 overflow-y-auto">
-          <div className="w-full max-w-xl rounded-2xl border-2 border-[#1673B8] bg-white p-5 sm:p-6 shadow-xl space-y-4 mt-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#1673B8] text-white text-xs font-extrabold uppercase tracking-wider">
-                  <ShieldCheck className="w-4 h-4 text-amber-300" />
-                  Official QR Verified Certificate
-                </span>
-                <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-[#1673B8] text-[11px] font-extrabold">
-                  Endorsed by Food Science Portal
-                </span>
-              </div>
-              <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
-                ID: {scannedCertNo}
-              </span>
-            </div>
-
-            <div className="space-y-3 text-left">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Certificate of Achievement Awarded To
-                </p>
-                <p className="text-xl font-black text-slate-900">
-                  {scannedName}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Completed Training Course
-                </p>
-                <p className="text-base font-black text-[#1673B8]">
-                  {scannedCourse}
-                </p>
-                <p className="text-xs font-semibold text-slate-600 mt-0.5">
-                  Course Code: {scannedCode} · Standard: {scannedStd}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
-                <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
-                  <p className="text-[10px] font-bold uppercase text-slate-400">
-                    Certificate No.
-                  </p>
-                  <p className="font-mono font-black text-slate-900 truncate">
-                    {scannedCertNo}
-                  </p>
-                </div>
-                <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
-                  <p className="text-[10px] font-bold uppercase text-slate-400">
-                    Awarded
-                  </p>
-                  <p className="font-bold text-slate-900 truncate">
-                    {scannedDate}
-                  </p>
-                </div>
-                <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80">
-                  <p className="text-[10px] font-bold uppercase text-slate-400">
-                    Exam Score
-                  </p>
-                  <p className="font-black text-[#1673B8] truncate">
-                    {scannedScore}% ({scannedScore >= 75 ? 'Distinction' : 'Passed'})
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-[#1A2138] bg-[#F0F6FC] border border-[#D2DEEA] rounded-xl p-3 font-medium">
-              This Certificate of Achievement has been verified via the official Food Science Portal Online Verification Registry. Sign in below to access the full Food Science Portal Verification Search &amp; Training Academy.
-            </p>
+        <div className="min-h-screen bg-[#F0F6FC] flex flex-col">
+          <div className="w-full bg-[#0C182D] text-white px-4 py-2.5 flex items-center justify-between gap-2 shadow-sm">
+            <span className="text-xs font-bold text-sky-200">
+              Sign in to save your profile, log batch records, or unlock verified certificates
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowGuestAuthModal(false);
+                if (route.name === 'profile') {
+                  setRoute({ name: 'home' });
+                }
+              }}
+              className="px-3 py-1 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer whitespace-nowrap"
+            >
+              ← Browse Public Portal
+            </button>
           </div>
-
-          <div className="w-full">
+          <div className="flex-1">
             <AuthScreen />
           </div>
         </div>
       );
     }
-
-    return <AuthScreen />;
   }
 
   // 3. Dedicated Admin Control Panel Entry: When Admin logs in, enter AdminControlPanel directly (not as a normal user)
   if (isUserAdmin && !adminPreviewUserMode) {
     return (
       <AdminControlPanel
-        adminEmail={authUser.email || 'mindmademedia9@gmail.com'}
+        adminEmail={authUser?.email || 'mindmademedia9@gmail.com'}
         users={users}
         paymentRequests={adminAllPaymentRequests}
         jobs={activeJobs}
@@ -3558,15 +3622,21 @@ export default function App() {
           pendingAdminCount={pendingPaymentRequestsCount}
           onSignOutClick={handleSignOut}
           onOpenLegal={(tab) => setLegalModalTab(tab)}
-          userEmail={authUser.email}
+          userEmail={authUser?.email || null}
           userInitial={userInitial}
           userAvatarUrl={
-            myProfile.profilePicUrl || authUser.photoURL || undefined
+            myProfile.profilePicUrl || authUser?.photoURL || undefined
           }
           activeWebsiteNav={activeWebsiteNav}
           onNavigateWebsiteSection={handleNavigateWebsiteSection}
           isStandaloneApp={isStandaloneApp}
           onInstallAppClick={() => setShowInstallAppModal(true)}
+          isGuest={!authUser}
+          onSignInClick={() => setShowGuestAuthModal(true)}
+        />
+        <SEOManager
+          routeName={route.name}
+          activeToolSection={activeToolSection}
         />
 
         {/* FLOATING BACK BUTTON THAT MOVES WITH SCROLL ON MOBILE/APP & WEBSITE */}
@@ -4368,6 +4438,72 @@ export default function App() {
                   </div>
                 )}
               </div>
+
+              {/* CERTIFICATE BUNDLE OFFERS SECTION */}
+              <CertificateBundleOffersCard
+                paymentGatewayConfig={liveGateway}
+                isGuest={!authUser}
+                onRequireSignIn={() => setShowGuestAuthModal(true)}
+                onOpenCourseCatalog={() => {
+                  setRoute({ name: 'trainings' });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onSubmitBundleRequest={async ({
+                  bundle,
+                  selectedCourses,
+                  paymentMethod,
+                  transactionId,
+                  receiptImageUrl,
+                  notes
+                }) => {
+                  const firstCourse = selectedCourses[0];
+                  const courseNames = selectedCourses
+                    .map((c) => `${c.title} (${c.code})`)
+                    .join(', ');
+                  const cleanUid = (authUser?.uid || myProfile.uid || 'USR')
+                    .replace(/[^a-zA-Z0-9]/g, '')
+                    .toUpperCase()
+                    .slice(0, 5);
+                  const certNo = `FSP-${(firstCourse?.code || 'BUNDLE').replace(/[^a-zA-Z0-9]/g, '')}-${cleanUid}`;
+                  await handleSubmitCertificatePaymentRequest({
+                    courseId: firstCourse?.id || 'bundle-pass',
+                    courseTitle: `${bundle.title}: ${courseNames}`,
+                    certificateNumber: certNo,
+                    scorePercentage: 80,
+                    distinction: true,
+                    paymentMethod,
+                    transactionId,
+                    receiptImageUrl,
+                    notes: `${bundle.title} (Rs. ${bundle.priceRs.toLocaleString()}) — Courses: ${courseNames}${notes ? ` | Note: ${notes}` : ''}`
+                  });
+                }}
+              />
+
+              {/* SEO DIRECTORY & SITEMAP FOOTER (Crawlable links for all Tools, Calculators & 13 Certifications) */}
+              <SEODirectoryFooter
+                onOpenTool={(toolId) => {
+                  setActiveToolSection(toolId);
+                  setToolsResetKey((k) => k + 1);
+                  setRoute({ name: 'tools', initialSection: toolId });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onOpenCourse={(courseId) => {
+                  try {
+                    window.history.replaceState(
+                      {},
+                      '',
+                      `${window.location.origin}${window.location.pathname}?section=trainings&course=${courseId}`
+                    );
+                  } catch {
+                    // ignore
+                  }
+                  setRoute({ name: 'trainings' });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onNavigateSection={(sec) => {
+                  handleNavigateWebsiteSection(sec);
+                }}
+              />
             </div>
           )}
 
@@ -5714,6 +5850,7 @@ export default function App() {
                 setPaySubmitBanner(null);
                 setShowPremiumUpgradeModal(true);
               }}
+              onRequireSignIn={() => setShowGuestAuthModal(true)}
             />
           )}
 
@@ -6675,42 +6812,58 @@ export default function App() {
           </div>
         )}
 
-        {/* ==================== PREMIUM MEMBERSHIP & PAYMENT POPUP MODAL (RS. 200 / MONTH OR RS. 1,800 / YEAR - 25% OFF) ==================== */}
+        {/* ==================== PREMIUM MEMBERSHIP & FREE VS. PREMIUM ACCESS COMPARISON POPUP NOTIFICATION ==================== */}
         {showPremiumUpgradeModal && (
           <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3.5 overflow-y-auto">
-            <div className="w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-5 shadow-2xl space-y-4 border-2 border-[#1673B8]">
-              {/* Modal Header */}
-              <div className="flex items-start justify-between gap-3 border-b border-[#D2DEEA] pb-3.5">
-                <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1673B8] to-[#1A2138] text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <Crown className="w-6 h-6 text-amber-300" />
+            <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-4 sm:p-6 shadow-2xl space-y-5 border-2 border-[#1673B8]">
+              {/* Free Access vs. Premium Access Comparison Notification with Close Button */}
+              <FreeVsPremiumComparisonCard
+                isCurrentUserPaid={isCurrentUserPaid}
+                monthlyFeeRs={liveGateway.monthlyFeeRs}
+                yearlyFeeRs={liveGateway.yearlyFeeRs}
+                onClose={() => setShowPremiumUpgradeModal(false)}
+                onSelectPlanUpgrade={(plan) => {
+                  setSelectedPlanDuration(plan);
+                  setPayAmount(
+                    plan === '1-year'
+                      ? `Rs. ${liveGateway.yearlyFeeRs}`
+                      : `Rs. ${liveGateway.monthlyFeeRs}`
+                  );
+                }}
+                onNavigateTools={() => {
+                  setShowPremiumUpgradeModal(false);
+                  setActiveToolSection('hub');
+                  setToolsResetKey((k) => k + 1);
+                  setRoute({ name: 'tools', initialSection: 'hub' });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onNavigateTrainings={() => {
+                  setShowPremiumUpgradeModal(false);
+                  setRoute({ name: 'trainings' });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+
+              {!authUser && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-400 space-y-2 text-xs text-[#1A2138]">
+                  <div className="font-extrabold text-amber-900">
+                    ⚠️ Account Registration &amp; Login Mandatory for Paid Membership
                   </div>
-                  <div>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#1673B8] text-[10.5px] font-extrabold">
-                      <Sparkles className="w-3 h-3 text-[#1673B8]" />
-                      <span>
-                        Rs. {liveGateway.monthlyFeeRs} / Month • Rs.{' '}
-                        {liveGateway.yearlyFeeRs.toLocaleString()} / Year (
-                        {liveGateway.yearlyDiscountPct}% OFF)
-                      </span>
-                    </span>
-                    <h2 className="text-[20px] font-extrabold text-[#1A2138] leading-tight mt-1">
-                      Become a Premium Member
-                    </h2>
-                    <p className="text-xs font-medium text-gray-600 mt-0.5">
-                      Unlock full Community visibility, networking &amp; CV
-                      vault access
-                    </p>
-                  </div>
+                  <p className="text-[11.5px] text-amber-800 leading-relaxed">
+                    Free tools, jobs, scholarships, and training study are open without login. However, activating <strong>Premium Access</strong> (Cloud Directory Saving, PDF Reports &amp; Verified Specialist Listing) requires a registered user account.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPremiumUpgradeModal(false);
+                      setShowGuestAuthModal(true);
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#0C182D] hover:bg-[#1673B8] text-white font-extrabold text-xs cursor-pointer transition-colors"
+                  >
+                    Sign In / Register Free Account First →
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowPremiumUpgradeModal(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center shrink-0 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              )}
 
               {/* STEP 1: CHOOSE SUBSCRIPTION PLAN (1 MONTH vs FULL YEAR DISCOUNT) */}
               <div className="space-y-2">
@@ -7022,7 +7175,10 @@ export default function App() {
                     </div>
                   </div>
                   <div className="text-[10.5px] font-semibold text-slate-600">
-                    Email: <strong>{myProfile.email || authUser.email}</strong>
+                    Email:{' '}
+                    <strong>
+                      {myProfile.email || authUser?.email || 'Guest (Sign in required)'}
+                    </strong>
                   </div>
                 </div>
 

@@ -66,21 +66,26 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
     ...(member.visibility || {})
   };
 
-  // Visibility checks for each section/field
+  // Visibility checks for each section/field:
+  // General Visitors & Free Users can ONLY see Name & Title (if enabled by the Paid Member).
+  // Paid Members can see all other fields that the Paid Member has chosen to share.
   const canSeeName = canViewerSeeField(
     vis.name,
     viewerIsPremium,
-    isOwnerOrAdmin
+    isOwnerOrAdmin,
+    true
   );
   const canSeeTitle = canViewerSeeField(
     vis.title,
     viewerIsPremium,
-    isOwnerOrAdmin
+    isOwnerOrAdmin,
+    true
   );
   const canSeeCompany = canViewerSeeField(
     vis.company,
     viewerIsPremium,
-    isOwnerOrAdmin
+    isOwnerOrAdmin,
+    false
   );
   const canSeeLocation = canViewerSeeField(
     vis.location,
@@ -494,10 +499,10 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
               </div>
               <div>
                 <div className="text-xs sm:text-sm font-extrabold text-[#1A2138]">
-                  Contact Information Hidden for Free Users
+                  Full Profile, CV &amp; Contact Details Visible to Paid Members Only
                 </div>
                 <p className="text-[11px] sm:text-xs font-medium text-slate-600 mt-0.5">
-                  Upgrade to Paid Premium Membership to view this specialist&apos;s WhatsApp number and Email address or contact them directly.
+                  General visitors and free users can view Premium Member Name and Title only. Upgrade to Paid Membership to view full specialist details, CV, WhatsApp number, and Email address shared by this member.
                 </p>
               </div>
             </div>
@@ -506,7 +511,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
               onClick={onRequestUpgradeToPremium}
               className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold whitespace-nowrap shrink-0 cursor-pointer transition-colors"
             >
-              Upgrade to Contact
+              Upgrade to Premium Access
             </button>
           </div>
         )}

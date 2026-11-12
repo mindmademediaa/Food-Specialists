@@ -46,7 +46,10 @@ import {
 } from '../types/hub';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsData';
-import { downloadOfficialCourseCertificatePdf } from '../utils/certificatePdfGenerator';
+import {
+  downloadOfficialCourseCertificatePdf,
+  resolveOfficialVerificationBaseUrl
+} from '../utils/certificatePdfGenerator';
 
 export type AdminSectionTab =
   | 'menu'
@@ -423,7 +426,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         totalQuestions: totalQs,
         distinction: isDistinction,
         issueDate: certRecord.issueDate,
-        verificationPortalUrl: window.location.origin,
+        verificationPortalUrl: resolveOfficialVerificationBaseUrl(),
         syllabusModules: syllabusList,
         issuedByMode: 'admin_direct'
       });
@@ -2912,7 +2915,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     Issue Instant Portrait Certificate (Official Certificate of Achievement Pattern) on Any Course or Custom Topic
                   </h2>
                   <p className="text-xs text-[#4A5568] font-medium leading-relaxed">
-                    Admin kisi bhi candidate ya member ko bina exam diye aur bina modules parhay Published Trainings may say kisi par bhi—ya kisi bhi Custom Topic par—<strong>Portrait A4 PDF Certificate</strong> bana kar day sakta hy. Certificate foran PDF may download hoga aur Online Verification Portal par live verify hoga.
+                    Administrators can directly issue an official <strong>Portrait A4 PDF Certificate</strong> to any candidate or member for any Published Training or Custom Topic without requiring prior module study or exam completion. The certificate downloads immediately in PDF format and verifies live on the Online Verification Portal.
                   </p>
                 </div>
               </div>
@@ -3236,7 +3239,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                   totalQuestions: 40,
                                   distinction: isDist,
                                   issueDate: cert.issueDate,
-                                  verificationPortalUrl: window.location.origin,
+                                  verificationPortalUrl: resolveOfficialVerificationBaseUrl(),
                                   syllabusModules: certModulesList,
                                   issuedByMode: 'admin_direct'
                                 });
@@ -3276,7 +3279,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     Approve / Allow User Certificate Downloads
                   </h2>
                   <p className="text-xs text-[#4A5568] font-medium">
-                    Jab user exam pass kar k Rs. 1,000 certificate fee submit karta hy, uski request yahan ati hy. Jab ap payment confirm kar k <strong>Allow Certificate Download</strong> par click karengay, tab user ka PDF Certificate download unlock hoga aur website portal par live verify hoga.
+                    When a user passes the course exam and submits a Certificate Unlock or Bundle payment request, it appears here. Clicking <strong>Allow Certificate Download</strong> unlocks their Portrait PDF Certificate, activates their complimentary Paid Membership (1 Month for 1 Certificate or 1 Full Year for the All-13 Bundle), and publishes live verification on the website portal.
                   </p>
                 </div>
               </div>
@@ -3288,7 +3291,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   r.amount?.toLowerCase().includes('certificate')
               ).length === 0 ? (
                 <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold text-[#4A5568] text-center">
-                  Abhi koi Rs. 1,000 Certificate Download request pending nahi hy.
+                  No pending Certificate Download requests at the moment.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -3753,7 +3756,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                   {trainings.length === 0 ? (
                     <div className="p-6 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-center text-xs font-semibold text-[#4A5568]">
-                      Abhi koi training add nahi ki gayi. Upar form say apni pehli International Certification training (Modules aur MCQs k sath) add karein.
+                      No training courses have been added yet. Use the form above to add your first International Certification training course (with Modules and MCQs).
                     </div>
                   ) : (
                     <div className="space-y-4">

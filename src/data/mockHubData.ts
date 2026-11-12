@@ -337,8 +337,8 @@ export const INITIAL_CHATS: HubChatMessage[] = [
     senderPhone: '+92 312 4901823',
     recipientName: 'Admin Support (Muneeb Khan)',
     chatType: 'admin_support',
-    message: 'Assalam-o-Alaikum Sir, mainay EasyPaisa TID-883920144 ke zariye Paid Membership fee bhej di hai. Kindly verify kar ke mera profile Communities may activate kar dein.',
-    adminReply: 'Wa-Alaikum-Salaam Hamza! Aapki request Admin Panel may receive ho gayi hai, payment verify hotay hi aapka profile Communities may live ho jayega.',
+    message: 'Hello Admin Support, I have transferred the Paid Membership fee via EasyPaisa TID-883920144. Please verify my payment and activate my profile in the Communities directory.',
+    adminReply: 'Hello Hamza! Your payment request has been received in the Admin Control Panel. Once verified, your Premium profile will be live in the Communities directory.',
     createdAt: '2026-11-01 09:35 AM'
   },
   {

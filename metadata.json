@@ -1,6 +1,6 @@
 {
   "name": "Food Specialists",
-  "description": "A dedicated career portal, multi-horizon task compliance manager, multi-year career roadmap, and CV builder tailored for Food Safety, QA/QC, and Food Science professionals.",
+  "description": "Food Science Portal — Free Food Safety & QA/QC Calculators (Pearson Square, Brix Acid Ratio, Molarity, OEE Yield, ANOVA), HACCP & ISO 22000/9001/BRCGS Certifications, Jobs & Scholarships.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

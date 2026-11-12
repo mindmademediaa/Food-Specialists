@@ -43,6 +43,7 @@ import {
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { preloadUserAvatarForPdf } from '../lib/pdfBranding';
 import { AlisonCourseModuleViewer } from './AlisonCourseModuleViewer';
+import { CertificateBundleOffersCard } from './PricingAndBundlesSection';
 
 interface TrainingsAcademyViewProps {
   trainings: HubTraining[];
@@ -70,6 +71,7 @@ interface TrainingsAcademyViewProps {
     notes: string;
   }) => Promise<void>;
   onOpenUpgradeModal: () => void;
+  onRequireSignIn?: () => void;
 }
 
 function makeDeterministicCertNumber(uid: string, courseCode: string): string {
@@ -89,7 +91,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   isUserPremiumActiveFn,
   onSaveCourseProgress,
   onSubmitCertificatePaymentRequest,
-  onOpenUpgradeModal
+  onOpenUpgradeModal,
+  onRequireSignIn
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'catalog' | 'my-certificates' | 'verify-portal'>('catalog');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -141,8 +144,51 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       setActiveSubTab('verify-portal');
       setVerifyQuery(certParam);
       setHasSearchedVerify(true);
+      return;
+    }
+    const courseParam = (params.get('course') || '').trim();
+    if (courseParam) {
+      const matched = INTERNATIONAL_TRAINING_COURSES.find(
+        (c) =>
+          c.id.toLowerCase() === courseParam.toLowerCase() ||
+          c.code.toLowerCase() === courseParam.toLowerCase()
+      );
+      if (matched) {
+        setActiveSubTab('catalog');
+        setSelectedCourseId(matched.id);
+        setViewMode('overview');
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const existingVerify = (params.get('verify') || params.get('cert') || '').trim();
+    const nextParams = new URLSearchParams();
+    nextParams.set('section', 'trainings');
+    if (activeSubTab === 'verify-portal') {
+      nextParams.set('tab', 'verify');
+      if (verifyQuery.trim()) {
+        nextParams.set('verify', verifyQuery.trim());
+      } else if (existingVerify) {
+        nextParams.set('verify', existingVerify);
+      }
+    } else if (activeSubTab === 'my-certificates') {
+      nextParams.set('tab', 'my-certificates');
+    } else if (selectedCourseId) {
+      nextParams.set('course', selectedCourseId);
+    }
+    try {
+      window.history.replaceState(
+        {},
+        '',
+        `${window.location.origin}${window.location.pathname}?${nextParams.toString()}`
+      );
+    } catch {
+      // ignore
+    }
+  }, [selectedCourseId, activeSubTab, verifyQuery]);
 
   // Build active courses only from Admin-managed trainings (pre-populated default trainings removed per user request)
   const mergedCourses: InternationalTrainingCourse[] = useMemo(() => {
@@ -528,9 +574,14 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
   const handleSubmitCertPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!certPayModalCourse || !currentUser) return;
+    if (!certPayModalCourse) return;
+    if (!currentUser?.uid) {
+      setCertPayModalCourse(null);
+      if (onRequireSignIn) onRequireSignIn();
+      return;
+    }
     if (!payTxId.trim()) {
-      setPayFeedbackMsg('Baraye meharbani Transaction ID / Reference Number darj karein.');
+      setPayFeedbackMsg('Please enter your Transaction ID / Reference Number.');
       return;
     }
     setIsSubmittingPay(true);
@@ -550,7 +601,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         paymentMethod: payMethod,
         transactionId: payTxId.trim(),
         receiptImageUrl: payReceiptDataUrl,
-        notes: payNotes.trim() || `Certificate Unlock Fee Rs. 1,000 for ${course.title} (${certNo})`
+        notes: payNotes.trim() || `Certificate Unlock Fee Rs. 1,000 for ${course.title} (${certNo}) + 1 Month Free Paid Membership`
       });
 
       const updated: UserCourseProgress = {
@@ -561,13 +612,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       saveProgressHelper(course, updated);
 
       setPayFeedbackMsg(
-        'Apki Rs. 1,000 Certificate Request Admin Control Panel may bhej di gayi hy! Admin ki payment confirmation & approval k foran baad apka Certificate Download unlock ho jayega aur Online Verification Portal par live verify hoga.'
+        'Your Rs. 1,000 Certificate Request has been submitted to the Admin Control Panel! Upon payment confirmation and approval, your Official Portrait PDF Certificate will unlock, 1 Month of FREE Paid Membership will be activated on your account, and your certificate will be live on the Online Verification Portal.'
       );
       setPayTxId('');
       setPayNotes('');
       setPayReceiptDataUrl('');
     } catch {
-      setPayFeedbackMsg('Request submit karnay may masla aya. Dobara koshish karein.');
+      setPayFeedbackMsg('Unable to submit your request at the moment. Please try again.');
     } finally {
       setIsSubmittingPay(false);
     }
@@ -608,11 +659,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       const isDirectByAdmin = Boolean(
         cert.issuedBy && cert.issuedBy.toLowerCase().includes('direct')
       );
-      const isHolderActive = isDirectByAdmin
-        ? holderUser
-          ? isUserPremiumActiveFn(holderUser) || true
-          : true
-        : holderUser
+      const isHolderActive = holderUser
         ? isUserPremiumActiveFn(holderUser)
         : true;
 
@@ -782,7 +829,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       issueDate: issueDateStr,
       baseUrl: officialPortalBase
     });
-    const shortVerifyDisplayUrl = `${officialPortalBase.replace(/^https?:\/\//i, '')}/?verify=${certNo}`;
+    const shortVerifyDisplayUrl = `${officialPortalBase}/?verify=${certNo}`;
     const sequentialModules = getSequentialModuleList(
       course.modules.map((m) => m.title),
       course.title
@@ -1070,9 +1117,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       <p className="font-black text-[#1A2138]">
                         Validate this certificate online at
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => {
+                      <a
+                        href={directVerifyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          e.preventDefault();
                           setActiveSubTab('verify-portal');
                           setVerifyQuery(certNo);
                           setHasSearchedVerify(true);
@@ -1080,9 +1130,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         className="text-left text-[#1673B8] hover:underline font-bold text-[11px] leading-snug cursor-pointer block"
                       >
                         {shortVerifyDisplayUrl}
-                      </button>
+                      </a>
                       <p className="text-[10.5px] text-slate-600 font-medium break-normal">
-                        Enter Certificate No: <strong className="font-mono text-slate-900">{certNo}</strong> on Verification Portal
+                        Enter Certificate No: <strong className="font-mono text-slate-900">{certNo}</strong> on the Website Verification Portal
                       </p>
                     </div>
                   </div>
@@ -1163,7 +1213,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     totalQuestions: 40,
                     distinction: isDistinction,
                     issueDate: issueDateStr,
-                    verificationPortalUrl: window.location.origin,
+                    verificationPortalUrl: officialPortalBase,
                     syllabusModules: course.modules.map((m) => m.title),
                     issuedByMode: 'exam'
                   })
@@ -1179,10 +1229,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-amber-900 font-extrabold text-sm">
                   <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-                  Premium Membership Expired — Certificate Verification &amp; Download Paused
+                  Paid Membership Expired — Certificate Verification &amp; Download Paused
                 </div>
                 <p className="text-xs text-amber-800 leading-relaxed">
-                  Apki Paid Premium Membership khatam ho chuki hy. Jab ap dobara Paid Premium Membership renew karengay, apka certificate download aur online website verification foran dobara active ho jayega.
+                  Your complimentary or subscribed Paid Membership period has ended. Renew your Paid Membership anytime to immediately reactivate your Portrait PDF Certificate download and live online verification on the website.
                 </p>
               </div>
               <button
@@ -1190,7 +1240,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 onClick={onOpenUpgradeModal}
                 className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 cursor-pointer"
               >
-                Renew Premium Membership
+                Renew Paid Membership
               </button>
             </div>
           ) : isPendingAdminApproval ? (
@@ -1200,7 +1250,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 Certificate Issuance Request Sent — Waiting for Admin Approval
               </div>
               <p className="text-xs text-amber-800 leading-relaxed">
-                Apki certificate download request Admin Control Panel may bhej di gayi hy. Jesay hi Admin approve karega, apka PDF Certificate yahan say foran download ho jayega aur Certificate ID <span className="font-mono font-bold">{certNo}</span> website par live verify hona shuru ho jayega.
+                Your certificate unlock request has been submitted to the Admin Control Panel. As soon as Administration approves your request, your Portrait PDF Certificate will be available for immediate download here, 1 Month of FREE Paid Membership will activate, and Certificate ID <span className="font-mono font-bold">{certNo}</span> will verify live on the website.
               </p>
             </div>
           ) : (
@@ -1208,10 +1258,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-[#1A2138] font-extrabold text-sm">
                   <Award className="w-4 h-4 text-[#1673B8] shrink-0" />
-                  Official Portrait PDF Certificate &amp; Online Portal Verification
+                  Official Portrait PDF Certificate &amp; Online Website Verification
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Apna official PDF Certificate download karnay aur Online Verification Registry par activate karnay k liye niche <strong>Download Certificate</strong> button par click karein.
+                  Click the <strong>Download Certificate</strong> button below to unlock your official Portrait PDF Certificate, receive <strong>1 Month of FREE Paid Membership</strong>, and activate live verification on the Online Verification Registry.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -1356,7 +1406,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       No Approved Certificate Found for &ldquo;{verifyQuery}&rdquo;
                     </p>
                     <p className="text-xs text-rose-700">
-                      Yeh Certificate ID abhi Admin say approve nahi hua ya darj kiya gaya code ghalat hy.
+                      This Certificate ID has not yet been approved by Administration or the entered verification code is invalid.
                     </p>
                   </div>
                 </div>
@@ -1380,7 +1430,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     );
                   }
 
-                  // STRICT MEMBERSHIP RULE: If holder's Paid Premium Membership expired, hide certificate details!
+                  // STRICT MEMBERSHIP RULE: If holder's Paid Membership expired, hide certificate details!
                   if (!rec.isHolderMembershipActive) {
                     return (
                       <div
@@ -1392,7 +1442,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           Certificate Verification Paused — Holder’s Paid Membership Expired
                         </div>
                         <p className="text-xs text-amber-800 leading-relaxed">
-                          Certificate ID <span className="font-mono font-bold">{rec.certificateNumber}</span> system may registered hy, magar is member ki <strong>Paid Premium Membership</strong> is waqt expire ho chuki hy. Food Science Portal policy k mutabiq certificate ki online verification aur details sirf active Paid Membership k doran show hoti hain. Jab member apni Paid Premium Membership dobara purchase/renew karega, tamam certificates ki verification details khud ba khud dobara live show ho jayengi.
+                          Certificate ID <span className="font-mono font-bold">{rec.certificateNumber}</span> is registered in our system, but the holder&apos;s <strong>Paid Membership</strong> (including their complimentary 1-Month or 1-Year membership period) has expired. In accordance with Food Science Portal policy, live online certificate verification and credential details are displayed only while the holder maintains an active Paid Membership. Once the member renews their Paid Membership, live verification is restored automatically.
                         </p>
                       </div>
                     );
@@ -1479,7 +1529,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                                 totalQuestions: 40,
                                 distinction: rec.distinction,
                                 issueDate: rec.issueDate,
-                                verificationPortalUrl: window.location.origin,
+                                verificationPortalUrl: resolveOfficialVerificationBaseUrl(),
                                 syllabusModules: matched?.modules.map((m) => m.title),
                                 issuedByMode: rec.issuedByAdminDirect ? 'admin_direct' : 'exam'
                               });
@@ -1583,7 +1633,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                               totalQuestions: 40,
                               distinction: isDist,
                               issueDate: cert.issueDate,
-                              verificationPortalUrl: window.location.origin,
+                              verificationPortalUrl: resolveOfficialVerificationBaseUrl(),
                               syllabusModules: matched?.modules.map((m) => m.title),
                               issuedByMode: 'admin_direct'
                             })
@@ -1606,7 +1656,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 Course exam certificates appear here once you pass any 40-MCQ Final Exam (60%+).
               </p>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Kisi bhi training course k modules mukammal kar k 40-MCQ exam dain. 60% marks par Pass Certificate aur 75% marks par Distinction Certificate Portrait PDF format may jari hota hy.
+                Complete the 05 study modules of any training course and pass the 40-MCQ Final Exam. Scoring 60% or higher qualifies for a Pass Certificate, and scoring 75% or higher qualifies for a Distinction Certificate in Portrait A4 PDF format.
               </p>
               <button
                 type="button"
@@ -1705,7 +1755,44 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-5">
+              {/* Certificate Bundle Offers Card Inside Trainings Academy */}
+              <CertificateBundleOffersCard
+                paymentGatewayConfig={paymentGatewayConfig}
+                isGuest={!currentUser?.uid}
+                onRequireSignIn={onRequireSignIn}
+                onSubmitBundleRequest={async ({
+                  bundle,
+                  selectedCourses,
+                  paymentMethod,
+                  transactionId,
+                  receiptImageUrl,
+                  notes
+                }) => {
+                  const firstCourse =
+                    selectedCourses[0] || INTERNATIONAL_TRAINING_COURSES[0];
+                  const courseNames = selectedCourses
+                    .map((c) => `${c.title} (${c.code})`)
+                    .join(', ');
+                  const certNo = makeDeterministicCertNumber(
+                    currentUser?.uid || 'GUEST',
+                    firstCourse.code
+                  );
+                  await onSubmitCertificatePaymentRequest({
+                    courseId: firstCourse.id,
+                    courseTitle: `${bundle.title}: ${courseNames}`,
+                    certificateNumber: certNo,
+                    scorePercentage: 80,
+                    distinction: true,
+                    paymentMethod,
+                    transactionId,
+                    receiptImageUrl,
+                    notes: `${bundle.title} (Rs. ${bundle.priceRs.toLocaleString()}) — Courses: ${courseNames}${notes ? ` | Note: ${notes}` : ''}`
+                  });
+                }}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {mergedCourses.map((course, idx) => {
                 const prog = courseProgressMap[course.id];
                 const completedCount = prog?.completedModuleIds?.length || 0;
@@ -1818,6 +1905,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   </div>
                 );
               })}
+              </div>
             </div>
           )}
         </div>
@@ -2117,10 +2205,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     </h3>
                     <p className="text-xs text-slate-700">
                       {lastExamResult.distinction
-                        ? 'Mubarak ho! Apnay 75% say ziada marks hasil kar k Distinction Certificate qualify kar liya hy.'
+                        ? 'Congratulations! You scored 75% or higher and qualified for an Official Certificate with Distinction.'
                         : lastExamResult.passed
-                        ? 'Mubarak ho! Apnay International Certification qualify kar liya hy.'
-                        : 'Certificate hasil karnay k liye kam az kam 60% marks lazmi hain. Niche diye gaye explanations review kar k dobara exam dain.'}
+                        ? 'Congratulations! You have passed the Final Exam and qualified for your International Certification.'
+                        : 'A minimum score of 60% is required to qualify for a certificate. Review the detailed explanations below and retake the exam anytime for free.'}
                     </p>
                   </div>
 
@@ -2256,14 +2344,40 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     </span>
                   </div>
                   <p className="text-[#1A2138] leading-relaxed">
-                    Apna official <strong>Portrait PDF Certificate</strong> download karnay aur <strong>Online Verification Portal</strong> par live verify karnay k liye <strong>Rs. 1,000</strong> certificate fee lagu hy.
+                    A certificate issuance fee of <strong>Rs. 1,000</strong> applies to download your official <strong>Portrait PDF Certificate</strong> and activate live verification on the <strong>Online Verification Portal</strong>.
                   </p>
+                  <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 font-semibold text-[11px]">
+                    🎁 <strong>Complimentary Membership Bonus:</strong> Unlocking 1 Certificate automatically grants you <strong>1 Month of FREE Paid Membership</strong>! (Unlocking the All-13 Certificates Bundle grants <strong>1 Full Year of FREE Paid Membership</strong>). After your complimentary period, active Paid Membership is required to keep online certificate verification active.
+                  </div>
                   <ul className="space-y-1 text-slate-700 font-medium pt-1">
-                    <li>1. Niche <strong>Proceed to Payment Option</strong> par click karein.</li>
-                    <li>2. Rs. 1,000 fee transfer kar k payment screenshot submit karein.</li>
-                    <li>3. Admin Control Panel may request approve hotay hi apka PDF Certificate download ho jayega.</li>
+                    <li>1. Click <strong>Proceed to Payment Option</strong> below.</li>
+                    <li>2. Transfer the Rs. 1,000 fee and upload your payment screenshot.</li>
+                    <li>3. Once approved in the Admin Control Panel, your PDF Certificate and 1-Month Paid Membership will unlock immediately.</li>
                   </ul>
                 </div>
+
+                {!currentUser?.uid && (
+                  <div className="rounded-xl bg-amber-50 border-2 border-amber-400 p-3.5 space-y-2 text-xs text-[#1A2138]">
+                    <div className="font-extrabold text-amber-900">
+                      ⚠️ User Registration &amp; Login Mandatory for Official Certificates
+                    </div>
+                    <p className="text-[11.5px] text-amber-800 leading-relaxed">
+                      Course study and the 40-MCQ exam are 100% free without registration. However, to issue and verify your Official Portrait PDF Certificate, please register / sign in to your account first.
+                    </p>
+                    {onRequireSignIn && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCertPayModalCourse(null);
+                          onRequireSignIn();
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-[#0C182D] hover:bg-[#1673B8] text-white font-extrabold text-xs cursor-pointer transition-colors"
+                      >
+                        Sign In / Register Free Account First →
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <button
@@ -2275,11 +2389,22 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCertModalStep('payment')}
+                    onClick={() => {
+                      if (!currentUser?.uid && onRequireSignIn) {
+                        setCertPayModalCourse(null);
+                        onRequireSignIn();
+                        return;
+                      }
+                      setCertModalStep('payment');
+                    }}
                     className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-sm cursor-pointer inline-flex items-center gap-1.5"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Proceed to Payment Option (Rs. 1,000) →</span>
+                    <span>
+                      {!currentUser?.uid
+                        ? 'Register / Sign In to Unlock Certificate →'
+                        : 'Proceed to Payment Option (Rs. 1,000) →'}
+                    </span>
                   </button>
                 </div>
               </div>

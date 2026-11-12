@@ -919,8 +919,13 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     setChatInput('');
   };
 
-  // Save Personal Health & Nutrition Tracker Data
+  // Save Personal Health & Nutrition Tracker Data (Paid Cloud Directory Feature)
   const handleSaveHealthTracker = async () => {
+    if (!hasFullPaidAccess) {
+      onOpenPremiumModal();
+      return;
+    }
+
     const todayLabel = new Date().toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'

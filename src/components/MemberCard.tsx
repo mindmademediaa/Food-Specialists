@@ -24,11 +24,15 @@ interface MemberCardProps {
 
 export function canViewerSeeField(
   vis: VisibilityLevel | undefined,
-  _viewerIsPremium?: boolean,
-  _isOwnerOrAdmin?: boolean
+  viewerIsPremium?: boolean,
+  isOwnerOrAdmin?: boolean,
+  isNameOrTitle?: boolean
 ): boolean {
+  if (isOwnerOrAdmin) return true;
   const level: VisibilityLevel = vis || 'public';
-  return level !== 'private';
+  if (level === 'private') return false;
+  if (isNameOrTitle) return true;
+  return Boolean(viewerIsPremium);
 }
 
 export const MemberCard: React.FC<MemberCardProps> = ({
@@ -41,40 +45,46 @@ export const MemberCard: React.FC<MemberCardProps> = ({
   const ownerIsPremium = Boolean(member.isPremium || member.isPaid);
   const vis = member.visibility;
 
-  const canSeeName = canViewerSeeField(vis?.name ?? 'public', viewerIsPremium, isOwner);
+  const canSeeName = canViewerSeeField(vis?.name ?? 'public', viewerIsPremium, isOwner, true);
   const canSeeTitle = canViewerSeeField(
     vis?.title ?? (member.privacySettings?.currentRole_public === false ? 'private' : 'public'),
     viewerIsPremium,
-    isOwner
+    isOwner,
+    true
   );
   const canSeeCompany = canViewerSeeField(
     vis?.company ?? 'public',
     viewerIsPremium,
-    isOwner
+    isOwner,
+    false
   );
   const canSeeLocation = canViewerSeeField(
     vis?.location ?? (member.privacySettings?.location_public === false ? 'private' : 'public'),
     viewerIsPremium,
-    isOwner
+    isOwner,
+    false
   );
   const canSeeBio = canViewerSeeField(
     vis?.bio ?? 'public',
     viewerIsPremium,
-    isOwner
+    isOwner,
+    false
   );
   const canSeeLinkedin = canViewerSeeField(
     vis?.linkedin ?? 'public',
     viewerIsPremium,
-    isOwner
+    isOwner,
+    false
   );
   const canSeeCv = canViewerSeeField(
     vis?.cv ?? 'public',
     viewerIsPremium,
-    isOwner
+    isOwner,
+    false
   );
 
-  // Contact details (WhatsApp & Email) can ONLY be published by Paid Members,
-  // and are STRICTLY HIDDEN from Free Users (only Paid viewers or owner can see them).
+  // Contact & full profile details can ONLY be published by Paid Members,
+  // and are STRICTLY HIDDEN from General Visitors & Free Users (only Paid viewers or owner can see them).
   const viewerCanAccessContact = Boolean(viewerIsPremium || isOwner);
   const ownerAllowsWhatsapp =
     ownerIsPremium &&
@@ -234,7 +244,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
         <div className="flex items-center gap-1.5 pt-1">
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-bold">
             <Lock className="w-3 h-3 text-slate-500 shrink-0" />
-            <span>WhatsApp &amp; Email Hidden for Free Users</span>
+            <span>Full Profile &amp; Contact Visible to Paid Members Only</span>
           </span>
         </div>
       )}
@@ -242,7 +252,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
       {/* Bottom Row: Hire Me / LinkedIn / CV Indicator + View Profile Button */}
       <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
-          {hireMeActive && (
+          {viewerCanAccessContact && hireMeActive && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10px] font-extrabold">
               <span>Available for Hire</span>
             </span>

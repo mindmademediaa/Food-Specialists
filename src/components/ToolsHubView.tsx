@@ -290,8 +290,8 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     featureName: string,
     afterUnlock?: () => void
   ) => {
-    // Specialist tools allow non-expired users to enter directly
-    if (targetSection !== 'interview' && !hasExpiredPremium) {
+    // All 11+ Specialist Tools open in Free On-Screen Live Preview Mode without login/registration
+    if (!hasExpiredPremium) {
       setActiveSection(targetSection);
       if (afterUnlock) afterUnlock();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -890,10 +890,26 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
          ===================================================================== */}
       {activeSection === 'hub' && (
         <div className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="text-center">
-            <h1 className="text-base sm:text-lg font-extrabold text-[#1A2138] tracking-tight">
-              Tools
-            </h1>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#D2DEEA] pb-3.5">
+            <div>
+              <h1 className="text-base sm:text-lg font-extrabold text-[#1A2138] tracking-tight">
+                Specialist Lab, Industrial &amp; Research Tools
+              </h1>
+              <p className="text-[11.5px] text-[#5A6C84] font-medium mt-0.5">
+                <strong>Free Tier (No Login Required):</strong> Live on-screen calculation &amp; preview across all tools •{' '}
+                <strong className="text-[#1673B8]">Paid Premium (Login + Membership Required):</strong> Save to Cloud Directory, Custom Profiles &amp; Official PDF Reports
+              </p>
+            </div>
+            {!isUserPaid && (
+              <button
+                type="button"
+                onClick={onOpenPremiumModal}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0 self-start sm:self-auto"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-300" />
+                <span>Unlock Paid Cloud &amp; PDF Features</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
@@ -1086,6 +1102,25 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 Citation &amp; Reference Generator
               </span>
             </button>
+
+            {/* TOOL 11: INTERVIEW Q&A PREPARATION (2,000+ BANK) */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'interview',
+                  'Food Industry Job Interview Q&A Preparation (2,000+ Bank)'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Briefcase className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Interview Q&amp;A Prep (2,000+ Bank)
+              </span>
+            </button>
           </div>
         </div>
       )}
@@ -1212,6 +1247,220 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           onSaveToolsData={onSaveToolsData}
           onOpenPremiumModal={onOpenPremiumModal}
         />
+      )}
+
+      {/* =====================================================================
+          VIEW 11: FOOD INDUSTRY JOB INTERVIEW Q&A PREPARATION (2,000+ BANK)
+          Free Tier: First 15 Verified Q&As visible without login
+          Paid Premium: Full 30-Q&A sessions, 2,000+ Bank Refresh, Cloud Save & PDF Report
+         ===================================================================== */}
+      {activeSection === 'interview' && (
+        <div className="bg-white border-2 border-[#D2DEEA] rounded-[28px] p-5 sm:p-6 shadow-xs space-y-5">
+          <div className="bg-gradient-to-br from-[#1A2138] via-[#105E9A] to-[#1673B8] rounded-[24px] p-5 sm:p-6 text-white flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-white/15 text-sky-200 text-[11px] font-extrabold uppercase tracking-wider">
+                <Briefcase className="w-3.5 h-3.5" />
+                <span>
+                  Session #{interviewBatchNumber} • {TOTAL_INTERVIEW_BANK_SIZE.toLocaleString()}+ Verified Q&amp;A Bank
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                Food Industry Job Interview Preparation Suite
+              </h2>
+              <p className="text-xs sm:text-sm text-sky-100 max-w-2xl leading-relaxed">
+                Master QA/QC Manager, HACCP Lead, ISO/FSSC 22000 Auditor, R&amp;D Technologist, and Production Manager technical interviews.{' '}
+                {isUserPaid
+                  ? 'Full Paid Premium unlocked: all 30 session Q&As, fresh batch loader, cloud mastery tracking, and PDF transcript!'
+                  : 'Free Preview Mode: Study the first 15 verified Q&As below without login. Upgrade to Paid Premium for all 2,000+ Q&As, cloud tracking & PDF reports.'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isUserPaid) {
+                    onOpenPremiumModal();
+                    return;
+                  }
+                  handleLoadNext30InterviewQuestions();
+                }}
+                className="px-4 py-2.5 rounded-xl bg-white text-[#1A2138] hover:bg-sky-50 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-[#1673B8]" />
+                <span>
+                  {isUserPaid ? 'Load Next 30 Q&As' : '🔒 Load Next 30 Q&As (Paid)'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isUserPaid) {
+                    onOpenPremiumModal();
+                    return;
+                  }
+                  downloadInterviewSessionReportPdf(
+                    user,
+                    activeInterviewQuestions,
+                    toolsData.masteredInterviewIds || [],
+                    interviewBatchNumber
+                  );
+                }}
+                className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>
+                  {isUserPaid ? 'Download PDF Report' : '🔒 Download PDF (Paid)'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Topic Filter Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {['All', ...Array.from(new Set(activeInterviewQuestions.map((q) => q.topic)))].map(
+                (topic) => (
+                  <button
+                    key={topic}
+                    type="button"
+                    onClick={() => setInterviewTopicFilter(topic)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                      interviewTopicFilter === topic
+                        ? 'bg-[#1673B8] text-white border-[#1673B8]'
+                        : 'bg-[#F0F6FC] text-[#1A2138] border-[#D2DEEA] hover:border-[#1673B8]'
+                    }`}
+                  >
+                    {topic}
+                  </button>
+                )
+              )}
+            </div>
+            <div className="text-xs font-bold text-[#5A6C84]">
+              Showing {isUserPaid ? '30 / 30 Full Session' : '15 Free Preview Q&As (16–30 Paid Premium)'}
+            </div>
+          </div>
+
+          {/* Q&A Accordion List */}
+          <div className="space-y-3">
+            {activeInterviewQuestions
+              .filter(
+                (q) =>
+                  interviewTopicFilter === 'All' ||
+                  q.topic === interviewTopicFilter
+              )
+              .map((q, idx) => {
+                const isLockedForFree = !isUserPaid && idx >= 15;
+                const isExpanded = expandedQuestionId === q.id;
+                const isMastered = (toolsData.masteredInterviewIds || []).includes(
+                  q.id
+                );
+
+                if (isLockedForFree) {
+                  return (
+                    <div
+                      key={q.id}
+                      onClick={onOpenPremiumModal}
+                      className="p-4 rounded-2xl bg-[#F8FAFC] border border-dashed border-[#94A3B8] flex items-center justify-between gap-3 cursor-pointer hover:border-[#1673B8]"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 text-xs font-extrabold flex items-center justify-center shrink-0">
+                          #{idx + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-xs sm:text-sm font-extrabold text-slate-700 truncate">
+                            {q.question}
+                          </div>
+                          <div className="text-[11px] font-semibold text-[#1673B8]">
+                            🔒 Paid Premium Member Q&amp;A ({q.topic}) — Click to Register &amp; Unlock Full 2,000+ Bank
+                          </div>
+                        </div>
+                      </div>
+                      <Lock className="w-4 h-4 text-[#1673B8] shrink-0" />
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={q.id}
+                    className="rounded-2xl border border-[#D2DEEA] bg-[#F8FBFF] overflow-hidden transition-all"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedQuestionId(isExpanded ? null : q.id)
+                      }
+                      className="w-full p-4 text-left flex items-start justify-between gap-3 cursor-pointer hover:bg-[#EBF4FC]/60"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-lg bg-[#1673B8] text-white text-xs font-extrabold flex items-center justify-center shrink-0 mt-0.5">
+                          #{idx + 1}
+                        </span>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                            <span className="px-2 py-0.5 rounded-md bg-white border border-[#D2DEEA] text-[#1673B8] text-[10px] font-extrabold uppercase">
+                              {q.topic}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-extrabold">
+                              Q&amp;A #{q.globalNumber}
+                            </span>
+                          </div>
+                          <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                            {q.question}
+                          </h3>
+                        </div>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-[#5A6C84] shrink-0 mt-1 transition-transform ${
+                          isExpanded ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="px-4 pb-4 pt-2 border-t border-[#D2DEEA]/80 bg-white space-y-3">
+                        <div className="p-3.5 rounded-xl bg-[#F0F6FC] border border-[#BBD6EE] text-xs sm:text-sm text-[#1A2138] leading-relaxed">
+                          <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8] mb-1">
+                            Model Technical Answer:
+                          </div>
+                          {q.answer}
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[11px] font-semibold text-[#5A6C84]">
+                            Key Concept: <strong>{q.keyTakeaway}</strong>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!isUserPaid) {
+                                onOpenPremiumModal();
+                                return;
+                              }
+                              handleToggleMasteredInterview(q.id);
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer ${
+                              isMastered
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-[#F0F6FC] text-[#1673B8] border border-[#1673B8]/40'
+                            }`}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>
+                              {isMastered
+                                ? 'Saved as Mastered'
+                                : isUserPaid
+                                ? 'Mark as Mastered (Save to Cloud)'
+                                : '🔒 Save Mastery to Cloud (Paid)'}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </div>
       )}
     </div>
   );

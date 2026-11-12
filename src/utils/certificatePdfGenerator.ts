@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
 
 export const OFFICIAL_APP_PORTAL_URL =
-  'https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app';
+  'https://mindmademediaa.github.io/food-specialists';
 
 export interface OfficialCertificatePdfParams {
   certificateNumber: string;
@@ -24,21 +24,24 @@ export interface OfficialCertificatePdfParams {
 }
 
 /**
- * Resolves the official App / Website base URL for certificate verification,
- * ensuring github.io or localhost origins are replaced with the live App Portal URL.
+ * Resolves the official public Website base URL for certificate verification,
+ * ensuring internal preview/container origins (.run.app, localhost) resolve to the public website URL,
+ * while preserving the user's live website or custom domain when accessed on the web.
  */
 export function resolveOfficialVerificationBaseUrl(rawUrl?: string): string {
-  const candidate = (
-    rawUrl ||
-    (typeof window !== 'undefined' ? window.location.origin : '') ||
-    OFFICIAL_APP_PORTAL_URL
-  )
+  const browserFullBase =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname
+          .replace(/\/index\.html$/i, '')
+          .replace(/\/$/, '')}`
+      : '';
+  const candidate = (rawUrl || browserFullBase || OFFICIAL_APP_PORTAL_URL)
     .trim()
     .replace(/\/$/, '');
 
   if (
     !candidate ||
-    candidate.toLowerCase().includes('github.io') ||
+    candidate.toLowerCase().includes('.run.app') ||
     candidate.toLowerCase().includes('localhost') ||
     candidate.toLowerCase().includes('127.0.0.1')
   ) {
@@ -182,7 +185,7 @@ export function downloadOfficialCourseCertificatePdf(
     issueDate,
     baseUrl: officialBaseUrl
   });
-  const shortVerifyDisplayUrl = `${officialBaseUrl.replace(/^https?:\/\//i, '')}/?verify=${certificateNumber}`;
+  const shortVerifyDisplayUrl = `${officialBaseUrl}/?verify=${certificateNumber}`;
 
   // =========================================================================
   // 1. PURE WHITE MAIN CANVAS & FAINT ICE-BLUE GIANT "U" WATERMARK ON RIGHT

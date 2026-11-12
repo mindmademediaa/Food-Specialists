@@ -62,6 +62,8 @@ interface HeaderProps {
   onNavigateWebsiteSection?: (section: WebsiteNavSection) => void;
   isStandaloneApp?: boolean;
   onInstallAppClick?: () => void;
+  isGuest?: boolean;
+  onSignInClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -86,7 +88,9 @@ export const Header: React.FC<HeaderProps> = ({
   activeWebsiteNav = 'home',
   onNavigateWebsiteSection,
   isStandaloneApp = false,
-  onInstallAppClick
+  onInstallAppClick,
+  isGuest = false,
+  onSignInClick
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -398,23 +402,35 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Desktop User Profile Avatar Button */}
-          <button
-            type="button"
-            onClick={onProfileClick}
-            title="My Profile & CV"
-            className="hidden md:flex w-9 h-9 rounded-full bg-[#EBF4FC] hover:bg-[#D2DEEA] border border-[#1673B8]/40 text-[#1673B8] font-extrabold text-xs items-center justify-center overflow-hidden transition-colors cursor-pointer shrink-0"
-          >
-            {userAvatarUrl ? (
-              <img
-                src={userAvatarUrl}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>{userInitial}</span>
-            )}
-          </button>
+          {/* Desktop User Profile Avatar Button or Guest Sign In Button */}
+          {isGuest && onSignInClick ? (
+            <button
+              type="button"
+              onClick={onSignInClick}
+              title="Sign In or Create Free Account"
+              className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            >
+              <User className="w-3.5 h-3.5 text-white shrink-0" />
+              <span>Sign In</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onProfileClick}
+              title="My Profile & CV"
+              className="hidden md:flex w-9 h-9 rounded-full bg-[#EBF4FC] hover:bg-[#D2DEEA] border border-[#1673B8]/40 text-[#1673B8] font-extrabold text-xs items-center justify-center overflow-hidden transition-colors cursor-pointer shrink-0"
+            >
+              {userAvatarUrl ? (
+                <img
+                  src={userAvatarUrl}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>{userInitial}</span>
+              )}
+            </button>
+          )}
 
           {/* 3-Dots Google Play Store Policy & App Closure Menu */}
           <div className="relative" ref={menuRef}>
