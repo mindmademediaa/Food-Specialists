@@ -188,27 +188,15 @@ export function downloadOfficialCourseCertificatePdf(
   const shortVerifyDisplayUrl = `${officialBaseUrl}/?verify=${certificateNumber}`;
 
   // =========================================================================
-  // 1. PURE WHITE MAIN CANVAS & FAINT ICE-BLUE GIANT "U" WATERMARK ON RIGHT
+  // 1. PURE WHITE MAIN CANVAS (No background "U" watermark)
   // =========================================================================
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, W, H, 'F');
 
-  // Giant subtle ice-blue "U" watermark in the right/lower-right background
-  doc.setDrawColor(242, 247, 252);
-  doc.setLineWidth(26);
-  doc.line(104, 125, 104, 205);
-  doc.line(195, 125, 195, 205);
-  const arcSteps = 24;
-  let prevArcX = 104;
-  let prevArcY = 205;
-  for (let i = 1; i <= arcSteps; i++) {
-    const angle = Math.PI - (i / arcSteps) * Math.PI;
-    const ax = 149.5 + 45.5 * Math.cos(angle);
-    const ay = 205 + 40 * Math.sin(angle);
-    doc.line(prevArcX, prevArcY, ax, ay);
-    prevArcX = ax;
-    prevArcY = ay;
-  }
+  // Subtle inner border frame on the white canvas to keep visual margins crisp
+  doc.setDrawColor(218, 228, 238);
+  doc.setLineWidth(0.4);
+  doc.rect(blueBarW + 4, 6, W - blueBarW - 10, H - 12);
 
   // =========================================================================
   // 2. LEFT FULL-HEIGHT ROYAL BLUE SIDEBAR + GIANT VERTICAL "Certificate"
@@ -217,23 +205,23 @@ export function downloadOfficialCourseCertificatePdf(
   doc.rect(0, 0, blueBarW, H, 'F');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(146);
+  doc.setFontSize(142);
   doc.setTextColor(16, 94, 154);
-  doc.text('Certificate', 39.5, 289, { angle: 90 });
+  doc.text('Certificate', 39.5, 287, { angle: 90 });
 
   // =========================================================================
   // 3. TOP-LEFT LARGE BRAND LOGO + "Food Science Portal" & TOP-RIGHT ROSETTE SEAL
   // =========================================================================
-  // Large, crystal-clear Food Science Portal Logo (22mm x 22mm) at the top
-  drawPdfBrandLogo(doc, leftX, 10, 22, {
+  // Large, crystal-clear Food Science Portal Logo (21mm x 21mm) at the top
+  drawPdfBrandLogo(doc, leftX, 11, 21, {
     borderColor: [22, 115, 184],
     bgFill: [255, 255, 255],
     roundedRadius: 3.5
   });
 
-  const brandTextX = leftX + 25;
+  const brandTextX = leftX + 24;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(17.5);
+  doc.setFontSize(17);
   doc.setTextColor(12, 24, 45);
   doc.text('Food Science ', brandTextX, 19.5);
 
@@ -243,78 +231,78 @@ export function downloadOfficialCourseCertificatePdf(
   const alW = doc.getTextWidth('Portal');
 
   doc.setFillColor(22, 115, 184);
-  doc.rect(brandTextX + portW + 0.3, 20.8, alW - 0.5, 1.3, 'F');
+  doc.rect(brandTextX + portW + 0.3, 20.8, alW - 0.5, 1.2, 'F');
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8.2);
   doc.setTextColor(71, 85, 105);
-  doc.text('International Food Safety & Hospitality Academy', brandTextX, 25.8);
+  doc.text('International Food Safety & Hospitality Academy', brandTextX, 25.5);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.5);
+  doc.setFontSize(7.2);
   doc.setTextColor(22, 115, 184);
-  doc.text('OFFICIAL ACCREDITED CREDENTIAL', brandTextX, 30.2);
+  doc.text('OFFICIAL ACCREDITED CREDENTIAL', brandTextX, 29.8);
 
   // Top-Right Blue Scalloped Rosette Seal with Two Ribbons (center x = 180mm, y = 26mm)
   const sealX = 180;
   const sealY = 26;
 
   doc.setFillColor(22, 115, 184);
-  doc.triangle(sealX - 8.5, sealY + 11, sealX - 2, sealY + 11, sealX - 10.5, sealY + 26, 'F');
-  doc.triangle(sealX - 2, sealY + 11, sealX - 4, sealY + 25, sealX - 7.5, sealY + 21, 'F');
-  doc.triangle(sealX + 2, sealY + 11, sealX + 8.5, sealY + 11, sealX + 10.5, sealY + 25, 'F');
-  doc.triangle(sealX + 2, sealY + 11, sealX + 4, sealY + 25, sealX + 7.5, sealY + 21, 'F');
+  doc.triangle(sealX - 8.5, sealY + 11, sealX - 2, sealY + 11, sealX - 10.5, sealY + 25, 'F');
+  doc.triangle(sealX - 2, sealY + 11, sealX - 4, sealY + 24, sealX - 7.5, sealY + 20, 'F');
+  doc.triangle(sealX + 2, sealY + 11, sealX + 8.5, sealY + 11, sealX + 10.5, sealY + 24, 'F');
+  doc.triangle(sealX + 2, sealY + 11, sealX + 4, sealY + 24, sealX + 7.5, sealY + 20, 'F');
 
   const numLobes = 12;
-  const lobeRingR = 12.8;
+  const lobeRingR = 12.2;
   for (let k = 0; k < numLobes; k++) {
     const theta = (k / numLobes) * Math.PI * 2;
     const lx = sealX + lobeRingR * Math.cos(theta);
     const ly = sealY + lobeRingR * Math.sin(theta);
-    doc.circle(lx, ly, 3.8, 'F');
+    doc.circle(lx, ly, 3.6, 'F');
   }
-  doc.circle(sealX, sealY, 13.6, 'F');
+  doc.circle(sealX, sealY, 13.0, 'F');
 
   doc.setFillColor(255, 255, 255);
-  doc.circle(sealX, sealY, 10.2, 'F');
+  doc.circle(sealX, sealY, 9.8, 'F');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(4.8);
+  doc.setFontSize(4.6);
   doc.setTextColor(45, 118, 175);
-  doc.text('FOOD SCIENCE', sealX, sealY - 6.0, { align: 'center' });
-  doc.text('CERTIFIED', sealX, sealY + 7.8, { align: 'center' });
+  doc.text('FOOD SCIENCE', sealX, sealY - 5.6, { align: 'center' });
+  doc.text('CERTIFIED', sealX, sealY + 7.4, { align: 'center' });
 
   doc.setFillColor(22, 115, 184);
-  doc.rect(sealX - 7.0, sealY - 0.8, 1.3, 1.3, 'F');
-  doc.rect(sealX + 5.7, sealY - 0.8, 1.3, 1.3, 'F');
+  doc.rect(sealX - 6.8, sealY - 0.8, 1.2, 1.2, 'F');
+  doc.rect(sealX + 5.6, sealY - 0.8, 1.2, 1.2, 'F');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(11.5);
   doc.setTextColor(22, 115, 184);
-  doc.text('FSP', sealX, sealY + 1.6, { align: 'center' });
-  doc.rect(sealX - 3.0, sealY + 2.7, 6.0, 0.8, 'F');
+  doc.text('FSP', sealX, sealY + 1.5, { align: 'center' });
+  doc.rect(sealX - 2.8, sealY + 2.5, 5.6, 0.75, 'F');
 
   // =========================================================================
   // 4. "Certificate of Achievement" HEADING (Always "of Achievement")
   // =========================================================================
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(28);
+  doc.setFontSize(26);
   doc.setTextColor(34, 108, 163); // #226CA3
-  doc.text('Certificate', leftX, 45);
-  doc.text('of Achievement', leftX, 55.5);
+  doc.text('Certificate', leftX, 44);
+  doc.text('of Achievement', leftX, 54);
 
   // =========================================================================
   // 5. "This is to certify that" + RECIPIENT NAME + USER PROFILE PICTURE
   // =========================================================================
   const cleanRecipient = (recipientName || 'Certified Professional').trim();
 
-  // Draw Recipient's Profile Picture (22mm x 22mm) on the right side of the recipient row
+  // Draw Recipient's Profile Picture (21mm x 21mm) on the right side of the recipient row
   drawPdfUserPhoto(
     doc,
     recipientProfilePicUrl,
     cleanRecipient,
-    rightEdgeX - 22,
-    60,
-    22,
+    rightEdgeX - 21,
+    59,
+    21,
     {
       borderColor: [22, 115, 184],
       fallbackBgColor: [22, 115, 184],
@@ -323,75 +311,79 @@ export function downloadOfficialCourseCertificatePdf(
   );
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11.5);
+  doc.setFontSize(11);
   doc.setTextColor(28, 35, 54);
-  doc.text('This is to certify that', leftX, 68);
+  doc.text('This is to certify that', leftX, 66);
 
   doc.setFont('helvetica', 'bold');
-  const recipientFontSize = cleanRecipient.length > 28 ? 16.5 : 20;
+  const maxRecipientW = contentWidth - 25;
+  let recipientFontSize = cleanRecipient.length > 30 ? 14.5 : cleanRecipient.length > 22 ? 16.5 : 19;
   doc.setFontSize(recipientFontSize);
+  while (doc.getTextWidth(cleanRecipient) > maxRecipientW && recipientFontSize > 11) {
+    recipientFontSize -= 0.5;
+    doc.setFontSize(recipientFontSize);
+  }
   doc.setTextColor(22, 32, 56);
-  const nameLines = doc.splitTextToSize(cleanRecipient, contentWidth - 26);
-  doc.text(nameLines[0], leftX, 80);
+  const nameLines = doc.splitTextToSize(cleanRecipient, maxRecipientW).slice(0, 2);
+  doc.text(nameLines, leftX, nameLines.length > 1 ? 74 : 78);
 
   // Horizontal divider line under Recipient Name & Photo
   doc.setDrawColor(210, 222, 234);
   doc.setLineWidth(0.45);
-  doc.line(leftX, 85, rightEdgeX, 85);
+  doc.line(leftX, 84, rightEdgeX, 84);
 
   // =========================================================================
   // 6. "has successfully completed" + COURSE TITLE + SEQUENTIAL MODULES LIST
   // =========================================================================
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11.5);
+  doc.setFontSize(11);
   doc.setTextColor(28, 35, 54);
-  doc.text('has successfully completed', leftX, 95);
+  doc.text('has successfully completed', leftX, 92);
 
   // Course Title properly adjusted inside certificate width
   doc.setFont('helvetica', 'bold');
   const titleLen = courseTitle.length;
-  const courseFontSize = titleLen > 45 ? 14.5 : titleLen > 32 ? 16.5 : 18.5;
+  const courseFontSize = titleLen > 45 ? 13.5 : titleLen > 32 ? 15.5 : 17.5;
   doc.setFontSize(courseFontSize);
   doc.setTextColor(22, 115, 184);
   const wrappedCourse = doc.splitTextToSize(courseTitle, contentWidth).slice(0, 2);
-  doc.text(wrappedCourse, leftX, 105);
+  doc.text(wrappedCourse, leftX, 100.5);
 
-  let cursorY = 105 + wrappedCourse.length * 6.5;
+  let cursorY = 100.5 + wrappedCourse.length * 6.0;
 
   // Course Code & Standard wrapped cleanly within certificate bounds
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8.2);
   doc.setTextColor(45, 55, 72);
   const codeAndStandardText = `Course Code: ${courseCode}  |  Standard: ${accreditationStandard}`;
   const wrappedStandard = doc
     .splitTextToSize(codeAndStandardText, contentWidth)
     .slice(0, 2);
   doc.text(wrappedStandard, leftX, cursorY);
-  cursorY += wrappedStandard.length * 4.2 + 2.5;
+  cursorY += wrappedStandard.length * 4.0 + 2.0;
 
   // Sequential Modules listed one below another (Module 1, Module 2, Module 3, Module 4, Module 5...)
   const sequentialModules = getSequentialModuleList(syllabusModules, courseTitle);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.2);
+  doc.setFontSize(8.0);
   doc.setTextColor(22, 115, 184);
   doc.text('Completed Course Modules:', leftX, cursorY);
-  cursorY += 4.5;
+  cursorY += 4.2;
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.8);
+  doc.setFontSize(7.5);
   doc.setTextColor(51, 65, 85);
 
-  const maxModulesToShow = Math.min(sequentialModules.length, 6);
+  const maxModulesToShow = Math.min(sequentialModules.length, 5);
   for (let mIdx = 0; mIdx < maxModulesToShow; mIdx++) {
     const modItem = sequentialModules[mIdx];
-    // Fit each module neatly on a single line (or 2 if needed) within contentWidth
-    const fittedLine = doc.splitTextToSize(modItem, contentWidth - 2)[0];
-    doc.text(fittedLine, leftX + 1.5, cursorY);
-    cursorY += 4.4;
+    const modLines = doc.splitTextToSize(modItem, contentWidth - 3).slice(0, 2);
+    doc.text(modLines, leftX + 1.5, cursorY);
+    cursorY += modLines.length * 3.6 + 0.8;
   }
 
   // Horizontal divider line below sequential modules list
-  const courseRuleY = Math.max(cursorY + 2, 162);
+  const courseRuleY = Math.min(Math.max(cursorY + 1.5, 160), 170);
   doc.setDrawColor(210, 222, 234);
   doc.setLineWidth(0.45);
   doc.line(leftX, courseRuleY, rightEdgeX, courseRuleY);
@@ -399,25 +391,42 @@ export function downloadOfficialCourseCertificatePdf(
   // =========================================================================
   // 7. THREE-COLUMN METRICS ROW: Certificate No. | Awarded | Exam Score
   // =========================================================================
-  const lineY = Math.max(courseRuleY + 21, 185);
+  const lineY = Math.min(Math.max(courseRuleY + 18, 182), 189);
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.setTextColor(22, 32, 56);
+  // Helper to fit text strictly inside each 42mm column
+  const drawFittedColText = (
+    textStr: string,
+    centerX: number,
+    yPos: number,
+    maxW: number,
+    initialSize: number,
+    rgb: [number, number, number]
+  ) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+    let sz = initialSize;
+    doc.setFontSize(sz);
+    while (doc.getTextWidth(textStr) > maxW && sz > 6.5) {
+      sz -= 0.4;
+      doc.setFontSize(sz);
+    }
+    doc.text(textStr, centerX, yPos, { align: 'center' });
+  };
 
-  // Col 1: Certificate No. (center x = 74)
-  doc.text(certificateNumber, 74, lineY - 2.8, { align: 'center' });
-  // Col 2: Awarded Date (center x = 125)
-  doc.text(issueDate, 125, lineY - 2.8, { align: 'center' });
-  // Col 3: Exam Score only (NO CPD Credits) (center x = 176)
-  doc.setTextColor(22, 115, 184);
-  doc.text(
+  // Col 1: Certificate No. (center x = 74, width = 42mm)
+  drawFittedColText(certificateNumber, 74, lineY - 2.5, 42, 9.0, [22, 32, 56]);
+  // Col 2: Awarded Date (center x = 125, width = 42mm)
+  drawFittedColText(issueDate, 125, lineY - 2.5, 42, 9.0, [22, 32, 56]);
+  // Col 3: Exam Score (center x = 176, width = 42mm)
+  drawFittedColText(
     `${scorePercentage}% (${correctCount}/${totalQuestions} · ${
       distinction ? 'Distinction' : 'Passed'
     })`,
     176,
-    lineY - 2.8,
-    { align: 'center' }
+    lineY - 2.5,
+    42,
+    8.8,
+    [22, 115, 184]
   );
 
   // 3 Horizontal Lines
@@ -429,16 +438,16 @@ export function downloadOfficialCourseCertificatePdf(
 
   // Labels below the 3 lines
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.0);
+  doc.setFontSize(8.5);
   doc.setTextColor(40, 48, 68);
-  doc.text('Certificate No.', 74, lineY + 5, { align: 'center' });
-  doc.text('Awarded', 125, lineY + 5, { align: 'center' });
-  doc.text('Exam Score', 176, lineY + 5, { align: 'center' });
+  doc.text('Certificate No.', 74, lineY + 4.8, { align: 'center' });
+  doc.text('Awarded', 125, lineY + 4.8, { align: 'center' });
+  doc.text('Exam Score', 176, lineY + 4.8, { align: 'center' });
 
   // =========================================================================
   // 8. SIGNATURE BLOCK + "Endorsed by FS Portal" BADGE
   // =========================================================================
-  const sigBaseY = 220;
+  const sigBaseY = 219;
 
   // Cursive handwritten signature
   doc.setDrawColor(20, 24, 36);
@@ -487,18 +496,18 @@ export function downloadOfficialCourseCertificatePdf(
 
   doc.setDrawColor(210, 222, 234);
   doc.setLineWidth(0.45);
-  doc.line(leftX, sigBaseY, leftX + 46, sigBaseY);
+  doc.line(leftX, sigBaseY, leftX + 52, sigBaseY);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.8);
+  doc.setFontSize(7.5);
   doc.setTextColor(45, 55, 72);
-  doc.text('Signed on behalf of Food Science Portal', leftX + 23, sigBaseY + 4.5, {
+  doc.text('Signed on behalf of Food Science Portal', leftX + 26, sigBaseY + 4.5, {
     align: 'center'
   });
 
   // Right-Side Endorsement Badge: "Endorsed by Food Science Portal"
-  const endX = 140;
-  const endY = 207;
+  const endX = 138;
+  const endY = 206;
 
   // Food Science Portal Official Emblem Icon
   drawPdfBrandLogo(doc, endX, endY, 14, {
@@ -509,26 +518,27 @@ export function downloadOfficialCourseCertificatePdf(
 
   // "Endorsed by Food Science Portal" text
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
+  doc.setFontSize(9.2);
   doc.setTextColor(26, 33, 56);
   doc.text('Endorsed by', endX + 16, endY + 4.5);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(10.2);
   doc.setTextColor(22, 115, 184);
-  doc.text('Food Science Portal', endX + 16, endY + 9.8);
+  doc.text('Food Science Portal', endX + 16, endY + 9.6);
 
-  // Official Endorsed Bar
+  // Official Endorsed Bar (fits within 154..195mm)
   doc.setFillColor(13, 92, 58); // #0D5C3A
-  doc.roundedRect(endX + 16, endY + 11.5, 40, 4.2, 0.8, 0.8, 'F');
+  doc.roundedRect(endX + 16, endY + 11.4, 41, 4.2, 0.8, 0.8, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(5.2);
+  doc.setFontSize(5.0);
   doc.setTextColor(255, 255, 255);
-  doc.text('ENDORSED BY FOOD SCIENCE PORTAL', endX + 36, endY + 14.3, { align: 'center' });
+  doc.text('ENDORSED BY FOOD SCIENCE PORTAL', endX + 36.5, endY + 14.2, { align: 'center' });
 
   // =========================================================================
-  // 9. BOTTOM-LEFT GREEN SHIELD + APP VERIFICATION LINK (No GitHub URL)
+  // 9. BOTTOM-LEFT GREEN SHIELD + WEBSITE VERIFICATION LINK
   // =========================================================================
-  const valY = 248;
+  const valY = 246;
+  const maxValTextWidth = 88; // Strictly fits between x=67mm and QR code box at x=159mm
 
   const shX = leftX + 5.2;
   const shY = valY + 3.5;
@@ -553,40 +563,42 @@ export function downloadOfficialCourseCertificatePdf(
   doc.line(shX - 0.5, shY + 2.1, shX + 2.6, shY - 1.8);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
+  doc.setFontSize(9.2);
   doc.setTextColor(26, 33, 56);
-  doc.text('Validate this certificate online at', leftX + 13, valY + 1.5);
+  doc.text('Validate this certificate online at', leftX + 13, valY + 1.2);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.0);
+  doc.setFontSize(7.6);
   doc.setTextColor(22, 115, 184);
-  const wrappedVerifyUrl = doc.splitTextToSize(shortVerifyDisplayUrl, 90);
-  doc.text(wrappedVerifyUrl.slice(0, 2), leftX + 13, valY + 6.2);
+  const wrappedVerifyUrl = doc.splitTextToSize(shortVerifyDisplayUrl, maxValTextWidth).slice(0, 2);
+  doc.text(wrappedVerifyUrl, leftX + 13, valY + 5.6);
   // Make the verification area clickable in the PDF
-  doc.link(leftX + 13, valY - 2, 92, 16, { url: directVerifyUrl });
+  doc.link(leftX + 13, valY - 2, maxValTextWidth + 2, 16, { url: directVerifyUrl });
 
-  const urlBottomY = valY + 6.2 + Math.min(wrappedVerifyUrl.length, 2) * 3.8;
+  const urlBottomY = valY + 5.6 + wrappedVerifyUrl.length * 3.6;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.8);
+  doc.setFontSize(7.4);
   doc.setTextColor(51, 65, 85);
-  doc.text(
-    `Enter Certificate No: ${certificateNumber} on Food Science Portal Verification Registry`,
-    leftX + 13,
-    urlBottomY + 1.2
-  );
+  const certInstructionLines = doc
+    .splitTextToSize(
+      `Enter Certificate No: ${certificateNumber} on the Website Verification Portal`,
+      maxValTextWidth
+    )
+    .slice(0, 2);
+  doc.text(certInstructionLines, leftX + 13, urlBottomY + 1.0);
 
   // Refresher training note at bottom-left
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.0);
+  doc.setFontSize(7.6);
   doc.setTextColor(71, 85, 105);
   doc.text('Refresher training recommended every three years', leftX, 276);
-  doc.text('or sooner if circumstances dictate.', leftX, 280.2);
+  doc.text('or sooner if circumstances dictate.', leftX, 280);
 
   // =========================================================================
   // 10. BOTTOM-RIGHT SCANNABLE QR CODE (Direct Certificate Verification on Scan)
   // =========================================================================
   const qrMatrix = generateQrCodeMatrix(directVerifyUrl);
-  const qrBoxSize = 29;
+  const qrBoxSize = 28;
   const qrX = 162;
   const qrY = 242;
 
@@ -621,17 +633,19 @@ export function downloadOfficialCourseCertificatePdf(
   });
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(6.5);
+  doc.setFontSize(6.2);
   doc.setTextColor(22, 115, 184);
-  doc.text('SCAN TO VERIFY', qrX + qrBoxSize / 2, qrY + qrBoxSize + 3.5, {
+  doc.text('SCAN TO VERIFY', qrX + qrBoxSize / 2, qrY + qrBoxSize + 3.4, {
     align: 'center'
   });
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(5.8);
-  doc.setTextColor(71, 85, 105);
-  doc.text(certificateNumber, qrX + qrBoxSize / 2, qrY + qrBoxSize + 6.5, {
-    align: 'center'
-  });
+  drawFittedColText(
+    certificateNumber,
+    qrX + qrBoxSize / 2,
+    qrY + qrBoxSize + 6.4,
+    qrBoxSize + 2,
+    5.6,
+    [71, 85, 105]
+  );
 
   const safeSlug = courseCode.replace(/[^a-zA-Z0-9_-]/g, '_');
   const safeName = cleanRecipient

@@ -101,6 +101,7 @@ interface ToolsHubViewProps {
   resetTrigger?: number;
   onSaveToolsData: (updatedToolsData: UserToolsData) => Promise<void>;
   onOpenPremiumModal: () => void;
+  onRequireSignIn?: () => void;
   onGoToProfileTools?: () => void;
   onActiveSectionChange?: (section: ActiveToolSection) => void;
 }
@@ -115,6 +116,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   resetTrigger = 0,
   onSaveToolsData,
   onOpenPremiumModal,
+  onRequireSignIn,
   onGoToProfileTools,
   onActiveSectionChange
 }) => {
@@ -1150,6 +1152,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           toolsData={toolsData}
           onSaveToolsData={onSaveToolsData}
           onOpenPremiumModal={onOpenPremiumModal}
+          onRequireSignIn={onRequireSignIn}
         />
       )}
 

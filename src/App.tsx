@@ -2035,7 +2035,7 @@ export default function App() {
     await persistUserProfileToFirestore(updatedUser);
   };
 
-  // Submit Rs. 1,000 Certificate Download & Online Verification Request to Admin
+  // Submit Certificate Download & Online Verification Request to Admin (Rs. 8,000 for Certified Dietary Manager; Rs. 1,000 for other courses)
   const handleSubmitCertificatePaymentRequest = async (params: {
     courseId: string;
     courseTitle: string;
@@ -2046,6 +2046,7 @@ export default function App() {
     transactionId: string;
     receiptImageUrl: string;
     notes: string;
+    amountRs?: number;
   }) => {
     if (!authUser) {
       setShowGuestAuthModal(true);
@@ -2055,6 +2056,12 @@ export default function App() {
     if (!cleanUid) return;
     const nowIso = new Date().toISOString().slice(0, 19) + 'Z';
     const reqId = `certpay-${cleanUid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 14)}-${Date.now()}`;
+    const feeRs =
+      params.amountRs ||
+      (params.courseId === 'mgr-food-dietary-2026' ||
+      params.courseTitle.toLowerCase().includes('dietary')
+        ? 8000
+        : 1000);
 
     const payload: HubPaymentRequest = {
       id: reqId,
@@ -2065,8 +2072,8 @@ export default function App() {
       qualification: myProfile.qualification || '',
       currentRole: myProfile.title || myProfile.currentRole || '',
       paymentMethod: params.paymentMethod,
-      transactionId: params.transactionId.trim() || 'CERT-FEE-1000',
-      amount: 'Rs. 1,000 (Certificate Fee)',
+      transactionId: params.transactionId.trim() || `CERT-FEE-${feeRs}`,
+      amount: `Rs. ${feeRs.toLocaleString()} (Certificate Fee)`,
       notes:
         params.notes.trim() ||
         `Certificate Unlock: ${params.courseTitle} (${params.certificateNumber}) — Score: ${params.scorePercentage}%`,
@@ -5867,6 +5874,7 @@ export default function App() {
                 setPaySubmitBanner(null);
                 setShowPremiumUpgradeModal(true);
               }}
+              onRequireSignIn={() => setShowGuestAuthModal(true)}
               onGoToProfileTools={() => {
                 setRoute({ name: 'profile' });
                 window.scrollTo({ top: 0, behavior: 'smooth' });

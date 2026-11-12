@@ -77,10 +77,10 @@ export const CERTIFICATE_BUNDLE_OPTIONS: CertificateBundleOption[] = [
     subtitle: 'All 13 Official Certificates + 1 FULL YEAR (12 Months) FREE Paid Membership!',
     count: 13,
     priceRs: 9500,
-    originalPriceRs: 13000,
-    savingsRs: 3500,
+    originalPriceRs: 20000,
+    savingsRs: 10500,
     recommendedCourses: [
-      'All 13 Courses (Manager Food & Dietary, HACCP L3/L4, Food Safety L3/L4, ISO 9001/22000/14001/45001, FSSC v7, BRCGS Issue 9, MS Office & English)',
+      'All 13 Courses (Certified Dietary Manager, HACCP L3/L4, Food Safety L3/L4, ISO 9001/22000/14001/45001, FSSC v7, BRCGS Issue 9, MS Office & English)',
       'Includes 1 Full Year (365 Days) FREE Paid Membership!'
     ]
   }
@@ -377,10 +377,25 @@ export const CertificateBundleOffersCard: React.FC<
         'cert-2026-iso-9001-awareness'
       ]);
     } else {
-      setSelectedCourseIds([INTERNATIONAL_TRAINING_COURSES[0].id]);
+      setSelectedCourseIds([
+        INTERNATIONAL_TRAINING_COURSES.find((c) => c.certificateFeeRs === 1000)
+          ?.id || INTERNATIONAL_TRAINING_COURSES[0].id
+      ]);
     }
     setActiveBundleModal(bundle);
   };
+
+  const effectiveBundlePriceRs = activeBundleModal
+    ? activeBundleModal.count === 1 &&
+      selectedCourseIds.some(
+        (id) =>
+          id === 'mgr-food-dietary-2026' ||
+          INTERNATIONAL_TRAINING_COURSES.find((c) => c.id === id)
+            ?.certificateFeeRs === 8000
+      )
+      ? 8000
+      : activeBundleModal.priceRs
+    : 1000;
 
   const toggleCourseInBundle = (courseId: string, maxCount: number) => {
     if (maxCount === 13) return; // All 13 included
@@ -433,8 +448,12 @@ export const CertificateBundleOffersCard: React.FC<
       const chosenCourses = INTERNATIONAL_TRAINING_COURSES.filter((c) =>
         selectedCourseIds.includes(c.id)
       );
+      const bundleWithEffectivePrice: CertificateBundleOption = {
+        ...activeBundleModal,
+        priceRs: effectiveBundlePriceRs
+      };
       await onSubmitBundleRequest({
-        bundle: activeBundleModal,
+        bundle: bundleWithEffectivePrice,
         selectedCourses: chosenCourses,
         paymentMethod: payMethod,
         transactionId: txId.trim(),
@@ -442,7 +461,7 @@ export const CertificateBundleOffersCard: React.FC<
         notes: notes.trim()
       });
       setFeedbackMsg(
-        `Your ${activeBundleModal.title} (Rs. ${activeBundleModal.priceRs.toLocaleString()}) request for ${chosenCourses.length} course(s) has been sent to the Admin Control Panel! Once verified, your official Portrait PDF Certificates will be unlocked.`
+        `Your ${activeBundleModal.title} (Rs. ${effectiveBundlePriceRs.toLocaleString()}) request for ${chosenCourses.length} course(s) has been sent to the Admin Control Panel! Once verified, your official Portrait PDF Certificates will be unlocked.`
       );
       setTxId('');
       setReceiptDataUrl('');
@@ -582,7 +601,7 @@ export const CertificateBundleOffersCard: React.FC<
                 </p>
                 <h3 className="text-base sm:text-lg font-black text-[#0C182D] mt-0.5">
                   {activeBundleModal.title} — Rs.{' '}
-                  {activeBundleModal.priceRs.toLocaleString()}
+                  {effectiveBundlePriceRs.toLocaleString()}
                 </h3>
               </div>
               <button
@@ -649,6 +668,7 @@ export const CertificateBundleOffersCard: React.FC<
                   <div className="max-h-44 overflow-y-auto rounded-xl border border-[#D2DEEA] bg-[#F8FAFC] p-2 grid grid-cols-1 gap-1.5">
                     {INTERNATIONAL_TRAINING_COURSES.map((course) => {
                       const isChecked = selectedCourseIds.includes(course.id);
+                      const courseFee = course.certificateFeeRs || 1000;
                       return (
                         <button
                           key={course.id}
@@ -666,7 +686,8 @@ export const CertificateBundleOffersCard: React.FC<
                           }`}
                         >
                           <span className="truncate">
-                            {course.title} ({course.code})
+                            {course.title} ({course.code}) — Rs.{' '}
+                            {courseFee.toLocaleString()}
                           </span>
                           {isChecked && <Check className="w-3.5 h-3.5 shrink-0" />}
                         </button>
@@ -678,7 +699,7 @@ export const CertificateBundleOffersCard: React.FC<
                 {/* Step 2: Payment Account Details */}
                 <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-3.5 space-y-2">
                   <p className="font-extrabold text-[#1673B8]">
-                    2. Transfer Rs. {activeBundleModal.priceRs.toLocaleString()}{' '}
+                    2. Transfer Rs. {effectiveBundlePriceRs.toLocaleString()}{' '}
                     to Official Account:
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -798,7 +819,7 @@ export const CertificateBundleOffersCard: React.FC<
                     <span>
                       {isSubmitting
                         ? 'Submitting...'
-                        : `Submit Bundle Request (Rs. ${activeBundleModal.priceRs.toLocaleString()})`}
+                        : `Submit Bundle Request (Rs. ${effectiveBundlePriceRs.toLocaleString()})`}
                     </span>
                   </button>
                 </div>

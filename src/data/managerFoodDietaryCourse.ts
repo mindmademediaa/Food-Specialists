@@ -6,23 +6,23 @@ import {
 
 export const MANAGER_FOOD_DIETARY_MODULES: CourseStudyModule[] = [
   // =========================================================================
-  // MODULE 1: ROLE OF MANAGER FOOD & DIETARY, KITCHEN SETUP & STAFF MANAGEMENT
+  // MODULE 1: ROLE OF CERTIFIED DIETARY MANAGER, KITCHEN SETUP & STAFF MANAGEMENT
   // =========================================================================
   {
     id: 'mfd-mod-1',
     moduleNumber: 1,
-    title: 'Role of Manager Food & Dietary, Kitchen Layout & Staff Management',
+    title: 'Role of Certified Dietary Manager, Kitchen Layout & Staff Management',
     estimatedMinutes: 45,
     overview:
-      'Simple, step-by-step presentation on what a Manager Food & Dietary does every day, how to organize a hospital or institutional kitchen, how one-way kitchen flow works, and how to manage kitchen and service staff.',
+      'Simple, step-by-step presentation on what a Certified Dietary Manager does every day, how to organize a hospital or institutional kitchen, how one-way kitchen flow works, and how to manage kitchen and service staff.',
     internationalClauses: [
       'Hospital & Institutional Dietary Department Standard Operating Procedures',
       'Basic Food Safety & Hygiene Principles (Codex / ISO 22000)'
     ],
     keyPrinciples: [
-      'The Manager Food & Dietary oversees all daily food operations: planning menus, ordering supplies, supervising cooking, checking patient diet trays, and maintaining kitchen cleanliness.',
+      'The Certified Dietary Manager oversees all daily food operations: planning menus, ordering supplies, supervising cooking, checking patient diet trays, and maintaining kitchen cleanliness.',
       'A safe kitchen follows a "One-Way Flow" (Receiving → Storage → Preparation → Cooking → Tray Assembly → Dispatch) so raw food never touches cooked food.',
-      'The Dietary Manager works closely with Clinical Dietitians (who prescribe special patient diets) and Ward Nurses (who update patient admissions, discharges, and NPO status).',
+      'The Certified Dietary Manager works closely with Clinical Dietitians (who prescribe special patient diets) and Ward Nurses (who update patient admissions, discharges, and NPO status).',
       'Proper staff management includes shift scheduling, daily uniform/hygiene checks, annual medical fitness certificates, and keeping sick staff away from food handling.'
     ],
     criticalControlParameters: [
@@ -45,16 +45,16 @@ export const MANAGER_FOOD_DIETARY_MODULES: CourseStudyModule[] = [
     presentationSlides: [
       {
         slideNumber: 1,
-        title: 'Who is a Manager Food & Dietary?',
+        title: 'Who is a Certified Dietary Manager?',
         subtitle: 'Understanding Your Core Role & Daily Responsibilities',
         bulletPoints: [
-          'The Manager Food & Dietary is the head of the food and nutrition service department in a hospital, clinic, university, corporate facility, or catering unit.',
+          'The Certified Dietary Manager is the head of the food and nutrition service department in a hospital, clinic, university, corporate facility, or catering unit.',
           'Your main goal is to serve safe, nutritious, hot, and tasty meals on time to patients, staff, and visitors.',
           'You manage two sides of the department: (1) Kitchen Production & Service, and (2) Clinical Patient Tray Accuracy.',
           'You control the department budget, food purchasing, store inventory, kitchen hygiene, and staff duty rosters.'
         ],
         keyTakeaway:
-          'A successful Manager Food & Dietary ensures the right meal reaches the right person, at the right temperature, at the right time, every single day.',
+          'A successful Certified Dietary Manager ensures the right meal reaches the right person, at the right temperature, at the right time, every single day.',
         practicalExample:
           'In a 200-bed hospital, you oversee breakfast, lunch, evening tea, and dinner for patients as well as the staff cafeteria.'
       },
@@ -63,14 +63,14 @@ export const MANAGER_FOOD_DIETARY_MODULES: CourseStudyModule[] = [
         title: 'Department Structure & Key Team Members',
         subtitle: 'How the Dietary Team Works Together',
         bulletPoints: [
-          'Manager Food & Dietary: Overall head responsible for operations, quality, budget, and compliance.',
+          'Certified Dietary Manager: Overall head responsible for operations, quality, budget, and compliance.',
           'Clinical Dietitians / Nutritionists: Assess patients and prescribe therapeutic diets (Diabetic, Renal, Low-Salt, Soft/Pureed).',
           'Executive Chef & Cooks: Prepare regular meals and therapeutic patient meals according to standardized recipes.',
           'Diet Aides & Tray Line Servers: Assemble patient trays using printed diet tickets and deliver meals to wards.',
           'Storekeeper & Stewards (Dishwashers): Manage raw material stock and keep kitchen equipment and dishes clean.'
         ],
         keyTakeaway:
-          'The Dietitian decides WHAT diet a patient needs; the Manager Food & Dietary ensures it is COOKED and DELIVERED accurately.'
+          'The Dietitian decides WHAT diet a patient needs; the Certified Dietary Manager ensures it is COOKED and DELIVERED accurately.'
       },
       {
         slideNumber: 3,
@@ -918,7 +918,7 @@ export const MANAGER_FOOD_DIETARY_MODULES: CourseStudyModule[] = [
       {
         slideNumber: 10,
         title: 'Passing Food Authority, ISO 22000 & JCI Inspections',
-        subtitle: 'Final Summary Checklist for the Manager Food & Dietary',
+        subtitle: 'Final Summary Checklist for the Certified Dietary Manager',
         bulletPoints: [
           'When an external inspector (Food Authority, Healthcare Commission, JCI, or ISO 22000 Auditor) visits your kitchen, they check 5 main things:',
           '  1. Staff Hygiene & Medical Certificates: Clean uniforms, hairnets, handwashing, and valid medical cards.',
@@ -944,10 +944,10 @@ export interface ManagerDietaryExamMcq {
 }
 
 export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
-  // MODULE 1: ROLE OF MANAGER FOOD & DIETARY, KITCHEN LAYOUT & STAFF MANAGEMENT (8 MCQs)
+  // MODULE 1: ROLE OF CERTIFIED DIETARY MANAGER, KITCHEN LAYOUT & STAFF MANAGEMENT (8 MCQs)
   {
     id: 'mfd-q1',
-    question: 'What is the main responsibility of a Manager Food & Dietary in a hospital or catering facility?',
+    question: 'What is the main responsibility of a Certified Dietary Manager in a hospital or catering facility?',
     options: [
       'Prescribing surgical operations for patients',
       'Managing kitchen production, patient diet tray accuracy, food safety, budget, and dietary staff',
@@ -956,8 +956,8 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
     ],
     correctIndex: 1,
     explanation:
-      'The Manager Food & Dietary oversees all kitchen operations, patient meal accuracy, food safety, store control, budget, and staff scheduling.',
-    moduleRef: 'Module 1: Role of Manager Food & Dietary, Kitchen Layout & Staff Management'
+      'The Certified Dietary Manager oversees all kitchen operations, patient meal accuracy, food safety, store control, budget, and staff scheduling.',
+    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
   },
   {
     id: 'mfd-q2',
@@ -970,8 +970,8 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
     ],
     correctIndex: 1,
     explanation:
-      'Doctors and Clinical Dietitians prescribe the patient’s diet, while the Manager Food & Dietary ensures the kitchen prepares and delivers it accurately.',
-    moduleRef: 'Module 1: Role of Manager Food & Dietary, Kitchen Layout & Staff Management'
+      'Doctors and Clinical Dietitians prescribe the patient’s diet, while the Certified Dietary Manager ensures the kitchen prepares and delivers it accurately.',
+    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
   },
   {
     id: 'mfd-q3',
@@ -985,7 +985,7 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
     correctIndex: 0,
     explanation:
       'One-Way Flow prevents cross-contamination by ensuring raw ingredients move smoothly toward cooked dispatch without crossing dirty dish returns.',
-    moduleRef: 'Module 1: Role of Manager Food & Dietary, Kitchen Layout & Staff Management'
+    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
   },
   {
     id: 'mfd-q4',
@@ -999,7 +999,7 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
     correctIndex: 1,
     explanation:
       'Shatterproof light covers protect food from physical glass contamination if a light tube or bulb shatters.',
-    moduleRef: 'Module 1: Role of Manager Food & Dietary, Kitchen Layout & Staff Management'
+    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
   },
   {
     id: 'mfd-q5',
@@ -1013,11 +1013,11 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
     correctIndex: 1,
     explanation:
       'Clean uniforms, hairnets, short clean nails, zero jewelry, and thorough handwashing are basic personal hygiene rules for all kitchen staff.',
-    moduleRef: 'Module 1: Role of Manager Food & Dietary, Kitchen Layout & Staff Management'
+    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
   },
   {
     id: 'mfd-q6',
-    question: 'If a kitchen cook reports having acute vomiting and diarrhea in the morning, what must the Manager Food & Dietary do?',
+    question: 'If a kitchen cook reports having acute vomiting and diarrhea in the morning, what must the Certified Dietary Manager do?',
     options: [
       'Let the cook prepare cold salads while wearing gloves',
       'Immediately remove the cook from food handling and allow return only after they are 100% symptom-free for at least 48 hours',
@@ -1027,7 +1027,7 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
     correctIndex: 1,
     explanation:
       'Staff with vomiting or diarrhea can spread dangerous viruses and bacteria to patients; they must be excluded from food handling until 48 hours symptom-free.',
-    moduleRef: 'Module 1: Role of Manager Food & Dietary, Kitchen Layout & Staff Management'
+    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
   },
   {
     id: 'mfd-q7',
@@ -1041,11 +1041,11 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
     correctIndex: 1,
     explanation:
       'A bright blue waterproof bandage covered by a disposable glove prevents wound bacteria from contaminating food and is easily visible if it ever slips.',
-    moduleRef: 'Module 1: Role of Manager Food & Dietary, Kitchen Layout & Staff Management'
+    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
   },
   {
     id: 'mfd-q8',
-    question: 'Why should the Manager Food & Dietary conduct a 10-minute morning briefing with kitchen staff every day?',
+    question: 'Why should the Certified Dietary Manager conduct a 10-minute morning briefing with kitchen staff every day?',
     options: [
       'To check staff uniforms/hygiene, review today’s menu and patient diet counts, and assign clear daily duties',
       'To cancel breakfast service',
@@ -1055,7 +1055,7 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
     correctIndex: 0,
     explanation:
       'A daily 10-minute morning briefing aligns the team on hygiene, patient diet counts, special requirements, and menu quality.',
-    moduleRef: 'Module 1: Role of Manager Food & Dietary, Kitchen Layout & Staff Management'
+    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
   },
 
   // MODULE 2: PATIENT DIETS, MENU PLANNING & TRAY SERVICE MANAGEMENT (8 MCQs)
@@ -1245,7 +1245,7 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
   },
   {
     id: 'mfd-q22',
-    question: 'Why does a Manager Food & Dietary enforce "Standardized Recipes" and numbered portion scoops in the kitchen?',
+    question: 'Why does a Certified Dietary Manager enforce "Standardized Recipes" and numbered portion scoops in the kitchen?',
     options: [
       'To ensure every dish has consistent taste, accurate patient nutrition, and controlled food cost per portion',
       'To make cooking slower and harder',
@@ -1431,7 +1431,7 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
   },
   {
     id: 'mfd-q35',
-    question: 'If three patients complain of vomiting shortly after eating lunch, what is the FIRST action the Manager Food & Dietary must take?',
+    question: 'If three patients complain of vomiting shortly after eating lunch, what is the FIRST action the Certified Dietary Manager must take?',
     options: [
       'Throw away the reference food samples and delete the temperature logs',
       'Immediately stop serving the suspected dish, quarantine remaining batches, lock the 72-hour Reference Food Samples, and inform Hospital Infection Control / Medical Director',
@@ -1473,7 +1473,7 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
   },
   {
     id: 'mfd-q38',
-    question: 'If the hospital experiences a "Boil-Water Alert" or water supply contamination, what must the Manager Food & Dietary do?',
+    question: 'If the hospital experiences a "Boil-Water Alert" or water supply contamination, what must the Certified Dietary Manager do?',
     options: [
       'Keep using tap water and ice machines as normal',
       'Turn off plumbed ice machines and water dispensers, discard existing ice, use bottled or boiled water (boiled ≥ 1 minute), and use disposable plates/cups',
@@ -1517,18 +1517,18 @@ export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
 
 export const MANAGER_FOOD_DIETARY_COURSE: InternationalTrainingCourse = {
   id: 'mgr-food-dietary-2026',
-  code: 'MFD-MGR',
-  title: 'Manager Food & Dietary',
-  levelBadge: 'Simple Presentation Course (05 Modules · 50 Slides · 40 MCQs · 60% Pass)',
+  code: 'CDM-CERT',
+  title: 'Certified Dietary Manager',
+  levelBadge: 'Professional Certification (05 Modules · 50 Slides · 40 MCQs · 60% Pass)',
   accreditationStandard:
-    'Hospital & Institutional Food & Dietary Management • Practical Presentation Course',
+    'Hospital & Institutional Food & Dietary Management • Accredited Certification',
   duration: '05 Presentation Modules (50 Easy Slides) + 40-MCQ Exam',
-  certificateFeeRs: 1000,
+  certificateFeeRs: 8000,
   passPercentage: 60,
   distinctionPercentage: 75,
   totalExamQuestions: 40,
   description:
-    'A clear, step-by-step Slide Presentation Course designed for Manager Food & Dietary roles in hospitals, clinics, corporate cafeterias, and catering operations. Divided into 05 easy-to-follow Presentation Modules (50 Slides total) covering: (1) Daily Role, Kitchen Layout & Staff Management, (2) Patient Diets, Menu Planning & Tray Delivery, (3) Purchasing, Receiving, Store Management & Cost Control, (4) Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing, and (5) Quality Checks, 72-Hour Food Samples, Emergency Planning & Inspections — followed by a straightforward 40-MCQ Final Exam (60% passing marks).',
+    'A comprehensive, step-by-step Slide Presentation Course designed for Certified Dietary Manager (CDM) roles in hospitals, clinics, corporate cafeterias, and catering operations. Course study material (05 Presentation Modules / 50 Slides) and the 40-MCQ Final Exam are 100% Free for all users, with an official verifiable Portrait PDF Certificate available upon completion (Certificate Fee: Rs. 8,000).',
   modules: MANAGER_FOOD_DIETARY_MODULES,
   coreExamPool: MANAGER_FOOD_DIETARY_EXAM_MCQS.map((item) => ({
     q: item.question,
@@ -1541,12 +1541,12 @@ export const MANAGER_FOOD_DIETARY_COURSE: InternationalTrainingCourse = {
 export const MANAGER_FOOD_DIETARY_HUB_TRAINING: HubTraining = {
   id: MANAGER_FOOD_DIETARY_COURSE.id,
   category: 'International Certification',
-  title: 'Manager Food & Dietary',
-  standardCode: 'MFD-MGR',
+  title: 'Certified Dietary Manager',
+  standardCode: 'CDM-CERT',
   subType: '05 Presentation Modules (50 Slides) | 40 MCQs | 60% Pass',
   description: MANAGER_FOOD_DIETARY_COURSE.description,
   duration: MANAGER_FOOD_DIETARY_COURSE.duration,
-  fees: 'Free Study & Exam | Rs. 1,000 Verified Certificate',
+  fees: 'Free Study & Exam | Rs. 8,000 Verified Certificate',
   enrollLink: '#trainings',
   isActive: true,
   customModules: MANAGER_FOOD_DIETARY_MODULES.map((m) => ({

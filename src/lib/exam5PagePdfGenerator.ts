@@ -778,35 +778,38 @@ export function downloadExamAchievementCertificatePdf(
     align: 'center'
   });
 
-  pdf.setFontSize(27);
+  pdf.setFontSize(26);
   pdf.setTextColor(19, 66, 43);
-  pdf.text('CERTIFICATE OF EXCELLENCE', 148.5, 55, { align: 'center' });
+  pdf.text('CERTIFICATE OF EXCELLENCE', 148.5, 54, { align: 'center' });
 
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(12);
   pdf.setTextColor(75, 99, 86);
-  pdf.text('This is proudly presented to', 148.5, 72, { align: 'center' });
+  pdf.text('This is proudly presented to', 148.5, 70, { align: 'center' });
 
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(24);
+  let nameFontSize = candidateName.length > 28 ? 19 : 23;
+  pdf.setFontSize(nameFontSize);
+  while (pdf.getTextWidth(candidateName) > 230 && nameFontSize > 13) {
+    nameFontSize -= 0.5;
+    pdf.setFontSize(nameFontSize);
+  }
   pdf.setTextColor(15, 41, 30);
-  pdf.text(candidateName, 148.5, 88, { align: 'center' });
+  const wrappedCandidate = pdf.splitTextToSize(candidateName, 230).slice(0, 2);
+  pdf.text(wrappedCandidate, 148.5, 85, { align: 'center' });
 
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(12);
+  pdf.setFontSize(11.5);
   pdf.setTextColor(51, 65, 85);
   pdf.text(
     `for achieving an outstanding score of ${result.scorePercent}% (${result.correct}/${result.totalQuestions} MCQs)`,
     148.5,
-    105,
+    102,
     { align: 'center' }
   );
-  pdf.text(
-    `in ${result.title} — ${result.category} Exam Preparation Assessment.`,
-    148.5,
-    115,
-    { align: 'center' }
-  );
+  const examLineText = `in ${result.title} — ${result.category} Exam Preparation Assessment.`;
+  const wrappedExamLine = pdf.splitTextToSize(examLineText, 235).slice(0, 2);
+  pdf.text(wrappedExamLine, 148.5, 111, { align: 'center' });
 
   // Stamp
   pdf.setFillColor(22, 163, 74);
@@ -818,11 +821,11 @@ export function downloadExamAchievementCertificatePdf(
 
   pdf.setTextColor(19, 66, 43);
   pdf.setFontSize(10);
-  pdf.text(`Date: ${result.dateFormatted}`, 45, 168);
-  pdf.text(`Certificate ID: ${result.certificateId}`, 45, 175);
+  pdf.text(`Date: ${result.dateFormatted}`, 28, 168);
+  pdf.text(`Certificate ID: ${result.certificateId}`, 28, 175);
 
-  pdf.line(200, 165, 260, 165);
-  pdf.text('Food Science Portal Exam Team', 230, 172, { align: 'center' });
+  pdf.line(200, 165, 268, 165);
+  pdf.text('Food Science Portal Exam Team', 234, 172, { align: 'center' });
 
   pdf.save(
     `Food-Science-Portal-Certificate-${candidateName.replace(/\s+/g, '-')}.pdf`

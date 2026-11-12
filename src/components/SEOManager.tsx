@@ -114,7 +114,7 @@ const ROUTE_SEO_METADATA: Record<
     title:
       'Accredited Food Safety, HACCP Level 3 & 4, ISO 22000, FSSC v7 & BRCGS Issue 9 Courses | Food Science Portal',
     description:
-      'Free online study & exam for 13 certifications: Manager Food & Dietary, HACCP Level 03 & 04, Food Safety Level 03 & 04, ISO 9001, ISO 22000, FSSC 22000 v7, BRCGS Issue 09, ISO 14001, ISO 45001, MS Office & English.',
+      'Free online study & exam for 13 certifications: Certified Dietary Manager, HACCP Level 03 & 04, Food Safety Level 03 & 04, ISO 9001, ISO 22000, FSSC 22000 v7, BRCGS Issue 09, ISO 14001, ISO 45001, MS Office & English.',
     sectionParam: 'trainings'
   },
   communities: {

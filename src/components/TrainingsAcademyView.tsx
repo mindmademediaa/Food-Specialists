@@ -69,6 +69,7 @@ interface TrainingsAcademyViewProps {
     transactionId: string;
     receiptImageUrl: string;
     notes: string;
+    amountRs?: number;
   }) => Promise<void>;
   onOpenUpgradeModal: () => void;
   onRequireSignIn?: () => void;
@@ -197,12 +198,22 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     const seenIds = new Set<string>();
 
     for (const customTr of activeAdminTrainings) {
+      const isDietaryCourse =
+        customTr.id === 'mgr-food-dietary-2026' ||
+        customTr.title.trim().toLowerCase() === 'manager food & dietary' ||
+        customTr.title.trim().toLowerCase() === 'manage food and dietary' ||
+        customTr.title.trim().toLowerCase() === 'certified dietary manager';
+
       const baseMatch = INTERNATIONAL_TRAINING_COURSES.find(
         (b) =>
           b.id === customTr.id ||
+          (isDietaryCourse && b.id === 'mgr-food-dietary-2026') ||
           b.title.trim().toLowerCase() === customTr.title.trim().toLowerCase()
       );
       const fallbackTemplate = baseMatch || DEFAULT_COURSE_TEMPLATE;
+      const normalizedCourseTitle = isDietaryCourse
+        ? 'Certified Dietary Manager'
+        : customTr.title;
       const mappedCustomModules: CourseStudyModule[] =
         customTr.customModules && customTr.customModules.length > 0
           ? customTr.customModules.map((m, idx) => {
@@ -218,7 +229,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   ...richBaseMod,
                   id: m.id || richBaseMod.id,
                   moduleNumber: idx + 1,
-                  title: m.subject || richBaseMod.title
+                  title: isDietaryCourse
+                    ? richBaseMod.title
+                    : m.subject || richBaseMod.title
                 };
               }
               return {
@@ -230,7 +243,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   m.description ||
                   `Core curriculum for ${m.subject || `Module ${idx + 1}`}.`,
                 internationalClauses: [
-                  `${customTr.title} — Module ${idx + 1}: ${m.subject}`
+                  `${normalizedCourseTitle} — Module ${idx + 1}: ${m.subject}`
                 ],
                 keyPrinciples:
                   paragraphs.length > 0
@@ -262,10 +275,18 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       result.push({
         ...fallbackTemplate,
         id: customTr.id,
-        code: customTr.standardCode || baseMatch?.code || 'FSC-INT',
-        title: customTr.title,
-        levelBadge: customTr.subType || baseMatch?.levelBadge || 'International Certification',
-        description: customTr.description || baseMatch?.description || '',
+        code: isDietaryCourse
+          ? 'CDM-CERT'
+          : customTr.standardCode || baseMatch?.code || 'FSC-INT',
+        title: normalizedCourseTitle,
+        certificateFeeRs: isDietaryCourse
+          ? 8000
+          : baseMatch?.certificateFeeRs || 1000,
+        levelBadge:
+          customTr.subType || baseMatch?.levelBadge || 'International Certification',
+        description: isDietaryCourse
+          ? baseMatch?.description || customTr.description || ''
+          : customTr.description || baseMatch?.description || '',
         modules: mappedCustomModules,
         duration:
           customTr.duration ||
@@ -588,6 +609,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     setPayFeedbackMsg(null);
     try {
       const { course, progress } = certPayModalCourse;
+      const certFeeRs =
+        course.certificateFeeRs ||
+        (course.id === 'mgr-food-dietary-2026' ||
+        course.title.toLowerCase().includes('dietary')
+          ? 8000
+          : 1000);
       const certNo =
         progress.certificateNumber ||
         makeDeterministicCertNumber(currentUser.uid, course.code);
@@ -601,7 +628,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         paymentMethod: payMethod,
         transactionId: payTxId.trim(),
         receiptImageUrl: payReceiptDataUrl,
-        notes: payNotes.trim() || `Certificate Unlock Fee Rs. 1,000 for ${course.title} (${certNo}) + 1 Month Free Paid Membership`
+        amountRs: certFeeRs,
+        notes:
+          payNotes.trim() ||
+          `Certificate Unlock Fee Rs. ${certFeeRs.toLocaleString()} for ${course.title} (${certNo}) + 1 Month Free Paid Membership`
       });
 
       const updated: UserCourseProgress = {
@@ -612,7 +642,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       saveProgressHelper(course, updated);
 
       setPayFeedbackMsg(
-        'Your Rs. 1,000 Certificate Request has been submitted to the Admin Control Panel! Upon payment confirmation and approval, your Official Portrait PDF Certificate will unlock, 1 Month of FREE Paid Membership will be activated on your account, and your certificate will be live on the Online Verification Portal.'
+        `Your Rs. ${certFeeRs.toLocaleString()} Certificate Request has been submitted to the Admin Control Panel! Upon payment confirmation and approval, your Official Portrait PDF Certificate will unlock, 1 Month of FREE Paid Membership will be activated on your account, and your certificate will be live on the Online Verification Portal.`
       );
       setPayTxId('');
       setPayNotes('');
@@ -841,31 +871,25 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         {/* Official FS Portal Portrait A4 Certificate Visual Pattern Card */}
         <div className="max-w-2xl mx-auto relative overflow-hidden rounded-xl border border-slate-300 bg-white shadow-2xl flex min-h-[760px]">
           {/* Left Full-Height Royal Blue Sidebar (#1673B8) with Giant Rotated "Certificate" */}
-          <div className="w-24 sm:w-36 bg-[#1673B8] shrink-0 relative overflow-hidden flex items-center justify-center select-none">
+          <div className="w-20 sm:w-32 bg-[#1673B8] shrink-0 relative overflow-hidden flex items-center justify-center select-none">
             <span
               className="text-[#105E9A] font-black tracking-tight leading-none select-none pointer-events-none"
               style={{
                 writingMode: 'vertical-rl',
                 transform: 'rotate(180deg)',
-                fontSize: 'clamp(5.2rem, 12vw, 8.8rem)'
+                fontSize: 'clamp(4.6rem, 11vw, 8.2rem)'
               }}
             >
               Certificate
             </span>
           </div>
 
-          {/* Right Main White Certificate Canvas */}
-          <div className="flex-1 p-5 sm:p-8 relative z-10 flex flex-col justify-between text-left overflow-hidden bg-white">
-            {/* Subtle Giant Ice-Blue "U" Watermark in Lower-Right Background */}
-            <div
-              className="pointer-events-none select-none absolute -right-8 top-44 w-72 h-80 border-[34px] border-[#F0F6FC] rounded-b-full border-t-0 z-0"
-              aria-hidden="true"
-            />
-
+          {/* Right Main White Certificate Canvas (No background "U" watermark; strict margin containment) */}
+          <div className="flex-1 min-w-0 p-4 sm:p-7 relative z-10 flex flex-col justify-between text-left overflow-hidden bg-white">
             {/* Preview Watermark if not yet unlocked */}
             {!isUnlocked && (
-              <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center z-20">
-                <span className="rotate-[-20deg] border-2 border-[#1673B8]/30 bg-white/85 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest text-[#1673B8]/60 shadow-xs text-center">
+              <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center z-20 p-4">
+                <span className="rotate-[-20deg] border-2 border-[#1673B8]/30 bg-white/85 px-4 py-2 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-widest text-[#1673B8]/60 shadow-xs text-center max-w-full break-words">
                   {isPendingAdminApproval
                     ? 'PENDING ADMIN APPROVAL · CERTIFICATE PREVIEW'
                     : 'CERTIFICATE PATTERN PREVIEW'}
@@ -874,36 +898,36 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             )}
 
             {/* Top Section: Brand Logo, Rosette Seal, Title, User & Training Info */}
-            <div className="space-y-4 relative z-10">
+            <div className="space-y-4 relative z-10 min-w-0">
               {/* Top Row: Large Food Science Portal Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 border-[#1673B8] bg-white p-0.5 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
+              <div className="flex items-start justify-between gap-2.5 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-12 h-12 sm:w-15 sm:h-15 rounded-xl border-2 border-[#1673B8] bg-white p-0.5 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
                     <img
                       src={FS_PORTAL_LOGO_DATA_URI}
                       alt="Food Science Portal Logo"
                       className="w-full h-full object-contain scale-105"
                     />
                   </div>
-                  <div>
-                    <div className="text-xl sm:text-2xl font-black tracking-tight text-[#0C182D] flex items-baseline gap-1.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-lg sm:text-2xl font-black tracking-tight text-[#0C182D] flex flex-wrap items-baseline gap-1.5 leading-tight">
                       <span>Food Science</span>
                       <span className="text-[#1673B8] border-b-[3px] border-[#1673B8] pb-0.5 leading-none">
                         Portal
                       </span>
                     </div>
-                    <p className="text-[11px] font-semibold text-slate-600 mt-1">
+                    <p className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600 mt-1 leading-snug break-words">
                       International Food Safety &amp; Hospitality Academy
                     </p>
-                    <p className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] mt-0.5">
+                    <p className="text-[9px] sm:text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] mt-0.5 break-words">
                       Official Accredited Credential
                     </p>
                   </div>
                 </div>
 
                 {/* Blue Scalloped Rosette Seal with Two Hanging Ribbons */}
-                <div className="relative flex flex-col items-center shrink-0 mr-1">
-                  <svg viewBox="0 0 120 145" className="w-20 h-24 sm:w-24 sm:h-28">
+                <div className="relative flex flex-col items-center shrink-0">
+                  <svg viewBox="0 0 120 145" className="w-16 h-20 sm:w-22 sm:h-26">
                     {/* Hanging Ribbons */}
                     <polygon points="36,88 54,88 48,136 39,125 28,134" fill="#1673B8" />
                     <polygon points="66,88 84,88 92,134 81,125 72,136" fill="#1673B8" />
@@ -956,26 +980,26 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               </div>
 
               {/* 1. Always "Certificate of Achievement" Heading */}
-              <div className="space-y-0.5">
-                <h3 className="text-3xl sm:text-4xl font-normal text-[#226CA3] tracking-tight leading-tight">
+              <div className="space-y-0.5 min-w-0">
+                <h3 className="text-2xl sm:text-4xl font-normal text-[#226CA3] tracking-tight leading-tight break-words">
                   Certificate
                 </h3>
-                <p className="text-3xl sm:text-4xl font-normal text-[#226CA3] tracking-tight leading-tight">
+                <p className="text-2xl sm:text-4xl font-normal text-[#226CA3] tracking-tight leading-tight break-words">
                   of Achievement
                 </p>
               </div>
 
               {/* 2. "This is to certify that" + Recipient Name + User Profile Picture */}
-              <div className="flex items-end justify-between gap-3 border-b border-[#D8E4EE] pb-2.5">
-                <div className="space-y-1.5 min-w-0 flex-1">
-                  <p className="text-sm sm:text-base text-[#1C2336]">
+              <div className="flex items-end justify-between gap-3 border-b border-[#D8E4EE] pb-2.5 min-w-0">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-[#1C2336]">
                     This is to certify that
                   </p>
-                  <p className="text-xl sm:text-2xl font-black text-[#162038] tracking-tight break-words">
+                  <p className="text-lg sm:text-2xl font-black text-[#162038] tracking-tight break-words leading-snug">
                     {holderName}
                   </p>
                 </div>
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 border-[#1673B8] bg-[#F0F7FF] overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-xl border-2 border-[#1673B8] bg-[#F0F7FF] overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
                   {currentUser?.profilePicUrl ? (
                     <img
                       src={currentUser.profilePicUrl}
@@ -984,7 +1008,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-base sm:text-lg font-black text-[#1673B8]">
+                    <span className="text-sm sm:text-lg font-black text-[#1673B8]">
                       {holderName
                         .trim()
                         .split(/\s+/)
@@ -997,11 +1021,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               </div>
 
               {/* 3. "has successfully completed" + Course Title + Sequential Modules One Below Another */}
-              <div className="space-y-2">
-                <p className="text-sm sm:text-base text-[#1C2336]">
+              <div className="space-y-2 min-w-0">
+                <p className="text-xs sm:text-sm text-[#1C2336]">
                   has successfully completed
                 </p>
-                <div className="border-b border-[#D8E4EE] pb-3 pt-0.5 space-y-2">
+                <div className="border-b border-[#D8E4EE] pb-3 pt-0.5 space-y-2 min-w-0">
                   <h4 className="text-base sm:text-xl font-black text-[#1673B8] leading-snug break-words">
                     {course.title}
                   </h4>
@@ -1009,7 +1033,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     Course Code: <span className="text-slate-900">{course.code}</span> · Standard:{' '}
                     <span className="text-slate-900">{course.accreditationStandard}</span>
                   </p>
-                  <div className="pt-1 space-y-1 bg-slate-50/80 rounded-lg p-2.5 border border-slate-200/80">
+                  <div className="pt-1 space-y-1 bg-slate-50/80 rounded-lg p-2.5 border border-slate-200/80 min-w-0">
                     <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8]">
                       Completed Course Modules:
                     </p>
@@ -1024,37 +1048,37 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 </div>
               </div>
 
-              {/* 4. 3-Column Underlined Metrics Row: Certificate No. | Awarded | Exam Score (No CPD Credits) */}
-              <div className="grid grid-cols-3 gap-3 sm:gap-5 pt-2 text-center">
-                <div>
-                  <div className="border-b border-[#D2DEEA] pb-1.5 text-xs sm:text-sm font-black text-[#162038] font-mono truncate">
+              {/* 4. 3-Column Underlined Metrics Row: Certificate No. | Awarded | Exam Score (Fits strictly within margins) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-2 text-center min-w-0">
+                <div className="min-w-0 px-1">
+                  <div className="border-b border-[#D2DEEA] pb-1.5 text-[11px] sm:text-xs font-black text-[#162038] font-mono break-all">
                     {certNo}
                   </div>
-                  <p className="text-[11px] text-slate-700 mt-1.5">Certificate No.</p>
+                  <p className="text-[10.5px] text-slate-700 mt-1">Certificate No.</p>
                 </div>
 
-                <div>
-                  <div className="border-b border-[#D2DEEA] pb-1.5 text-xs sm:text-sm font-bold text-[#162038] truncate">
+                <div className="min-w-0 px-1">
+                  <div className="border-b border-[#D2DEEA] pb-1.5 text-[11px] sm:text-xs font-bold text-[#162038] break-words">
                     {issueDateStr}
                   </div>
-                  <p className="text-[11px] text-slate-700 mt-1.5">Awarded</p>
+                  <p className="text-[10.5px] text-slate-700 mt-1">Awarded</p>
                 </div>
 
-                <div>
-                  <div className="border-b border-[#D2DEEA] pb-1.5 text-xs sm:text-sm font-black text-[#1673B8] truncate">
+                <div className="min-w-0 px-1">
+                  <div className="border-b border-[#D2DEEA] pb-1.5 text-[11px] sm:text-xs font-black text-[#1673B8] break-words">
                     {scorePct}% ({correctOutOf40}/40 · {isDistinction ? 'Distinction' : 'Passed'})
                   </div>
-                  <p className="text-[11px] text-slate-700 mt-1.5">Exam Score</p>
+                  <p className="text-[10.5px] text-slate-700 mt-1">Exam Score</p>
                 </div>
               </div>
             </div>
 
-            {/* Bottom Section: Cursive Signature, "Endorsed by FS Portal", App Verification Link & Scannable QR Code */}
-            <div className="pt-6 space-y-5 relative z-10">
+            {/* Bottom Section: Cursive Signature, "Endorsed by FS Portal", Website Verification Link & Scannable QR Code */}
+            <div className="pt-5 space-y-4 relative z-10 min-w-0">
               {/* Row 1: Cursive Signature on Left + "Endorsed by FS Portal" on Right */}
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <div className="w-44 text-center">
-                  <svg viewBox="0 0 190 48" className="w-40 h-11 mx-auto text-[#141824]">
+              <div className="flex flex-wrap items-end justify-between gap-3 min-w-0">
+                <div className="w-42 text-center shrink-0">
+                  <svg viewBox="0 0 190 48" className="w-36 h-10 mx-auto text-[#141824]">
                     <path
                       d="M 14 14 L 22 36 L 30 12 M 36 34 C 36 34, 37 34, 37 34 M 46 35 L 49 16 L 57 30 L 65 16 L 71 35 M 84 13 L 86 35 L 94 26 L 100 35 L 108 24 L 113 35 L 121 15 L 123 35 L 132 25 L 139 34 L 148 25 L 156 34 L 164 25 L 169 42 C 166 47, 158 45, 156 39"
                       fill="none"
@@ -1065,15 +1089,15 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     />
                   </svg>
                   <div className="border-t border-[#D2DEEA] pt-1">
-                    <p className="text-[10.5px] text-slate-700">
+                    <p className="text-[10px] text-slate-700 leading-tight">
                       Signed on behalf of Food Science Portal
                     </p>
                   </div>
                 </div>
 
                 {/* 7. Endorsed by Food Science Portal Badge */}
-                <div className="flex items-start gap-2.5">
-                  <div className="w-11 h-11 rounded-lg border border-[#1673B8] bg-white flex items-center justify-center p-0.5 shrink-0 overflow-hidden shadow-2xs">
+                <div className="flex items-start gap-2 shrink-0">
+                  <div className="w-10 h-10 rounded-lg border border-[#1673B8] bg-white flex items-center justify-center p-0.5 shrink-0 overflow-hidden shadow-2xs">
                     <img
                       src={FS_PORTAL_LOGO_DATA_URI}
                       alt="Food Science Portal Logo"
@@ -1082,22 +1106,22 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   </div>
                   <div className="space-y-1">
                     <div className="leading-tight text-[#1A2138]">
-                      <p className="text-[11px] font-medium text-slate-600">Endorsed by</p>
-                      <p className="text-sm font-black text-[#1673B8]">Food Science Portal</p>
+                      <p className="text-[10.5px] font-medium text-slate-600">Endorsed by</p>
+                      <p className="text-xs sm:text-sm font-black text-[#1673B8]">Food Science Portal</p>
                     </div>
-                    <div className="px-2.5 py-0.5 rounded bg-[#1673B8] text-white text-[7.5px] font-black uppercase tracking-wider text-center">
+                    <div className="px-2 py-0.5 rounded bg-[#0D5C3A] text-white text-[7px] font-black uppercase tracking-wider text-center">
                       ENDORSED BY FOOD SCIENCE PORTAL
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Row 2: Green Shield "Validate this certificate at" (Official App Link) on Left + Scannable QR Code on Right */}
-              <div className="flex flex-wrap items-end justify-between gap-4 pt-1">
-                <div className="space-y-2.5 flex-1 min-w-[210px]">
-                  <div className="flex items-start gap-2.5">
+              {/* Row 2: Green Shield "Validate this certificate online at" on Left + Scannable QR Code on Right */}
+              <div className="flex flex-wrap items-end justify-between gap-3 pt-1 min-w-0">
+                <div className="space-y-2 flex-1 min-w-[180px]">
+                  <div className="flex items-start gap-2 min-w-0">
                     {/* Shield with Green Checkmark */}
-                    <svg viewBox="0 0 36 42" className="w-8 h-9 shrink-0 mt-0.5">
+                    <svg viewBox="0 0 36 42" className="w-7 h-8 shrink-0 mt-0.5">
                       <path
                         d="M 18 2 L 33 8 L 33 21 C 33 30, 25 36, 18 40 C 11 36, 3 30, 3 21 L 3 8 Z"
                         fill="#FFFFFF"
@@ -1113,8 +1137,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         strokeLinejoin="round"
                       />
                     </svg>
-                    <div className="text-xs space-y-0.5 break-all">
-                      <p className="font-black text-[#1A2138]">
+                    <div className="text-xs space-y-0.5 min-w-0 flex-1">
+                      <p className="font-black text-[#1A2138] leading-snug">
                         Validate this certificate online at
                       </p>
                       <a
@@ -1127,28 +1151,28 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           setVerifyQuery(certNo);
                           setHasSearchedVerify(true);
                         }}
-                        className="text-left text-[#1673B8] hover:underline font-bold text-[11px] leading-snug cursor-pointer block"
+                        className="text-left text-[#1673B8] hover:underline font-bold text-[10.5px] leading-snug cursor-pointer block break-all"
                       >
                         {shortVerifyDisplayUrl}
                       </a>
-                      <p className="text-[10.5px] text-slate-600 font-medium break-normal">
+                      <p className="text-[10px] text-slate-600 font-medium leading-snug break-words">
                         Enter Certificate No: <strong className="font-mono text-slate-900">{certNo}</strong> on the Website Verification Portal
                       </p>
                     </div>
                   </div>
 
-                  <div className="text-[10.5px] text-slate-600 leading-snug">
+                  <div className="text-[10px] text-slate-600 leading-snug">
                     <p>Refresher training recommended every three years</p>
                     <p>or sooner if circumstances dictate.</p>
                   </div>
                 </div>
 
-                {/* 6 & 8. Scannable QR Code for Direct Certificate Verification (replaces CPD mark) */}
-                <div className="flex flex-col items-center bg-white border border-slate-300 rounded-xl p-2 shadow-xs shrink-0">
+                {/* Scannable QR Code for Direct Certificate Verification */}
+                <div className="flex flex-col items-center bg-white border border-slate-300 rounded-xl p-2 shadow-xs shrink-0 max-w-[112px]">
                   {qrMatrix.length > 0 && (
                     <svg
                       viewBox={`0 0 ${qrMatrix.length} ${qrMatrix.length}`}
-                      className="w-20 h-20 sm:w-24 sm:h-24"
+                      className="w-18 h-18 sm:w-22 sm:h-22"
                       shapeRendering="crispEdges"
                     >
                       <rect
@@ -1172,10 +1196,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       )}
                     </svg>
                   )}
-                  <span className="text-[8.5px] font-black uppercase tracking-wider text-[#1673B8] mt-1">
+                  <span className="text-[8px] font-black uppercase tracking-wider text-[#1673B8] mt-1">
                     Scan to Verify
                   </span>
-                  <span className="text-[8px] font-mono font-bold text-slate-600">
+                  <span className="text-[7.5px] font-mono font-bold text-slate-600 break-all text-center leading-tight">
                     {certNo}
                   </span>
                 </div>
@@ -2333,212 +2357,236 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               </div>
             ) : certModalStep === 'instruction' ? (
               /* STEP 1: SMALL INSTRUCTION WINDOW WHEN USER CLICKS "DOWNLOAD CERTIFICATE" */
-              <div className="space-y-4">
-                <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-4 space-y-2.5 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-black uppercase tracking-wider text-[#1673B8]">
-                      Certificate Issuance Fee
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-[#1673B8] text-white font-black text-xs">
-                      Rs. 1,000
-                    </span>
-                  </div>
-                  <p className="text-[#1A2138] leading-relaxed">
-                    A certificate issuance fee of <strong>Rs. 1,000</strong> applies to download your official <strong>Portrait PDF Certificate</strong> and activate live verification on the <strong>Online Verification Portal</strong>.
-                  </p>
-                  <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 font-semibold text-[11px]">
-                    🎁 <strong>Complimentary Membership Bonus:</strong> Unlocking 1 Certificate automatically grants you <strong>1 Month of FREE Paid Membership</strong>! (Unlocking the All-13 Certificates Bundle grants <strong>1 Full Year of FREE Paid Membership</strong>). After your complimentary period, active Paid Membership is required to keep online certificate verification active.
-                  </div>
-                  <ul className="space-y-1 text-slate-700 font-medium pt-1">
-                    <li>1. Click <strong>Proceed to Payment Option</strong> below.</li>
-                    <li>2. Transfer the Rs. 1,000 fee and upload your payment screenshot.</li>
-                    <li>3. Once approved in the Admin Control Panel, your PDF Certificate and 1-Month Paid Membership will unlock immediately.</li>
-                  </ul>
-                </div>
-
-                {!currentUser?.uid && (
-                  <div className="rounded-xl bg-amber-50 border-2 border-amber-400 p-3.5 space-y-2 text-xs text-[#1A2138]">
-                    <div className="font-extrabold text-amber-900">
-                      ⚠️ User Registration &amp; Login Mandatory for Official Certificates
+              (() => {
+                const modalCertFeeRs =
+                  certPayModalCourse.course.certificateFeeRs ||
+                  (certPayModalCourse.course.id === 'mgr-food-dietary-2026' ||
+                  certPayModalCourse.course.title.toLowerCase().includes('dietary')
+                    ? 8000
+                    : 1000);
+                return (
+                  <div className="space-y-4">
+                    <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-4 space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black uppercase tracking-wider text-[#1673B8]">
+                          Certificate Issuance Fee
+                        </span>
+                        <span className="px-2.5 py-1 rounded-lg bg-[#1673B8] text-white font-black text-xs">
+                          Rs. {modalCertFeeRs.toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-[#1A2138] leading-relaxed">
+                        A certificate issuance fee of{' '}
+                        <strong>Rs. {modalCertFeeRs.toLocaleString()}</strong> applies to download your official{' '}
+                        <strong>Portrait PDF Certificate</strong> for{' '}
+                        <strong>{certPayModalCourse.course.title}</strong> and activate live verification on the{' '}
+                        <strong>Online Verification Portal</strong>.
+                      </p>
+                      <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 font-semibold text-[11px]">
+                        🎁 <strong>Complimentary Membership Bonus:</strong> Unlocking 1 Certificate automatically grants you <strong>1 Month of FREE Paid Membership</strong>! (Unlocking the All-13 Certificates Bundle grants <strong>1 Full Year of FREE Paid Membership</strong>). After your complimentary period, active Paid Membership is required to keep online certificate verification active.
+                      </div>
+                      <ul className="space-y-1 text-slate-700 font-medium pt-1">
+                        <li>1. Click <strong>Proceed to Payment Option</strong> below.</li>
+                        <li>2. Transfer the Rs. {modalCertFeeRs.toLocaleString()} fee and upload your payment screenshot.</li>
+                        <li>3. Once approved in the Admin Control Panel, your PDF Certificate and 1-Month Paid Membership will unlock immediately.</li>
+                      </ul>
                     </div>
-                    <p className="text-[11.5px] text-amber-800 leading-relaxed">
-                      Course study and the 40-MCQ exam are 100% free without registration. However, to issue and verify your Official Portrait PDF Certificate, please register / sign in to your account first.
-                    </p>
-                    {onRequireSignIn && (
+
+                    {!currentUser?.uid && (
+                      <div className="rounded-xl bg-amber-50 border-2 border-amber-400 p-3.5 space-y-2 text-xs text-[#1A2138]">
+                        <div className="font-extrabold text-amber-900">
+                          ⚠️ User Registration &amp; Login Mandatory for Official Certificates
+                        </div>
+                        <p className="text-[11.5px] text-amber-800 leading-relaxed">
+                          Course study and the 40-MCQ exam are 100% free without registration. However, to issue and verify your Official Portrait PDF Certificate, please register / sign in to your account first.
+                        </p>
+                        {onRequireSignIn && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCertPayModalCourse(null);
+                              onRequireSignIn();
+                            }}
+                            className="w-full py-2.5 px-4 rounded-xl bg-[#0C182D] hover:bg-[#1673B8] text-white font-extrabold text-xs cursor-pointer transition-colors"
+                          >
+                            Sign In / Register Free Account First →
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setCertPayModalCourse(null)}
+                        className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
-                          setCertPayModalCourse(null);
-                          onRequireSignIn();
+                          if (!currentUser?.uid && onRequireSignIn) {
+                            setCertPayModalCourse(null);
+                            onRequireSignIn();
+                            return;
+                          }
+                          setCertModalStep('payment');
                         }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-[#0C182D] hover:bg-[#1673B8] text-white font-extrabold text-xs cursor-pointer transition-colors"
+                        className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-sm cursor-pointer inline-flex items-center gap-1.5"
                       >
-                        Sign In / Register Free Account First →
+                        <Download className="w-3.5 h-3.5" />
+                        <span>
+                          {!currentUser?.uid
+                            ? 'Register / Sign In to Unlock Certificate →'
+                            : `Proceed to Payment Option (Rs. ${modalCertFeeRs.toLocaleString()}) →`}
+                        </span>
                       </button>
-                    )}
+                    </div>
                   </div>
-                )}
-
-                <div className="flex items-center justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setCertPayModalCourse(null)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!currentUser?.uid && onRequireSignIn) {
-                        setCertPayModalCourse(null);
-                        onRequireSignIn();
-                        return;
-                      }
-                      setCertModalStep('payment');
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-sm cursor-pointer inline-flex items-center gap-1.5"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>
-                      {!currentUser?.uid
-                        ? 'Register / Sign In to Unlock Certificate →'
-                        : 'Proceed to Payment Option (Rs. 1,000) →'}
-                    </span>
-                  </button>
-                </div>
-              </div>
+                );
+              })()
             ) : (
               /* STEP 2: PAYMENT OPTION & SCREENSHOT UPLOAD TO ADMIN */
-              <div className="space-y-3.5">
-                <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-3.5 space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <p className="font-extrabold text-[#1673B8]">
-                      Transfer Rs. 1,000 &amp; Upload Payment Screenshot:
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setCertModalStep('instruction')}
-                      className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"
-                    >
-                      ← Back
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div className="bg-white p-2.5 rounded-lg border border-[#D2DEEA]">
-                      <p className="font-bold text-[#1A2138]">
-                        JazzCash: {paymentGatewayConfig.jazzCashNumber}
-                      </p>
-                      <p className="text-[11px] text-slate-500">
-                        {paymentGatewayConfig.jazzCashTitle}
-                      </p>
+              (() => {
+                const modalCertFeeRs =
+                  certPayModalCourse.course.certificateFeeRs ||
+                  (certPayModalCourse.course.id === 'mgr-food-dietary-2026' ||
+                  certPayModalCourse.course.title.toLowerCase().includes('dietary')
+                    ? 8000
+                    : 1000);
+                return (
+                  <div className="space-y-3.5">
+                    <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-3.5 space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <p className="font-extrabold text-[#1673B8]">
+                          Transfer Rs. {modalCertFeeRs.toLocaleString()} &amp; Upload Payment Screenshot:
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setCertModalStep('instruction')}
+                          className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                        >
+                          ← Back
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="bg-white p-2.5 rounded-lg border border-[#D2DEEA]">
+                          <p className="font-bold text-[#1A2138]">
+                            JazzCash: {paymentGatewayConfig.jazzCashNumber}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            {paymentGatewayConfig.jazzCashTitle}
+                          </p>
+                        </div>
+                        <div className="bg-white p-2.5 rounded-lg border border-[#D2DEEA]">
+                          <p className="font-bold text-[#1A2138]">
+                            EasyPaisa: {paymentGatewayConfig.easyPaisaNumber}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            {paymentGatewayConfig.easyPaisaTitle}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-lg border border-[#D2DEEA]">
+                        <p className="font-bold text-[#1A2138]">
+                          {paymentGatewayConfig.bankName}: {paymentGatewayConfig.bankAccountOrIban}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Title: {paymentGatewayConfig.bankTitle}
+                        </p>
+                      </div>
                     </div>
-                    <div className="bg-white p-2.5 rounded-lg border border-[#D2DEEA]">
-                      <p className="font-bold text-[#1A2138]">
-                        EasyPaisa: {paymentGatewayConfig.easyPaisaNumber}
-                      </p>
-                      <p className="text-[11px] text-slate-500">
-                        {paymentGatewayConfig.easyPaisaTitle}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-[#D2DEEA]">
-                    <p className="font-bold text-[#1A2138]">
-                      {paymentGatewayConfig.bankName}: {paymentGatewayConfig.bankAccountOrIban}
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      Title: {paymentGatewayConfig.bankTitle}
-                    </p>
-                  </div>
-                </div>
 
-                <form onSubmit={handleSubmitCertPayment} className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Select Payment Method (Rs. 1,000)
-                    </label>
-                    <select
-                      value={payMethod}
-                      onChange={(e) =>
-                        setPayMethod(
-                          e.target.value as 'JazzCash' | 'EasyPaisa' | 'Bank Transfer'
-                        )
-                      }
-                      className="w-full px-3 py-2 rounded-xl border border-[#D2DEEA] text-xs font-semibold focus:outline-none focus:border-[#1673B8]"
-                    >
-                      <option value="JazzCash">JazzCash</option>
-                      <option value="EasyPaisa">EasyPaisa</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                    </select>
-                  </div>
+                    <form onSubmit={handleSubmitCertPayment} className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Select Payment Method (Rs. {modalCertFeeRs.toLocaleString()})
+                        </label>
+                        <select
+                          value={payMethod}
+                          onChange={(e) =>
+                            setPayMethod(
+                              e.target.value as 'JazzCash' | 'EasyPaisa' | 'Bank Transfer'
+                            )
+                          }
+                          className="w-full px-3 py-2 rounded-xl border border-[#D2DEEA] text-xs font-semibold focus:outline-none focus:border-[#1673B8]"
+                        >
+                          <option value="JazzCash">JazzCash</option>
+                          <option value="EasyPaisa">EasyPaisa</option>
+                          <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                      </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Transaction ID / TID / Reference Number *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={payTxId}
-                      onChange={(e) => setPayTxId(e.target.value)}
-                      placeholder="Enter 11-digit TID or Bank Reference..."
-                      className="w-full px-3 py-2 rounded-xl border border-[#D2DEEA] text-xs focus:outline-none focus:border-[#1673B8]"
-                    />
-                  </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Transaction ID / TID / Reference Number *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={payTxId}
+                          onChange={(e) => setPayTxId(e.target.value)}
+                          placeholder="Enter 11-digit TID or Bank Reference..."
+                          className="w-full px-3 py-2 rounded-xl border border-[#D2DEEA] text-xs focus:outline-none focus:border-[#1673B8]"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Upload Payment Screenshot *
-                    </label>
-                    <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-[#D2DEEA] bg-[#F0F6FC] hover:bg-[#EBF4FC] text-xs font-semibold text-[#1A2138] cursor-pointer">
-                      <Upload className="w-4 h-4 text-[#1673B8]" />
-                      <span>
-                        {payReceiptDataUrl
-                          ? 'Payment Screenshot Attached ✓'
-                          : 'Select Payment Screenshot Image'}
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleReceiptFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Upload Payment Screenshot *
+                        </label>
+                        <label className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-[#D2DEEA] bg-[#F0F6FC] hover:bg-[#EBF4FC] text-xs font-semibold text-[#1A2138] cursor-pointer">
+                          <Upload className="w-4 h-4 text-[#1673B8]" />
+                          <span>
+                            {payReceiptDataUrl
+                              ? 'Payment Screenshot Attached ✓'
+                              : 'Select Payment Screenshot Image'}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleReceiptFileChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Additional Notes (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={payNotes}
-                      onChange={(e) => setPayNotes(e.target.value)}
-                      placeholder="Sender account number or note for Admin..."
-                      className="w-full px-3 py-2 rounded-xl border border-[#D2DEEA] text-xs focus:outline-none focus:border-[#1673B8]"
-                    />
-                  </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Additional Notes (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={payNotes}
+                          onChange={(e) => setPayNotes(e.target.value)}
+                          placeholder="Sender account number or note for Admin..."
+                          className="w-full px-3 py-2 rounded-xl border border-[#D2DEEA] text-xs focus:outline-none focus:border-[#1673B8]"
+                        />
+                      </div>
 
-                  <div className="pt-2 flex items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setCertPayModalCourse(null)}
-                      className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmittingPay}
-                      className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-sm cursor-pointer disabled:opacity-50"
-                    >
-                      {isSubmittingPay
-                        ? 'Sending to Admin...'
-                        : 'Submit Payment & Screenshot to Admin'}
-                    </button>
+                      <div className="pt-2 flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCertPayModalCourse(null)}
+                          className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmittingPay}
+                          className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                          {isSubmittingPay
+                            ? 'Sending to Admin...'
+                            : 'Submit Payment & Screenshot to Admin'}
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                </form>
-              </div>
+                );
+              })()
             )}
           </div>
         </div>

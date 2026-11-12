@@ -51,12 +51,15 @@ interface ExamSuiteToolProps {
   toolsData: UserToolsData;
   onSaveToolsData: (updated: UserToolsData) => Promise<void>;
   onOpenPremiumModal: () => void;
+  onRequireSignIn?: () => void;
 }
 
 type ExamScreenMode = 'dashboard' | 'attempt' | 'result';
 
 const IN_PROGRESS_STORAGE_KEY = 'fs_portal_active_exam_attempt_v4';
-const FREE_USER_MAX_ATTEMPTS = 3;
+const GUEST_RESULTS_STORAGE_KEY = 'fs_portal_guest_exam_results_v1';
+const GUEST_MAX_ATTEMPTS = 3;
+const REGISTERED_FREE_MAX_ATTEMPTS = 5;
 
 function stripLeadingReference(text: string): string {
   return (text || '').replace(/^\[[^\]]+\]\s*/, '').trim();
@@ -68,9 +71,14 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
   hasExpiredPremium,
   toolsData,
   onSaveToolsData,
-  onOpenPremiumModal
+  onOpenPremiumModal,
+  onRequireSignIn
 }) => {
   const canUsePremium = Boolean((isUserPaid && !hasExpiredPremium) || user.isAdmin);
+  const isGuestUser = !Boolean(user?.uid);
+  const maxFreeAttempts = isGuestUser
+    ? GUEST_MAX_ATTEMPTS
+    : REGISTERED_FREE_MAX_ATTEMPTS;
 
   const firstName = useMemo(() => {
     const raw = (user.name || 'Specialist').trim();
@@ -157,11 +165,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
     );
   }, [firestoreResults, fallbackResultsFromToolsData]);
 
-  // Total completed attempts count (Free users get max 3 attempts; 4th requires Paid Premium)
+  // Total completed attempts count (Guest: max 3 attempts; Registered Free: max 5 attempts; Paid: Unlimited)
   const totalAttemptsCount = savedResults.length;
   const freeAttemptsRemaining = Math.max(
     0,
-    FREE_USER_MAX_ATTEMPTS - totalAttemptsCount
+    maxFreeAttempts - totalAttemptsCount
   );
 
   // Active 30-MCQ Exam Attempt State
@@ -249,6 +257,15 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             );
             setFirestoreResults(loaded);
           }
+        } else {
+          // Guest user: load saved guest exam attempts from localStorage
+          const rawGuestResults = localStorage.getItem(GUEST_RESULTS_STORAGE_KEY);
+          if (rawGuestResults && isMounted) {
+            const parsedGuest = JSON.parse(rawGuestResults);
+            if (Array.isArray(parsedGuest)) {
+              setFirestoreResults(parsedGuest);
+            }
+          }
         }
       } catch {
         // Silent fallback
@@ -324,9 +341,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
 
   // Resume unfinished exam
   const handleResumeInProgressExam = () => {
-    if (!canUsePremium && totalAttemptsCount >= FREE_USER_MAX_ATTEMPTS) {
+    if (!canUsePremium && totalAttemptsCount >= maxFreeAttempts) {
       setPaywallModalFeature(
-        'Unlimited Exam Attempts (Free Users get 03 Exam Attempts)'
+        isGuestUser
+          ? 'More Exam Attempts (Guest Users get 03 Attempts; Registered Free Users get 05 Attempts; Paid Users get Unlimited)'
+          : 'Unlimited Exam Attempts (Registered Free Users get 05 Exam Attempts)'
       );
       return;
     }
@@ -368,10 +387,12 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
   const handleStartNew30McqExam = async (trackOverride?: ExamTrackId) => {
     const trackToUse = trackOverride || selectedTrack || 'All';
 
-    // Free User Check: Maximum 3 Exam Attempts Allowed; 4th Attempt requires Paid Premium
-    if (!canUsePremium && totalAttemptsCount >= FREE_USER_MAX_ATTEMPTS) {
+    // Tier Check: Guest max 3 attempts; Registered Free max 5 attempts; Paid Unlimited
+    if (!canUsePremium && totalAttemptsCount >= maxFreeAttempts) {
       setPaywallModalFeature(
-        '4th Exam Attempt & Unlimited Practice (Free Users get 03 Exam Attempts)'
+        isGuestUser
+          ? 'More Exam Attempts (Guest Users get 03 Attempts; Register for 05 Attempts or Upgrade to Paid for Unlimited)'
+          : '6th Exam Attempt & Unlimited Practice (Registered Free Users get 05 Exam Attempts)'
       );
       return;
     }
@@ -503,6 +524,16 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
 
     const nextFirestoreResults = [resultObj, ...firestoreResults].slice(0, 50);
     setFirestoreResults(nextFirestoreResults);
+    if (!user?.uid) {
+      try {
+        localStorage.setItem(
+          GUEST_RESULTS_STORAGE_KEY,
+          JSON.stringify(nextFirestoreResults)
+        );
+      } catch {
+        // Ignore storage quota errors
+      }
+    }
     setActiveResult(resultObj);
     const updatedStudySec = totalStudySeconds + elapsedSec;
     setTotalStudySeconds(updatedStudySec);
@@ -668,13 +699,27 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               Unlock {paywallModalFeature}
             </h3>
             <p className="text-xs text-[#5A6C84] leading-relaxed">
-              Free users can attempt <strong>03 Exams in total</strong> and view
-              their Pass/Fail status, percentage score, and Correct/Wrong/Skipped
-              summary. Upgrade to <strong>Paid Premium</strong> for{' '}
-              <strong>Unlimited Exam Attempts</strong> across all certification
-              tracks, full <strong>30-MCQ Correct vs. Wrong Answer Key with Explanations</strong>,
-              and <strong>Official Multi-Page Exam PDF Reports</strong>!
+              <strong>Guest Users</strong> get <strong>03 Exam Attempts</strong> and{' '}
+              <strong>Registered Free Users</strong> get <strong>05 Exam Attempts</strong>{' '}
+              with summary results (Pass/Fail, Score %, Correct/Wrong/Skipped),
+              while detailed answers and certificate downloads remain locked.
+              Upgrade to <strong>Paid Premium</strong> for{' '}
+              <strong>Unlimited Exam Attempts</strong>, full{' '}
+              <strong>30-MCQ Detailed Report with Correct Answers &amp; Explanations</strong>,
+              and <strong>Downloadable Exam Certificates &amp; Full PDF Reports</strong>!
             </p>
+            {isGuestUser && onRequireSignIn && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPaywallModalFeature(null);
+                  onRequireSignIn();
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] border border-[#1673B8] text-[#1673B8] text-xs font-extrabold cursor-pointer"
+              >
+                Register / Sign In Free Account (Unlock 05 Attempts) →
+              </button>
+            )}
             <div className="flex items-center gap-2.5 pt-1">
               <button
                 type="button"
@@ -691,7 +736,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 }}
                 className="flex-1 py-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-md cursor-pointer"
               >
-                Upgrade to Premium →
+                Upgrade to Paid Premium →
               </button>
             </div>
           </div>
@@ -745,10 +790,14 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   <div className="text-base sm:text-lg font-extrabold tabular-nums">
                     {canUsePremium
                       ? 'Unlimited'
-                      : `${freeAttemptsRemaining} / ${FREE_USER_MAX_ATTEMPTS}`}
+                      : `${freeAttemptsRemaining} / ${maxFreeAttempts}`}
                   </div>
                   <div className="text-[10.5px] text-[#DCE9F6] font-semibold">
-                    {canUsePremium ? 'Paid Access' : 'Free Attempts Left'}
+                    {canUsePremium
+                      ? 'Paid Access'
+                      : isGuestUser
+                        ? 'Guest Attempts Left'
+                        : 'Free Attempts Left'}
                   </div>
                 </div>
               </div>
@@ -893,7 +942,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     ))}
                   </div>
 
-                  {/* Free User Attempt Limit Notice Banner */}
+                  {/* Guest / Registered Free User Attempt Limit Notice Banner */}
                   {!canUsePremium && (
                     <div
                       className={`rounded-xl p-3 border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
@@ -904,35 +953,54 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     >
                       <div>
                         <span className="font-extrabold">
-                          Free Tier Exam Limit:{' '}
+                          {isGuestUser
+                            ? 'Guest Tier Exam Limit (03 Attempts): '
+                            : 'Registered Free Tier Exam Limit (05 Attempts): '}
                         </span>
                         {freeAttemptsRemaining > 0 ? (
                           <span>
                             You have used{' '}
                             <strong>
-                              {totalAttemptsCount} of {FREE_USER_MAX_ATTEMPTS}
+                              {totalAttemptsCount} of {maxFreeAttempts}
                             </strong>{' '}
-                            free exam attempts ({freeAttemptsRemaining} remaining).
-                            Free users receive summary score reports; Paid Members
-                            get unlimited attempts + full 30-MCQ answer keys &amp;
-                            PDF reports.
+                            {isGuestUser ? 'guest' : 'free'} exam attempts (
+                            {freeAttemptsRemaining} remaining).{' '}
+                            {isGuestUser
+                              ? 'Register a Free Account for 05 Attempts, or upgrade to Paid Premium for Unlimited Attempts, Full Detailed Answer Key & Certificate Download.'
+                              : 'Guest & Free users receive summary score reports; Paid Members get Unlimited Attempts + Full 30-MCQ Detailed Report with Correct Answers & Certificate Download.'}
                           </span>
                         ) : (
                           <span>
                             You have completed all{' '}
-                            <strong>03 Free Exam Attempts</strong>. Upgrade to
-                            Paid Premium to unlock your 4th attempt and unlimited
-                            exams with full PDF answer keys!
+                            <strong>
+                              0{maxFreeAttempts}{' '}
+                              {isGuestUser ? 'Guest' : 'Free'} Exam Attempts
+                            </strong>
+                            .{' '}
+                            {isGuestUser
+                              ? 'Register a Free Account to unlock 05 Attempts, or upgrade to Paid Premium for Unlimited Attempts & Full Detailed Reports!'
+                              : 'Upgrade to Paid Premium to unlock Unlimited Exam Attempts, Full 30-MCQ Answer Keys & Certificate Downloads!'}
                           </span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={onOpenPremiumModal}
-                        className="px-3 py-1.5 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs shrink-0 cursor-pointer whitespace-nowrap"
-                      >
-                        Upgrade to Paid →
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isGuestUser && onRequireSignIn && (
+                          <button
+                            type="button"
+                            onClick={onRequireSignIn}
+                            className="px-3 py-1.5 rounded-lg bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#1673B8] border border-[#1673B8]/40 font-extrabold text-xs cursor-pointer whitespace-nowrap"
+                          >
+                            Register (05 Attempts)
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={onOpenPremiumModal}
+                          className="px-3 py-1.5 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs shrink-0 cursor-pointer whitespace-nowrap"
+                        >
+                          Upgrade to Paid →
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -944,15 +1012,15 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   >
                     <span className="text-base sm:text-lg font-extrabold leading-tight flex items-center gap-2">
                       {!canUsePremium &&
-                      totalAttemptsCount >= FREE_USER_MAX_ATTEMPTS ? (
+                      totalAttemptsCount >= maxFreeAttempts ? (
                         <Lock className="w-5 h-5 text-amber-200" />
                       ) : (
                         <Play className="w-5 h-5 fill-white" />
                       )}
                       <span>
                         {!canUsePremium &&
-                        totalAttemptsCount >= FREE_USER_MAX_ATTEMPTS
-                          ? `Unlock 4th Attempt — Upgrade for Unlimited ${selectedTrackMeta.title} Exams`
+                        totalAttemptsCount >= maxFreeAttempts
+                          ? `Unlock Next Attempt — Upgrade for Unlimited ${selectedTrackMeta.title} Exams`
                           : `Start ${selectedTrackMeta.title} Now (30 MCQs)`}
                       </span>
                     </span>
@@ -1075,7 +1143,9 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                       <p className="text-xs text-[#5A6C84] truncate">
                         {canUsePremium
                           ? 'Paid Premium Member (Full Access)'
-                          : `Free Member (${totalAttemptsCount}/${FREE_USER_MAX_ATTEMPTS} Attempts Used)`}
+                          : isGuestUser
+                            ? `Guest User (${totalAttemptsCount}/${GUEST_MAX_ATTEMPTS} Attempts Used)`
+                            : `Registered Free Member (${totalAttemptsCount}/${REGISTERED_FREE_MAX_ATTEMPTS} Attempts Used)`}
                       </p>
                     </div>
                   </div>
@@ -1103,24 +1173,28 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 {/* Access Comparison Summary */}
                 <div className="space-y-2 text-xs">
                   <div className="font-extrabold text-[#1A2138]">
-                    Your Exam Tool Permissions:
+                    Exam Preparation Tier Permissions:
                   </div>
                   <div className="flex items-center justify-between text-[#5A6C84]">
-                    <span>Total Exam Attempts</span>
+                    <span>Guest User Attempts</span>
                     <span className="font-extrabold text-[#1A2138]">
-                      {canUsePremium
-                        ? 'Unlimited Attempts'
-                        : `${FREE_USER_MAX_ATTEMPTS} Free Attempts Max`}
+                      03 Attempts (Summary Only)
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[#5A6C84]">
-                    <span>Specific Exam Selection</span>
+                    <span>Registered Free User</span>
+                    <span className="font-extrabold text-[#1A2138]">
+                      05 Attempts (Summary Only)
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[#5A6C84]">
+                    <span>Paid Member Attempts</span>
                     <span className="font-extrabold text-[#1673B8]">
-                      ✓ All 7 Exam Tracks
+                      ✓ Unlimited Attempts
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[#5A6C84]">
-                    <span>Full 30-MCQ Answer Key</span>
+                    <span>Detailed Answers &amp; Explanations</span>
                     <span
                       className={`font-extrabold ${
                         canUsePremium ? 'text-[#1673B8]' : 'text-amber-700'
@@ -1130,7 +1204,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[#5A6C84]">
-                    <span>PDF Report with Answers</span>
+                    <span>Certificate &amp; Full PDF Download</span>
                     <span
                       className={`font-extrabold ${
                         canUsePremium ? 'text-[#1673B8]' : 'text-amber-700'
@@ -1793,13 +1867,13 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
 
                 {!canUsePremium && (
                   <div className="pt-1 text-[11px] font-bold text-amber-200">
-                    Free Tier Attempts Used: {totalAttemptsCount} of{' '}
-                    {FREE_USER_MAX_ATTEMPTS}
+                    {isGuestUser ? 'Guest Tier' : 'Registered Free Tier'} Attempts
+                    Used: {totalAttemptsCount} of {maxFreeAttempts}
                   </div>
                 )}
               </div>
 
-              {/* FRONT SUMMARY METRICS & PIE CHART (6 Cols on Desktop — Shown to Both Free & Paid Users) */}
+              {/* FRONT SUMMARY METRICS & PIE CHART (6 Cols on Desktop — Shown to Guest, Free & Paid Users) */}
               <div className="lg:col-span-6 bg-white rounded-[26px] p-5 sm:p-6 border border-[#D2DEEA] shadow-xs flex flex-col justify-between space-y-4">
                 <div>
                   <div className="text-xs font-extrabold text-[#1673B8]">
@@ -1915,49 +1989,78 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 </div>
 
                 {/* Action Buttons inside Summary Card */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
                   {canUsePremium ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        download5PageExamReportPdf(
-                          user,
-                          activeResult,
-                          savedResults
-                        );
-                        showToast('Official Exam PDF Report downloaded!');
-                      }}
-                      className="py-3.5 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>Download PDF Report (With Answers)</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          download5PageExamReportPdf(
+                            user,
+                            activeResult,
+                            savedResults
+                          );
+                          showToast('Official Exam PDF Report downloaded!');
+                        }}
+                        className="py-3 px-3.5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Download className="w-4 h-4 shrink-0" />
+                        <span>Download Full Report PDF</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          downloadExamAchievementCertificatePdf(
+                            user,
+                            activeResult
+                          );
+                          showToast('Official Certificate PDF downloaded!');
+                        }}
+                        className="py-3 px-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Award className="w-4 h-4 shrink-0" />
+                        <span>Download Certificate PDF</span>
+                      </button>
+                    </>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPaywallModalFeature(
-                          'Exam PDF Report with Full Correct & Wrong Answers'
-                        )
-                      }
-                      className="py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                    >
-                      <Lock className="w-4 h-4" />
-                      <span>Unlock Answer Key PDF (Paid Only)</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaywallModalFeature(
+                            'Exam Certificate Download (Locked for Guest & Free Users — Paid Members Only)'
+                          )
+                        }
+                        className="py-3 px-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Lock className="w-4 h-4 shrink-0" />
+                        <span>Certificate (Paid Only)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPaywallModalFeature(
+                            'Full Detailed Exam Report with Correct Answers & PDF Download (Paid Members Only)'
+                          )
+                        }
+                        className="py-3 px-3.5 rounded-2xl bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#1673B8] border border-[#1673B8]/40 text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        <Lock className="w-4 h-4 shrink-0" />
+                        <span>Full Report PDF (Paid)</span>
+                      </button>
+                    </>
                   )}
 
                   <button
                     type="button"
                     onClick={() => handleStartNew30McqExam(activeExamTrack)}
-                    className="py-3.5 px-4 rounded-2xl bg-[#1A2138] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                    className="py-3 px-3.5 rounded-2xl bg-[#1A2138] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                   >
-                    <RotateCcw className="w-4 h-4 text-[#60A5FA]" />
+                    <RotateCcw className="w-4 h-4 text-[#60A5FA] shrink-0" />
                     <span>
-                      {!canUsePremium &&
-                      totalAttemptsCount >= FREE_USER_MAX_ATTEMPTS
-                        ? 'Unlock 4th Attempt (Paid)'
-                        : 'Next Exam (30 New MCQs)'}
+                      {!canUsePremium && totalAttemptsCount >= maxFreeAttempts
+                        ? 'Unlock More Attempts'
+                        : 'Next Exam (30 MCQs)'}
                     </span>
                   </button>
                 </div>
@@ -2133,38 +2236,27 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     </span>
                   </button>
 
-                  {activeResult.scorePercent >= 80 ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        downloadExamAchievementCertificatePdf(
-                          user,
-                          activeResult
-                        );
-                        showToast('Official Certificate PDF downloaded!');
-                      }}
-                      className="py-4 px-5 rounded-[18px] bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Award className="w-5 h-5" />
-                      <span>
-                        Download High-Achievement Certificate (
-                        {activeResult.scorePercent}%)
-                      </span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleStartNew30McqExam(activeExamTrack)}
-                      className="py-4 px-5 rounded-[18px] bg-[#1A2138] hover:bg-[#105E9A] text-white font-extrabold text-sm shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <RotateCcw className="w-5 h-5 text-[#60A5FA]" />
-                      <span>Take Next Exam (30 New Different MCQs) →</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      downloadExamAchievementCertificatePdf(
+                        user,
+                        activeResult
+                      );
+                      showToast('Official Certificate PDF downloaded!');
+                    }}
+                    className="py-4 px-5 rounded-[18px] bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Award className="w-5 h-5" />
+                    <span>
+                      Download Exam Certificate PDF ({activeResult.scorePercent}
+                      %)
+                    </span>
+                  </button>
                 </div>
               </div>
             ) : (
-              /* FREE USER LOCKED ANSWER KEY & PDF CARD (Free users only see the front Pass/Fail, %, Correct/Wrong/Skipped summary above) */
+              /* GUEST & REGISTERED FREE USER LOCKED ANSWER KEY & CERTIFICATE CARD */
               <div className="bg-white rounded-[26px] p-6 sm:p-8 border-2 border-amber-300 shadow-sm text-center space-y-4">
                 <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
                   <Lock className="w-7 h-7 stroke-[2.2]" />
@@ -2174,25 +2266,52 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     Paid Member Exclusive Feature
                   </div>
                   <h4 className="text-lg sm:text-xl font-extrabold text-[#1A2138]">
-                    Full 30-MCQ Answer Key (Correct vs. Wrong Answers) &amp; PDF
-                    Report Locked
+                    Detailed Result with Correct Answers, Full Report &amp;
+                    Certificate Download Locked
                   </h4>
                   <p className="text-xs sm:text-sm text-[#5A6C84] leading-relaxed">
-                    Free members can view their <strong>Pass / Fail status</strong>,{' '}
-                    <strong>Percentage Marks ({activeResult.scorePercent}%)</strong>,{' '}
-                    <strong>Correct ({activeResult.correct})</strong>,{' '}
-                    <strong>Wrong ({activeResult.wrong})</strong>, and{' '}
-                    <strong>Skipped ({activeResult.skipped})</strong> counts above,
-                    and can attempt up to <strong>03 Free Exams</strong> (You have
-                    used {totalAttemptsCount} of {FREE_USER_MAX_ATTEMPTS} attempts).
-                    Upgrade to <strong>Paid Premium</strong> to unlock all 30
-                    questions with proper correct &amp; wrong answers, detailed
-                    explanations, downloadable PDF reports, and unlimited exam
-                    attempts!
+                    {isGuestUser ? (
+                      <>
+                        As a <strong>Guest User</strong>, you can attempt up to{' '}
+                        <strong>03 Exams</strong> (You have used{' '}
+                        {totalAttemptsCount} of {GUEST_MAX_ATTEMPTS} attempts)
+                        and view your summary result above (Pass/Fail status,{' '}
+                        {activeResult.scorePercent}% score, Correct/Wrong/Skipped
+                        counts), but Certificate Download and Detailed Correct
+                        Answers are locked. Register a Free Account for{' '}
+                        <strong>05 Exam Attempts</strong>, or upgrade to{' '}
+                        <strong>Paid Premium</strong> for{' '}
+                        <strong>Unlimited Exam Attempts</strong>, the{' '}
+                        <strong>Full Detailed Report with Correct Answers</strong>,
+                        and <strong>Certificate &amp; Report Downloads</strong>!
+                      </>
+                    ) : (
+                      <>
+                        As a <strong>Registered Free Member</strong>, you can
+                        attempt up to <strong>05 Exams</strong> (You have used{' '}
+                        {totalAttemptsCount} of {REGISTERED_FREE_MAX_ATTEMPTS}{' '}
+                        attempts) and view your summary result above (Pass/Fail
+                        status, {activeResult.scorePercent}% score,
+                        Correct/Wrong/Skipped counts). Detailed results with
+                        correct answers and Certificate/PDF Report downloads are
+                        exclusively available for{' '}
+                        <strong>Paid Premium Members</strong> along with{' '}
+                        <strong>Unlimited Exam Attempts</strong>!
+                      </>
+                    )}
                   </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                  {isGuestUser && onRequireSignIn && (
+                    <button
+                      type="button"
+                      onClick={onRequireSignIn}
+                      className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#1673B8] border border-[#1673B8] text-xs sm:text-sm font-extrabold cursor-pointer"
+                    >
+                      Register Free Account (05 Attempts) →
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={onOpenPremiumModal}
@@ -2200,7 +2319,8 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   >
                     <Crown className="w-4 h-4" />
                     <span>
-                      Upgrade to Paid Premium (Unlock Full Answers &amp; PDF) →
+                      Upgrade to Paid Premium (Unlimited + Full Report &amp;
+                      Certificate) →
                     </span>
                   </button>
                   <button
