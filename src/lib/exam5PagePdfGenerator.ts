@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import { HubUser } from '../types/hub';
 import { SuiteExamResult } from '../data/examSuiteData';
 import { drawPdfBrandLogo, drawPdfUserPhoto } from './pdfBranding';
+import { drawPermanentMuneebSignatureStrokeOnly } from '../utils/certificateSignatures';
 
 function drawQrCodePlaceholder(pdf: jsPDF, x: number, y: number, size: number) {
   pdf.setDrawColor(19, 66, 43);
@@ -704,12 +705,13 @@ export function download5PageExamReportPdf(
     { align: 'center' }
   );
 
-  // Signature line
+  // Signature line + Permanent MK Monogram Signature
+  drawPermanentMuneebSignatureStrokeOnly(pdf, 128, impY + 41.5);
   pdf.setDrawColor(19, 66, 43);
   pdf.line(125, impY + 42, 182, impY + 42);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(9);
-  pdf.text('Food Science Portal Exam Team', 153.5, impY + 47, { align: 'center' });
+  pdf.text('Signed on behalf of Food Science Portal', 153.5, impY + 47, { align: 'center' });
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
   pdf.text(`Certificate ID: ${result.certificateId}`, 22, impY + 46);
@@ -772,9 +774,14 @@ export function downloadExamAchievementCertificatePdf(
     align: 'center'
   });
 
-  pdf.setFontSize(12.5);
+  pdf.setFontSize(11);
+  pdf.setTextColor(71, 85, 105);
+  pdf.text('"International Food Science Community"', 148.5, 35.5, {
+    align: 'center'
+  });
+  pdf.setFontSize(10);
   pdf.setTextColor(22, 163, 74);
-  pdf.text('PROFESSIONAL CERTIFICATION BOARD', 148.5, 38, {
+  pdf.text('Official FSP verified Credential', 148.5, 41.5, {
     align: 'center'
   });
 
@@ -824,8 +831,12 @@ export function downloadExamAchievementCertificatePdf(
   pdf.text(`Date: ${result.dateFormatted}`, 28, 168);
   pdf.text(`Certificate ID: ${result.certificateId}`, 28, 175);
 
+  drawPermanentMuneebSignatureStrokeOnly(pdf, 208, 164.5);
+  pdf.setDrawColor(19, 66, 43);
   pdf.line(200, 165, 268, 165);
-  pdf.text('Food Science Portal Exam Team', 234, 172, { align: 'center' });
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9.5);
+  pdf.text('Signed on behalf of Food Science Portal', 234, 172, { align: 'center' });
 
   pdf.save(
     `Food-Science-Portal-Certificate-${candidateName.replace(/\s+/g, '-')}.pdf`

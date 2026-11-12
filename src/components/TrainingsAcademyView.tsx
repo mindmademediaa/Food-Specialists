@@ -38,8 +38,10 @@ import {
   downloadOfficialCourseCertificatePdf,
   generateQrCodeMatrix,
   getSequentialModuleList,
-  resolveOfficialVerificationBaseUrl
+  resolveOfficialVerificationBaseUrl,
+  stripAccreditedWord
 } from '../utils/certificatePdfGenerator';
+import { PERMANENT_CERTIFICATE_SIGNATURE } from '../utils/certificateSignatures';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { preloadUserAvatarForPdf } from '../lib/pdfBranding';
 import { AlisonCourseModuleViewer } from './AlisonCourseModuleViewer';
@@ -917,10 +919,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       </span>
                     </div>
                     <p className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600 mt-1 leading-snug break-words">
-                      International Food Safety &amp; Hospitality Academy
+                      &ldquo;International Food Science Community&rdquo;
                     </p>
-                    <p className="text-[9px] sm:text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] mt-0.5 break-words">
-                      Official Accredited Credential
+                    <p className="text-[9.5px] sm:text-[10px] font-extrabold tracking-wide text-[#1673B8] mt-0.5 break-words">
+                      Official FSP verified Credential
                     </p>
                   </div>
                 </div>
@@ -1027,11 +1029,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 </p>
                 <div className="border-b border-[#D8E4EE] pb-3 pt-0.5 space-y-2 min-w-0">
                   <h4 className="text-base sm:text-xl font-black text-[#1673B8] leading-snug break-words">
-                    {course.title}
+                    {stripAccreditedWord(course.title)}
                   </h4>
                   <p className="text-[11px] font-bold text-slate-700 leading-snug break-words">
                     Course Code: <span className="text-slate-900">{course.code}</span> · Standard:{' '}
-                    <span className="text-slate-900">{course.accreditationStandard}</span>
+                    <span className="text-slate-900">{stripAccreditedWord(course.accreditationStandard)}</span>
                   </p>
                   <div className="pt-1 space-y-1 bg-slate-50/80 rounded-lg p-2.5 border border-slate-200/80 min-w-0">
                     <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8]">
@@ -1048,55 +1050,68 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 </div>
               </div>
 
-              {/* 4. 3-Column Underlined Metrics Row: Certificate No. | Awarded | Exam Score (Fits strictly within margins) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-2 text-center min-w-0">
-                <div className="min-w-0 px-1">
-                  <div className="border-b border-[#D2DEEA] pb-1.5 text-[11px] sm:text-xs font-black text-[#162038] font-mono break-all">
+              {/* 4. 3-Column Underlined Metrics Row: Certificate No. | Awarded | Exam Score (Aligned on the exact same horizontal baseline) */}
+              <div className="grid grid-cols-3 items-end gap-2 sm:gap-3 pt-2 text-center min-w-0">
+                <div className="flex flex-col justify-end min-w-0 px-0.5">
+                  <div className="min-h-[24px] flex items-end justify-center border-b border-[#D2DEEA] pb-1.5 text-[9.5px] sm:text-[11px] font-black text-[#162038] font-mono whitespace-nowrap overflow-hidden text-ellipsis">
                     {certNo}
                   </div>
-                  <p className="text-[10.5px] text-slate-700 mt-1">Certificate No.</p>
+                  <p className="text-[10px] sm:text-[10.5px] text-slate-700 mt-1 leading-tight">
+                    Certificate No.
+                  </p>
                 </div>
 
-                <div className="min-w-0 px-1">
-                  <div className="border-b border-[#D2DEEA] pb-1.5 text-[11px] sm:text-xs font-bold text-[#162038] break-words">
+                <div className="flex flex-col justify-end min-w-0 px-0.5">
+                  <div className="min-h-[24px] flex items-end justify-center border-b border-[#D2DEEA] pb-1.5 text-[9.5px] sm:text-[11px] font-bold text-[#162038] whitespace-nowrap overflow-hidden text-ellipsis">
                     {issueDateStr}
                   </div>
-                  <p className="text-[10.5px] text-slate-700 mt-1">Awarded</p>
+                  <p className="text-[10px] sm:text-[10.5px] text-slate-700 mt-1 leading-tight">
+                    Awarded
+                  </p>
                 </div>
 
-                <div className="min-w-0 px-1">
-                  <div className="border-b border-[#D2DEEA] pb-1.5 text-[11px] sm:text-xs font-black text-[#1673B8] break-words">
+                <div className="flex flex-col justify-end min-w-0 px-0.5">
+                  <div className="min-h-[24px] flex items-end justify-center border-b border-[#D2DEEA] pb-1.5 text-[9.5px] sm:text-[10.5px] font-black text-[#1673B8] whitespace-nowrap overflow-hidden text-ellipsis">
                     {scorePct}% ({correctOutOf40}/40 · {isDistinction ? 'Distinction' : 'Passed'})
                   </div>
-                  <p className="text-[10.5px] text-slate-700 mt-1">Exam Score</p>
+                  <p className="text-[10px] sm:text-[10.5px] text-slate-700 mt-1 leading-tight">
+                    Exam Score
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Bottom Section: Cursive Signature, "Endorsed by FS Portal", Website Verification Link & Scannable QR Code */}
             <div className="pt-5 space-y-4 relative z-10 min-w-0">
-              {/* Row 1: Cursive Signature on Left + "Endorsed by FS Portal" on Right */}
+              {/* Row 1: Permanent No. 3 Intertwined MK Monogram Signature on Left + Endorsed by Food Science Portal on Right */}
               <div className="flex flex-wrap items-end justify-between gap-3 min-w-0">
-                <div className="w-42 text-center shrink-0">
-                  <svg viewBox="0 0 190 48" className="w-36 h-10 mx-auto text-[#141824]">
-                    <path
-                      d="M 14 14 L 22 36 L 30 12 M 36 34 C 36 34, 37 34, 37 34 M 46 35 L 49 16 L 57 30 L 65 16 L 71 35 M 84 13 L 86 35 L 94 26 L 100 35 L 108 24 L 113 35 L 121 15 L 123 35 L 132 25 L 139 34 L 148 25 L 156 34 L 164 25 L 169 42 C 166 47, 158 45, 156 39"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.1"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                <div className="w-44 text-center shrink-0">
+                  <svg
+                    viewBox="0 0 190 48"
+                    className="w-38 h-10 mx-auto"
+                    style={{ color: PERMANENT_CERTIFICATE_SIGNATURE.inkColorHex }}
+                  >
+                    {PERMANENT_CERTIFICATE_SIGNATURE.svgPathsLeft.map((p, idx) => (
+                      <path
+                        key={idx}
+                        d={p.d}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={p.strokeWidth || 2.1}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    ))}
                   </svg>
                   <div className="border-t border-[#D2DEEA] pt-1">
                     <p className="text-[10px] text-slate-700 leading-tight">
-                      Signed on behalf of Food Science Portal
+                      {PERMANENT_CERTIFICATE_SIGNATURE.signerTitleLeft}
                     </p>
                   </div>
                 </div>
 
-                {/* 7. Endorsed by Food Science Portal Badge */}
-                <div className="flex items-start gap-2 shrink-0">
+                {/* 7. Endorsed by + Green FOOD SCIENCE PORTAL Badge */}
+                <div className="flex items-center gap-2 shrink-0">
                   <div className="w-10 h-10 rounded-lg border border-[#1673B8] bg-white flex items-center justify-center p-0.5 shrink-0 overflow-hidden shadow-2xs">
                     <img
                       src={FS_PORTAL_LOGO_DATA_URI}
@@ -1105,12 +1120,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     />
                   </div>
                   <div className="space-y-1">
-                    <div className="leading-tight text-[#1A2138]">
-                      <p className="text-[10.5px] font-medium text-slate-600">Endorsed by</p>
-                      <p className="text-xs sm:text-sm font-black text-[#1673B8]">Food Science Portal</p>
-                    </div>
-                    <div className="px-2 py-0.5 rounded bg-[#0D5C3A] text-white text-[7px] font-black uppercase tracking-wider text-center">
-                      ENDORSED BY FOOD SCIENCE PORTAL
+                    <p className="text-[10.5px] font-semibold text-slate-600 leading-none">
+                      Endorsed by
+                    </p>
+                    <div className="px-2.5 py-1 rounded bg-[#0D5C3A] text-white text-[8px] font-black uppercase tracking-wider text-center">
+                      FOOD SCIENCE PORTAL
                     </div>
                   </div>
                 </div>

@@ -1521,7 +1521,7 @@ export const MANAGER_FOOD_DIETARY_COURSE: InternationalTrainingCourse = {
   title: 'Certified Dietary Manager',
   levelBadge: 'Professional Certification (05 Modules · 50 Slides · 40 MCQs · 60% Pass)',
   accreditationStandard:
-    'Hospital & Institutional Food & Dietary Management • Accredited Certification',
+    'Hospital & Institutional Food & Dietary Management • Verified Certification',
   duration: '05 Presentation Modules (50 Easy Slides) + 40-MCQ Exam',
   certificateFeeRs: 8000,
   passPercentage: 60,

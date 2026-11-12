@@ -1,6 +1,12 @@
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
+import {
+  CertificateSignatureId,
+  drawSignaturePresetOnPdf,
+  getSavedCertificateSignatureId,
+  getSavedCustomSignatureDataUrl
+} from './certificateSignatures';
 
 export const OFFICIAL_APP_PORTAL_URL =
   'https://mindmademediaa.github.io/food-specialists';
@@ -21,6 +27,8 @@ export interface OfficialCertificatePdfParams {
   verificationPortalUrl?: string;
   syllabusModules?: string[];
   issuedByMode?: 'exam' | 'admin_direct';
+  signatureStyleId?: CertificateSignatureId;
+  customSignatureImageUrl?: string;
 }
 
 /**
@@ -104,6 +112,16 @@ export function generateQrCodeMatrix(text: string): boolean[][] {
 }
 
 /**
+ * Removes any occurrence of the word "accredited" from certificate display strings.
+ */
+export function stripAccreditedWord(text?: string): string {
+  return (text || '')
+    .replace(/\baccredited\b\s*/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+/**
  * Normalizes the course's module titles into a clean sequential list (Module 1 .. Module 5).
  */
 export function getSequentialModuleList(
@@ -124,10 +142,10 @@ export function getSequentialModuleList(
       : defaultModules;
 
   return rawList.map((rawTitle, idx) => {
-    const cleaned = rawTitle
-      .replace(/^Module\s*\d+\s*[:.-]\s*/i, '')
-      .trim();
-    return `Module ${idx + 1}: ${cleaned || (courseTitle ? `${courseTitle} Stage ${idx + 1}` : defaultModules[idx] || 'Core Competency')}`;
+    const cleaned = stripAccreditedWord(
+      rawTitle.replace(/^Module\s*\d+\s*[:.-]\s*/i, '').trim()
+    );
+    return `Module ${idx + 1}: ${cleaned || (courseTitle ? `${stripAccreditedWord(courseTitle)} Stage ${idx + 1}` : defaultModules[idx] || 'Core Competency')}`;
   });
 }
 
@@ -236,11 +254,11 @@ export function downloadOfficialCourseCertificatePdf(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.2);
   doc.setTextColor(71, 85, 105);
-  doc.text('International Food Safety & Hospitality Academy', brandTextX, 25.5);
+  doc.text('"International Food Science Community"', brandTextX, 25.5);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.2);
+  doc.setFontSize(7.4);
   doc.setTextColor(22, 115, 184);
-  doc.text('OFFICIAL ACCREDITED CREDENTIAL', brandTextX, 29.8);
+  doc.text('Official FSP verified Credential', brandTextX, 29.8);
 
   // Top-Right Blue Scalloped Rosette Seal with Two Ribbons (center x = 180mm, y = 26mm)
   const sealX = 180;
@@ -341,12 +359,14 @@ export function downloadOfficialCourseCertificatePdf(
   doc.text('has successfully completed', leftX, 92);
 
   // Course Title properly adjusted inside certificate width
+  const cleanCourseTitle = stripAccreditedWord(courseTitle);
+  const cleanStandard = stripAccreditedWord(accreditationStandard);
   doc.setFont('helvetica', 'bold');
-  const titleLen = courseTitle.length;
+  const titleLen = cleanCourseTitle.length;
   const courseFontSize = titleLen > 45 ? 13.5 : titleLen > 32 ? 15.5 : 17.5;
   doc.setFontSize(courseFontSize);
   doc.setTextColor(22, 115, 184);
-  const wrappedCourse = doc.splitTextToSize(courseTitle, contentWidth).slice(0, 2);
+  const wrappedCourse = doc.splitTextToSize(cleanCourseTitle, contentWidth).slice(0, 2);
   doc.text(wrappedCourse, leftX, 100.5);
 
   let cursorY = 100.5 + wrappedCourse.length * 6.0;
@@ -355,7 +375,7 @@ export function downloadOfficialCourseCertificatePdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.2);
   doc.setTextColor(45, 55, 72);
-  const codeAndStandardText = `Course Code: ${courseCode}  |  Standard: ${accreditationStandard}`;
+  const codeAndStandardText = `Course Code: ${courseCode}  |  Standard: ${cleanStandard}`;
   const wrappedStandard = doc
     .splitTextToSize(codeAndStandardText, contentWidth)
     .slice(0, 2);
@@ -448,64 +468,19 @@ export function downloadOfficialCourseCertificatePdf(
   // 8. SIGNATURE BLOCK + "Endorsed by FS Portal" BADGE
   // =========================================================================
   const sigBaseY = 219;
+  const activeSigId = params.signatureStyleId || getSavedCertificateSignatureId();
+  const activeCustomSigImg =
+    params.customSignatureImageUrl ?? getSavedCustomSignatureDataUrl();
 
-  // Cursive handwritten signature
-  doc.setDrawColor(20, 24, 36);
-  doc.setLineWidth(0.55);
-  doc.lines(
-    [
-      [2.2, 6.5],
-      [2.6, -6.8]
-    ],
-    leftX + 1.5,
-    sigBaseY - 8.5
-  );
-  doc.circle(leftX + 8.2, sigBaseY - 2.3, 0.35, 'F');
-  doc.lines(
-    [
-      [0.8, -5.5],
-      [2.2, 4.2],
-      [2.2, -4.2],
-      [1.8, 5.5]
-    ],
-    leftX + 11,
-    sigBaseY - 2
-  );
-  doc.lines(
-    [
-      [1.5, -6.5],
-      [0.5, 6.2],
-      [2.2, -2.5],
-      [1.6, 2.5],
-      [2.0, -3.5],
-      [1.2, 3.5],
-      [2.4, -5.8],
-      [0.6, 5.8],
-      [2.5, -2.8],
-      [2.2, 2.6],
-      [2.8, -2.4],
-      [2.5, 2.4],
-      [2.2, -2.2],
-      [1.4, 6.2],
-      [-1.8, 2.2],
-      [-2.2, -1.2]
-    ],
-    leftX + 21.5,
-    sigBaseY - 2.2
+  drawSignaturePresetOnPdf(
+    doc,
+    activeSigId,
+    leftX,
+    sigBaseY,
+    activeCustomSigImg
   );
 
-  doc.setDrawColor(210, 222, 234);
-  doc.setLineWidth(0.45);
-  doc.line(leftX, sigBaseY, leftX + 52, sigBaseY);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(45, 55, 72);
-  doc.text('Signed on behalf of Food Science Portal', leftX + 26, sigBaseY + 4.5, {
-    align: 'center'
-  });
-
-  // Right-Side Endorsement Badge: "Endorsed by Food Science Portal"
+  // Right-Side Endorsement Badge: "Endorsed by" slightly above green "FOOD SCIENCE PORTAL" bar
   const endX = 138;
   const endY = 206;
 
@@ -516,23 +491,19 @@ export function downloadOfficialCourseCertificatePdf(
     roundedRadius: 2.2
   });
 
-  // "Endorsed by Food Science Portal" text
+  // "Endorsed by" text placed slightly above the green bar (no blue Food Science Portal text)
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.2);
-  doc.setTextColor(26, 33, 56);
-  doc.text('Endorsed by', endX + 16, endY + 4.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.2);
-  doc.setTextColor(22, 115, 184);
-  doc.text('Food Science Portal', endX + 16, endY + 9.6);
+  doc.setFontSize(8.8);
+  doc.setTextColor(71, 85, 105);
+  doc.text('Endorsed by', endX + 16, endY + 5.8);
 
-  // Official Endorsed Bar (fits within 154..195mm)
+  // Official Green Bar right below "Endorsed by" with "FOOD SCIENCE PORTAL" only
   doc.setFillColor(13, 92, 58); // #0D5C3A
-  doc.roundedRect(endX + 16, endY + 11.4, 41, 4.2, 0.8, 0.8, 'F');
+  doc.roundedRect(endX + 16, endY + 7.5, 41, 5.0, 0.8, 0.8, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(5.0);
+  doc.setFontSize(6.2);
   doc.setTextColor(255, 255, 255);
-  doc.text('ENDORSED BY FOOD SCIENCE PORTAL', endX + 36.5, endY + 14.2, { align: 'center' });
+  doc.text('FOOD SCIENCE PORTAL', endX + 36.5, endY + 10.8, { align: 'center' });
 
   // =========================================================================
   // 9. BOTTOM-LEFT GREEN SHIELD + WEBSITE VERIFICATION LINK
