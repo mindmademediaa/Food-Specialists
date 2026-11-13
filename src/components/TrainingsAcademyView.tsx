@@ -193,29 +193,67 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     }
   }, [selectedCourseId, activeSubTab, verifyQuery]);
 
-  // Build active courses only from Admin-managed trainings (pre-populated default trainings removed per user request)
+  // Build active courses from Admin-managed trainings + built-in courses, respecting all Admin edits to title, price, modules, MCQs, and visibility
   const mergedCourses: InternationalTrainingCourse[] = useMemo(() => {
+    const hiddenIds = new Set(
+      trainings.filter((t) => t.isActive === false).map((t) => t.id)
+    );
     const activeAdminTrainings = trainings.filter((t) => t.isActive !== false);
     const result: InternationalTrainingCourse[] = [];
     const seenIds = new Set<string>();
 
+    const parseLiveCourseFeeRs = (
+      tr: HubTraining,
+      fallbackRs: number
+    ): number => {
+      if (typeof tr.certificateFeeRs === 'number' && tr.certificateFeeRs > 0) {
+        return tr.certificateFeeRs;
+      }
+      if (tr.fees) {
+        const cleaned = tr.fees.replace(/,/g, '');
+        const match =
+          cleaned.match(/(?:rs\.?|pkr)\s*(\d{2,7})/i) ||
+          cleaned.match(/\b(\d{3,7})\b/);
+        if (match && match[1]) {
+          const parsed = Number(match[1]);
+          if (!Number.isNaN(parsed) && parsed > 0) {
+            return parsed;
+          }
+        }
+      }
+      return fallbackRs;
+    };
+
     for (const customTr of activeAdminTrainings) {
+      const rawLowerTitle = customTr.title.trim().toLowerCase();
       const isDietaryCourse =
         customTr.id === 'mgr-food-dietary-2026' ||
-        customTr.title.trim().toLowerCase() === 'manager food & dietary' ||
-        customTr.title.trim().toLowerCase() === 'manage food and dietary' ||
-        customTr.title.trim().toLowerCase() === 'certified dietary manager';
+        rawLowerTitle === 'manager food & dietary' ||
+        rawLowerTitle === 'manage food and dietary' ||
+        rawLowerTitle === 'certified dietary manager';
 
       const baseMatch = INTERNATIONAL_TRAINING_COURSES.find(
         (b) =>
           b.id === customTr.id ||
           (isDietaryCourse && b.id === 'mgr-food-dietary-2026') ||
-          b.title.trim().toLowerCase() === customTr.title.trim().toLowerCase()
+          b.title.trim().toLowerCase() === rawLowerTitle
       );
       const fallbackTemplate = baseMatch || DEFAULT_COURSE_TEMPLATE;
-      const normalizedCourseTitle = isDietaryCourse
+      const isLegacyDietaryTitle =
+        rawLowerTitle === 'manager food & dietary' ||
+        rawLowerTitle === 'manage food and dietary';
+      const normalizedCourseTitle = isLegacyDietaryTitle
         ? 'Certified Dietary Manager'
-        : customTr.title;
+        : customTr.title || baseMatch?.title || 'Certified Dietary Manager';
+
+      const defaultFeeForCourse = isDietaryCourse
+        ? 8000
+        : baseMatch?.certificateFeeRs || 1000;
+      const liveCourseFeeRs = parseLiveCourseFeeRs(
+        customTr,
+        defaultFeeForCourse
+      );
+
       const mappedCustomModules: CourseStudyModule[] =
         customTr.customModules && customTr.customModules.length > 0
           ? customTr.customModules.map((m, idx) => {
@@ -231,9 +269,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   ...richBaseMod,
                   id: m.id || richBaseMod.id,
                   moduleNumber: idx + 1,
-                  title: isDietaryCourse
-                    ? richBaseMod.title
-                    : m.subject || richBaseMod.title
+                  title: m.subject || richBaseMod.title,
+                  overview: m.description || richBaseMod.overview,
+                  keyPrinciples:
+                    paragraphs.length > 1
+                      ? paragraphs
+                      : richBaseMod.keyPrinciples
                 };
               }
               return {
@@ -277,18 +318,18 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       result.push({
         ...fallbackTemplate,
         id: customTr.id,
-        code: isDietaryCourse
-          ? 'CDM-CERT'
-          : customTr.standardCode || baseMatch?.code || 'FSC-INT',
+        code:
+          customTr.standardCode ||
+          (isDietaryCourse ? 'CDM-CERT' : baseMatch?.code || 'FSC-INT'),
         title: normalizedCourseTitle,
-        certificateFeeRs: isDietaryCourse
-          ? 8000
-          : baseMatch?.certificateFeeRs || 1000,
+        accreditationStandard:
+          customTr.accreditationStandard ||
+          baseMatch?.accreditationStandard ||
+          fallbackTemplate.accreditationStandard,
+        certificateFeeRs: liveCourseFeeRs,
         levelBadge:
           customTr.subType || baseMatch?.levelBadge || 'International Certification',
-        description: isDietaryCourse
-          ? baseMatch?.description || customTr.description || ''
-          : customTr.description || baseMatch?.description || '',
+        description: customTr.description || baseMatch?.description || '',
         modules: mappedCustomModules,
         duration:
           customTr.duration ||
@@ -298,7 +339,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     }
 
     for (const baseCourse of INTERNATIONAL_TRAINING_COURSES) {
-      if (!seenIds.has(baseCourse.id)) {
+      if (!seenIds.has(baseCourse.id) && !hiddenIds.has(baseCourse.id)) {
         result.push(baseCourse);
       }
     }
@@ -1796,6 +1837,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             <div className="space-y-5">
               {/* Certificate Bundle Offers Card Inside Trainings Academy */}
               <CertificateBundleOffersCard
+                courses={mergedCourses}
                 paymentGatewayConfig={paymentGatewayConfig}
                 isGuest={!currentUser?.uid}
                 onRequireSignIn={onRequireSignIn}
@@ -1808,7 +1850,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   notes
                 }) => {
                   const firstCourse =
-                    selectedCourses[0] || INTERNATIONAL_TRAINING_COURSES[0];
+                    selectedCourses[0] || mergedCourses[0] || INTERNATIONAL_TRAINING_COURSES[0];
                   const courseNames = selectedCourses
                     .map((c) => `${c.title} (${c.code})`)
                     .join(', ');
@@ -1825,6 +1867,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     paymentMethod,
                     transactionId,
                     receiptImageUrl,
+                    amountRs: bundle.priceRs,
                     notes: `${bundle.title} (Rs. ${bundle.priceRs.toLocaleString()}) — Courses: ${courseNames}${notes ? ` | Note: ${notes}` : ''}`
                   });
                 }}
@@ -1845,24 +1888,30 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     className="rounded-2xl border border-[#D2DEEA] bg-white p-5 shadow-sm hover:shadow-md hover:border-[#1673B8]/50 transition flex flex-col justify-between space-y-4"
                   >
                     <div className="space-y-2.5">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] text-[10px] font-extrabold uppercase tracking-wider">
                           #{idx + 1} · {course.code} · {course.levelBadge}
                         </span>
-                        {prog?.examPassed && (
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase ${
-                              prog.distinctionEarned
-                                ? 'bg-amber-100 border border-amber-400 text-amber-900'
-                                : 'bg-[#EBF4FC] border border-[#1673B8]/35 text-[#105E9A]'
-                            }`}
-                          >
-                            <Award className="w-3 h-3" />
-                            {prog.distinctionEarned
-                              ? `Distinction (${prog.bestExamPercentage}%)`
-                              : `Passed (${prog.bestExamPercentage}%)`}
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-extrabold">
+                            Free Study &amp; Exam · Cert: Rs.{' '}
+                            {(course.certificateFeeRs || 1000).toLocaleString()}
                           </span>
-                        )}
+                          {prog?.examPassed && (
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase ${
+                                prog.distinctionEarned
+                                  ? 'bg-amber-100 border border-amber-400 text-amber-900'
+                                  : 'bg-[#EBF4FC] border border-[#1673B8]/35 text-[#105E9A]'
+                              }`}
+                            >
+                              <Award className="w-3 h-3" />
+                              {prog.distinctionEarned
+                                ? `Distinction (${prog.bestExamPercentage}%)`
+                                : `Passed (${prog.bestExamPercentage}%)`}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <h3 className="text-base sm:text-lg font-black text-[#1A2138] leading-snug">

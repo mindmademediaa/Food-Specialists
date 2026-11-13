@@ -432,126 +432,128 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* 3-Dots Google Play Store Policy & App Closure Menu */}
-          <div className="relative" ref={menuRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setNotifOpen(false);
-                setMenuOpen((prev) => !prev);
-              }}
-              aria-label="Policies, Legal & App Closure Menu"
-              title="Policies & App Options"
-              className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1A2138] flex items-center justify-center transition-colors cursor-pointer shrink-0"
-            >
-              <MoreVertical className="w-4 h-4 stroke-[2.2]" />
-            </button>
+          {/* 3-Dots Google Play Store Policy & App Closure Menu — Visible Only to Signed-In Users */}
+          {!isGuest && (
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setNotifOpen(false);
+                  setMenuOpen((prev) => !prev);
+                }}
+                aria-label="Policies, Legal & App Closure Menu"
+                title="Policies & App Options"
+                className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1A2138] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              >
+                <MoreVertical className="w-4 h-4 stroke-[2.2]" />
+              </button>
 
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#D2DEEA] shadow-xl py-1.5 z-50 text-left">
-                <div className="px-3.5 py-2 border-b border-slate-100">
-                  <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8]">
-                    Google Play &amp; Portal Options
-                  </p>
-                  <p className="text-[11px] font-semibold text-slate-600">
-                    Official Compliance, App Install &amp; Session
-                  </p>
-                </div>
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#D2DEEA] shadow-xl py-1.5 z-50 text-left">
+                  <div className="px-3.5 py-2 border-b border-slate-100">
+                    <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8]">
+                      Google Play &amp; Portal Options
+                    </p>
+                    <p className="text-[11px] font-semibold text-slate-600">
+                      Official Compliance, App Install &amp; Session
+                    </p>
+                  </div>
 
-                <div className="py-1">
-                  {onInstallAppClick && (
+                  <div className="py-1">
+                    {onInstallAppClick && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onInstallAppClick();
+                        }}
+                        className="w-full px-3.5 py-2 text-xs font-extrabold text-[#1673B8] bg-[#F0F6FC]/70 hover:bg-[#E1EEF9] flex items-center gap-2.5 cursor-pointer transition-colors"
+                      >
+                        <Smartphone className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                        <span>Download / Install Mobile App</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        onInstallAppClick();
+                        onOpenLegal?.('privacy');
                       }}
-                      className="w-full px-3.5 py-2 text-xs font-extrabold text-[#1673B8] bg-[#F0F6FC]/70 hover:bg-[#E1EEF9] flex items-center gap-2.5 cursor-pointer transition-colors"
+                      className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
                     >
-                      <Smartphone className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
-                      <span>Download / Install Mobile App</span>
+                      <Lock className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                      <span>Privacy Policy</span>
                     </button>
-                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenLegal?.('privacy');
-                    }}
-                    className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
-                  >
-                    <Lock className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
-                    <span>Privacy Policy</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenLegal?.('ads');
-                    }}
-                    className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
-                  >
-                    <Globe className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
-                    <span>AdMob &amp; Ads Policy</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenLegal?.('terms');
-                    }}
-                    className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
-                  >
-                    <FileText className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
-                    <span>Terms &amp; Conditions Policy</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenLegal?.('deletion');
-                    }}
-                    className="w-full px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-50 flex items-center gap-2.5 cursor-pointer transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                    <span>Data &amp; Account Deletion Policy</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenLegal?.('closure');
-                    }}
-                    className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
-                  >
-                    <Power className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
-                    <span>App Closure Policy</span>
-                  </button>
-                </div>
-
-                {onSignOutClick && (
-                  <div className="border-t border-slate-100 pt-1 mt-0.5">
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        onSignOutClick();
+                        onOpenLegal?.('ads');
                       }}
-                      className="w-full px-3.5 py-2 text-xs font-extrabold text-[#1A2138] hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors"
+                      className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
                     >
-                      <LogOut className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-                      <span>Sign Out / Close Session</span>
+                      <Globe className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                      <span>AdMob &amp; Ads Policy</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onOpenLegal?.('terms');
+                      }}
+                      className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                      <span>Terms &amp; Conditions Policy</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onOpenLegal?.('deletion');
+                      }}
+                      className="w-full px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-50 flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                      <span>Data &amp; Account Deletion Policy</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onOpenLegal?.('closure');
+                      }}
+                      className="w-full px-3.5 py-2 text-xs font-bold text-[#1A2138] hover:bg-[#F0F6FC] flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <Power className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                      <span>App Closure Policy</span>
                     </button>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+
+                  {onSignOutClick && (
+                    <div className="border-t border-slate-100 pt-1 mt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onSignOutClick();
+                        }}
+                        className="w-full px-3.5 py-2 text-xs font-extrabold text-[#1A2138] hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+                        <span>Sign Out / Close Session</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

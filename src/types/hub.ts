@@ -794,6 +794,42 @@ export interface PaymentGatewayConfig {
   customPriceUpdated?: boolean;
 }
 
+export interface CustomAdBannerItem {
+  id: string;
+  badgeText: string;
+  headline: string;
+  subtext?: string;
+  ctaLabel?: string;
+  linkUrl?: string;
+  bannerImageUrl?: string;
+  theme?: 'royal-blue' | 'emerald-gold' | 'navy-amber' | 'crimson-alert';
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface FrontPageContentConfig {
+  heroBadge?: string;
+  heroGreetingSuffix?: string;
+  heroSubtitle?: string;
+  announcementText?: string;
+  showScrollingAds?: boolean;
+  adScrollSpeedSeconds?: number;
+}
+
+export interface ManualRevenueEntry {
+  id: string;
+  userName: string;
+  userEmail: string;
+  userPhone?: string;
+  category: 'subscription' | 'certificate' | 'bundle';
+  itemTitle: string;
+  amountRs: number;
+  paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Bank Transfer' | 'Direct / Cash';
+  transactionId: string;
+  recordedAt: string;
+  notes?: string;
+}
+
 export interface CloudStorageConfig {
   provider: 'smart-firestore' | 'cloudinary';
   cloudinaryCloudName: string;
@@ -802,6 +838,9 @@ export interface CloudStorageConfig {
   whatsappChannelUrl?: string;
   whatsappChannelButtonText?: string;
   paymentGateway?: PaymentGatewayConfig;
+  customAds?: CustomAdBannerItem[];
+  frontPageConfig?: FrontPageContentConfig;
+  manualRevenueEntries?: ManualRevenueEntry[];
 }
 
 export interface HubChatMessage {
@@ -876,10 +915,12 @@ export interface HubTraining {
   category: 'Highfield' | 'Lead Auditor' | 'International Certification';
   title: string;
   standardCode?: 'ISO 9001' | 'FSSC 22000' | 'ISO 14001' | 'ISO 45001' | string;
+  accreditationStandard?: string;
   subType: null | 'Exemplar Global' | 'IRCA | CQI' | string;
   description: string;
   duration: string;
   fees: string;
+  certificateFeeRs?: number;
   enrollLink: string;
   isActive: boolean;
   customModules?: CustomTrainingModule[];
@@ -887,6 +928,7 @@ export interface HubTraining {
 }
 
 export type NavTab = 'home' | 'search' | 'communities' | 'trainings' | 'tools' | 'profile';
+
 
 
 

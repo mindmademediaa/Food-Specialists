@@ -320,6 +320,7 @@ export const FreeVsPremiumComparisonCard: React.FC<
 };
 
 interface CertificateBundleOffersCardProps {
+  courses?: InternationalTrainingCourse[];
   paymentGatewayConfig: PaymentGatewayConfig;
   onSubmitBundleRequest: (params: {
     bundle: CertificateBundleOption;
@@ -337,12 +338,64 @@ interface CertificateBundleOffersCardProps {
 export const CertificateBundleOffersCard: React.FC<
   CertificateBundleOffersCardProps
 > = ({
+  courses,
   paymentGatewayConfig,
   onSubmitBundleRequest,
   onOpenCourseCatalog,
   isGuest = false,
   onRequireSignIn
 }) => {
+  const catalogCourses =
+    courses && courses.length > 0 ? courses : INTERNATIONAL_TRAINING_COURSES;
+
+  const getDefaultIdsForBundle = (
+    bundleId: CertificateBundleOption['id'],
+    count: number
+  ): string[] => {
+    if (bundleId === 'bundle-13' || count >= catalogCourses.length) {
+      return catalogCourses.map((c) => c.id);
+    }
+    const standardCourses = catalogCourses.filter(
+      (c) =>
+        c.id !== 'mgr-food-dietary-2026' &&
+        (c.certificateFeeRs || 1000) <= 1500
+    );
+    const pool = standardCourses.length >= count ? standardCourses : catalogCourses;
+    if (bundleId === 'bundle-3') {
+      const preferred = [
+        'cert-2026-haccp-level-03',
+        'cert-2026-food-safety-level-03',
+        'cert-2026-iso-22000-awareness'
+      ].filter((id) => catalogCourses.some((c) => c.id === id));
+      if (preferred.length === 3) return preferred;
+    }
+    if (bundleId === 'bundle-5') {
+      const preferred = [
+        'cert-2026-haccp-level-04',
+        'cert-2026-food-safety-level-04',
+        'cert-2026-fssc-22000-v7-awareness',
+        'cert-2026-brcgs-issue-09-awareness',
+        'cert-2026-iso-9001-awareness'
+      ].filter((id) => catalogCourses.some((c) => c.id === id));
+      if (preferred.length === 5) return preferred;
+    }
+    return pool.slice(0, count).map((c) => c.id);
+  };
+
+  // Interactive per-bundle-card course selection so clicking any course (including Certified Dietary Manager) updates the bundle price live
+  const [cardCourseSelections, setCardCourseSelections] = useState<
+    Record<string, string[]>
+  >(() => ({
+    'single-1': getDefaultIdsForBundle('single-1', 1),
+    'bundle-3': getDefaultIdsForBundle('bundle-3', 3),
+    'bundle-5': getDefaultIdsForBundle('bundle-5', 5),
+    'bundle-13': catalogCourses.map((c) => c.id)
+  }));
+
+  const [expandedSelectorBundleId, setExpandedSelectorBundleId] = useState<
+    string | null
+  >(null);
+
   const [activeBundleModal, setActiveBundleModal] =
     useState<CertificateBundleOption | null>(null);
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
@@ -355,61 +408,127 @@ export const CertificateBundleOffersCard: React.FC<
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
+  // Calculate live bundle pricing based on the selected courses and their Admin-configured certificateFeeRs
+  const computeBundlePricing = (
+    bundle: CertificateBundleOption,
+    chosenIds: string[]
+  ) => {
+    const validCourses =
+      chosenIds.length > 0
+        ? catalogCourses.filter((c) => chosenIds.includes(c.id))
+        : catalogCourses.slice(0, bundle.count);
+
+    const actualTotalRs = validCourses.reduce(
+      (sum, c) => sum + (Number(c.certificateFeeRs) || 1000),
+      0
+    );
+
+    if (bundle.count === 1) {
+      return {
+        selectedCourses: validCourses,
+        actualTotalRs,
+        discountedPriceRs: actualTotalRs,
+        savingsRs: 0,
+        discountPct: 0
+      };
+    }
+
+    // Apply 25% OFF on the actual total fee of the selected certificates
+    const discountedPriceRs = Math.round(actualTotalRs * 0.75);
+    const savingsRs = Math.max(0, actualTotalRs - discountedPriceRs);
+    return {
+      selectedCourses: validCourses,
+      actualTotalRs,
+      discountedPriceRs,
+      savingsRs,
+      discountPct: 25
+    };
+  };
+
+  const toggleCourseOnCard = (
+    bundle: CertificateBundleOption,
+    courseId: string
+  ) => {
+    setCardCourseSelections((prev) => {
+      const current =
+        prev[bundle.id] || getDefaultIdsForBundle(bundle.id, bundle.count);
+      if (bundle.count === 1) {
+        return { ...prev, [bundle.id]: [courseId] };
+      }
+      if (current.includes(courseId)) {
+        if (current.length <= 1) return prev;
+        return {
+          ...prev,
+          [bundle.id]: current.filter((id) => id !== courseId)
+        };
+      }
+      if (bundle.id !== 'bundle-13' && current.length >= bundle.count) {
+        return {
+          ...prev,
+          [bundle.id]: [...current.slice(1), courseId]
+        };
+      }
+      return {
+        ...prev,
+        [bundle.id]: [...current, courseId]
+      };
+    });
+  };
+
   const handleOpenBundleModal = (bundle: CertificateBundleOption) => {
     setFeedbackMsg(null);
     setTxId('');
     setNotes('');
     setReceiptDataUrl('');
-    if (bundle.count === 13) {
-      setSelectedCourseIds(INTERNATIONAL_TRAINING_COURSES.map((c) => c.id));
-    } else if (bundle.count === 3) {
-      setSelectedCourseIds([
-        'cert-2026-haccp-level-03',
-        'cert-2026-food-safety-level-03',
-        'cert-2026-iso-22000-awareness'
-      ]);
-    } else if (bundle.count === 5) {
-      setSelectedCourseIds([
-        'cert-2026-haccp-level-04',
-        'cert-2026-food-safety-level-04',
-        'cert-2026-fssc-22000-v7-awareness',
-        'cert-2026-brcgs-issue-09-awareness',
-        'cert-2026-iso-9001-awareness'
-      ]);
-    } else {
-      setSelectedCourseIds([
-        INTERNATIONAL_TRAINING_COURSES.find((c) => c.certificateFeeRs === 1000)
-          ?.id || INTERNATIONAL_TRAINING_COURSES[0].id
-      ]);
-    }
+    const currentCardIds =
+      cardCourseSelections[bundle.id] &&
+      cardCourseSelections[bundle.id].length > 0
+        ? cardCourseSelections[bundle.id]
+        : getDefaultIdsForBundle(bundle.id, bundle.count);
+    setSelectedCourseIds(currentCardIds);
     setActiveBundleModal(bundle);
   };
 
-  const effectiveBundlePriceRs = activeBundleModal
-    ? activeBundleModal.count === 1 &&
-      selectedCourseIds.some(
-        (id) =>
-          id === 'mgr-food-dietary-2026' ||
-          INTERNATIONAL_TRAINING_COURSES.find((c) => c.id === id)
-            ?.certificateFeeRs === 8000
-      )
-      ? 8000
-      : activeBundleModal.priceRs
-    : 1000;
+  const modalPricing = activeBundleModal
+    ? computeBundlePricing(activeBundleModal, selectedCourseIds)
+    : {
+        selectedCourses: [],
+        actualTotalRs: 1000,
+        discountedPriceRs: 1000,
+        savingsRs: 0,
+        discountPct: 0
+      };
+
+  const effectiveBundlePriceRs = modalPricing.discountedPriceRs;
 
   const toggleCourseInBundle = (courseId: string, maxCount: number) => {
-    if (maxCount === 13) return; // All 13 included
     setSelectedCourseIds((prev) => {
       if (prev.includes(courseId)) {
-        return prev.filter((id) => id !== courseId);
+        if (prev.length <= 1) return prev;
+        const next = prev.filter((id) => id !== courseId);
+        if (activeBundleModal) {
+          setCardCourseSelections((map) => ({
+            ...map,
+            [activeBundleModal.id]: next
+          }));
+        }
+        return next;
       }
+      let next: string[];
       if (maxCount === 1) {
-        return [courseId];
+        next = [courseId];
+      } else if (maxCount < 13 && prev.length >= maxCount) {
+        next = [...prev.slice(1), courseId];
+      } else {
+        next = [...prev, courseId];
       }
-      if (prev.length >= maxCount) {
-        return [...prev.slice(1), courseId];
+      if (activeBundleModal) {
+        setCardCourseSelections((map) => ({
+          ...map,
+          [activeBundleModal.id]: next
+        }));
       }
-      return [...prev, courseId];
+      return next;
     });
   };
 
@@ -434,7 +553,9 @@ export const CertificateBundleOffersCard: React.FC<
       return;
     }
     if (selectedCourseIds.length === 0) {
-      setFeedbackMsg('Please select at least 1 course for your certificate package.');
+      setFeedbackMsg(
+        'Please select at least 1 course for your certificate package.'
+      );
       return;
     }
     if (!txId.trim()) {
@@ -445,12 +566,14 @@ export const CertificateBundleOffersCard: React.FC<
     setIsSubmitting(true);
     setFeedbackMsg(null);
     try {
-      const chosenCourses = INTERNATIONAL_TRAINING_COURSES.filter((c) =>
+      const chosenCourses = catalogCourses.filter((c) =>
         selectedCourseIds.includes(c.id)
       );
       const bundleWithEffectivePrice: CertificateBundleOption = {
         ...activeBundleModal,
-        priceRs: effectiveBundlePriceRs
+        priceRs: effectiveBundlePriceRs,
+        originalPriceRs: modalPricing.actualTotalRs,
+        savingsRs: modalPricing.savingsRs
       };
       await onSubmitBundleRequest({
         bundle: bundleWithEffectivePrice,
@@ -483,13 +606,13 @@ export const CertificateBundleOffersCard: React.FC<
             <Award className="w-4 h-4 text-amber-500" />
             <span>Free Course Study &amp; Exam</span>
             <span aria-hidden="true">·</span>
-            <span>Special Certificate Bundle Discounts</span>
+            <span>25% OFF Certificate Bundle Discounts</span>
           </div>
           <h2 className="text-base sm:text-lg font-black text-[#0C182D]">
             Official QR-Verified Certificate Packages &amp; Bundle Offers
           </h2>
           <p className="text-xs text-slate-600 max-w-2xl">
-            Study all 05 presentation modules and pass the 40-MCQ exam (60% passing score) for free. Unlock your official Portrait PDF Certificates individually or save up to Rs. 3,500 with a multi-certificate career bundle.
+            Study all 05 presentation modules and pass the 40-MCQ exam (60% passing score) for free. Select your desired certificates below — multi-certificate bundles automatically apply a <strong>25% discount</strong> on the actual course fees (including Certified Dietary Manager or any custom course fee set in the Control Panel).
           </p>
         </div>
 
@@ -499,92 +622,169 @@ export const CertificateBundleOffersCard: React.FC<
             onClick={onOpenCourseCatalog}
             className="px-4 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1673B8] text-xs font-extrabold cursor-pointer shrink-0 transition-colors"
           >
-            View All 13 Courses →
+            View All {catalogCourses.length} Courses →
           </button>
         )}
       </div>
 
       {/* 4 Bundle Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {CERTIFICATE_BUNDLE_OPTIONS.map((bundle) => (
-          <div
-            key={bundle.id}
-            className={`rounded-2xl p-4 flex flex-col justify-between space-y-4 border transition-all ${
-              bundle.highlight
-                ? 'bg-[#F0F6FC]/70 border-2 border-[#1673B8] shadow-sm'
-                : 'bg-white border-[#D2DEEA] hover:border-[#1673B8]/50'
-            }`}
-          >
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between gap-2 text-[11px] font-extrabold">
-                <span className="text-[#1673B8]">
-                  {bundle.count === 1
-                    ? '1 Certificate'
-                    : `${bundle.count} Certificates Bundle`}
-                </span>
-                {bundle.savingsRs > 0 && (
-                  <span className="text-emerald-700 font-black">
-                    Save Rs. {bundle.savingsRs.toLocaleString()}
-                  </span>
-                )}
-              </div>
+        {CERTIFICATE_BUNDLE_OPTIONS.map((bundle) => {
+          const currentIds =
+            cardCourseSelections[bundle.id] &&
+            cardCourseSelections[bundle.id].length > 0
+              ? cardCourseSelections[bundle.id]
+              : getDefaultIdsForBundle(bundle.id, bundle.count);
+          const livePricing = computeBundlePricing(bundle, currentIds);
+          const isSelectorOpen = expandedSelectorBundleId === bundle.id;
 
-              <h3 className="text-sm sm:text-base font-black text-[#0C182D] leading-snug">
-                {bundle.title}
-              </h3>
-
-              <div className="flex items-baseline gap-2 pt-0.5">
-                <span className="text-xl font-black text-[#1673B8]">
-                  Rs. {bundle.priceRs.toLocaleString()}
-                </span>
-                {bundle.savingsRs > 0 && (
-                  <span className="text-xs font-bold text-slate-400 line-through">
-                    Rs. {bundle.originalPriceRs.toLocaleString()}
-                  </span>
-                )}
-              </div>
-
-              <p className="text-[11.5px] text-slate-600 leading-relaxed">
-                {bundle.subtitle}
-              </p>
-
-              <div className="pt-2 border-t border-slate-200/70 space-y-1">
-                <p className="text-[10.5px] font-extrabold text-slate-500 uppercase tracking-wider">
-                  Recommended Combination:
-                </p>
-                <ul className="space-y-1 text-[11px] text-slate-700 font-semibold">
-                  {bundle.recommendedCourses.map((rc, i) => (
-                    <li key={i} className="flex items-start gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5" />
-                      <span>{rc}</span>
-                    </li>
-                  ))}
-                  <li className="flex items-start gap-1.5 text-slate-600">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Unique Certificate ID + Scannable QR Code</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => handleOpenBundleModal(bundle)}
-              className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1.5 ${
+          return (
+            <div
+              key={bundle.id}
+              className={`rounded-2xl p-4 flex flex-col justify-between space-y-3.5 border transition-all ${
                 bundle.highlight
-                  ? 'bg-[#1673B8] hover:bg-[#105E9A] text-white shadow-xs'
-                  : 'bg-[#0C182D] hover:bg-[#1673B8] text-white'
+                  ? 'bg-[#F0F6FC]/70 border-2 border-[#1673B8] shadow-sm'
+                  : 'bg-white border-[#D2DEEA] hover:border-[#1673B8]/50'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>
-                {bundle.count === 1
-                  ? 'Unlock 1 Certificate'
-                  : `Claim ${bundle.count}-Cert Bundle`}
-              </span>
-            </button>
-          </div>
-        ))}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2 text-[11px] font-extrabold">
+                  <span className="text-[#1673B8]">
+                    {bundle.count === 1
+                      ? '1 Certificate'
+                      : `${livePricing.selectedCourses.length} Certificates (${livePricing.discountPct}% OFF)`}
+                  </span>
+                  {livePricing.savingsRs > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">
+                      Save Rs. {livePricing.savingsRs.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="text-sm sm:text-base font-black text-[#0C182D] leading-snug">
+                  {bundle.title}
+                </h3>
+
+                {/* Live Price with Crossed-Out Actual Fee & 25% Discount */}
+                <div className="flex items-baseline gap-2 pt-0.5 flex-wrap">
+                  <span className="text-xl font-black text-[#1673B8]">
+                    Rs. {livePricing.discountedPriceRs.toLocaleString()}
+                  </span>
+                  {livePricing.savingsRs > 0 && (
+                    <span className="text-xs font-bold text-slate-400 line-through">
+                      Rs. {livePricing.actualTotalRs.toLocaleString()}
+                    </span>
+                  )}
+                  {livePricing.discountPct > 0 && (
+                    <span className="text-[10.5px] font-extrabold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
+                      {livePricing.discountPct}% OFF
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-[11.5px] text-slate-600 leading-relaxed">
+                  {bundle.subtitle}
+                </p>
+
+                {/* Selected Courses Summary & Interactive Course Picker Toggle */}
+                <div className="pt-2 border-t border-slate-200/70 space-y-2">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-[10.5px] font-extrabold text-slate-600 uppercase tracking-wider">
+                      Selected ({livePricing.selectedCourses.length}
+                      {bundle.id !== 'bundle-13' ? `/${bundle.count}` : ''}):
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedSelectorBundleId(
+                          isSelectorOpen ? null : bundle.id
+                        )
+                      }
+                      className="text-[10.5px] font-extrabold text-[#1673B8] hover:underline cursor-pointer"
+                    >
+                      {isSelectorOpen
+                        ? 'Hide Course List ▲'
+                        : 'Select / Change Courses ▼'}
+                    </button>
+                  </div>
+
+                  {/* Currently Selected Courses with their Individual Live Fees */}
+                  <ul className="space-y-1 text-[11px] text-slate-700 font-semibold max-h-28 overflow-y-auto pr-1">
+                    {livePricing.selectedCourses.map((c) => (
+                      <li
+                        key={c.id}
+                        className="flex items-start justify-between gap-1.5 bg-white/80 px-2 py-1 rounded-lg border border-slate-200/70"
+                      >
+                        <div className="flex items-start gap-1 min-w-0">
+                          <Check className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5" />
+                          <span className="truncate">{c.title}</span>
+                        </div>
+                        <span className="text-[10px] font-extrabold text-[#105E9A] shrink-0">
+                          Rs. {(c.certificateFeeRs || 1000).toLocaleString()}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Expandable Interactive Course Checklist on the Bundle Card */}
+                  {isSelectorOpen && (
+                    <div className="p-2 rounded-xl bg-slate-50 border border-[#94B8D7] space-y-1 max-h-48 overflow-y-auto">
+                      <p className="text-[10px] font-extrabold text-[#105E9A] px-1">
+                        Click any course below (fees set from Control Panel apply with 25% bundle discount):
+                      </p>
+                      {catalogCourses.map((course) => {
+                        const isSelected = currentIds.includes(course.id);
+                        const cFee = Number(course.certificateFeeRs) || 1000;
+                        return (
+                          <button
+                            key={course.id}
+                            type="button"
+                            onClick={() => toggleCourseOnCard(bundle, course.id)}
+                            className={`w-full px-2.5 py-1.5 rounded-lg text-left text-[11px] flex items-center justify-between gap-1.5 cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-[#1673B8] text-white font-extrabold'
+                                : 'bg-white hover:bg-[#EBF4FC] text-slate-700 border border-slate-200'
+                            }`}
+                          >
+                            <span className="truncate">{course.title}</span>
+                            <span
+                              className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded ${
+                                isSelected
+                                  ? 'bg-white/20 text-white'
+                                  : cFee > 1000
+                                  ? 'bg-amber-100 text-amber-900'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}
+                            >
+                              Rs. {cFee.toLocaleString()}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleOpenBundleModal(bundle)}
+                className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-extrabold cursor-pointer transition-colors flex items-center justify-center gap-1.5 ${
+                  bundle.highlight
+                    ? 'bg-[#1673B8] hover:bg-[#105E9A] text-white shadow-xs'
+                    : 'bg-[#0C182D] hover:bg-[#1673B8] text-white'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>
+                  {bundle.count === 1
+                    ? `Unlock Certificate (Rs. ${livePricing.discountedPriceRs.toLocaleString()})`
+                    : `Claim Bundle — Rs. ${livePricing.discountedPriceRs.toLocaleString()}`}
+                </span>
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       {/* Interactive Bundle Selection & Payment Modal */}
@@ -595,13 +795,20 @@ export const CertificateBundleOffersCard: React.FC<
               <div>
                 <p className="text-[11px] font-bold text-[#1673B8]">
                   Official Certificate Bundle Unlock
-                  {activeBundleModal.savingsRs > 0
-                    ? ` · Save Rs. ${activeBundleModal.savingsRs.toLocaleString()}`
+                  {modalPricing.savingsRs > 0
+                    ? ` · 25% OFF (Save Rs. ${modalPricing.savingsRs.toLocaleString()})`
                     : ''}
                 </p>
-                <h3 className="text-base sm:text-lg font-black text-[#0C182D] mt-0.5">
-                  {activeBundleModal.title} — Rs.{' '}
-                  {effectiveBundlePriceRs.toLocaleString()}
+                <h3 className="text-base sm:text-lg font-black text-[#0C182D] mt-0.5 flex items-baseline gap-2 flex-wrap">
+                  <span>
+                    {activeBundleModal.title} — Rs.{' '}
+                    {effectiveBundlePriceRs.toLocaleString()}
+                  </span>
+                  {modalPricing.savingsRs > 0 && (
+                    <span className="text-xs font-bold text-slate-400 line-through">
+                      Rs. {modalPricing.actualTotalRs.toLocaleString()}
+                    </span>
+                  )}
                 </h3>
               </div>
               <button
@@ -635,7 +842,7 @@ export const CertificateBundleOffersCard: React.FC<
                       ⚠️ Account Registration &amp; Login Mandatory for Official Certificates
                     </div>
                     <p className="text-[11.5px] text-amber-800 leading-relaxed">
-                      Studying all 13 courses and taking the 40-MCQ exams is 100% free without registration. However, to issue and verify Official QR Certificates in your name, you must register / sign in first.
+                      Studying all {catalogCourses.length} courses and taking the 40-MCQ exams is 100% free without registration. However, to issue and verify Official QR Certificates in your name, you must register / sign in first.
                     </p>
                     {onRequireSignIn && (
                       <button
@@ -654,21 +861,24 @@ export const CertificateBundleOffersCard: React.FC<
 
                 {/* Step 1: Select Courses Included in Bundle */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
                     <label className="font-extrabold text-[#0C182D]">
-                      1. Select Courses to Include ({selectedCourseIds.length} /{' '}
-                      {activeBundleModal.count} Selected):
+                      1. Select Courses to Include ({selectedCourseIds.length}
+                      {activeBundleModal.id !== 'bundle-13'
+                        ? ` / ${activeBundleModal.count}`
+                        : ''}{' '}
+                      Selected):
                     </label>
-                    {activeBundleModal.count < 13 && (
-                      <span className="text-[11px] text-slate-500">
-                        Click to choose any {activeBundleModal.count} course(s)
-                      </span>
-                    )}
+                    <span className="text-[11px] font-bold text-[#1673B8]">
+                      {activeBundleModal.count > 1
+                        ? `Actual: Rs. ${modalPricing.actualTotalRs.toLocaleString()} → 25% OFF: Rs. ${effectiveBundlePriceRs.toLocaleString()}`
+                        : `Course Fee: Rs. ${effectiveBundlePriceRs.toLocaleString()}`}
+                    </span>
                   </div>
-                  <div className="max-h-44 overflow-y-auto rounded-xl border border-[#D2DEEA] bg-[#F8FAFC] p-2 grid grid-cols-1 gap-1.5">
-                    {INTERNATIONAL_TRAINING_COURSES.map((course) => {
+                  <div className="max-h-48 overflow-y-auto rounded-xl border border-[#D2DEEA] bg-[#F8FAFC] p-2 grid grid-cols-1 gap-1.5">
+                    {catalogCourses.map((course) => {
                       const isChecked = selectedCourseIds.includes(course.id);
-                      const courseFee = course.certificateFeeRs || 1000;
+                      const courseFee = Number(course.certificateFeeRs) || 1000;
                       return (
                         <button
                           key={course.id}
@@ -700,6 +910,9 @@ export const CertificateBundleOffersCard: React.FC<
                 <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-3.5 space-y-2">
                   <p className="font-extrabold text-[#1673B8]">
                     2. Transfer Rs. {effectiveBundlePriceRs.toLocaleString()}{' '}
+                    {modalPricing.savingsRs > 0
+                      ? `(After 25% OFF on Rs. ${modalPricing.actualTotalRs.toLocaleString()}) `
+                      : ''}
                     to Official Account:
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
