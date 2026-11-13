@@ -128,6 +128,7 @@ import {
 } from './components/LegalComplianceModal';
 import { ToolsHubView, ActiveToolSection } from './components/ToolsHubView';
 import { TrainingsAcademyView } from './components/TrainingsAcademyView';
+import { ScrollingAdBanner } from './components/ScrollingAdBanner';
 import { SEOManager, SEODirectoryFooter } from './components/SEOManager';
 import {
   FreeVsPremiumComparisonCard,
@@ -1123,7 +1124,14 @@ export default function App() {
               customPriceUpdated: Boolean(
                 data.paymentGateway?.customPriceUpdated
               )
-            }
+            },
+            customAds: Array.isArray(data.customAds)
+              ? data.customAds
+              : undefined,
+            frontPageConfig: data.frontPageConfig || undefined,
+            manualRevenueEntries: Array.isArray(data.manualRevenueEntries)
+              ? data.manualRevenueEntries
+              : undefined
           };
           setStorageConfig(hydrated);
         }
@@ -3195,9 +3203,22 @@ export default function App() {
         ...training,
         title: training.title.slice(0, 195),
         category: training.category,
+        standardCode: training.standardCode
+          ? training.standardCode.slice(0, 75)
+          : null,
+        accreditationStandard: training.accreditationStandard
+          ? training.accreditationStandard.slice(0, 195)
+          : undefined,
+        certificateFeeRs:
+          typeof training.certificateFeeRs === 'number' &&
+          training.certificateFeeRs > 0
+            ? training.certificateFeeRs
+            : undefined,
         subType: training.subType || null,
         duration: (training.duration || 'Self-Paced').slice(0, 110),
-        fees: (training.fees || 'Free Study & Exam · Rs. 1,000 Certificate').slice(0, 110),
+        fees: (
+          training.fees || 'Free Study & Exam · Rs. 1,000 Certificate'
+        ).slice(0, 110),
         description: (training.description || '').slice(0, 7800),
         enrollLink: (training.enrollLink || 'https://wa.me/923240906384').slice(
           0,
@@ -3624,6 +3645,30 @@ export default function App() {
           activeToolSection={activeToolSection}
         />
 
+        {/* CUSTOM RIGHT-TO-LEFT SCROLLING AD BANNER (BELOW TOP MENU & ABOVE HERO / CONTENT) */}
+        <ScrollingAdBanner
+          ads={storageConfig.customAds}
+          isVisible={storageConfig.frontPageConfig?.showAdBanner !== false}
+          onNavigateInternal={(target) => {
+            const cleanTarget = target.trim().toLowerCase();
+            if (cleanTarget.includes('trainings') || cleanTarget.includes('course=')) {
+              setRoute({ name: 'trainings' });
+            } else if (cleanTarget.includes('jobs')) {
+              navigateToJobs('All');
+            } else if (cleanTarget.includes('scholarships')) {
+              navigateToScholarships('All');
+            } else if (cleanTarget.includes('tools')) {
+              setActiveToolSection('hub');
+              setRoute({ name: 'tools', initialSection: 'hub' });
+            } else if (cleanTarget.includes('communities')) {
+              setRoute({ name: 'communities' });
+            } else {
+              setRoute({ name: 'trainings' });
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+
         {/* FLOATING BACK BUTTON THAT MOVES WITH SCROLL ON MOBILE/APP & WEBSITE */}
         {route.name !== 'home' && (
           <button
@@ -3703,7 +3748,10 @@ export default function App() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 border border-white/20 text-sky-200 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider">
                         <Sparkles className="w-3 h-3 text-amber-300 shrink-0" />
-                        <span>Global Food Science &amp; Safety Portal</span>
+                        <span>
+                          {storageConfig.frontPageConfig?.heroBadgeText?.trim() ||
+                            'Global Food Science & Safety Portal'}
+                        </span>
                       </span>
                       {isCurrentUserPaid && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-300 text-[#0C182D] text-[10px] sm:text-[11px] font-extrabold">
@@ -3715,10 +3763,13 @@ export default function App() {
 
                     <div className="space-y-1">
                       <h1 className="text-[19px] sm:text-[26px] lg:text-[32px] font-black text-white tracking-tight leading-tight break-words">
-                        {timeOfDayGreeting}, {firstName}
+                        {storageConfig.frontPageConfig?.heroCustomGreeting?.trim()
+                          ? `${storageConfig.frontPageConfig.heroCustomGreeting.trim()}, ${firstName}`
+                          : `${timeOfDayGreeting}, ${firstName}`}
                       </h1>
                       <p className="text-xs sm:text-sm text-sky-100/90 font-medium max-w-2xl leading-relaxed">
-                        Your unified platform for verified Food Safety &amp; QA/QC jobs, international scholarships, Halal E-Number lookup, laboratory calculators, and accredited trainings.
+                        {storageConfig.frontPageConfig?.heroSubtitle?.trim() ||
+                          'Your unified platform for verified Food Safety & QA/QC jobs, international scholarships, Halal E-Number lookup, laboratory calculators, and accredited trainings.'}
                       </p>
                     </div>
 

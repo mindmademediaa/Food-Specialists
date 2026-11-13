@@ -757,6 +757,7 @@ export interface HubPaymentRequest {
   certificateCourseTitle?: string;
   certificateNumber?: string;
   approvedAt?: string;
+  verifiedAt?: string;
   premiumActivatedAt?: string;
   premiumExpiresAt?: string;
 }
@@ -797,22 +798,29 @@ export interface PaymentGatewayConfig {
 export interface CustomAdBannerItem {
   id: string;
   badgeText: string;
-  headline: string;
+  headline?: string;
+  title?: string;
   subtext?: string;
+  subtitle?: string;
   ctaLabel?: string;
+  ctaText?: string;
   linkUrl?: string;
+  ctaLink?: string;
   bannerImageUrl?: string;
   theme?: 'royal-blue' | 'emerald-gold' | 'navy-amber' | 'crimson-alert';
   isActive: boolean;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface FrontPageContentConfig {
   heroBadge?: string;
+  heroBadgeText?: string;
   heroGreetingSuffix?: string;
+  heroCustomGreeting?: string;
   heroSubtitle?: string;
   announcementText?: string;
   showScrollingAds?: boolean;
+  showAdBanner?: boolean;
   adScrollSpeedSeconds?: number;
 }
 
@@ -824,7 +832,7 @@ export interface ManualRevenueEntry {
   category: 'subscription' | 'certificate' | 'bundle';
   itemTitle: string;
   amountRs: number;
-  paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Bank Transfer' | 'Direct / Cash';
+  paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Bank Transfer' | 'Direct / Cash' | string;
   transactionId: string;
   recordedAt: string;
   notes?: string;
@@ -914,7 +922,7 @@ export interface HubTraining {
   id: string;
   category: 'Highfield' | 'Lead Auditor' | 'International Certification';
   title: string;
-  standardCode?: 'ISO 9001' | 'FSSC 22000' | 'ISO 14001' | 'ISO 45001' | string;
+  standardCode?: 'ISO 9001' | 'FSSC 22000' | 'ISO 14001' | 'ISO 45001' | string | null;
   accreditationStandard?: string;
   subType: null | 'Exemplar Global' | 'IRCA | CQI' | string;
   description: string;

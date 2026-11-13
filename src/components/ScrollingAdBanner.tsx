@@ -32,6 +32,7 @@ export const DEFAULT_SCROLLING_AD_BANNERS: CustomAdBannerItem[] = [
 interface ScrollingAdBannerProps {
   ads?: CustomAdBannerItem[];
   showAds?: boolean;
+  isVisible?: boolean;
   scrollSpeedSeconds?: number;
   onNavigateInternal?: (url: string) => void;
 }
@@ -39,20 +40,27 @@ interface ScrollingAdBannerProps {
 export const ScrollingAdBanner: React.FC<ScrollingAdBannerProps> = ({
   ads,
   showAds = true,
+  isVisible = true,
   scrollSpeedSeconds = 32,
   onNavigateInternal
 }) => {
-  if (showAds === false) return null;
+  if (showAds === false || isVisible === false) return null;
 
-  const sourceAds = Array.isArray(ads) ? ads : DEFAULT_SCROLLING_AD_BANNERS;
-  const activeAds = sourceAds.filter((a) => a && a.isActive !== false && a.headline?.trim());
+  const sourceAds =
+    Array.isArray(ads) && ads.length > 0 ? ads : DEFAULT_SCROLLING_AD_BANNERS;
+  const activeAds = sourceAds.filter(
+    (a) =>
+      a &&
+      a.isActive !== false &&
+      Boolean((a.headline || a.title || '').trim())
+  );
 
   if (activeAds.length === 0) return null;
 
   const durationSec = Math.max(14, Math.min(90, Number(scrollSpeedSeconds) || 32));
 
   const handleAdClick = (ad: CustomAdBannerItem) => {
-    const rawLink = (ad.linkUrl || '').trim();
+    const rawLink = (ad.linkUrl || ad.ctaLink || '').trim();
     if (!rawLink) return;
     if (rawLink.startsWith('?') && onNavigateInternal) {
       onNavigateInternal(rawLink);
@@ -71,7 +79,7 @@ export const ScrollingAdBanner: React.FC<ScrollingAdBannerProps> = ({
   const tickerItems = [...activeAds, ...activeAds];
 
   return (
-    <div className="w-full rounded-2xl bg-gradient-to-r from-[#0C182D] via-[#104A7F] to-[#1673B8] text-white border border-[#1673B8]/50 shadow-sm overflow-hidden">
+    <div className="w-full shrink-0 bg-gradient-to-r from-[#0C182D] via-[#104A7F] to-[#1673B8] text-white border-b border-[#1673B8]/50 shadow-sm overflow-hidden">
       <style>{`
         @keyframes fspMarqueeRtl {
           0% { transform: translateX(0%); }
@@ -88,64 +96,71 @@ export const ScrollingAdBanner: React.FC<ScrollingAdBannerProps> = ({
         }
       `}</style>
 
-      <div className="flex items-center min-h-[42px] sm:min-h-[46px] px-2.5 sm:px-3.5 py-1.5 gap-2.5">
+      <div className="max-w-[1440px] mx-auto flex items-center min-h-[38px] sm:min-h-[42px] px-3 sm:px-6 lg:px-10 py-1 gap-2.5">
         {/* Left Fixed Pin Badge */}
         <div className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-400 text-[#0C182D] text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-2xs">
           <Megaphone className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-          <span className="hidden xs:inline"> Announcement</span>
+          <span className="hidden xs:inline">Announcement</span>
           <span className="xs:hidden">Live</span>
         </div>
 
         {/* Scrolling Right-to-Left Ticker Viewport */}
         <div className="flex-1 overflow-hidden relative">
           <div className="fsp-marquee-track items-center gap-8 sm:gap-12 pr-8">
-            {tickerItems.map((ad, idx) => (
-              <div
-                key={`${ad.id}-${idx}`}
-                onClick={() => handleAdClick(ad)}
-                className={`inline-flex items-center gap-2.5 whitespace-nowrap ${
-                  ad.linkUrl ? 'cursor-pointer group' : ''
-                }`}
-              >
-                {ad.bannerImageUrl && (
-                  <img
-                    src={ad.bannerImageUrl}
-                    alt={ad.badgeText || 'Banner'}
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-white/30 shrink-0"
-                  />
-                )}
+            {tickerItems.map((ad, idx) => {
+              const headlineText = ad.headline || ad.title || '';
+              const subtextVal = ad.subtext || ad.subtitle || '';
+              const ctaTextVal = ad.ctaLabel || ad.ctaText || '';
+              const targetLink = ad.linkUrl || ad.ctaLink || '';
 
-                {ad.badgeText && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/15 border border-white/25 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider">
-                    <Sparkles className="w-2.5 h-2.5 text-amber-300 shrink-0" />
-                    <span>{ad.badgeText}</span>
+              return (
+                <div
+                  key={`${ad.id}-${idx}`}
+                  onClick={() => handleAdClick(ad)}
+                  className={`inline-flex items-center gap-2.5 whitespace-nowrap ${
+                    targetLink ? 'cursor-pointer group' : ''
+                  }`}
+                >
+                  {ad.bannerImageUrl && (
+                    <img
+                      src={ad.bannerImageUrl}
+                      alt={ad.badgeText || 'Banner'}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-white/30 shrink-0"
+                    />
+                  )}
+
+                  {ad.badgeText && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/15 border border-white/25 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider">
+                      <Sparkles className="w-2.5 h-2.5 text-amber-300 shrink-0" />
+                      <span>{ad.badgeText}</span>
+                    </span>
+                  )}
+
+                  <span className="text-xs sm:text-[13px] font-extrabold text-white group-hover:text-amber-200 transition-colors">
+                    {headlineText}
                   </span>
-                )}
 
-                <span className="text-xs sm:text-[13px] font-extrabold text-white group-hover:text-amber-200 transition-colors">
-                  {ad.headline}
-                </span>
+                  {subtextVal && (
+                    <span className="text-[11px] sm:text-xs font-semibold text-sky-200">
+                      • {subtextVal}
+                    </span>
+                  )}
 
-                {ad.subtext && (
-                  <span className="text-[11px] sm:text-xs font-semibold text-sky-200">
-                    • {ad.subtext}
-                  </span>
-                )}
+                  {ctaTextVal && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-300 group-hover:bg-amber-200 text-[#0C182D] text-[10.5px] font-black transition-colors shadow-2xs">
+                      <span>{ctaTextVal}</span>
+                      {targetLink.startsWith('http') ? (
+                        <ExternalLink className="w-3 h-3" />
+                      ) : (
+                        <ArrowRight className="w-3 h-3" />
+                      )}
+                    </span>
+                  )}
 
-                {ad.ctaLabel && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-300 group-hover:bg-amber-200 text-[#0C182D] text-[10.5px] font-black transition-colors shadow-2xs">
-                    <span>{ad.ctaLabel}</span>
-                    {ad.linkUrl?.startsWith('http') ? (
-                      <ExternalLink className="w-3 h-3" />
-                    ) : (
-                      <ArrowRight className="w-3 h-3" />
-                    )}
-                  </span>
-                )}
-
-                <span className="text-sky-300/50 pl-2">✦</span>
-              </div>
-            ))}
+                  <span className="text-sky-300/50 pl-2">✦</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

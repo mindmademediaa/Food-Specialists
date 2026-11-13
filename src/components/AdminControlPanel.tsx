@@ -18,11 +18,13 @@ import {
   LogOut,
   Mail,
   MapPin,
+  Megaphone,
   MessageSquare,
   MoreVertical,
   Plus,
   RefreshCw,
   Search,
+  Share2,
   Shield,
   ShieldCheck,
   Sparkles,
@@ -35,14 +37,17 @@ import {
 } from 'lucide-react';
 import {
   CloudStorageConfig,
+  CustomAdBannerItem,
   CustomTrainingMCQ,
   CustomTrainingModule,
+  FrontPageContentConfig,
   HubCertificate,
   HubJob,
   HubPaymentRequest,
   HubScholarship,
   HubTraining,
-  HubUser
+  HubUser,
+  ManualRevenueEntry
 } from '../types/hub';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsData';
@@ -50,10 +55,12 @@ import {
   downloadOfficialCourseCertificatePdf,
   resolveOfficialVerificationBaseUrl
 } from '../utils/certificatePdfGenerator';
+import { DEFAULT_SCROLLING_AD_BANNERS } from './ScrollingAdBanner';
 
 export type AdminSectionTab =
   | 'menu'
   | 'overview'
+  | 'revenue'
   | 'users'
   | 'jobs'
   | 'scholarships'
@@ -271,10 +278,84 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const [cardMcqOptD, setCardMcqOptD] = useState('');
   const [cardMcqCorrectIdx, setCardMcqCorrectIdx] = useState<number>(0);
 
-  // Inline Training Price & Duration Edits Map: { [trainingId]: { fees, duration } }
+  // Inline Training Topic, Code, Price, Description & Duration Edits Map
   const [priceEdits, setPriceEdits] = useState<
-    Record<string, { fees: string; duration: string }>
+    Record<
+      string,
+      {
+        title?: string;
+        standardCode?: string;
+        certificateFeeRs?: number;
+        fees: string;
+        duration: string;
+        description?: string;
+      }
+    >
   >({});
+
+  // Inline Existing Module Edit State: { [moduleId]: { subject, description } }
+  const [editingModMap, setEditingModMap] = useState<
+    Record<string, { subject: string; description: string }>
+  >({});
+
+  // Dismissed / Handled Payment Request IDs so clicking Accept, Reject, or Delete immediately closes the request card
+  const [dismissedReqIds, setDismissedReqIds] = useState<string[]>([]);
+
+  // Custom Scrolling Ad Banner Manager State (Right-to-Left Marquee below Header & above Good Morning Hero)
+  const [adTitleInput, setAdTitleInput] = useState('');
+  const [adSubtitleInput, setAdSubtitleInput] = useState('');
+  const [adBadgeInput, setAdBadgeInput] = useState('UPCOMING TRAINING');
+  const [adCtaTextInput, setAdCtaTextInput] = useState('Register / Details');
+  const [adCtaLinkInput, setAdCtaLinkInput] = useState('?page=trainings');
+  const [editingAdId, setEditingAdId] = useState<string | null>(null);
+
+  // Manual Revenue Record Form State
+  const [revUserName, setRevUserName] = useState('');
+  const [revUserEmail, setRevUserEmail] = useState('');
+  const [revUserPhone, setRevUserPhone] = useState('');
+  const [revCategory, setRevCategory] = useState<
+    'subscription' | 'certificate' | 'bundle'
+  >('certificate');
+  const [revItemTitle, setRevItemTitle] = useState('');
+  const [revAmountRs, setRevAmountRs] = useState<number>(1000);
+  const [revMethod, setRevMethod] = useState('JazzCash / EasyPaisa');
+  const [revTxId, setRevTxId] = useState('');
+  const [revSearchQuery, setRevSearchQuery] = useState('');
+  const [revFilterType, setRevFilterType] = useState<
+    'all' | 'subscription' | 'certificate'
+  >('all');
+
+  // Helper: Auto-generate a clean Qualification Code from any Custom Topic Title
+  const generateAutoQualificationCode = (
+    topicTitle: string,
+    includeRandomSuffix = false
+  ): string => {
+    const cleaned = topicTitle
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .trim()
+      .toUpperCase();
+    if (!cleaned) {
+      const randNum = Math.floor(100 + Math.random() * 900);
+      return `FSP-CERT-${randNum}`;
+    }
+    const words = cleaned.split(/\s+/).filter(Boolean);
+    let prefix = '';
+    if (words.length === 1) {
+      prefix = words[0].slice(0, 6);
+    } else {
+      prefix = words
+        .slice(0, 4)
+        .map((w) =>
+          /^\d+$/.test(w) ? w.slice(0, 4) : w.slice(0, w.length <= 3 ? 3 : 2)
+        )
+        .join('');
+    }
+    const cleanPrefix = prefix.slice(0, 8) || 'EXEC';
+    const suffix = includeRandomSuffix
+      ? Math.floor(100 + Math.random() * 900)
+      : new Date().getFullYear();
+    return `FSP-${cleanPrefix}-${suffix}`;
+  };
 
   // Admin Direct Certificate Generator State (Issue Certificate Without Exam / Study on Any Course or Custom Topic)
   const [directRecipientName, setDirectRecipientName] = useState('');
@@ -285,7 +366,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     trainings[0]?.id || ''
   );
   const [directCustomTopicTitle, setDirectCustomTopicTitle] = useState('');
-  const [directCustomCourseCode, setDirectCustomCourseCode] = useState('FS-EXEC-400');
+  const [directCustomCourseCode, setDirectCustomCourseCode] = useState(
+    () => `FSP-CERT-${new Date().getFullYear()}`
+  );
   const [directAccreditationStd, setDirectAccreditationStd] = useState(
     'Codex Alimentarius CXC 1-1969 · ISO 22000 & GFSI Benchmark'
   );
@@ -299,6 +382,61 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   );
   const [directCustomCertNumber, setDirectCustomCertNumber] = useState<string>('');
   const [isIssuingDirectCert, setIsIssuingDirectCert] = useState(false);
+
+  // WhatsApp Group / Channel Share Helper
+  const shareToWhatsAppGroupOrChannel = (
+    headline: string,
+    summaryText: string,
+    targetUrl: string
+  ) => {
+    const origin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : resolveOfficialVerificationBaseUrl();
+    const fullUrl = targetUrl.startsWith('http')
+      ? targetUrl
+      : `${origin}${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`;
+    const message = `📢 *${headline}*\n\n${summaryText}\n\n🔗 *Open Direct Link:* ${fullUrl}\n🌐 *Food Science Portal — International Food Science Community*`;
+    const waShareUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(waShareUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const copyWhatsAppShareText = async (
+    headline: string,
+    summaryText: string,
+    targetUrl: string
+  ) => {
+    const origin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : resolveOfficialVerificationBaseUrl();
+    const fullUrl = targetUrl.startsWith('http')
+      ? targetUrl
+      : `${origin}${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`;
+    const message = `📢 *${headline}*\n\n${summaryText}\n\n🔗 *Open Direct Link:* ${fullUrl}\n🌐 *Food Science Portal — International Food Science Community*`;
+    try {
+      await navigator.clipboard.writeText(message);
+      onSetBanner('Formatted WhatsApp Group/Channel post copied to clipboard!');
+    } catch {
+      onSetBanner(`Share Link: ${fullUrl}`);
+    }
+  };
+
+  // Wrapper for Accept / Reject / Delete Payment Request that automatically closes the request from active view
+  const handleActionAndAutoClosePaymentRequest = async (
+    req: HubPaymentRequest,
+    action: 'verified' | 'rejected' | 'delete'
+  ) => {
+    // Immediately dismiss from the active approval queue so the card closes automatically
+    setDismissedReqIds((prev) =>
+      prev.includes(req.id) ? prev : [...prev, req.id]
+    );
+    if (action === 'delete') {
+      await onDeletePaymentRequest(req.id);
+    } else {
+      await onVerifyPayment(req, action);
+    }
+  };
 
   const handleSelectExistingMemberForCert = (uid: string) => {
     setDirectSelectedUserUid(uid);
@@ -334,8 +472,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         ? directCustomTopicTitle.trim()
         : activeTrMatch?.title || catalogCourse?.title || directCustomTopicTitle.trim() || 'Food Safety & Quality Management';
     const finalCourseCode =
-      directTopicMode === 'custom' && directCustomCourseCode.trim()
-        ? directCustomCourseCode.trim().toUpperCase()
+      directTopicMode === 'custom'
+        ? (
+            directCustomCourseCode.trim() ||
+            generateAutoQualificationCode(finalCourseTitle)
+          ).toUpperCase()
         : activeTrMatch?.standardCode || catalogCourse?.code || 'FS-CERT-INTL';
     const finalAccreditation =
       directTopicMode === 'custom' && directAccreditationStd.trim()
@@ -442,6 +583,349 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     }
   };
 
+  // Helper: Parse numeric PKR amount from payment request string (e.g. "Rs. 8,000 — Certified Dietary Manager" -> 8000)
+  const parseAmountRsFromRequest = (req: HubPaymentRequest): number => {
+    const raw = (req.amount || '').replace(/,/g, '');
+    const rsMatch =
+      raw.match(/(?:rs\.?|pkr)\s*(\d{2,7})/i) || raw.match(/\b(\d{2,7})\b/);
+    if (rsMatch && rsMatch[1]) {
+      const val = Number(rsMatch[1]);
+      if (!Number.isNaN(val) && val > 0) return val;
+    }
+    if (
+      req.certificateCourseId ||
+      req.subscriptionPlan === 'certificate_unlock'
+    ) {
+      if (
+        req.certificateCourseId === 'mgr-food-dietary-2026' ||
+        (req.certificateCourseTitle || '').toLowerCase().includes('dietary')
+      ) {
+        return 8000;
+      }
+      return 1000;
+    }
+    if ((req.subscriptionPlan || '').toLowerCase().includes('year')) {
+      return liveYearlyFee;
+    }
+    return liveMonthlyFee;
+  };
+
+  // Comprehensive Revenue Ledger (Verified Subscriptions + Verified Certificates/Bundles + Direct/Manual Entries)
+  const revenueLedger = useMemo(() => {
+    const items: ManualRevenueEntry[] = [];
+    const seenPaymentIds = new Set<string>();
+
+    // 1. All verified payment requests (Subscriptions + Certificates + Bundles)
+    for (const req of paymentRequests) {
+      if (req.status !== 'verified') continue;
+      seenPaymentIds.add(req.id);
+      const isCertOrBundle =
+        Boolean(req.certificateCourseId) ||
+        req.subscriptionPlan === 'certificate_unlock' ||
+        (req.amount || '').toLowerCase().includes('certificate') ||
+        (req.amount || '').toLowerCase().includes('bundle');
+      const isBundle =
+        (req.certificateCourseTitle || '').toLowerCase().includes('bundle') ||
+        (req.notes || '').toLowerCase().includes('bundle');
+      const amountRs = parseAmountRsFromRequest(req);
+
+      items.push({
+        id: `rev-req-${req.id}`,
+        userName: req.userName || 'Member',
+        userEmail: req.userEmail || '',
+        userPhone: req.userPhone || '',
+        category: isBundle
+          ? 'bundle'
+          : isCertOrBundle
+          ? 'certificate'
+          : 'subscription',
+        itemTitle: isCertOrBundle
+          ? req.certificateCourseTitle ||
+            req.notes ||
+            'Official Course Certificate'
+          : req.subscriptionPlan === 'yearly' ||
+            (req.amount || '').toLowerCase().includes('year')
+          ? '1-Year Paid Specialist Membership'
+          : '1-Month Paid Specialist Membership',
+        amountRs,
+        paymentMethod: req.paymentMethod || 'JazzCash / EasyPaisa',
+        transactionId: req.transactionId || 'Verified',
+        recordedAt:
+          req.verifiedAt || req.submittedAt || new Date().toISOString()
+      });
+    }
+
+    // 2. Manual revenue entries saved by Admin in storageConfig
+    const manualList = storageConfig.manualRevenueEntries || [];
+    for (const entry of manualList) {
+      items.push(entry);
+    }
+
+    // Sort newest first
+    return items.sort((a, b) =>
+      (b.recordedAt || '').localeCompare(a.recordedAt || '')
+    );
+  }, [paymentRequests, storageConfig.manualRevenueEntries, liveMonthlyFee, liveYearlyFee]);
+
+  const filteredRevenueLedger = useMemo(() => {
+    const q = revSearchQuery.trim().toLowerCase();
+    return revenueLedger
+      .filter((r) => {
+        if (revFilterType === 'subscription') {
+          return r.category === 'subscription';
+        }
+        if (revFilterType === 'certificate') {
+          return r.category === 'certificate' || r.category === 'bundle';
+        }
+        return true;
+      })
+      .filter((r) => {
+        if (!q) return true;
+        return (
+          r.userName.toLowerCase().includes(q) ||
+          r.userEmail.toLowerCase().includes(q) ||
+          (r.userPhone || '').toLowerCase().includes(q) ||
+          r.itemTitle.toLowerCase().includes(q) ||
+          r.transactionId.toLowerCase().includes(q) ||
+          r.paymentMethod.toLowerCase().includes(q)
+        );
+      });
+  }, [revenueLedger, revSearchQuery, revFilterType]);
+
+  const revenueSummary = useMemo(() => {
+    let totalRevenueRs = 0;
+    let subscriptionRevenueRs = 0;
+    let certificateRevenueRs = 0;
+    let subscriptionCount = 0;
+    let certificateCount = 0;
+
+    for (const item of revenueLedger) {
+      const amt = Number(item.amountRs) || 0;
+      totalRevenueRs += amt;
+      if (item.category === 'subscription') {
+        subscriptionRevenueRs += amt;
+        subscriptionCount += 1;
+      } else {
+        certificateRevenueRs += amt;
+        certificateCount += 1;
+      }
+    }
+
+    return {
+      totalRevenueRs,
+      subscriptionRevenueRs,
+      certificateRevenueRs,
+      subscriptionCount,
+      certificateCount,
+      totalTransactions: revenueLedger.length
+    };
+  }, [revenueLedger]);
+
+  const handleDownloadRevenueCsv = () => {
+    const headers = [
+      'Receipt ID',
+      'Date',
+      'User Name',
+      'User Email',
+      'Phone / WhatsApp',
+      'Category',
+      'Item / Course / Subscription Plan',
+      'Payment Method',
+      'Transaction ID (TID)',
+      'Amount (PKR)'
+    ];
+    const escapeCsv = (val: string | number) => {
+      const s = String(val ?? '').replace(/"/g, '""');
+      return `"${s}"`;
+    };
+    const rows = filteredRevenueLedger.map((r) => [
+      escapeCsv(r.id),
+      escapeCsv((r.recordedAt || '').replace('T', ' ').slice(0, 19)),
+      escapeCsv(r.userName),
+      escapeCsv(r.userEmail),
+      escapeCsv(r.userPhone || '-'),
+      escapeCsv(r.category.toUpperCase()),
+      escapeCsv(r.itemTitle),
+      escapeCsv(r.paymentMethod),
+      escapeCsv(r.transactionId),
+      escapeCsv(r.amountRs)
+    ]);
+    rows.push([
+      escapeCsv('TOTAL REVENUE'),
+      escapeCsv(new Date().toISOString().slice(0, 10)),
+      escapeCsv(`${filteredRevenueLedger.length} Verified Payments`),
+      escapeCsv('-'),
+      escapeCsv('-'),
+      escapeCsv('ALL'),
+      escapeCsv(
+        `Subscriptions: Rs. ${revenueSummary.subscriptionRevenueRs} | Certificates/Bundles: Rs. ${revenueSummary.certificateRevenueRs}`
+      ),
+      escapeCsv('-'),
+      escapeCsv('-'),
+      escapeCsv(
+        filteredRevenueLedger.reduce(
+          (sum, item) => sum + (Number(item.amountRs) || 0),
+          0
+        )
+      )
+    ]);
+
+    const csvContent =
+      '\uFEFF' + [headers.map(escapeCsv).join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `food-science-portal-revenue-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    onSetBanner(
+      `Revenue Ledger CSV downloaded (Total: Rs. ${revenueSummary.totalRevenueRs.toLocaleString()})!`
+    );
+  };
+
+  const handleAddManualRevenueEntry = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!revUserName.trim() || !revItemTitle.trim()) {
+      onSetBanner('Please enter User Name and Item/Course Title.');
+      return;
+    }
+    const newEntry: ManualRevenueEntry = {
+      id: `rev-manual-${Date.now()}`,
+      userName: revUserName.trim(),
+      userEmail: revUserEmail.trim(),
+      userPhone: revUserPhone.trim(),
+      category: revCategory,
+      itemTitle: revItemTitle.trim(),
+      amountRs: Math.max(0, Number(revAmountRs) || 0),
+      paymentMethod: revMethod.trim() || 'Direct Transfer',
+      transactionId: revTxId.trim() || `DIRECT-${Date.now().toString().slice(-6)}`,
+      recordedAt: new Date().toISOString()
+    };
+    const nextManual = [
+      newEntry,
+      ...(storageConfig.manualRevenueEntries || [])
+    ];
+    onChangeStorageConfig({
+      ...storageConfig,
+      manualRevenueEntries: nextManual
+    });
+    setRevUserName('');
+    setRevUserEmail('');
+    setRevUserPhone('');
+    setRevItemTitle('');
+    setRevTxId('');
+    onSetBanner(
+      `Added Rs. ${newEntry.amountRs.toLocaleString()} from "${newEntry.userName}" to Revenue Ledger! Click "Save Revenue Ledger to Cloud" to persist.`
+    );
+  };
+
+  const handleDeleteManualRevenueEntry = (entryId: string) => {
+    const nextManual = (storageConfig.manualRevenueEntries || []).filter(
+      (e) => e.id !== entryId
+    );
+    onChangeStorageConfig({
+      ...storageConfig,
+      manualRevenueEntries: nextManual
+    });
+    onSetBanner('Manual revenue entry removed. Click "Save Revenue Ledger to Cloud" to persist.');
+  };
+
+  // Custom Scrolling Ad Banner List & Handlers
+  const currentAdBanners: CustomAdBannerItem[] = useMemo(() => {
+    if (
+      Array.isArray(storageConfig.customAds) &&
+      storageConfig.customAds.length > 0
+    ) {
+      return storageConfig.customAds;
+    }
+    return DEFAULT_SCROLLING_AD_BANNERS;
+  }, [storageConfig.customAds]);
+
+  const handleSaveAdBannerItem = () => {
+    const cleanTitle = adTitleInput.trim();
+    if (!cleanTitle) {
+      onSetBanner('Please enter the Ad Banner Headline / Announcement text.');
+      return;
+    }
+    const existingList =
+      Array.isArray(storageConfig.customAds) &&
+      storageConfig.customAds.length > 0
+        ? [...storageConfig.customAds]
+        : [...DEFAULT_SCROLLING_AD_BANNERS];
+
+    if (editingAdId) {
+      const updated = existingList.map((ad) =>
+        ad.id === editingAdId
+          ? {
+              ...ad,
+              title: cleanTitle,
+              subtitle: adSubtitleInput.trim(),
+              badgeText: adBadgeInput.trim() || 'ANNOUNCEMENT',
+              ctaText: adCtaTextInput.trim() || 'Learn More',
+              ctaLink: adCtaLinkInput.trim() || '?page=trainings'
+            }
+          : ad
+      );
+      onChangeStorageConfig({
+        ...storageConfig,
+        customAds: updated
+      });
+      setEditingAdId(null);
+      onSetBanner('Ad Banner updated! Click "Save Front Page & Ad Banners" to publish live.');
+    } else {
+      const newAd: CustomAdBannerItem = {
+        id: `ad-${Date.now()}`,
+        title: cleanTitle,
+        headline: cleanTitle,
+        subtitle: adSubtitleInput.trim(),
+        subtext: adSubtitleInput.trim(),
+        badgeText: adBadgeInput.trim() || 'UPCOMING TRAINING',
+        ctaText: adCtaTextInput.trim() || 'Register / Details',
+        ctaLabel: adCtaTextInput.trim() || 'Register / Details',
+        ctaLink: adCtaLinkInput.trim() || '?page=trainings',
+        linkUrl: adCtaLinkInput.trim() || '?page=trainings',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      onChangeStorageConfig({
+        ...storageConfig,
+        customAds: [newAd, ...existingList]
+      });
+      onSetBanner('New Scrolling Ad Banner added! Click "Save Front Page & Ad Banners" to publish live.');
+    }
+    setAdTitleInput('');
+    setAdSubtitleInput('');
+  };
+
+  const handleToggleAdBannerItem = (adId: string) => {
+    const existingList =
+      Array.isArray(storageConfig.customAds) &&
+      storageConfig.customAds.length > 0
+        ? [...storageConfig.customAds]
+        : [...DEFAULT_SCROLLING_AD_BANNERS];
+    const updated = existingList.map((ad) =>
+      ad.id === adId ? { ...ad, isActive: ad.isActive === false } : ad
+    );
+    onChangeStorageConfig({
+      ...storageConfig,
+      customAds: updated
+    });
+  };
+
+  const handleDeleteAdBannerItem = (adId: string) => {
+    const existingList =
+      Array.isArray(storageConfig.customAds) &&
+      storageConfig.customAds.length > 0
+        ? [...storageConfig.customAds]
+        : [...DEFAULT_SCROLLING_AD_BANNERS];
+    const updated = existingList.filter((ad) => ad.id !== adId);
+    onChangeStorageConfig({
+      ...storageConfig,
+      customAds: updated
+    });
+  };
+
   // Derived Analytics & Graph Data
   const stats = useMemo(() => {
     const nonAdminUsers = users.filter(
@@ -469,7 +953,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     const hireMeActive = nonAdminUsers.filter((u) => Boolean(u.hireMe)).length;
 
     const pendingRequests = paymentRequests.filter(
-      (r) => r.status === 'pending'
+      (r) => r.status === 'pending' && !dismissedReqIds.includes(r.id)
     ).length;
     const verifiedRequests = paymentRequests.filter(
       (r) => r.status === 'verified'
@@ -535,7 +1019,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       ircaTrainings,
       egTrainings
     };
-  }, [users, paymentRequests, jobs, scholarships, trainings]);
+  }, [users, paymentRequests, jobs, scholarships, trainings, dismissedReqIds]);
 
   const filteredUsersList = useMemo(() => {
     const q = userSearch.trim().toLowerCase();
@@ -570,13 +1054,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       });
   }, [users, userSearch, userFilter]);
 
+  // Only show PENDING & non-dismissed payment requests in the active Accept / Reject / Delete queues so requests close immediately once acted upon
   const sortedPaymentRequests = useMemo(() => {
-    return [...paymentRequests].sort((a, b) => {
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
-      return (b.submittedAt || '').localeCompare(a.submittedAt || '');
-    });
-  }, [paymentRequests]);
+    return paymentRequests
+      .filter(
+        (req) => req.status === 'pending' && !dismissedReqIds.includes(req.id)
+      )
+      .sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+  }, [paymentRequests, dismissedReqIds]);
 
   const filteredAdminJobs = useMemo(() => {
     if (jobFilterCat === 'All') return jobs;
@@ -835,19 +1320,93 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
   const handleUpdateCoursePrice = async (tr: HubTraining) => {
     const edited = priceEdits[tr.id];
-    const nextFees = edited?.fees !== undefined ? edited.fees.trim() : tr.fees;
+    const nextTitle =
+      edited?.title !== undefined && edited.title.trim()
+        ? edited.title.trim()
+        : tr.title;
+    const nextCode =
+      edited?.standardCode !== undefined && edited.standardCode.trim()
+        ? edited.standardCode.trim().toUpperCase()
+        : tr.standardCode;
+    const nextDesc =
+      edited?.description !== undefined
+        ? edited.description.trim()
+        : tr.description;
     const nextDuration =
-      edited?.duration !== undefined ? edited.duration.trim() : tr.duration;
+      edited?.duration !== undefined && edited.duration.trim()
+        ? edited.duration.trim()
+        : tr.duration;
 
-    if (!nextFees) return;
+    // Determine numeric certificateFeeRs & display fees string
+    let nextCertFeeRs =
+      edited?.certificateFeeRs !== undefined
+        ? Number(edited.certificateFeeRs)
+        : tr.certificateFeeRs;
+    let nextFees = edited?.fees !== undefined ? edited.fees.trim() : tr.fees;
+
+    if (
+      edited?.certificateFeeRs !== undefined &&
+      !Number.isNaN(Number(edited.certificateFeeRs)) &&
+      Number(edited.certificateFeeRs) > 0
+    ) {
+      nextCertFeeRs = Number(edited.certificateFeeRs);
+      nextFees = `Free Study & Exam · Rs. ${nextCertFeeRs.toLocaleString()} Certificate`;
+    } else if (nextFees) {
+      const cleaned = nextFees.replace(/,/g, '');
+      const match =
+        cleaned.match(/(?:rs\.?|pkr)\s*(\d{2,7})/i) ||
+        cleaned.match(/\b(\d{3,7})\b/);
+      if (match && match[1]) {
+        const parsed = Number(match[1]);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          nextCertFeeRs = parsed;
+        }
+      }
+    }
+
     const updated: HubTraining = {
       ...tr,
-      fees: nextFees,
+      title: nextTitle,
+      standardCode: nextCode || tr.standardCode,
+      certificateFeeRs: nextCertFeeRs,
+      fees:
+        nextFees ||
+        `Free Study & Exam · Rs. ${(nextCertFeeRs || 1000).toLocaleString()} Certificate`,
       duration: nextDuration || tr.duration,
-      isActive: true
+      description: nextDesc || tr.description,
+      isActive: tr.isActive !== false
     };
     await onSaveTraining(updated);
-    onSetBanner(`Updated "${tr.title}" price to ${nextFees} (Live on App)!`);
+    onSetBanner(
+      `Updated "${nextTitle}" (Cert Fee: Rs. ${(nextCertFeeRs || 1000).toLocaleString()} · ${nextDuration || tr.duration}) — Live on Website & Bundles!`
+    );
+  };
+
+  const handleSaveExistingModuleEdit = async (
+    tr: HubTraining,
+    modId: string
+  ) => {
+    const editedMod = editingModMap[modId];
+    if (!editedMod) return;
+    const nextMods = (tr.customModules || []).map((m) =>
+      m.id === modId
+        ? {
+            ...m,
+            subject: editedMod.subject.trim() || m.subject,
+            description: editedMod.description.trim()
+          }
+        : m
+    );
+    await onSaveTraining({
+      ...tr,
+      customModules: nextMods
+    });
+    setEditingModMap((prev) => {
+      const copy = { ...prev };
+      delete copy[modId];
+      return copy;
+    });
+    onSetBanner(`Updated module in "${tr.title}" (Live on Website)!`);
   };
 
   const todayFormatted = new Date().toISOString().slice(0, 10);
@@ -1060,24 +1619,31 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       Select an Admin Section to Open &amp; Manage Separately
                     </h2>
                     <p className="text-xs text-[#4A5568] font-medium">
-                      Click any button below to open that dedicated control page. Every section opens on its own page and saves changes independently.
+                      Click any button below to open that dedicated control page. Control every front-page element, scrolling ad banner, training course topic/price/content, WhatsApp share, and downloadable revenue ledger.
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                   {[
                     {
                       id: 'overview' as AdminSectionTab,
-                      title: '1. Dashboard & Graphs',
-                      desc: 'Live platform analytics, user statistics & content charts',
-                      badge: `${stats.totalUsers} Users`,
+                      title: '1. Front Page, Ad Banner & Pages Control',
+                      desc: 'Edit front page hero, custom scrolling ad banners, WhatsApp share links & analytics',
+                      badge: `${currentAdBanners.filter((a) => a.isActive !== false).length} Active Ads`,
                       icon: BarChart3
                     },
                     {
+                      id: 'revenue' as AdminSectionTab,
+                      title: '2. Revenue Ledger & Downloadable Records',
+                      desc: 'Track all Subscription & Certificate payments by user, total revenue & CSV download',
+                      badge: `Rs. ${revenueSummary.totalRevenueRs.toLocaleString()}`,
+                      icon: DollarSign
+                    },
+                    {
                       id: 'users' as AdminSectionTab,
-                      title: '2. Users & Approvals',
-                      desc: 'Approve membership payment slips, manage users & CVs',
+                      title: '3. Users & Payment Slip Approvals',
+                      desc: 'Accept/Reject membership slips (auto-closes on click), manage users & CVs',
                       badge:
                         stats.pendingRequests > 0
                           ? `${stats.pendingRequests} Pending`
@@ -1086,42 +1652,42 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     },
                     {
                       id: 'jobs' as AdminSectionTab,
-                      title: '3. Post Jobs (1-Box)',
-                      desc: 'Paste & publish new jobs and manage active job listings',
+                      title: '4. Post Jobs (1-Box) & WhatsApp Share',
+                      desc: 'Paste & publish new jobs, manage listings & share directly to WhatsApp groups',
                       badge: `${jobs.length} Jobs`,
                       icon: Briefcase
                     },
                     {
                       id: 'scholarships' as AdminSectionTab,
-                      title: '4. Scholarships (1-Box)',
-                      desc: 'Paste & publish fellowships, international & research grants',
+                      title: '5. Scholarships (1-Box) & WhatsApp Share',
+                      desc: 'Paste & publish fellowships, international grants & share to WhatsApp',
                       badge: `${scholarships.length} Grants`,
                       icon: GraduationCap
                     },
                     {
                       id: 'certificates' as AdminSectionTab,
-                      title: '5. Direct Certificate Generator',
-                      desc: 'Generate Portrait PDF Certificates on any topic & approve Rs. 1,000 fee requests',
+                      title: '6. Direct Certificate Generator',
+                      desc: 'Generate Portrait PDF Certificates with auto qualification code & approve fee requests',
                       badge: `${certificates.length} Issued`,
                       icon: Award
                     },
                     {
                       id: 'trainings' as AdminSectionTab,
-                      title: '6. Trainings & Course Prices',
-                      desc: 'Add new training courses, edit fees, or toggle course visibility',
+                      title: '7. Trainings, Topics, Prices & Content',
+                      desc: 'Change any course topic, price (e.g. Rs. 8,000), modules, MCQs & bundle pricing',
                       badge: `${trainings.length} Courses`,
                       icon: FileText
                     },
                     {
                       id: 'payments' as AdminSectionTab,
-                      title: '7. Payment Gateway & Fees',
+                      title: '8. Payment Gateway & Subscription Fees',
                       desc: 'Update Bank Account, JazzCash, EasyPaisa & membership pricing',
                       badge: `Rs. ${liveMonthlyFee}/Mo`,
                       icon: CreditCard
                     },
                     {
                       id: 'storage' as AdminSectionTab,
-                      title: '8. Cloud Storage & Backup',
+                      title: '9. Cloud Storage & Full Backup',
                       desc: 'Configure cloud storage endpoints & export full JSON backup',
                       badge: 'Cloud Sync',
                       icon: Database
@@ -1925,6 +2491,774 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </button>
               </div>
             </form>
+
+            {/* CUSTOM RIGHT-TO-LEFT SCROLLING AD BANNER & FRONT PAGE HERO CONTROL */}
+            <form
+              onSubmit={onSaveStorageConfig}
+              className="bg-white border-2 border-[#1673B8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1673B8] to-[#1A2138] text-amber-300 flex items-center justify-center shrink-0 shadow-2xs">
+                    <Megaphone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
+                      Custom Scrolling Ad Banner (Below Top Menu &amp; Above Good Morning Hero) + Front Page Text Control
+                    </h3>
+                    <p className="text-[11.5px] text-[#4A5568] font-medium">
+                      Add, edit, or toggle right-to-left scrolling promotional banners (e.g. Highfield HACCP Level 3 program starting date) and customize the Front Page Good Morning Hero section.
+                    </p>
+                  </div>
+                </div>
+                <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={
+                      storageConfig.frontPageConfig?.showAdBanner !== false
+                    }
+                    onChange={(e) =>
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        frontPageConfig: {
+                          ...storageConfig.frontPageConfig,
+                          showAdBanner: e.target.checked
+                        }
+                      })
+                    }
+                    className="w-4 h-4 accent-[#1673B8] rounded cursor-pointer"
+                  />
+                  <span>Show Scrolling Ad Banner on Website/App</span>
+                </label>
+              </div>
+
+              {/* Add / Edit Scrolling Ad Banner Item */}
+              <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider">
+                    {editingAdId
+                      ? 'Edit Selected Scrolling Ad Banner'
+                      : 'Add New Right-to-Left Scrolling Ad Banner'}
+                  </span>
+                  {editingAdId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingAdId(null);
+                        setAdTitleInput('');
+                        setAdSubtitleInput('');
+                      }}
+                      className="text-xs font-extrabold text-red-600 hover:underline cursor-pointer"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Badge Tag (Left Pill)
+                    </label>
+                    <input
+                      type="text"
+                      value={adBadgeInput}
+                      onChange={(e) => setAdBadgeInput(e.target.value)}
+                      placeholder="e.g., UPCOMING TRAINING"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Ad Headline / Training Announcement *
+                    </label>
+                    <input
+                      type="text"
+                      value={adTitleInput}
+                      onChange={(e) => setAdTitleInput(e.target.value)}
+                      placeholder="e.g., Highfield HACCP Level 3 International Program starting from 15th of this month — Limited Seats!"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                  <div className="sm:col-span-5">
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Subtext / Schedule / Fee Details (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={adSubtitleInput}
+                      onChange={(e) => setAdSubtitleInput(e.target.value)}
+                      placeholder="e.g., Free Course Study & Exam · Official QR-Verified Certificate"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Button Label
+                    </label>
+                    <input
+                      type="text"
+                      value={adCtaTextInput}
+                      onChange={(e) => setAdCtaTextInput(e.target.value)}
+                      placeholder="Enroll / Details"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target URL / Link
+                    </label>
+                    <input
+                      type="text"
+                      value={adCtaLinkInput}
+                      onChange={(e) => setAdCtaLinkInput(e.target.value)}
+                      placeholder="?page=trainings"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-mono font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveAdBannerItem}
+                      className="w-full py-2 px-3 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer transition-colors"
+                    >
+                      {editingAdId ? 'Update Ad' : '+ Add Ad'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Active & Saved Scrolling Ad Banners List */}
+                <div className="space-y-2 pt-2 border-t border-[#D2DEEA]">
+                  <div className="text-[11px] font-extrabold text-[#105E9A]">
+                    Configured Right-to-Left Scrolling Ad Banners ({currentAdBanners.length}):
+                  </div>
+                  {currentAdBanners.map((ad) => (
+                    <div
+                      key={ad.id}
+                      className="p-3 rounded-xl bg-white border border-[#D2DEEA] flex flex-wrap items-center justify-between gap-2 text-xs"
+                    >
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-black uppercase">
+                            {ad.badgeText || 'AD BANNER'}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                              ad.isActive !== false
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {ad.isActive !== false ? 'MOVING LIVE' : 'PAUSED'}
+                          </span>
+                          <span className="font-extrabold text-[#1A2138]">
+                            {ad.title || ad.headline || 'Training Announcement'}
+                          </span>
+                        </div>
+                        {(ad.subtitle || ad.subtext) && (
+                          <p className="text-[11px] text-[#4A5568]">
+                            {ad.subtitle || ad.subtext} • Link: {ad.ctaLink || ad.linkUrl || '?page=trainings'}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            shareToWhatsAppGroupOrChannel(
+                              ad.title || ad.headline || 'Training Announcement',
+                              ad.subtitle ||
+                                ad.subtext ||
+                                'Special Training & Certification Announcement on Food Science Portal.',
+                              ad.ctaLink || ad.linkUrl || '?page=trainings'
+                            )
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-[#25D366] hover:bg-[#1EBE5B] text-white text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                          title="Share this Ad Announcement to WhatsApp Group/Channel"
+                        >
+                          <Share2 className="w-3 h-3" />
+                          <span>WhatsApp</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingAdId(ad.id);
+                            setAdBadgeInput(ad.badgeText || 'UPCOMING TRAINING');
+                            setAdTitleInput(ad.title || ad.headline || '');
+                            setAdSubtitleInput(ad.subtitle || ad.subtext || '');
+                            setAdCtaTextInput(ad.ctaText || ad.ctaLabel || 'Register / Details');
+                            setAdCtaLinkInput(ad.ctaLink || ad.linkUrl || '?page=trainings');
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#105E9A] text-[11px] font-extrabold cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAdBannerItem(ad.id)}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-extrabold cursor-pointer"
+                        >
+                          {ad.isActive === false ? 'Enable' : 'Hide'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAdBannerItem(ad.id)}
+                          className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-extrabold cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Front Page Hero Banner Text Overrides (Good Morning Blue Section) */}
+              <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
+                <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider">
+                  Front Page &quot;Good Morning&quot; Blue Hero Banner Content Control
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Top Badge Text
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.frontPageConfig?.heroBadgeText ??
+                        'Food Science Portal • International Hub'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          frontPageConfig: {
+                            ...storageConfig.frontPageConfig,
+                            heroBadgeText: e.target.value
+                          }
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Custom Greeting Override (Leave blank for Auto Good Morning/Afternoon)
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.frontPageConfig?.heroCustomGreeting ?? ''
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          frontPageConfig: {
+                            ...storageConfig.frontPageConfig,
+                            heroCustomGreeting: e.target.value
+                          }
+                        })
+                      }
+                      placeholder="Auto: Good morning / Good afternoon"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Hero Subtitle / Description
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.frontPageConfig?.heroSubtitle ??
+                        'Explore global QA/QC & R&D jobs, international scholarships, accredited trainings, and 18+ Food Science & Lab Calculators.'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          frontPageConfig: {
+                            ...storageConfig.frontPageConfig,
+                            heroSubtitle: e.target.value
+                          }
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                >
+                  <Check className="w-4 h-4 stroke-[2.5]" />
+                  <span>Save Front Page &amp; Scrolling Ad Banners (Live on Website)</span>
+                </button>
+              </div>
+            </form>
+
+            {/* WEBSITE PAGES & TOOLS WHATSAPP GROUP / CHANNEL SHARE CENTER */}
+            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10.5px] font-extrabold uppercase tracking-wider">
+                    WhatsApp Group &amp; Channel Broadcast Center
+                  </span>
+                  <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138] mt-1">
+                    Share Any Website Page, Tool, or Certification Portal to Your WhatsApp Group / Channel
+                  </h3>
+                  <p className="text-xs text-[#4A5568]">
+                    Click <strong>Share to WhatsApp</strong> on any page below to send a formatted announcement with its direct custom URL to your WhatsApp Group or Channel.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {[
+                  {
+                    title: 'Trainings & Certification Academy',
+                    desc: '13 International Food Safety, HACCP, ISO 22000 & Certified Dietary Manager courses with Free Study & Exam.',
+                    path: '?page=trainings'
+                  },
+                  {
+                    title: 'Official Certificate Verification Portal',
+                    desc: 'Verify any Food Science Portal credential online via Certificate ID or QR Code.',
+                    path: '?page=verify-certificate'
+                  },
+                  {
+                    title: 'Global Food Science Jobs Board',
+                    desc: 'Latest QA/QC, Food Safety, R&D Lab & Production vacancies.',
+                    path: '?page=jobs'
+                  },
+                  {
+                    title: 'International Scholarships & Fellowships',
+                    desc: 'Fully funded MSc, PhD & research grants in Food Science & Nutrition.',
+                    path: '?page=scholarships'
+                  },
+                  {
+                    title: '18+ Food Science & Lab Calculators',
+                    desc: 'HACCP Matrix, Nutrition Facts, F0 Thermal Lethality, Sensory & Pearson Square tools.',
+                    path: '?page=tools'
+                  },
+                  {
+                    title: 'Food Specialists Community Directory',
+                    desc: 'Connect with verified Food Technologists, Auditors, and QA/QC Managers.',
+                    path: '?page=community'
+                  }
+                ].map((pg) => (
+                  <div
+                    key={pg.path}
+                    className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex flex-col justify-between gap-2.5"
+                  >
+                    <div>
+                      <div className="text-xs font-extrabold text-[#1A2138]">
+                        {pg.title}
+                      </div>
+                      <p className="text-[11px] text-[#4A5568] mt-0.5 line-clamp-2">
+                        {pg.desc}
+                      </p>
+                      <div className="text-[10px] font-mono font-bold text-[#1673B8] mt-1">
+                        URL: {pg.path}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          shareToWhatsAppGroupOrChannel(
+                            pg.title,
+                            pg.desc,
+                            pg.path
+                          )
+                        }
+                        className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-[11px] font-extrabold inline-flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>Share to WhatsApp</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          copyWhatsAppShareText(pg.title, pg.desc, pg.path)
+                        }
+                        className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EBF4FC] text-[#105E9A] border border-[#D2DEEA] text-[11px] font-extrabold cursor-pointer"
+                      >
+                        Copy Post
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB 1B: DEDICATED REVENUE LEDGER & DOWNLOADABLE RECORDS (revenue)
+           ===================================================================== */}
+        {activeTab === 'revenue' && (
+          <div className="space-y-5">
+            {/* TOP REVENUE SUMMARY KPI CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div className="bg-gradient-to-br from-[#1A2138] to-[#1673B8] text-white rounded-2xl p-5 shadow-sm space-y-1">
+                <div className="flex items-center justify-between text-xs font-bold text-sky-200 uppercase tracking-wider">
+                  <span>Total Revenue Generated</span>
+                  <DollarSign className="w-4 h-4 text-amber-300" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black">
+                  Rs. {revenueSummary.totalRevenueRs.toLocaleString()}
+                </div>
+                <div className="text-[11px] text-sky-100 font-semibold">
+                  Across {revenueSummary.totalTransactions} Verified Payments (Subscriptions + Certificates)
+                </div>
+              </div>
+
+              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-5 shadow-xs space-y-1">
+                <div className="flex items-center justify-between text-xs font-bold text-[#4A5568] uppercase tracking-wider">
+                  <span>Subscription Revenue</span>
+                  <Crown className="w-4 h-4 text-[#D97706]" />
+                </div>
+                <div className="text-2xl font-black text-[#1A2138]">
+                  Rs. {revenueSummary.subscriptionRevenueRs.toLocaleString()}
+                </div>
+                <div className="text-[11px] font-bold text-[#1673B8]">
+                  {revenueSummary.subscriptionCount} Paid Membership Subscriptions
+                </div>
+              </div>
+
+              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-5 shadow-xs space-y-1">
+                <div className="flex items-center justify-between text-xs font-bold text-[#4A5568] uppercase tracking-wider">
+                  <span>Certificates &amp; Bundles Revenue</span>
+                  <Award className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="text-2xl font-black text-[#1A2138]">
+                  Rs. {revenueSummary.certificateRevenueRs.toLocaleString()}
+                </div>
+                <div className="text-[11px] font-bold text-emerald-700">
+                  {revenueSummary.certificateCount} Verified Certificates &amp; Bundles
+                </div>
+              </div>
+            </div>
+
+            {/* RECORD DIRECT / MANUAL REVENUE ENTRY FORM */}
+            <form
+              onSubmit={handleAddManualRevenueEntry}
+              className="bg-white border-2 border-[#1673B8] rounded-[24px] p-5 shadow-xs space-y-3.5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold uppercase tracking-wider">
+                    Add Direct Payment Record
+                  </span>
+                  <h3 className="text-base font-extrabold text-[#1A2138] mt-1">
+                    Record Direct WhatsApp / Bank Payment into Revenue Ledger
+                  </h3>
+                  <p className="text-xs text-[#4A5568]">
+                    All approved Payment Slips are recorded automatically below. You can also log any direct WhatsApp or offline payment here.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => onSaveStorageConfig(e as unknown as React.FormEvent)}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Save Revenue Ledger to Cloud</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    User Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={revUserName}
+                    onChange={(e) => setRevUserName(e.target.value)}
+                    placeholder="e.g., Ali Raza"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    User Email / Phone
+                  </label>
+                  <input
+                    type="text"
+                    value={revUserEmail}
+                    onChange={(e) => setRevUserEmail(e.target.value)}
+                    placeholder="user@email.com / 0300..."
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Revenue Type
+                  </label>
+                  <select
+                    value={revCategory}
+                    onChange={(e) =>
+                      setRevCategory(
+                        e.target.value as
+                          | 'subscription'
+                          | 'certificate'
+                          | 'bundle'
+                      )
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  >
+                    <option value="certificate">Certificate Fee</option>
+                    <option value="bundle">Certificate Bundle</option>
+                    <option value="subscription">Paid Membership Subscription</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Amount Received (PKR) *
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    value={revAmountRs}
+                    onChange={(e) => setRevAmountRs(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-black text-[#1A2138]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                <div className="sm:col-span-5">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Course / Bundle / Subscription Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={revItemTitle}
+                    onChange={(e) => setRevItemTitle(e.target.value)}
+                    placeholder="e.g., Certified Dietary Manager (Rs. 8,000) / 1-Year Membership"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Payment Method
+                  </label>
+                  <input
+                    type="text"
+                    value={revMethod}
+                    onChange={(e) => setRevMethod(e.target.value)}
+                    placeholder="JazzCash / EasyPaisa / Bank"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                    Transaction ID (TID)
+                  </label>
+                  <input
+                    type="text"
+                    value={revTxId}
+                    onChange={(e) => setRevTxId(e.target.value)}
+                    placeholder="TID / Ref"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-mono font-bold text-[#1A2138]"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    className="w-full py-2 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer"
+                  >
+                    + Add Record
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* COMPLETE REVENUE RECORDS TABLE + CSV DOWNLOAD */}
+            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#D2DEEA] pb-3">
+                <div>
+                  <h2 className="text-lg font-extrabold text-[#1A2138] flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-[#1673B8]" />
+                    <span>
+                      Verified Revenue Ledger ({filteredRevenueLedger.length} Records)
+                    </span>
+                  </h2>
+                  <p className="text-xs text-[#4A5568]">
+                    Complete record of who paid, how much was received, for which subscription or certificate, and total revenue generated.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadRevenueCsv}
+                    className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download Revenue Record (.CSV / Excel)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Filter & Search Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {(
+                    [
+                      {
+                        id: 'all',
+                        label: `All Revenue (${revenueLedger.length})`
+                      },
+                      {
+                        id: 'subscription',
+                        label: `Subscriptions (${revenueSummary.subscriptionCount})`
+                      },
+                      {
+                        id: 'certificate',
+                        label: `Certificates & Bundles (${revenueSummary.certificateCount})`
+                      }
+                    ] as const
+                  ).map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setRevFilterType(tab.id)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-extrabold cursor-pointer ${
+                        revFilterType === tab.id
+                          ? 'bg-[#1673B8] text-white'
+                          : 'bg-[#F0F6FC] text-[#1A2138] border border-[#D2DEEA]'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-[#1673B8] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={revSearchQuery}
+                    onChange={(e) => setRevSearchQuery(e.target.value)}
+                    placeholder="Search user, course, TID..."
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold text-[#1A2138]"
+                  />
+                </div>
+              </div>
+
+              {filteredRevenueLedger.length === 0 ? (
+                <div className="p-6 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-center text-xs font-semibold text-[#4A5568]">
+                  No verified revenue records match the current filter yet. When you Accept a user&apos;s Membership or Certificate payment slip (or add a record above), it is automatically logged here.
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-[#D2DEEA]">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-[#1A2138] text-white uppercase text-[10.5px] tracking-wider">
+                        <th className="py-3 px-3.5 font-extrabold">Date</th>
+                        <th className="py-3 px-3.5 font-extrabold">User / Payer</th>
+                        <th className="py-3 px-3.5 font-extrabold">Type</th>
+                        <th className="py-3 px-3.5 font-extrabold">Subscription / Certificate Details</th>
+                        <th className="py-3 px-3.5 font-extrabold">Method &amp; TID</th>
+                        <th className="py-3 px-3.5 font-extrabold text-right">Amount (PKR)</th>
+                        <th className="py-3 px-3.5 font-extrabold text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#D2DEEA] bg-white">
+                      {filteredRevenueLedger.map((item) => {
+                        const isManual = item.id.startsWith('rev-manual-');
+                        return (
+                          <tr key={item.id} className="hover:bg-[#F0F6FC]/70">
+                            <td className="py-2.5 px-3.5 font-semibold text-slate-600 whitespace-nowrap">
+                              {(item.recordedAt || '').replace('T', ' ').slice(0, 16)}
+                            </td>
+                            <td className="py-2.5 px-3.5">
+                              <div className="font-extrabold text-[#1A2138]">
+                                {item.userName}
+                              </div>
+                              {item.userEmail && (
+                                <div className="text-[11px] text-slate-500">
+                                  {item.userEmail}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3.5">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                  item.category === 'subscription'
+                                    ? 'bg-amber-100 text-amber-900'
+                                    : 'bg-[#EBF4FC] text-[#105E9A]'
+                                }`}
+                              >
+                                {item.category}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3.5 font-bold text-[#1A2138]">
+                              {item.itemTitle}
+                            </td>
+                            <td className="py-2.5 px-3.5">
+                              <div className="font-semibold text-[#1A2138]">
+                                {item.paymentMethod}
+                              </div>
+                              <div className="font-mono text-[10.5px] text-[#1673B8]">
+                                TID: {item.transactionId}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3.5 text-right font-black text-emerald-700 whitespace-nowrap">
+                              Rs. {(Number(item.amountRs) || 0).toLocaleString()}
+                            </td>
+                            <td className="py-2.5 px-3.5 text-right">
+                              {isManual ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDeleteManualRevenueEntry(item.id)
+                                  }
+                                  className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[10.5px] font-extrabold cursor-pointer"
+                                >
+                                  Remove
+                                </button>
+                              ) : (
+                                <span className="text-[10.5px] font-bold text-emerald-700">
+                                  Verified Slip
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-[#F0F6FC] border-t-2 border-[#1673B8] font-black text-xs text-[#1A2138]">
+                        <td colSpan={5} className="py-3 px-3.5 text-right uppercase">
+                          Total Revenue Shown ({filteredRevenueLedger.length} Payments):
+                        </td>
+                        <td className="py-3 px-3.5 text-right text-sm text-[#1673B8] whitespace-nowrap">
+                          Rs.{' '}
+                          {filteredRevenueLedger
+                            .reduce(
+                              (sum, r) => sum + (Number(r.amountRs) || 0),
+                              0
+                            )
+                            .toLocaleString()}
+                        </td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1940,14 +3274,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   <h2 className="text-lg font-extrabold text-[#1A2138] flex items-center gap-2">
                     <Crown className="w-5 h-5 text-[#D97706]" />
                     <span>
-                      Membership Payment Slips — Accept or Reject (
+                      Pending Payment Slips — Accept, Reject or Delete (
                       {sortedPaymentRequests.length})
                     </span>
                   </h2>
                   <p className="text-xs text-[#4A5568] font-medium">
-                    When a user submits a Rs. {liveMonthlyFee.toLocaleString()} (1 Month) or Rs. {liveYearlyFee.toLocaleString()} (1 Year
-                    — {liveYearlyDiscountPct}% OFF) payment screenshot, accept it here to unlock
-                    their Premium Membership immediately.
+                    Clicking <strong>Accept</strong>, <strong>Reject</strong>, or <strong>Delete</strong> automatically processes the request, logs verified revenue in the Revenue Ledger, and immediately closes the request from this queue.
                   </p>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] text-xs font-extrabold">
@@ -1957,9 +3289,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
               {sortedPaymentRequests.length === 0 ? (
                 <div className="p-6 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-center text-xs text-[#4A5568] font-semibold">
-                  No payment requests submitted yet. You can also directly
-                  Accept/Activate or Reject any user from the Users Directory
-                  below.
+                  All pending payment requests have been handled and closed! Verified payments are saved in the <strong>Revenue Ledger</strong> tab, and you can also manage any user directly below.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -2029,24 +3359,19 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
-                              req.status === 'verified'
-                                ? 'bg-[#EBF4FC] text-[#105E9A]'
-                                : req.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-amber-200 text-amber-950'
-                            }`}
-                          >
-                            {req.status === 'verified'
-                              ? 'ACCEPTED'
-                              : req.status.toUpperCase()}
+                          <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold bg-amber-200 text-amber-950">
+                            PENDING
                           </span>
                           <button
                             type="button"
-                            onClick={() => onDeletePaymentRequest(req.id)}
+                            onClick={() =>
+                              handleActionAndAutoClosePaymentRequest(
+                                req,
+                                'delete'
+                              )
+                            }
                             className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
-                            title="Delete this payment request record"
+                            title="Delete and close this payment request"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -2081,7 +3406,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       <div className="grid grid-cols-3 gap-2 pt-1">
                         <button
                           type="button"
-                          onClick={() => onVerifyPayment(req, 'verified')}
+                          onClick={() =>
+                            handleActionAndAutoClosePaymentRequest(
+                              req,
+                              'verified'
+                            )
+                          }
                           className="py-2.5 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs"
                         >
                           <Check className="w-4 h-4 stroke-[2.5]" />
@@ -2104,7 +3434,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onVerifyPayment(req, 'rejected')}
+                          onClick={() =>
+                            handleActionAndAutoClosePaymentRequest(
+                              req,
+                              'rejected'
+                            )
+                          }
                           className="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                         >
                           <X className="w-4 h-4 stroke-[2.5]" />
@@ -2112,7 +3447,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onDeletePaymentRequest(req.id)}
+                          onClick={() =>
+                            handleActionAndAutoClosePaymentRequest(
+                              req,
+                              'delete'
+                            )
+                          }
                           className="py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -2707,14 +4047,31 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => onDeleteJob(job)}
-                        className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Remove</span>
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            shareToWhatsAppGroupOrChannel(
+                              `New Job Opening: ${job.title}`,
+                              `${job.category || 'Food Science & QA/QC'} (${job.country || 'Global'})\n${(job.description || '').slice(0, 180)}...`,
+                              '?page=jobs'
+                            )
+                          }
+                          className="px-3 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
+                          title="Share Job to WhatsApp Group / Channel"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteJob(job)}
+                          className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2819,7 +4176,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </h3>
                   <p className="text-xs text-[#4A5568]">
                     Click Remove on any scholarship to delete it immediately
-                    from the frontend app.
+                    from the frontend app, or Share directly to WhatsApp.
                   </p>
                 </div>
 
@@ -2877,14 +4234,31 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => onDeleteScholarship(sch)}
-                        className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Remove</span>
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            shareToWhatsAppGroupOrChannel(
+                              `Scholarship Opportunity: ${sch.title}`,
+                              `${sch.fundingType} (${sch.country || 'International'})\n${(sch.description || '').slice(0, 180)}...`,
+                              '?page=scholarships'
+                            )
+                          }
+                          className="px-3 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
+                          title="Share Scholarship to WhatsApp Group / Channel"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteScholarship(sch)}
+                          className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2988,7 +4362,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDirectTopicMode('custom')}
+                      onClick={() => {
+                        setDirectTopicMode('custom');
+                        setDirectCustomCourseCode(
+                          generateAutoQualificationCode(directCustomTopicTitle)
+                        );
+                      }}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition ${
                         directTopicMode === 'custom'
                           ? 'bg-[#1673B8] text-white shadow-xs'
@@ -3046,21 +4425,44 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         type="text"
                         required={directTopicMode === 'custom'}
                         value={directCustomTopicTitle}
-                        onChange={(e) => setDirectCustomTopicTitle(e.target.value)}
+                        onChange={(e) => {
+                          const nextTitle = e.target.value;
+                          setDirectCustomTopicTitle(nextTitle);
+                          setDirectCustomCourseCode(
+                            generateAutoQualificationCode(nextTitle)
+                          );
+                        }}
                         placeholder="e.g., ISO 22000:2018 Lead Auditor / Halal Food Standards"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-                        Custom Qualification Code
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-extrabold text-[#1A2138]">
+                          Custom Qualification Code (Auto-Generated)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDirectCustomCourseCode(
+                              generateAutoQualificationCode(
+                                directCustomTopicTitle,
+                                true
+                              )
+                            )
+                          }
+                          className="text-[10.5px] font-extrabold text-[#1673B8] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Auto-Generate</span>
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={directCustomCourseCode}
                         onChange={(e) => setDirectCustomCourseCode(e.target.value)}
-                        placeholder="e.g., FS-ISO22K-LA"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                        placeholder="Auto: FSP-CERT-2026"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-mono font-bold text-[#1A2138]"
                       />
                     </div>
                     <div>
@@ -3268,18 +4670,18 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               )}
             </form>
 
-            {/* CERTIFICATE DOWNLOAD APPROVAL REQUESTS (Rs. 1,000 PER CERTIFICATE) */}
+            {/* CERTIFICATE DOWNLOAD APPROVAL REQUESTS */}
             <div className="bg-white border-2 border-amber-500 rounded-[26px] p-5 shadow-sm space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div>
                   <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold">
-                    Rs. 1,000 Certificate Download &amp; Live Verification Requests
+                    Certificate &amp; Bundle Download Approval Requests
                   </span>
                   <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
-                    Approve / Allow User Certificate Downloads
+                    Approve / Allow User Certificate Downloads (Auto-Closes on Click)
                   </h2>
                   <p className="text-xs text-[#4A5568] font-medium">
-                    When a user passes the course exam and submits a Certificate Unlock or Bundle payment request, it appears here. Clicking <strong>Allow Certificate Download</strong> unlocks their Portrait PDF Certificate, activates their complimentary Paid Membership (1 Month for 1 Certificate or 1 Full Year for the All-13 Bundle), and publishes live verification on the website portal.
+                    When a user submits a Certificate Unlock or Bundle payment request, it appears here. Clicking <strong>Accept</strong>, <strong>Reject</strong>, or <strong>Delete</strong> processes the request, logs verified revenue in the Revenue Ledger, and automatically closes the request from this queue.
                   </p>
                 </div>
               </div>
@@ -3305,11 +4707,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     .map((req) => (
                       <div
                         key={req.id}
-                        className={`p-4 rounded-2xl border space-y-2.5 ${
-                          req.status === 'pending'
-                            ? 'bg-[#FFFDF5] border-2 border-[#F59E0B]'
-                            : 'bg-[#F0F6FC] border-[#D2DEEA]'
-                        }`}
+                        className="p-4 rounded-2xl border space-y-2.5 bg-[#FFFDF5] border-2 border-[#F59E0B]"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div>
@@ -3329,24 +4727,19 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                req.status === 'verified'
-                                  ? 'bg-[#EBF4FC] text-[#105E9A]'
-                                  : req.status === 'rejected'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-amber-200 text-amber-950'
-                              }`}
-                            >
-                              {req.status === 'verified'
-                                ? 'APPROVED & LIVE'
-                                : req.status.toUpperCase()}
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200 text-amber-950">
+                              PENDING
                             </span>
                             <button
                               type="button"
-                              onClick={() => onDeletePaymentRequest(req.id)}
+                              onClick={() =>
+                                handleActionAndAutoClosePaymentRequest(
+                                  req,
+                                  'delete'
+                                )
+                              }
                               className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
-                              title="Delete this request record"
+                              title="Delete and close this request"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -3366,7 +4759,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         <div className="grid grid-cols-3 gap-2 pt-1">
                           <button
                             type="button"
-                            onClick={() => onVerifyPayment(req, 'verified')}
+                            onClick={() =>
+                              handleActionAndAutoClosePaymentRequest(
+                                req,
+                                'verified'
+                              )
+                            }
                             className="py-2 px-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1 cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
@@ -3374,7 +4772,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => onVerifyPayment(req, 'rejected')}
+                            onClick={() =>
+                              handleActionAndAutoClosePaymentRequest(
+                                req,
+                                'rejected'
+                              )
+                            }
                             className="py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-extrabold flex items-center justify-center gap-1 cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -3382,7 +4785,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => onDeletePaymentRequest(req.id)}
+                            onClick={() =>
+                              handleActionAndAutoClosePaymentRequest(
+                                req,
+                                'delete'
+                              )
+                            }
                             className="py-2 px-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold flex items-center justify-center gap-1 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -3743,15 +5151,31 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </button>
                 </form>
 
-                {/* PUBLISHED TRAININGS — EDIT PRICES, MODULES, MCQS, VISIBILITY OR REMOVE */}
+                {/* PUBLISHED TRAININGS — EDIT TOPICS, PRICES, MODULES, MCQS, VISIBILITY OR REMOVE */}
                 <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
-                  <div className="border-b border-[#D2DEEA] pb-3">
-                    <h3 className="text-base font-extrabold text-[#1A2138]">
-                      Published Trainings — Manage Modules, MCQs, Prices or Remove ({trainings.length})
-                    </h3>
-                    <p className="text-xs text-[#4A5568]">
-                      Manage every training course below: add or edit its Modules (Subject + Description) and Manual MCQs (4 Options + 1 Correct Answer), update fee/duration, or remove it.
-                    </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
+                    <div>
+                      <h3 className="text-base font-extrabold text-[#1A2138]">
+                        Published Trainings — Edit Topic Title, Certificate Price (Synced to Bundles), Modules &amp; MCQs ({trainings.length})
+                      </h3>
+                      <p className="text-xs text-[#4A5568]">
+                        Change any course&apos;s Topic/Title, Course Code, Certificate Fee in PKR (e.g., Rs. 8,000 for Certified Dietary Manager or any price), Duration, Overview Description, Modules, and MCQs. Any certificate fee set here automatically applies to the Certificate Bundle Offers (with 25% bundle discount)!
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        shareToWhatsAppGroupOrChannel(
+                          'Official QR-Verified Certificate Packages & 25% OFF Career Bundles',
+                          'Study all 13 International Food Safety, HACCP, ISO 22000 & Certified Dietary Manager courses 100% Free! Select any 3, 5, or all 13 certificates for an automatic 25% Bundle Discount + Free Paid Membership.',
+                          '?page=trainings'
+                        )
+                      }
+                      className="px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Share Bundles to WhatsApp</span>
+                    </button>
                   </div>
 
                   {trainings.length === 0 ? (
@@ -3761,6 +5185,23 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   ) : (
                     <div className="space-y-4">
                       {trainings.map((tr) => {
+                        const isDietary =
+                          tr.id === 'mgr-food-dietary-2026' ||
+                          tr.title.toLowerCase().includes('dietary');
+                        const defaultCertFee =
+                          tr.certificateFeeRs || (isDietary ? 8000 : 1000);
+                        const currentTitleVal =
+                          priceEdits[tr.id]?.title !== undefined
+                            ? priceEdits[tr.id].title!
+                            : tr.title;
+                        const currentCodeVal =
+                          priceEdits[tr.id]?.standardCode !== undefined
+                            ? priceEdits[tr.id].standardCode!
+                            : tr.standardCode || (isDietary ? 'CDM-CERT' : 'FSC-INT');
+                        const currentCertFeeRsVal =
+                          priceEdits[tr.id]?.certificateFeeRs !== undefined
+                            ? priceEdits[tr.id].certificateFeeRs!
+                            : defaultCertFee;
                         const currentFeeVal =
                           priceEdits[tr.id]?.fees !== undefined
                             ? priceEdits[tr.id].fees
@@ -3769,6 +5210,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           priceEdits[tr.id]?.duration !== undefined
                             ? priceEdits[tr.id].duration
                             : tr.duration;
+                        const currentDescVal =
+                          priceEdits[tr.id]?.description !== undefined
+                            ? priceEdits[tr.id].description!
+                            : tr.description;
                         const isBuilderOpen = expandedTrIdForBuilder === tr.id;
                         const trMods = tr.customModules || [];
                         const trMcqs = tr.customMcqs || [];
@@ -3782,7 +5227,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               <div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
-                                    {tr.category}
+                                    {tr.standardCode || currentCodeVal} · {tr.category}
+                                  </span>
+                                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10.5px] font-extrabold">
+                                    Cert Fee: Rs. {(tr.certificateFeeRs || defaultCertFee).toLocaleString()}
                                   </span>
                                   <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#1673B8] text-[10.5px] font-extrabold">
                                     {trMods.length} Modules
@@ -3812,6 +5260,21 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                 <button
                                   type="button"
                                   onClick={() =>
+                                    shareToWhatsAppGroupOrChannel(
+                                      `Certification Course: ${tr.title}`,
+                                      `Free Course Material & Exam · Official QR-Verified Certificate (Rs. ${(tr.certificateFeeRs || defaultCertFee).toLocaleString()}).\n${tr.description}`,
+                                      `?page=trainings&course=${encodeURIComponent(tr.id)}`
+                                    )
+                                  }
+                                  className="px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                                  title="Share this Training Course to WhatsApp Group/Channel"
+                                >
+                                  <Share2 className="w-3.5 h-3.5" />
+                                  <span>WhatsApp</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
                                     setExpandedTrIdForBuilder(
                                       isBuilderOpen ? null : tr.id
                                     )
@@ -3820,7 +5283,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                 >
                                   {isBuilderOpen
                                     ? 'Close Modules & MCQs'
-                                    : `+ Modules (${trMods.length}) & MCQs (${trMcqs.length})`}
+                                    : `Edit Modules (${trMods.length}) & MCQs (${trMcqs.length})`}
                                 </button>
                                 <button
                                   type="button"
@@ -3845,56 +5308,149 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               </div>
                             </div>
 
-                            {/* INLINE PRICE & DURATION EDITOR */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#D2DEEA] items-end">
-                              <div>
-                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                                  Course Fee / Price (Live)
-                                </label>
-                                <input
-                                  type="text"
-                                  value={currentFeeVal}
-                                  onChange={(e) =>
-                                    setPriceEdits((prev) => ({
-                                      ...prev,
-                                      [tr.id]: {
-                                        fees: e.target.value,
-                                        duration: currentDurVal
-                                      }
-                                    }))
-                                  }
-                                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
-                                />
+                            {/* INLINE TOPIC TITLE, COURSE CODE, NUMERIC CERTIFICATE FEE (RS.), DURATION & DESCRIPTION EDITOR */}
+                            <div className="p-3.5 rounded-2xl bg-white border border-[#D2DEEA] space-y-2.5">
+                              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                                <div className="sm:col-span-5">
+                                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                    Course Topic / Title (Live on Website &amp; Certificate)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={currentTitleVal}
+                                    onChange={(e) =>
+                                      setPriceEdits((prev) => ({
+                                        ...prev,
+                                        [tr.id]: {
+                                          ...prev[tr.id],
+                                          title: e.target.value,
+                                          standardCode: currentCodeVal,
+                                          certificateFeeRs: currentCertFeeRsVal,
+                                          fees: currentFeeVal,
+                                          duration: currentDurVal,
+                                          description: currentDescVal
+                                        }
+                                      }))
+                                    }
+                                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
+                                  />
+                                </div>
+
+                                <div className="sm:col-span-2">
+                                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                    Course Code
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={currentCodeVal}
+                                    onChange={(e) =>
+                                      setPriceEdits((prev) => ({
+                                        ...prev,
+                                        [tr.id]: {
+                                          ...prev[tr.id],
+                                          title: currentTitleVal,
+                                          standardCode: e.target.value,
+                                          certificateFeeRs: currentCertFeeRsVal,
+                                          fees: currentFeeVal,
+                                          duration: currentDurVal,
+                                          description: currentDescVal
+                                        }
+                                      }))
+                                    }
+                                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-mono font-bold text-[#1A2138]"
+                                  />
+                                </div>
+
+                                <div className="sm:col-span-2">
+                                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                    Cert Fee (Rs.) *
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={100}
+                                    value={currentCertFeeRsVal}
+                                    onChange={(e) => {
+                                      const numFee = Math.max(0, Number(e.target.value) || 0);
+                                      setPriceEdits((prev) => ({
+                                        ...prev,
+                                        [tr.id]: {
+                                          ...prev[tr.id],
+                                          title: currentTitleVal,
+                                          standardCode: currentCodeVal,
+                                          certificateFeeRs: numFee,
+                                          fees: `Free Study & Exam · Rs. ${numFee.toLocaleString()} Certificate`,
+                                          duration: currentDurVal,
+                                          description: currentDescVal
+                                        }
+                                      }));
+                                    }}
+                                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-black text-emerald-800"
+                                  />
+                                </div>
+
+                                <div className="sm:col-span-3">
+                                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                    Duration
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={currentDurVal}
+                                    onChange={(e) =>
+                                      setPriceEdits((prev) => ({
+                                        ...prev,
+                                        [tr.id]: {
+                                          ...prev[tr.id],
+                                          title: currentTitleVal,
+                                          standardCode: currentCodeVal,
+                                          certificateFeeRs: currentCertFeeRsVal,
+                                          fees: currentFeeVal,
+                                          duration: e.target.value,
+                                          description: currentDescVal
+                                        }
+                                      }))
+                                    }
+                                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                  />
+                                </div>
                               </div>
 
-                              <div>
-                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                                  Duration
-                                </label>
-                                <input
-                                  type="text"
-                                  value={currentDurVal}
-                                  onChange={(e) =>
-                                    setPriceEdits((prev) => ({
-                                      ...prev,
-                                      [tr.id]: {
-                                        fees: currentFeeVal,
-                                        duration: e.target.value
-                                      }
-                                    }))
-                                  }
-                                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
-                                />
-                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                                <div className="sm:col-span-9">
+                                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                    Course Overview / Description
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={currentDescVal}
+                                    onChange={(e) =>
+                                      setPriceEdits((prev) => ({
+                                        ...prev,
+                                        [tr.id]: {
+                                          ...prev[tr.id],
+                                          title: currentTitleVal,
+                                          standardCode: currentCodeVal,
+                                          certificateFeeRs: currentCertFeeRsVal,
+                                          fees: currentFeeVal,
+                                          duration: currentDurVal,
+                                          description: e.target.value
+                                        }
+                                      }))
+                                    }
+                                    className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-medium text-[#1A2138]"
+                                  />
+                                </div>
 
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateCoursePrice(tr)}
-                                className="py-2 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors h-[36px]"
-                              >
-                                <Check className="w-4 h-4 stroke-[2.5]" />
-                                <span>Save Price &amp; Update Live</span>
-                              </button>
+                                <div className="sm:col-span-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateCoursePrice(tr)}
+                                    className="w-full py-2 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors h-[36px]"
+                                  >
+                                    <Check className="w-4 h-4 stroke-[2.5]" />
+                                    <span>Save Course &amp; Price</span>
+                                  </button>
+                                </div>
+                              </div>
                             </div>
 
                             {/* EXPANDABLE MODULES & MCQS MANAGER FOR THIS EXISTING TRAINING */}
@@ -3904,7 +5460,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                 <div className="p-3.5 rounded-2xl bg-white border border-[#D2DEEA] space-y-3">
                                   <div className="flex flex-wrap items-center justify-between gap-2">
                                     <span className="text-xs font-extrabold text-[#1A2138]">
-                                      Course Modules ({trMods.length}) — Add Module Subject + Description
+                                      Course Modules ({trMods.length}) — Edit Existing Modules or Add New Module
                                     </span>
                                     <button
                                       type="button"
@@ -3926,7 +5482,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                         onChange={(e) =>
                                           setCardModSubject(e.target.value)
                                         }
-                                        placeholder="Module Subject..."
+                                        placeholder="New Module Subject..."
                                         className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                                       />
                                     </div>
@@ -3937,7 +5493,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                         onChange={(e) =>
                                           setCardModDesc(e.target.value)
                                         }
-                                        placeholder="Module Description & study details..."
+                                        placeholder="New Module Description & study details..."
                                         className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-medium text-[#1A2138]"
                                       />
                                     </div>
@@ -3955,36 +5511,135 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                   </div>
 
                                   {trMods.length > 0 && (
-                                    <div className="space-y-1.5">
-                                      {trMods.map((m, idx) => (
-                                        <div
-                                          key={m.id}
-                                          className="p-2.5 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start justify-between gap-2 text-xs"
-                                        >
-                                          <div>
-                                            <span className="font-extrabold text-[#1A2138]">
-                                              {idx + 1}. {m.subject}
-                                            </span>
-                                            {m.description && (
-                                              <p className="text-[11px] text-[#4A5568] mt-0.5 whitespace-pre-line">
-                                                {m.description}
-                                              </p>
+                                    <div className="space-y-2">
+                                      {trMods.map((m, idx) => {
+                                        const isEditingThisMod =
+                                          editingModMap[m.id] !== undefined;
+                                        const modEditState =
+                                          editingModMap[m.id] || {
+                                            subject: m.subject,
+                                            description: m.description
+                                          };
+                                        return (
+                                          <div
+                                            key={m.id}
+                                            className="p-3 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2 text-xs"
+                                          >
+                                            {isEditingThisMod ? (
+                                              <div className="space-y-2">
+                                                <input
+                                                  type="text"
+                                                  value={modEditState.subject}
+                                                  onChange={(e) =>
+                                                    setEditingModMap((prev) => ({
+                                                      ...prev,
+                                                      [m.id]: {
+                                                        ...modEditState,
+                                                        subject: e.target.value
+                                                      }
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#1673B8] text-xs font-extrabold text-[#1A2138]"
+                                                />
+                                                <textarea
+                                                  rows={3}
+                                                  value={
+                                                    modEditState.description
+                                                  }
+                                                  onChange={(e) =>
+                                                    setEditingModMap((prev) => ({
+                                                      ...prev,
+                                                      [m.id]: {
+                                                        ...modEditState,
+                                                        description:
+                                                          e.target.value
+                                                      }
+                                                    }))
+                                                  }
+                                                  className="w-full px-3 py-1.5 rounded-lg bg-white border border-[#1673B8] text-xs font-medium text-[#1A2138]"
+                                                />
+                                                <div className="flex items-center justify-end gap-2">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      setEditingModMap(
+                                                        (prev) => {
+                                                          const copy = {
+                                                            ...prev
+                                                          };
+                                                          delete copy[m.id];
+                                                          return copy;
+                                                        }
+                                                      )
+                                                    }
+                                                    className="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 text-[11px] font-bold cursor-pointer"
+                                                  >
+                                                    Cancel
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      handleSaveExistingModuleEdit(
+                                                        tr,
+                                                        m.id
+                                                      )
+                                                    }
+                                                    className="px-3 py-1 rounded-lg bg-[#1673B8] text-white text-[11px] font-extrabold cursor-pointer"
+                                                  >
+                                                    Save Module Content
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                  <span className="font-extrabold text-[#1A2138]">
+                                                    {idx + 1}. {m.subject}
+                                                  </span>
+                                                  {m.description && (
+                                                    <p className="text-[11px] text-[#4A5568] mt-0.5 whitespace-pre-line">
+                                                      {m.description}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      setEditingModMap(
+                                                        (prev) => ({
+                                                          ...prev,
+                                                          [m.id]: {
+                                                            subject: m.subject,
+                                                            description:
+                                                              m.description ||
+                                                              ''
+                                                          }
+                                                        })
+                                                      )
+                                                    }
+                                                    className="px-2 py-1 rounded-lg bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#105E9A] text-[11px] font-extrabold cursor-pointer"
+                                                  >
+                                                    Edit Content
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      handleDeleteModuleFromExistingTraining(
+                                                        tr,
+                                                        m.id
+                                                      )
+                                                    }
+                                                    className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-extrabold cursor-pointer"
+                                                  >
+                                                    Delete
+                                                  </button>
+                                                </div>
+                                              </div>
                                             )}
                                           </div>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              handleDeleteModuleFromExistingTraining(
-                                                tr,
-                                                m.id
-                                              )
-                                            }
-                                            className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-extrabold shrink-0 cursor-pointer"
-                                          >
-                                            Delete
-                                          </button>
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>

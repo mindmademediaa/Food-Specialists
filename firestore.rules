@@ -137,6 +137,10 @@ service cloud.firestore {
         (!('cloudinaryUploadPreset' in data) || (data.cloudinaryUploadPreset is string && data.cloudinaryUploadPreset.size() <= 120)) &&
         (!('whatsappChannelUrl' in data) || (data.whatsappChannelUrl is string && data.whatsappChannelUrl.size() <= 500)) &&
         (!('whatsappChannelButtonText' in data) || (data.whatsappChannelButtonText is string && data.whatsappChannelButtonText.size() <= 120)) &&
+        (!('paymentGateway' in data) || data.paymentGateway is map) &&
+        (!('customAds' in data) || (data.customAds is list && data.customAds.size() <= 50)) &&
+        (!('frontPageConfig' in data) || data.frontPageConfig is map) &&
+        (!('manualRevenueEntries' in data) || (data.manualRevenueEntries is list && data.manualRevenueEntries.size() <= 500)) &&
         (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
@@ -218,7 +222,9 @@ service cloud.firestore {
         data.isActive is bool &&
         (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
         (!('standardCode' in data) || data.standardCode == null || (data.standardCode is string && data.standardCode.size() <= 80)) &&
-        (!('subType' in data) || data.subType == null || (data.subType is string && data.subType is string && data.subType.size() <= 80)) &&
+        (!('accreditationStandard' in data) || data.accreditationStandard == null || (data.accreditationStandard is string && data.accreditationStandard.size() <= 200)) &&
+        (!('certificateFeeRs' in data) || data.certificateFeeRs == null || (data.certificateFeeRs is number && data.certificateFeeRs >= 0 && data.certificateFeeRs <= 1000000)) &&
+        (!('subType' in data) || data.subType == null || (data.subType is string && data.subType.size() <= 80)) &&
         (!('description' in data) || (data.description is string && data.description.size() <= 8000)) &&
         (!('duration' in data) || (data.duration is string && data.duration.size() <= 120)) &&
         (!('fees' in data) || (data.fees is string && data.fees.size() <= 120)) &&
