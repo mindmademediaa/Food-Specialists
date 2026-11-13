@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /?section=home
+Allow: /?section=tools
+Allow: /?section=trainings
+Allow: /?section=jobs
+Allow: /?section=scholarships
+Allow: /?section=communities
+
+Sitemap: https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app/sitemap.xml
