@@ -944,43 +944,8 @@ export default function App() {
     }
   };
 
-  // Real-time Firestore Listeners (Real Firestore data only — no placeholder users)
+  // Real-time Public Portal Listeners (Available to Guests, Free Users & Paid Members)
   useEffect(() => {
-    if (!authUser || !auth.currentUser) return;
-    const isAdminUser =
-      authUser.email?.toLowerCase() === 'mindmademedia9@gmail.com';
-
-    // Listen to current user's own document so admin approval of isPaid/isPremium reflects immediately
-    const unsubMyDoc = onSnapshot(
-      doc(db, 'users', authUser.uid),
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data() as Partial<HubUser>;
-          const rawExpires = data.premiumExpiresAt || '';
-          const notExpired =
-            !rawExpires ||
-            Number.isNaN(new Date(rawExpires).getTime()) ||
-            new Date(rawExpires).getTime() > Date.now();
-          const nextPaid = Boolean(
-            isAdminUser || ((data.isPaid || data.isPremium) && notExpired)
-          );
-          setMyProfile((prev) => ({
-            ...prev,
-            isPaid: nextPaid,
-            isPremium: nextPaid,
-            plan: nextPaid ? 'premium' : 'free',
-            paymentStatus: data.paymentStatus || prev.paymentStatus,
-            subscriptionPlan: data.subscriptionPlan || prev.subscriptionPlan,
-            premiumActivatedAt:
-              data.premiumActivatedAt || prev.premiumActivatedAt,
-            premiumExpiresAt: data.premiumExpiresAt || prev.premiumExpiresAt,
-            toolsData: data.toolsData || prev.toolsData
-          }));
-        }
-      },
-      () => {}
-    );
-
     const unsubUsers = onSnapshot(
       collection(db, 'users'),
       (snap) => {
@@ -1005,7 +970,6 @@ export default function App() {
         }));
         setJobs(() => {
           const map = new Map<string, HubJob>();
-          // Put custom/newly added jobs first (sorted newest first)
           fsJobs
             .filter((j) => !INITIAL_JOBS.some((ij) => ij.id === j.id))
             .sort((a, b) => b.id.localeCompare(a.id))
@@ -1067,7 +1031,6 @@ export default function App() {
             ...(d.data() as HubTraining),
             id: d.id
           }))
-          // Exclude pre-populated seed trainings so only custom Admin-created trainings appear
           .filter(
             (t) =>
               !t.id.startsWith('tr-hf-') &&
@@ -1163,41 +1126,53 @@ export default function App() {
             }
           };
           setStorageConfig(hydrated);
-          if (
-            isAdminUser &&
-            data.paymentGateway?.monthlyFeeRs === 200 &&
-            data.paymentGateway?.yearlyFeeRs === 1800 &&
-            !data.paymentGateway?.customPriceUpdated
-          ) {
-            setDoc(doc(db, 'settings', 'storageConfig'), hydrated, {
-              merge: true
-            }).catch(() => {});
-          }
-        } else if (isAdminUser) {
-          const defaultCfg: CloudStorageConfig = {
-            provider: 'cloudinary',
-            cloudinaryCloudName: 'mhjkrdlh',
-            cloudinaryUploadPreset: 'Food Specialists',
-            updatedAt: new Date().toISOString().slice(0, 19) + 'Z',
-            whatsappChannelUrl:
-              'https://whatsapp.com/channel/0029VaFoodSpecialists',
-            whatsappChannelButtonText: 'Follow WhatsApp Channel',
-            paymentGateway: {
-              jazzCashTitle: 'Muneeb Khan',
-              jazzCashNumber: '0324-0906384',
-              easyPaisaTitle: 'Muneeb Khan',
-              easyPaisaNumber: '0324-0906384',
-              bankTitle: 'Muneeb Khan',
-              bankName: 'Allied Bank / Bank Transfer',
-              bankAccountOrIban: 'Contact on WhatsApp for IBAN',
-              bankWhatsapp: '+92 324 0906384',
-              monthlyFeeRs: 100,
-              yearlyFeeRs: 900
-            }
-          };
-          setDoc(doc(db, 'settings', 'storageConfig'), defaultCfg, {
-            merge: true
-          }).catch(() => {});
+        }
+      },
+      () => {}
+    );
+
+    return () => {
+      unsubUsers();
+      unsubJobs();
+      unsubSch();
+      unsubTr();
+      unsubCerts();
+      unsubStorageCfg();
+    };
+  }, []);
+
+  // Real-time Authenticated User & Payment Listeners
+  useEffect(() => {
+    if (!authUser?.uid) return;
+    const isAdminUser =
+      authUser.email?.toLowerCase() === 'mindmademedia9@gmail.com';
+
+    // Listen to current user's own document so admin approval of isPaid/isPremium reflects immediately
+    const unsubMyDoc = onSnapshot(
+      doc(db, 'users', authUser.uid),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data() as Partial<HubUser>;
+          const rawExpires = data.premiumExpiresAt || '';
+          const notExpired =
+            !rawExpires ||
+            Number.isNaN(new Date(rawExpires).getTime()) ||
+            new Date(rawExpires).getTime() > Date.now();
+          const nextPaid = Boolean(
+            isAdminUser || ((data.isPaid || data.isPremium) && notExpired)
+          );
+          setMyProfile((prev) => ({
+            ...prev,
+            isPaid: nextPaid,
+            isPremium: nextPaid,
+            plan: nextPaid ? 'premium' : 'free',
+            paymentStatus: data.paymentStatus || prev.paymentStatus,
+            subscriptionPlan: data.subscriptionPlan || prev.subscriptionPlan,
+            premiumActivatedAt:
+              data.premiumActivatedAt || prev.premiumActivatedAt,
+            premiumExpiresAt: data.premiumExpiresAt || prev.premiumExpiresAt,
+            toolsData: data.toolsData || prev.toolsData
+          }));
         }
       },
       () => {}
@@ -1218,8 +1193,6 @@ export default function App() {
           id: d.id
         }));
         setPaymentRequests(list);
-        // If any membership payment request for the current user was verified by Admin,
-        // immediately activate their Premium status across Website and Mobile App
         const myApprovedMembership = list.find(
           (r) =>
             r.uid === authUser.uid &&
@@ -1253,12 +1226,6 @@ export default function App() {
 
     return () => {
       unsubMyDoc();
-      unsubUsers();
-      unsubJobs();
-      unsubSch();
-      unsubTr();
-      unsubCerts();
-      unsubStorageCfg();
       unsubPay();
     };
   }, [authUser]);
@@ -2632,12 +2599,15 @@ export default function App() {
         }
 
         const cleanUserForFirestore = stripUndefinedDeep(updatedUser);
+        const sanitizedPublicForFirestore = stripUndefinedDeep(
+          buildSanitizedPublicUser(cleanUserForFirestore)
+        );
         await Promise.all([
-          setDoc(doc(db, 'users', req.uid), cleanUserForFirestore, { merge: true }),
+          setDoc(doc(db, 'users', req.uid), sanitizedPublicForFirestore, { merge: true }),
           setDoc(doc(db, 'users', req.uid, 'private', 'profile'), cleanUserForFirestore, {
             merge: true
           }),
-          setDoc(doc(db, 'users', req.uid, 'profile', 'main'), cleanUserForFirestore, {
+          setDoc(doc(db, 'users', req.uid, 'profile', 'main'), sanitizedPublicForFirestore, {
             merge: true
           })
         ]);
@@ -2794,12 +2764,16 @@ export default function App() {
         prev.map((u) => (u.uid === req.uid ? updatedUser : u))
       );
 
+      const cleanUpdatedUser = stripUndefinedDeep(updatedUser);
+      const sanitizedUpdatedUser = stripUndefinedDeep(
+        buildSanitizedPublicUser(cleanUpdatedUser)
+      );
       await Promise.all([
-        setDoc(doc(db, 'users', req.uid), updatedUser, { merge: true }),
-        setDoc(doc(db, 'users', req.uid, 'private', 'profile'), updatedUser, {
+        setDoc(doc(db, 'users', req.uid), sanitizedUpdatedUser, { merge: true }),
+        setDoc(doc(db, 'users', req.uid, 'private', 'profile'), cleanUpdatedUser, {
           merge: true
         }),
-        setDoc(doc(db, 'users', req.uid, 'profile', 'main'), updatedUser, {
+        setDoc(doc(db, 'users', req.uid, 'profile', 'main'), sanitizedUpdatedUser, {
           merge: true
         })
       ]);
@@ -2919,16 +2893,20 @@ export default function App() {
         premiumExpiresAt: makePremium ? expiresIso : ''
       };
 
+      const cleanToggledUser = stripUndefinedDeep(updatedUser);
+      const sanitizedToggledUser = stripUndefinedDeep(
+        buildSanitizedPublicUser(cleanToggledUser)
+      );
       await Promise.all([
-        setDoc(doc(db, 'users', targetUser.uid), updatedUser, { merge: true }),
+        setDoc(doc(db, 'users', targetUser.uid), sanitizedToggledUser, { merge: true }),
         setDoc(
           doc(db, 'users', targetUser.uid, 'private', 'profile'),
-          updatedUser,
+          cleanToggledUser,
           { merge: true }
         ),
         setDoc(
           doc(db, 'users', targetUser.uid, 'profile', 'main'),
-          updatedUser,
+          sanitizedToggledUser,
           { merge: true }
         )
       ]);

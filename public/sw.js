@@ -1,4 +1,4 @@
-const CACHE_NAME = 'food-science-portal-v20261110-v2';
+const CACHE_NAME = 'food-science-portal-v20261112-v4';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -25,6 +25,15 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Never intercept Vite dev server or module script paths
+  if (
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.pathname.startsWith('/@')
+  ) {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
@@ -37,9 +46,13 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(() =>
-        caches
-          .match(event.request)
-          .then((cached) => cached || caches.match('./index.html') || caches.match('./'))
+        caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (event.request.mode === 'navigate') {
+            return caches.match('./index.html') || caches.match('./');
+          }
+          return Response.error();
+        })
       )
   );
 });

@@ -2,7 +2,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-const APP_BUILD_VERSION = 'fsp-2026-11-10-v3';
+const APP_BUILD_VERSION = 'fsp-2026-11-12-v4';
 
 if (typeof window !== 'undefined') {
   try {
@@ -18,14 +18,25 @@ if (typeof window !== 'undefined') {
       }
     }
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+      if (import.meta.env.DEV) {
         navigator.serviceWorker
-          .register('./sw.js')
-          .then((reg) => {
-            reg.update().catch(() => {});
+          .getRegistrations()
+          .then((registrations) => {
+            registrations.forEach((reg) => {
+              reg.unregister().catch(() => {});
+            });
           })
           .catch(() => {});
-      });
+      } else {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('./sw.js')
+            .then((reg) => {
+              reg.update().catch(() => {});
+            })
+            .catch(() => {});
+        });
+      }
     }
   } catch {
     // Ignore storage access errors in restricted webviews

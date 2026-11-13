@@ -113,17 +113,20 @@ service cloud.firestore {
         data.keys().hasAll(['id', 'certificateNumber', 'recipientName', 'trainingTitle', 'issueDate', 'verificationStatus']) &&
         data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
         data.certificateNumber is string && data.certificateNumber.size() >= 1 && data.certificateNumber.size() <= 120 &&
-        data.recipientName is string && data.recipientName.size() >= 1 && data.recipientName.size() <= 160 &&
-        data.trainingTitle is string && data.trainingTitle.size() >= 1 && data.trainingTitle.size() <= 240 &&
-        data.issueDate is string && data.issueDate.size() >= 1 && data.issueDate.size() <= 64 &&
+        data.recipientName is string && data.recipientName.size() >= 1 && data.recipientName.size() <= 200 &&
+        data.trainingTitle is string && data.trainingTitle.size() >= 1 && data.trainingTitle.size() <= 300 &&
+        data.issueDate is string && data.issueDate.size() >= 1 && data.issueDate.size() <= 80 &&
         data.verificationStatus in ['valid', 'revoked'] &&
         (!('recipientUid' in data) || (data.recipientUid is string && data.recipientUid.size() <= 128)) &&
         (!('recipientEmail' in data) || (data.recipientEmail is string && data.recipientEmail.size() <= 200)) &&
+        (!('courseId' in data) || (data.courseId is string && data.courseId.size() <= 128)) &&
         (!('trainingCategory' in data) || (data.trainingCategory is string && data.trainingCategory.size() <= 120)) &&
-        (!('accreditationBody' in data) || (data.accreditationBody is string && data.accreditationBody.size() <= 160)) &&
+        (!('accreditationBody' in data) || (data.accreditationBody is string && data.accreditationBody.size() <= 200)) &&
         (!('certificateImageUrl' in data) || (data.certificateImageUrl is string && data.certificateImageUrl.size() <= 550000)) &&
-        (!('issuedBy' in data) || (data.issuedBy is string && data.issuedBy.size() <= 160)) &&
-        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+        (!('issuedBy' in data) || (data.issuedBy is string && data.issuedBy.size() <= 200)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+        (!('scorePercentage' in data) || (data.scorePercentage is number && data.scorePercentage >= 0 && data.scorePercentage <= 100)) &&
+        (!('distinction' in data) || data.distinction is bool);
     }
 
     function isValidCloudStorageConfig(data) {
@@ -215,7 +218,7 @@ service cloud.firestore {
         data.isActive is bool &&
         (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
         (!('standardCode' in data) || data.standardCode == null || (data.standardCode is string && data.standardCode.size() <= 80)) &&
-        (!('subType' in data) || data.subType == null || (data.subType is string && data.subType.size() <= 80)) &&
+        (!('subType' in data) || data.subType == null || (data.subType is string && data.subType is string && data.subType.size() <= 80)) &&
         (!('description' in data) || (data.description is string && data.description.size() <= 8000)) &&
         (!('duration' in data) || (data.duration is string && data.duration.size() <= 120)) &&
         (!('fees' in data) || (data.fees is string && data.fees.size() <= 120)) &&
@@ -226,10 +229,10 @@ service cloud.firestore {
 
     // Strict Per-User Profile & Community Visibility Rules:
     // 1. Only the authenticated owner (request.auth.uid == uid) or Admin can create, update, or delete their profile.
-    // 2. Other signed-in users can read the sanitized /users/{uid} profile document; frontend enforces field-level visibility ('public' | 'private' | 'premium') + viewer plan.
+    // 2. Public visitors and signed-in users can read the sanitized /users/{uid} profile document; private PII is isolated in /users/{uid}/private/{docId}.
     // 3. Non-admin users cannot escalate their own isAdmin flag.
     match /users/{uid} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create: if (isOwner(uid) || isAdmin()) &&
         isValidId(uid) &&
         isValidUser(request.resource.data, uid) &&
@@ -247,9 +250,9 @@ service cloud.firestore {
         allow delete: if isOwner(uid) || isAdmin();
       }
 
-      // Profile subcollection (/users/{uid}/profile/{docId})
+      // Sanitized profile subcollection (/users/{uid}/profile/{docId})
       match /profile/{docId} {
-        allow get, list: if isSignedIn();
+        allow get, list: if true;
         allow create, update: if (isOwner(uid) || isAdmin()) && isValidUser(request.resource.data, uid);
         allow delete: if isOwner(uid) || isAdmin();
       }
@@ -306,13 +309,13 @@ service cloud.firestore {
 
     // Exam Questions Collection
     match /examQuestions/{questionId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update, delete: if isAdmin() && isValidId(questionId);
     }
 
-    // Community & Pre-loaded Recipes: Signed-in users can read and submit valid community recipes
+    // Community & Pre-loaded Recipes: Publicly readable; signed-in users can submit valid community recipes
     match /recipes/{recipeId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update: if isSignedIn() && isValidId(recipeId) && request.resource.data is map &&
         request.resource.data.keys().hasAll(['id', 'title', 'category']) &&
         request.resource.data.title is string && request.resource.data.title.size() >= 1 && request.resource.data.title.size() <= 200;
@@ -321,7 +324,7 @@ service cloud.firestore {
 
     // Health Condition Recommendations Directory
     match /healthConditions/{condId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update, delete: if isAdmin() && isValidId(condId);
     }
 
@@ -338,16 +341,16 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
     }
 
-    // Training Certificates: Signed-in individuals can view/verify certificates; only Admin can issue, update, or delete
+    // Training Certificates: Publicly verifiable via QR code / Certificate ID; only Admin can issue, update, or delete
     match /certificates/{certificateId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update: if isAdmin() && isValidId(certificateId) && isValidCertificate(request.resource.data);
       allow delete: if isAdmin() && isValidId(certificateId);
     }
 
-    // Cloud Storage & CDN Settings: Signed-in users can read upload configuration; only Admin can update
+    // Cloud Storage & CDN Settings: Publicly readable for payment gateway & WhatsApp channel links; only Admin can update
     match /settings/{settingId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update: if isAdmin() && isValidId(settingId) && isValidCloudStorageConfig(request.resource.data);
       allow delete: if isAdmin() && isValidId(settingId);
     }
@@ -362,21 +365,21 @@ service cloud.firestore {
       allow update, delete: if isAdmin() || (isSignedIn() && resource.data.senderUid == request.auth.uid && isValidChatMessage(request.resource.data));
     }
 
-    // Jobs, Scholarships & Trainings: Authenticated members can view; only Admin can publish/modify/delete
+    // Jobs, Scholarships & Trainings: Publicly viewable by all visitors; only Admin can publish/modify/delete
     match /jobs/{jobId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update: if isAdmin() && isValidId(jobId) && isValidJob(request.resource.data);
       allow delete: if isAdmin() && isValidId(jobId);
     }
 
     match /scholarships/{scholarshipId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update: if isAdmin() && isValidId(scholarshipId) && isValidScholarship(request.resource.data);
       allow delete: if isAdmin() && isValidId(scholarshipId);
     }
 
     match /trainings/{trainingId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update: if isAdmin() && isValidId(trainingId) && isValidTraining(request.resource.data);
       allow delete: if isAdmin() && isValidId(trainingId);
     }
