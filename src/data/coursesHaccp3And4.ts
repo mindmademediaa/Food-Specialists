@@ -41,6 +41,143 @@ export interface RawSlideCourseInput {
   }>;
 }
 
+// ============================================================================
+// CHALLENGING TECHNICAL MCQ SYNTHESIZER FOR ALL 13 INTERNATIONAL COURSES
+// Ensures every MCQ has:
+// 1. A distinct, scenario/audit-grade question stem (no repetitive phrasing)
+// 2. 4 realistic, domain-specific technical options of comparable length
+// 3. Subtle parameter/threshold/role mutations & cross-slide technical distractors
+// 4. Deterministic shuffling across A (0), B (1), C (2), and D (3)
+// ============================================================================
+
+const QUESTION_STEM_TEMPLATES: Array<(courseTitle: string, code: string, modTitle: string, topic: string) => string> = [
+  (_c, code, mod, topic) => `During an internal compliance audit of ${mod}, which technical criterion governs "${topic}" under ${code}?`,
+  (c, _code, _mod, topic) => `When evaluating operational compliance for "${topic}" in ${c}, which control measure must be verified first?`,
+  (_c, code, mod, topic) => `A quality supervisor reviewing "${topic}" (${mod}) identifies a process deviation. Which ${code} protocol applies?`,
+  (c, _code, mod, topic) => `Which technical specification defines the mandatory standard for "${topic}" within ${mod} (${c})?`,
+  (_c, code, _mod, topic) => `In an accredited ${code} assessment of "${topic}", which objective evidence demonstrates effective implementation?`,
+  (c, _code, mod, topic) => `What is the primary operational requirement when executing "${topic}" in ${mod} (${c})?`,
+  (_c, code, mod, topic) => `When validating "${topic}" under ${code} (${mod}), which technical procedure is mandatory?`,
+  (c, _code, _mod, topic) => `How must the technical team manage "${topic}" to maintain compliance with ${c} standards?`,
+  (_c, code, mod, topic) => `During a management review of ${mod}, how is conformance to "${topic}" verified under ${code}?`,
+  (c, _code, mod, topic) => `Which operational control directly satisfies the ${c} requirement for "${topic}" in ${mod}?`
+];
+
+// Mutates numbers, temperatures, durations, percentages, or technical qualifiers in a statement
+// to create a close, realistic, challenging technical distractor of equal length and style.
+function buildCloseParameterDistractor(baseText: string, topic: string, code: string, seed: number): string {
+  let mutated = baseText;
+  let changed = false;
+
+  // 1. Mutate temperatures (°C)
+  mutated = mutated.replace(/(\d+)\s*°C/g, (_match, numStr) => {
+    changed = true;
+    const n = parseInt(numStr, 10);
+    const delta = seed % 2 === 0 ? 12 : -11;
+    const nextVal = Math.max(1, n + delta);
+    return `${nextVal}°C`;
+  });
+
+  // 2. Mutate percentages (%)
+  mutated = mutated.replace(/(\d+)\s*%/g, (_match, numStr) => {
+    changed = true;
+    const n = parseInt(numStr, 10);
+    const nextVal = n >= 80 ? n - 25 : n + 20;
+    return `${nextVal}%`;
+  });
+
+  // 3. Mutate durations (seconds / minutes / hours / days / months / years)
+  mutated = mutated.replace(/(\d+)\s*(seconds|second|minutes|minute|hours|hour|days|day|months|month|years|year)/gi, (_match, numStr, unit) => {
+    changed = true;
+    const n = parseInt(numStr, 10);
+    const nextVal = n <= 2 ? n + 4 : n <= 15 ? n * 2 : Math.max(1, Math.round(n * 0.5));
+    return `${nextVal} ${unit}`;
+  });
+
+  // 4. Mutate key technical authority / verification terms if no numeric values were present
+  if (!changed) {
+    if (/before|prior to/i.test(mutated)) {
+      mutated = mutated.replace(/before|prior to/i, 'within 30 days after completing');
+      changed = true;
+    } else if (/daily|every shift|continuous/i.test(mutated)) {
+      mutated = mutated.replace(/daily|every shift|continuous/i, 'on a quarterly rotational basis');
+      changed = true;
+    } else if (/mandatory|must|required/i.test(mutated)) {
+      mutated = mutated.replace(/mandatory|must|required/i, 'recommended as an optional guideline');
+      changed = true;
+    }
+  }
+
+  if (changed && mutated.trim().toLowerCase() !== baseText.trim().toLowerCase()) {
+    return mutated;
+  }
+
+  // Fallback high-precision technical parameter distractor tailored to the exact topic
+  const parameterFallbacks = [
+    `Record "${topic}" parameters at the end of each monthly cycle and archive for internal reference under ${code} Clause 4.2.`,
+    `Delegate "${topic}" verification solely to external third-party contractors during biennial surveillance reviews.`,
+    `Classify "${topic}" as an advisory prerequisite observation that does not require formal root-cause corrective action.`,
+    `Approve "${topic}" compliance using retrospective batch release sampling in place of real-time process monitoring.`
+  ];
+  return parameterFallbacks[seed % parameterFallbacks.length];
+}
+
+// 40 distinct, realistic, audit-grade technical distractors (indexed 0..39 so every question gets a unique one)
+function buildAuditDistractorForIndex(topic: string, modTitle: string, code: string, qIdx: number): string {
+  const templates: Array<(t: string, m: string, c: string) => string> = [
+    (t, _m, c) => `Rely on end-product lot sampling instead of continuous in-line process monitoring for "${t}" under ${c}.`,
+    (t, m, _c) => `Authorize shift operators in ${m} to close non-conformances on "${t}" without independent QA verification.`,
+    (t, _m, c) => `Release affected production lots under conditional concession prior to completing the "${t}" evaluation in ${c}.`,
+    (t, m, _c) => `Treat "${t}" in ${m} as a voluntary guidance note rather than an auditable compliance requirement.`,
+    (t, _m, c) => `Adjust the established specification limits for "${t}" during peak production runs without formal ${c} re-validation.`,
+    (t, m, _c) => `Consolidate "${t}" monitoring logs at the conclusion of each quarter in ${m} instead of real-time recording.`,
+    (t, _m, c) => `Apply a generic facility checklist to "${t}" in place of the hazard-specific risk assessment required by ${c}.`,
+    (t, m, _c) => `Defer quarantine of non-conforming items from "${t}" until the scheduled annual ${m} management review.`,
+    (t, _m, c) => `Substitute uncalibrated visual estimation for verified instrument measurement when executing "${t}" under ${c}.`,
+    (t, m, _c) => `Accept supplier self-declarations for "${t}" in ${m} without empirical Certificate of Analysis (COA) verification.`,
+    (t, _m, c) => `Restrict "${t}" documentation to external certification audits while omitting internal ${c} verification checks.`,
+    (t, m, _c) => `Allow temporary bypass of "${t}" controls in ${m} up to 4 hours per shift provided line output targets are met.`,
+    (t, _m, c) => `Validate "${t}" once during initial commissioning without periodic re-verification or change-triggered ${c} review.`,
+    (t, m, _c) => `Transfer primary accountability for "${t}" in ${m} exclusively to warehouse dispatch personnel after packaging.`,
+    (t, _m, c) => `Classify deviations in "${t}" as minor observations that only require verbal notification under ${c}.`,
+    (t, m, _c) => `Perform corrective adjustments on "${t}" in ${m} retroactively after product dispatch to distribution centers.`,
+    (t, _m, c) => `Evaluate "${t}" using historical industry averages rather than site-specific empirical validation data for ${c}.`,
+    (t, m, _c) => `Maintain "${t}" operational records in ${m} for a maximum of 14 days regardless of product shelf-life duration.`,
+    (t, _m, c) => `Combine "${t}" verification with routine housekeeping inspections to eliminate dedicated ${c} control logs.`,
+    (t, m, _c) => `Approve process modifications affecting "${t}" in ${m} verbally before updating the controlled hazard analysis.`,
+    (t, _m, c) => `Limit "${t}" competency assessments to newly hired staff while exempting senior supervisors under ${c}.`,
+    (t, m, _c) => `Conduct "${t}" calibration checks in ${m} only after a customer complaint or regulatory rejection occurs.`,
+    (t, _m, c) => `Downgrade "${t}" from a critical operational control to a routine maintenance task during ${c} system updates.`,
+    (t, m, _c) => `Record "${t}" compliance in ${m} using pre-printed shift averages rather than actual time-stamped measurements.`,
+    (t, _m, c) => `Permit re-processing of quarantined stock from "${t}" without QA Manager sign-off or ${c} traceability logging.`,
+    (t, m, _c) => `Exclude sub-contracted processes and night-shift operations from the "${t}" scope within ${m}.`,
+    (t, _m, c) => `Verify "${t}" effectiveness solely through annual financial performance metrics rather than ${c} audit evidence.`,
+    (t, m, _c) => `Use unverified third-party templates for "${t}" in ${m} without on-site flow diagram confirmation.`,
+    (t, _m, c) => `Close "${t}" corrective action requests immediately upon containment before investigating root causes under ${c}.`,
+    (t, m, _c) => `Store "${t}" reference standards and controlled documents in ${m} without version control or change history.`,
+    (t, _m, c) => `Sample only the first batch of the week for "${t}" to represent full continuous compliance with ${c}.`,
+    (t, m, _c) => `Waive "${t}" verification requirements in ${m} whenever raw materials originate from domestic suppliers.`,
+    (t, _m, c) => `Assign the same operator who performs "${t}" monitoring to conduct the independent ${c} internal audit of that step.`,
+    (t, m, _c) => `Replace documented "${t}" standard operating procedures in ${m} with informal peer-to-peer shift briefings.`,
+    (t, _m, c) => `Calculate "${t}" compliance scores by excluding peak-season deviations from the official ${c} trend analysis.`,
+    (t, m, _c) => `Implement "${t}" controls in ${m} only for export batches while exempting domestic production runs.`,
+    (t, _m, c) => `Archive "${t}" non-conformance reports separately from the ${c} management review input package.`,
+    (t, m, _c) => `Extend the allowable tolerance range for "${t}" in ${m} by 25% when ambient facility humidity increases.`,
+    (t, _m, c) => `Complete "${t}" sign-off logs at the start of the shift based on projected ${c} operating parameters.`,
+    (t, m, _c) => `Verify "${t}" trace recall readiness in ${m} through tabletop discussion without timed physical stock reconciliation.`
+  ];
+  return templates[qIdx % templates.length](topic, modTitle, code);
+}
+
+function cleanSlideStatement(text: string | undefined, fallback: string): string {
+  if (!text) return fallback;
+  const cleaned = text.trim();
+  if (/congratulations|proceed to the 40-mcq|passing mark/i.test(cleaned)) {
+    return fallback;
+  }
+  return cleaned;
+}
+
 export function normalizeRawSlideCourse(
   raw: RawSlideCourseInput
 ): InternationalTrainingCourse {
@@ -48,36 +185,99 @@ export function normalizeRawSlideCourse(
     (sum, m) => sum + m.presentationSlides.length,
     0
   );
-  const coreExamPool: InternationalTrainingCourse['coreExamPool'] = [];
+
+  // Collect all valid slide keyPoints and bullets across the entire course for cross-slide technical distractors
+  const allSlidesFlat: Array<{
+    modNumber: number;
+    modTitle: string;
+    slideNumber: number;
+    title: string;
+    subtitle: string;
+    keyPoint: string;
+    bullets: string[];
+    example?: string;
+  }> = [];
 
   for (const mod of raw.modules) {
+    const cleanModTitle = mod.title.replace(/^Module\s*0?\d+:\s*/i, '');
     for (const slide of mod.presentationSlides) {
-      coreExamPool.push({
-        q: `In ${raw.title} (${mod.title} — ${slide.title}), which of the following statements is accurate?`,
-        options: [
-          slide.keyPoint,
-          'No documentation, verification, or control is required',
-          'Standard procedures can be ignored during peak workloads',
-          'Checks are only required once every five years'
-        ],
-        correctIndex: 0,
-        explanation: `${slide.keyPoint}${slide.Example ? ` Example: ${slide.Example}` : ''}`
+      const validBullets = (slide.bullets || []).filter(
+        (b) => b && !/congratulations|proceed to the 40-mcq/i.test(b)
+      );
+      const primaryPoint = cleanSlideStatement(
+        slide.keyPoint,
+        validBullets[0] || mod.keyTakeaways[0] || mod.summary
+      );
+      allSlidesFlat.push({
+        modNumber: mod.moduleNumber,
+        modTitle: cleanModTitle,
+        slideNumber: slide.slideNumber,
+        title: slide.title,
+        subtitle: slide.subtitle,
+        keyPoint: primaryPoint,
+        bullets: validBullets,
+        example: slide.Example
       });
-      if (slide.bullets[0]) {
-        coreExamPool.push({
-          q: `Regarding "${slide.title}" in ${raw.title}, what is a key operational requirement?`,
-          options: [
-            'Skip standard verification checks',
-            slide.bullets[0],
-            'Operate without management oversight or training',
-            'Discard records immediately after the shift'
-          ],
-          correctIndex: 1,
-          explanation: `${slide.bullets[0]} — ${slide.keyPoint}`
-        });
-      }
     }
   }
+
+  const coreExamPool: InternationalTrainingCourse['coreExamPool'] = [];
+
+  allSlidesFlat.forEach((sl, idx) => {
+    const useBullet = idx % 2 === 1 && sl.bullets.length > 0;
+    const correctStatement = useBullet ? sl.bullets[0] : sl.keyPoint;
+    const altSourceForMutation =
+      sl.bullets.length > 1
+        ? sl.bullets[1]
+        : sl.example || sl.keyPoint;
+
+    // Distractor 1: Close parameter / threshold / frequency mutation of a real statement from this slide
+    const distractor1 = buildCloseParameterDistractor(
+      altSourceForMutation,
+      sl.title,
+      raw.code,
+      idx + 3
+    );
+
+    // Distractor 2: Unique audit/operational misconception tailored to this slide's topic
+    const distractor2 = buildAuditDistractorForIndex(
+      sl.title,
+      sl.modTitle,
+      raw.code,
+      idx
+    );
+
+    // Distractor 3: Cross-module/slide technical requirement modified with an incompatible scope/condition
+    const peerSlide = allSlidesFlat[(idx + 7) % allSlidesFlat.length];
+    const peerBase = peerSlide.bullets[0] || peerSlide.keyPoint;
+    const distractor3 = buildCloseParameterDistractor(
+      peerBase,
+      sl.title,
+      raw.code,
+      idx + 11
+    );
+
+    // Place correct answer at a deterministically varied index (0, 1, 2, or 3)
+    const targetCorrectIdx = (idx * 3 + sl.modNumber) % 4;
+    const distractors = [distractor1, distractor2, distractor3];
+    const options: [string, string, string, string] = ['', '', '', ''];
+    let dPtr = 0;
+    for (let pos = 0; pos < 4; pos++) {
+      if (pos === targetCorrectIdx) {
+        options[pos] = correctStatement;
+      } else {
+        options[pos] = distractors[dPtr++];
+      }
+    }
+
+    const stemFn = QUESTION_STEM_TEMPLATES[idx % QUESTION_STEM_TEMPLATES.length];
+    coreExamPool.push({
+      q: stemFn(raw.title, raw.code, sl.modTitle, sl.title),
+      options,
+      correctIndex: targetCorrectIdx,
+      explanation: `${correctStatement}${sl.example ? ` (${sl.example})` : ''}`
+    });
+  });
 
   return {
     id: raw.id,
@@ -118,71 +318,123 @@ export function normalizeRawSlideCourse(
   };
 }
 
+// Detects whether an existing MCQ has trivial/boilerplate options that need upgrading
+export function hasLegacyTrivialOptions(options: string[]): boolean {
+  if (!options || options.length < 4) return true;
+  const trivialPattern =
+    /no check|no documentation|skip all|skip standard|ignore the rule|ignore safety|never required|once every five years|once every two years|take no action|hide the record|wait until next month|television commercial|office chairs|paint the factory|destroy all raw|close the warehouse|no bins are needed/i;
+  if (options.some((opt) => trivialPattern.test(opt))) return true;
+  const lengths = options.map((o) => (o || '').trim().length);
+  const maxLen = Math.max(...lengths);
+  const minLen = Math.min(...lengths);
+  // If the longest option is >3.2x the shortest option (e.g., 120 chars vs 18 chars), it's a giveaway
+  return maxLen > 70 && minLen < 24;
+}
+
 export function build40McqsForCourse(
   course: InternationalTrainingCourse
 ): CourseExamMCQ[] {
-  const pool: Array<{
-    q: string;
-    options: [string, string, string, string];
-    correctIndex: number;
+  // Collect all slide & parameter items across the course so we can generate 40 distinct, challenging questions
+  const slideEntries: Array<{
+    modNumber: number;
+    modTitle: string;
+    topic: string;
+    correctStatement: string;
+    secondaryStatement: string;
     explanation: string;
-  }> = [...course.coreExamPool];
+  }> = [];
 
   for (const mod of course.modules) {
-    for (const ccp of mod.criticalControlParameters) {
-      pool.push({
-        q: `In ${course.title} (${mod.title}), what is the standard requirement for "${ccp.parameter}"?`,
-        options: [
-          ccp.standardLimit,
-          'No check or standard is required',
-          'Check only once every two years',
-          'Ignore the rule during busy shifts'
-        ],
-        correctIndex: 0,
-        explanation: `${ccp.parameter} requires: ${ccp.standardLimit}. Action: ${ccp.correctiveProtocol}`
-      });
-      pool.push({
-        q: `In ${course.title}, what corrective action must be taken if "${ccp.parameter}" is not met?`,
-        options: [
-          'Take no action and continue',
-          ccp.correctiveProtocol,
-          'Hide the record from the supervisor',
-          'Wait until next month to check'
-        ],
-        correctIndex: 1,
-        explanation: ccp.correctiveProtocol
-      });
-    }
-    if (mod.presentationSlides) {
+    if (mod.presentationSlides && mod.presentationSlides.length > 0) {
       for (const sl of mod.presentationSlides) {
-        if (pool.length >= 40) break;
-        pool.push({
-          q: `According to ${mod.title} (${sl.title}), which of the following statements is correct?`,
-          options: [
-            sl.keyTakeaway,
-            'Skip all daily monitoring and documentation',
-            'Ignore safety and quality procedures during peak hours',
-            'Training and supervision are never required'
-          ],
-          correctIndex: 0,
-          explanation: sl.keyTakeaway
+        const validBullets = (sl.bulletPoints || []).filter(
+          (b) => b && !/congratulations|proceed to the 40-mcq/i.test(b)
+        );
+        const primary = cleanSlideStatement(
+          sl.keyTakeaway,
+          validBullets[0] || mod.keyPrinciples[0] || mod.overview
+        );
+        const secondary =
+          validBullets[1] ||
+          validBullets[0] ||
+          sl.practicalExample ||
+          primary;
+        slideEntries.push({
+          modNumber: mod.moduleNumber,
+          modTitle: mod.title,
+          topic: sl.title,
+          correctStatement:
+            slideEntries.length % 2 === 1 && validBullets[0]
+              ? validBullets[0]
+              : primary,
+          secondaryStatement: secondary,
+          explanation: `${primary}${sl.practicalExample ? ` (${sl.practicalExample})` : ''}`
+        });
+      }
+    } else {
+      for (const ccp of mod.criticalControlParameters) {
+        slideEntries.push({
+          modNumber: mod.moduleNumber,
+          modTitle: mod.title,
+          topic: ccp.parameter,
+          correctStatement: `${ccp.standardLimit} — ${ccp.correctiveProtocol}`,
+          secondaryStatement: ccp.correctiveProtocol,
+          explanation: `${ccp.parameter}: ${ccp.standardLimit}. Corrective Action: ${ccp.correctiveProtocol}`
         });
       }
     }
   }
 
-  while (pool.length < 40) {
-    pool.push(course.coreExamPool[pool.length % course.coreExamPool.length]);
+  const finalQuestions: CourseExamMCQ[] = [];
+
+  // Use slideEntries to build 40 distinct, high-rigor questions
+  for (let idx = 0; idx < 40; idx++) {
+    const entry = slideEntries[idx % slideEntries.length];
+    const peerEntry = slideEntries[(idx + 9) % slideEntries.length];
+
+    const distractor1 = buildCloseParameterDistractor(
+      entry.secondaryStatement,
+      entry.topic,
+      course.code,
+      idx + 5
+    );
+    const distractor2 = buildAuditDistractorForIndex(
+      entry.topic,
+      entry.modTitle,
+      course.code,
+      idx
+    );
+    const distractor3 = buildCloseParameterDistractor(
+      peerEntry.correctStatement,
+      entry.topic,
+      course.code,
+      idx + 13
+    );
+
+    const targetCorrectIdx = (idx * 3 + entry.modNumber) % 4;
+    const distractors = [distractor1, distractor2, distractor3];
+    const options: [string, string, string, string] = ['', '', '', ''];
+    let dPtr = 0;
+    for (let pos = 0; pos < 4; pos++) {
+      if (pos === targetCorrectIdx) {
+        options[pos] = entry.correctStatement;
+      } else {
+        options[pos] = distractors[dPtr++];
+      }
+    }
+
+    const stemFn = QUESTION_STEM_TEMPLATES[idx % QUESTION_STEM_TEMPLATES.length];
+    finalQuestions.push({
+      id: `${course.id}-q-${idx + 1}`,
+      questionNumber: idx + 1,
+      question: stemFn(course.title, course.code, entry.modTitle, entry.topic),
+      options,
+      correctIndex: targetCorrectIdx,
+      explanation: entry.explanation
+    });
   }
 
-  return pool.slice(0, 40).map((item, idx) => ({
-    id: `${course.id}-q-${idx + 1}`,
-    questionNumber: idx + 1,
-    question: item.q,
-    options: item.options,
-    correctIndex: item.correctIndex,
-    explanation: item.explanation
-  }));
+  return finalQuestions;
 }
 
 export function buildHubTrainingFromCourse(

@@ -112,7 +112,13 @@ function getFriendlyFirebaseAuthError(err: unknown): string {
   return 'Authentication failed. Please verify your details and try again.';
 }
 
-export const AuthScreen: React.FC = () => {
+export interface AuthScreenProps {
+  onBackToPublicPortal?: () => void;
+}
+
+export const AuthScreen: React.FC<AuthScreenProps> = ({
+  onBackToPublicPortal
+}) => {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -319,6 +325,18 @@ export const AuthScreen: React.FC = () => {
       />
 
       <div className="relative z-10 w-full max-w-[390px] flex flex-col items-center">
+        {onBackToPublicPortal && (
+          <div className="w-full flex justify-start mb-3">
+            <button
+              type="button"
+              onClick={onBackToPublicPortal}
+              className="px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>← Back to Portal</span>
+            </button>
+          </div>
+        )}
+
         {/* Top-Mid Centered Brand Logo & Title */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-24 h-24 rounded-[28px] bg-white p-1 shadow-[0_14px_38px_rgba(0,0,0,0.32)] ring-4 ring-white/20 flex items-center justify-center overflow-hidden mb-3.5">

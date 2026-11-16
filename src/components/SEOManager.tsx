@@ -6,7 +6,11 @@ import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsDa
 export interface SEOManagerProps {
   routeName: string;
   activeToolSection?: string;
-  activeTrainingsSubTab?: 'catalog' | 'my-certificates' | 'verify-portal';
+  activeTrainingsSubTab?:
+    | 'catalog'
+    | 'custom-trainings'
+    | 'my-certificates'
+    | 'verify-portal';
 }
 
 const TOOL_SEO_METADATA: Record<

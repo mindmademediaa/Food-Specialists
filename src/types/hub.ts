@@ -862,6 +862,146 @@ export interface ManualRevenueEntry {
   notes?: string;
 }
 
+export interface CustomTrainingItem {
+  id: string;
+  title: string;
+  code: string;
+  fee?: string;
+  feeRs?: number;
+  priceRs?: number;
+  priceUsd?: number;
+  duration: string;
+  mode: string;
+  instructorOrStandard?: string;
+  accreditationStandard?: string;
+  instructor?: string;
+  description: string;
+  topics: string[];
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface CustomTrainingRegistration {
+  id: string;
+  trainingId: string;
+  trainingTitle: string;
+  trainingFee: string;
+  trainingCode?: string;
+  trainingPriceRs?: number;
+  name: string;
+  fatherName: string;
+  education: string;
+  designation: string;
+  dob: string;
+  email: string;
+  mobileNo: string;
+  uid?: string;
+  status: 'pending' | 'contacted' | 'enrolled' | 'archived';
+  submittedAt: string;
+}
+
+export const DEFAULT_CUSTOM_TRAININGS: CustomTrainingItem[] = [
+  {
+    id: 'ct-haccp-implementation',
+    title: 'Industrial HACCP Plan Design & CCP Validation Workshop',
+    code: 'CT-HACCP-01',
+    fee: 'Rs. 3,500',
+    feeRs: 3500,
+    priceRs: 3500,
+    priceUsd: 15,
+    duration: '3 Days (Live Interactive + Case Studies)',
+    mode: 'Online Live Zoom / On-Site Corporate',
+    instructorOrStandard: 'Codex CXC 1-1969 & Highfield UK Framework',
+    accreditationStandard: 'Codex CXC 1-1969 & Highfield UK Framework',
+    instructor: 'Food Science Portal Industrial Faculty',
+    description:
+      'Hands-on practical training for QA/QC Officers, Production Supervisors, and Food Technologists on drafting factory-specific Hazard Analysis tables, validating Critical Control Points (CCPs), establishing critical limits, and designing corrective action logs.',
+    topics: [
+      'Process Flow Diagram & On-Site Verification',
+      'Biological, Chemical, Physical & Allergen Risk Matrix',
+      'Codex Decision Tree CCP Determination',
+      'Thermal Lethality & CCP Validation Documentation',
+      'Mock Audit & Non-Conformance CAPA Drafting'
+    ],
+    isActive: true,
+    createdAt: '2026-11-01T10:00:00Z'
+  },
+  {
+    id: 'ct-fssc-brcgs-audit',
+    title: 'FSSC 22000 Version 6/7 & BRCGS Issue 9 Internal Auditor Bootcamp',
+    code: 'CT-FSSC-02',
+    fee: 'Rs. 5,000',
+    feeRs: 5000,
+    priceRs: 5000,
+    priceUsd: 20,
+    duration: '5 Days Intensive',
+    mode: 'Online Live Sessions + Audit Toolkit Templates',
+    instructorOrStandard: 'GFSI Benchmarking, ISO 22000 & ISO 19011',
+    accreditationStandard: 'GFSI Benchmarking, ISO 22000 & ISO 19011',
+    instructor: 'Food Science Portal Industrial Faculty',
+    description:
+      'Comprehensive custom training program covering GFSI-benchmarked Food Safety Management Systems, PRP/OPRP differentiation, Food Defense (TACCP), Food Fraud (VACCP), Environmental Monitoring (EMP), and unannounced audit readiness.',
+    topics: [
+      'ISO 22000 Clause-by-Clause & ISO/TS 22002-1 PRPs',
+      'FSSC 22000 Additional Requirements (Food Loss, Allergen & EMP)',
+      'BRCGS Issue 9 Senior Management Commitment & Food Safety Culture',
+      'TACCP Vulnerability & VACCP Food Fraud Mitigation Plans',
+      'Conducting Opening/Closing Meetings & Grading NCRs'
+    ],
+    isActive: true,
+    createdAt: '2026-11-02T10:00:00Z'
+  },
+  {
+    id: 'ct-lab-qa-instrumentation',
+    title: 'Food Testing Laboratory QA/QC, Titration & Proximate Analysis Practical Training',
+    code: 'CT-LAB-03',
+    fee: 'Rs. 4,000',
+    feeRs: 4000,
+    priceRs: 4000,
+    priceUsd: 18,
+    duration: '4 Days Technical Workshop',
+    mode: 'Online Interactive + Standard SOP Manual',
+    instructorOrStandard: 'AOAC Official Methods & ISO/IEC 17025',
+    accreditationStandard: 'AOAC Official Methods & ISO/IEC 17025',
+    instructor: 'Food Science Portal Industrial Faculty',
+    description:
+      'Specialized laboratory analyst training covering chemical standardization, molarity/normality reagent preparation, Kjeldahl protein, Soxhlet fat, Gerber dairy testing, Brix/acidity standardization, and microbiological media quality control.',
+    topics: [
+      'Reagent Standardization, Molarity, Normality & Buffer Calibration',
+      'Dairy (Fat, SNF, Acidity, COB, Adulteration) & Beverage Analysis',
+      'Proximate Analysis: Moisture, Total Ash, Crude Protein & Fat',
+      'Sanitizer PPM Titration & Water Quality (TDS, Hardness, Residual Cl2)',
+      'ISO/IEC 17025 Good Laboratory Practices & Uncertainty Logs'
+    ],
+    isActive: true,
+    createdAt: '2026-11-03T10:00:00Z'
+  },
+  {
+    id: 'ct-halal-regulatory-labeling',
+    title: 'Halal Assurance System (PS 3733 / OIC-SMIIC) & Global Food Labeling Compliance',
+    code: 'CT-HALAL-04',
+    fee: 'Rs. 3,000',
+    feeRs: 3000,
+    priceRs: 3000,
+    priceUsd: 12,
+    duration: '2 Days Executive Training',
+    mode: 'Online Live Workshop',
+    instructorOrStandard: 'PS 3733, GSO 2055-1 & Provincial Food Authorities',
+    accreditationStandard: 'PS 3733, GSO 2055-1 & Provincial Food Authorities',
+    instructor: 'Food Science Portal Industrial Faculty',
+    description:
+      'Focused regulatory and Halal compliance training for R&D, Regulatory Affairs, and QA professionals covering E-number verification, Halal critical control points, nutrition facts panel calculation, and export labeling laws.',
+    topics: [
+      'PS 3733 & OIC/SMIIC 1 Halal Slaughtering and Processing Standards',
+      'Critical Ingredients, Enzymes, Gelatin, Emulsifiers & E-Number Auditing',
+      'PFA, KPFA, SFA & PSQCA Licensing and Inspection Readiness',
+      'Nutritional Labeling, Allergen Declarations & Shelf-Life Substantiation'
+    ],
+    isActive: true,
+    createdAt: '2026-11-04T10:00:00Z'
+  }
+];
+
 export interface CloudStorageConfig {
   provider: 'smart-firestore' | 'cloudinary';
   cloudinaryCloudName: string;
@@ -873,6 +1013,7 @@ export interface CloudStorageConfig {
   customAds?: CustomAdBannerItem[];
   frontPageConfig?: FrontPageContentConfig;
   manualRevenueEntries?: ManualRevenueEntry[];
+  customTrainings?: CustomTrainingItem[];
 }
 
 export interface HubChatMessage {

@@ -141,7 +141,41 @@ service cloud.firestore {
         (!('customAds' in data) || (data.customAds is list && data.customAds.size() <= 50)) &&
         (!('frontPageConfig' in data) || data.frontPageConfig is map) &&
         (!('manualRevenueEntries' in data) || (data.manualRevenueEntries is list && data.manualRevenueEntries.size() <= 500)) &&
+        (!('customTrainings' in data) || (data.customTrainings is list && data.customTrainings.size() <= 100)) &&
         (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    function isValidCustomTrainingRegistration(data) {
+      return data is map &&
+        data.keys().hasAll([
+          'id',
+          'trainingId',
+          'trainingTitle',
+          'trainingFee',
+          'name',
+          'fatherName',
+          'education',
+          'designation',
+          'dob',
+          'email',
+          'mobileNo',
+          'status',
+          'submittedAt'
+        ]) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.trainingId is string && data.trainingId.size() >= 1 && data.trainingId.size() <= 128 &&
+        data.trainingTitle is string && data.trainingTitle.size() >= 1 && data.trainingTitle.size() <= 240 &&
+        data.trainingFee is string && data.trainingFee.size() >= 1 && data.trainingFee.size() <= 100 &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 140 &&
+        data.fatherName is string && data.fatherName.size() >= 1 && data.fatherName.size() <= 140 &&
+        data.education is string && data.education.size() >= 1 && data.education.size() <= 200 &&
+        data.designation is string && data.designation.size() >= 1 && data.designation.size() <= 200 &&
+        data.dob is string && data.dob.size() >= 1 && data.dob.size() <= 64 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        data.mobileNo is string && data.mobileNo.size() >= 4 && data.mobileNo.size() <= 60 &&
+        data.status in ['pending', 'contacted', 'enrolled', 'archived'] &&
+        data.submittedAt is string && data.submittedAt.size() >= 1 && data.submittedAt.size() <= 64 &&
+        (!('uid' in data) || (data.uid is string && data.uid.size() <= 128));
     }
 
     function isValidChatMessage(data) {
@@ -388,6 +422,14 @@ service cloud.firestore {
       allow get, list: if true;
       allow create, update: if isAdmin() && isValidId(trainingId) && isValidTraining(request.resource.data);
       allow delete: if isAdmin() && isValidId(trainingId);
+    }
+
+    // Custom Training Registrations: Any visitor or user can submit a valid registration; only Admin can read, update, or delete
+    match /customTrainingRegistrations/{regId} {
+      allow get, list: if isAdmin();
+      allow create: if isValidId(regId) && isValidCustomTrainingRegistration(request.resource.data);
+      allow update: if isAdmin() && isValidId(regId) && isValidCustomTrainingRegistration(request.resource.data);
+      allow delete: if isAdmin() && isValidId(regId);
     }
   }
 }

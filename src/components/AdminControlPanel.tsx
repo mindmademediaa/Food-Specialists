@@ -38,8 +38,11 @@ import {
 import {
   CloudStorageConfig,
   CustomAdBannerItem,
+  CustomTrainingItem,
   CustomTrainingMCQ,
   CustomTrainingModule,
+  CustomTrainingRegistration,
+  DEFAULT_CUSTOM_TRAININGS,
   FrontPageContentConfig,
   HubCertificate,
   HubJob,
@@ -109,6 +112,13 @@ interface AdminControlPanelProps {
   onDeleteCertificate?: (certId: string) => Promise<void>;
   onChangeStorageConfig: (cfg: CloudStorageConfig) => void;
   onSaveStorageConfig: (e: React.FormEvent) => Promise<void>;
+  onSaveCustomTrainingsList?: (list: CustomTrainingItem[]) => Promise<void>;
+  customTrainingRegistrations?: CustomTrainingRegistration[];
+  onUpdateCustomTrainingRegistrationStatus?: (
+    id: string,
+    status: CustomTrainingRegistration['status']
+  ) => Promise<void>;
+  onDeleteCustomTrainingRegistration?: (id: string) => Promise<void>;
   onExportBackup: () => void;
   onPreviewUserApp: () => void;
   onSignOut: () => void;
@@ -139,12 +149,69 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onDeleteCertificate,
   onChangeStorageConfig,
   onSaveStorageConfig,
+  onSaveCustomTrainingsList,
+  customTrainingRegistrations = [],
+  onUpdateCustomTrainingRegistrationStatus,
+  onDeleteCustomTrainingRegistration,
   onExportBackup,
   onPreviewUserApp,
   onSignOut
 }) => {
   const geo = useGeoCurrency();
   const [activeTab, setActiveTab] = useState<AdminSectionTab>('menu');
+
+  // Custom Trainings Admin Form & Inline Editor State
+  const [ctTitle, setCtTitle] = useState('');
+  const [ctCode, setCtCode] = useState('');
+  const [ctPriceRs, setCtPriceRs] = useState<number>(3500);
+  const [ctPriceUsd, setCtPriceUsd] = useState<number>(15);
+  const [ctDuration, setCtDuration] = useState('2 Weeks (Live & Practical)');
+  const [ctMode, setCtMode] = useState('Online Live / Hybrid');
+  const [ctStandard, setCtStandard] = useState(
+    'Codex Alimentarius & Industrial QA/QC Standard'
+  );
+  const [ctInstructor, setCtInstructor] = useState(
+    'Food Science Portal Industrial Faculty'
+  );
+  const [ctDescription, setCtDescription] = useState('');
+  const [ctTopicsText, setCtTopicsText] = useState('');
+  const [ctEdits, setCtEdits] = useState<
+    Record<
+      string,
+      {
+        title: string;
+        code: string;
+        priceRs: number;
+        priceUsd: number;
+        duration: string;
+        mode: string;
+        description: string;
+        topicsText: string;
+      }
+    >
+  >({});
+
+  const liveCustomTrainings: CustomTrainingItem[] = useMemo(() => {
+    if (
+      storageConfig.customTrainings &&
+      Array.isArray(storageConfig.customTrainings) &&
+      storageConfig.customTrainings.length > 0
+    ) {
+      return storageConfig.customTrainings;
+    }
+    return DEFAULT_CUSTOM_TRAININGS;
+  }, [storageConfig.customTrainings]);
+
+  const persistCustomTrainings = async (nextList: CustomTrainingItem[], msg: string) => {
+    onChangeStorageConfig({
+      ...storageConfig,
+      customTrainings: nextList
+    });
+    if (onSaveCustomTrainingsList) {
+      await onSaveCustomTrainingsList(nextList);
+    }
+    onSetBanner(msg);
+  };
 
   const updatePaymentGateway = (patch: Partial<PaymentGatewayConfig>) => {
     const prev = storageConfig.paymentGateway;
@@ -5794,6 +5861,594 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+                </div>
+
+                {/* =================================================================
+                    CUSTOM TRAININGS MANAGER (ADD, EDIT PRICE & DETAILS, REMOVE)
+                   ================================================================= */}
+                <div className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
+                    <div>
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
+                        Custom Trainings &amp; Registration Control
+                      </span>
+                      <h3 className="text-lg font-extrabold text-[#1A2138] mt-1">
+                        Manage Custom Trainings — Add, Edit Price &amp; Details, or Remove ({liveCustomTrainings.length})
+                      </h3>
+                      <p className="text-xs text-[#4A5568]">
+                        Any Custom Training added or updated here appears immediately under the <strong>Custom Trainings</strong> tab in the Trainings section for users to view and register.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Add New Custom Training Form */}
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!ctTitle.trim()) return;
+                      const autoCode =
+                        ctCode.trim() ||
+                        `CT-${ctTitle
+                          .trim()
+                          .split(/\s+/)
+                          .slice(0, 2)
+                          .map((w) => w.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 3))
+                          .join('')}-${Math.floor(100 + Math.random() * 900)}`;
+                      const parsedTopics = ctTopicsText
+                        .split(/\n|,/)
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      const newItem: CustomTrainingItem = {
+                        id: `ct-${Date.now()}`,
+                        title: ctTitle.trim(),
+                        code: autoCode,
+                        priceRs: Math.max(0, Number(ctPriceRs) || 0),
+                        priceUsd: Math.max(0, Number(ctPriceUsd) || 15),
+                        duration: ctDuration.trim() || '2 Weeks',
+                        mode: ctMode.trim() || 'Online Live / Hybrid',
+                        accreditationStandard:
+                          ctStandard.trim() ||
+                          'Codex Alimentarius & Industrial QA/QC Standard',
+                        instructor:
+                          ctInstructor.trim() ||
+                          'Food Science Portal Industrial Faculty',
+                        description:
+                          ctDescription.trim() ||
+                          'Specialized hands-on industrial training program for food technologists and QA/QC professionals.',
+                        topics:
+                          parsedTopics.length > 0
+                            ? parsedTopics
+                            : [
+                                'Industrial Process Control & SOP Implementation',
+                                'Quality Assurance Testing & Batch Documentation',
+                                'Regulatory & Audit Compliance Workshop'
+                              ],
+                        isActive: true
+                      };
+                      const nextList = [newItem, ...liveCustomTrainings];
+                      await persistCustomTrainings(
+                        nextList,
+                        `Custom Training "${newItem.title}" added and published!`
+                      );
+                      setCtTitle('');
+                      setCtCode('');
+                      setCtDescription('');
+                      setCtTopicsText('');
+                    }}
+                    className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3.5"
+                  >
+                    <div className="text-xs font-extrabold text-[#1A2138]">
+                      + Add New Custom Training Program
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                      <div className="sm:col-span-5">
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Custom Training Title *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={ctTitle}
+                          onChange={(e) => setCtTitle(e.target.value)}
+                          placeholder="e.g., Industrial Dairy & Beverage QA/QC Hands-On Workshop"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Training Code
+                        </label>
+                        <input
+                          type="text"
+                          value={ctCode}
+                          onChange={(e) => setCtCode(e.target.value)}
+                          placeholder="e.g., CT-QA-105"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-mono font-bold text-[#1A2138]"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Price / Fee (Rs.) *
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          required
+                          value={ctPriceRs}
+                          onChange={(e) => setCtPriceRs(Number(e.target.value) || 0)}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-black text-emerald-800"
+                        />
+                      </div>
+                      <div className="sm:col-span-3">
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Duration *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={ctDuration}
+                          onChange={(e) => setCtDuration(e.target.value)}
+                          placeholder="e.g., 2 Weeks / 5 Days"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Training Mode
+                        </label>
+                        <input
+                          type="text"
+                          value={ctMode}
+                          onChange={(e) => setCtMode(e.target.value)}
+                          placeholder="Online Live / Hybrid / On-Site"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Intl Fee (USD $)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={ctPriceUsd}
+                          onChange={(e) => setCtPriceUsd(Number(e.target.value) || 0)}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Standard / Faculty
+                        </label>
+                        <input
+                          type="text"
+                          value={ctStandard}
+                          onChange={(e) => setCtStandard(e.target.value)}
+                          placeholder="Codex Alimentarius & Industrial Standard"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Training Details / Overview Description *
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={ctDescription}
+                          onChange={(e) => setCtDescription(e.target.value)}
+                          placeholder="Describe what participants will learn in this Custom Training..."
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-medium text-[#1A2138]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                          Key Topics Covered (One per line or comma-separated)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={ctTopicsText}
+                          onChange={(e) => setCtTopicsText(e.target.value)}
+                          placeholder="Topic 1, Topic 2, Topic 3..."
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-medium text-[#1A2138]"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add &amp; Publish Custom Training</span>
+                    </button>
+                  </form>
+
+                  {/* Existing Custom Trainings List — Edit Price, Details, or Remove */}
+                  <div className="space-y-3">
+                    {liveCustomTrainings.map((ct) => {
+                      const editState = ctEdits[ct.id] || {
+                        title: ct.title,
+                        code: ct.code,
+                        priceRs: ct.priceRs,
+                        priceUsd: ct.priceUsd || 15,
+                        duration: ct.duration,
+                        mode: ct.mode,
+                        description: ct.description,
+                        topicsText: (ct.topics || []).join('\n')
+                      };
+
+                      return (
+                        <div
+                          key={ct.id}
+                          className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-2.5 py-0.5 rounded-full bg-[#1673B8] text-white text-[10.5px] font-extrabold">
+                                  {ct.code} · {ct.mode}
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10.5px] font-extrabold">
+                                  Fee: Rs. {Number(ct.priceRs || 0).toLocaleString()}
+                                  {ct.priceUsd ? ` ($${ct.priceUsd})` : ''}
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#1A2138] text-[10.5px] font-bold">
+                                  {ct.duration}
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-extrabold text-[#1A2138] mt-1">
+                                {ct.title}
+                              </h4>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const nextList = liveCustomTrainings.filter(
+                                    (item) => item.id !== ct.id
+                                  );
+                                  await persistCustomTrainings(
+                                    nextList,
+                                    `Removed Custom Training "${ct.title}".`
+                                  );
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-white border border-[#D2DEEA] space-y-2.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                              <div className="sm:col-span-5">
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Custom Training Title
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editState.title}
+                                  onChange={(e) =>
+                                    setCtEdits((prev) => ({
+                                      ...prev,
+                                      [ct.id]: { ...editState, title: e.target.value }
+                                    }))
+                                  }
+                                  className="w-full px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
+                                />
+                              </div>
+                              <div className="sm:col-span-2">
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Code
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editState.code}
+                                  onChange={(e) =>
+                                    setCtEdits((prev) => ({
+                                      ...prev,
+                                      [ct.id]: { ...editState, code: e.target.value }
+                                    }))
+                                  }
+                                  className="w-full px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-mono font-bold text-[#1A2138]"
+                                />
+                              </div>
+                              <div className="sm:col-span-2">
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Price (Rs.)
+                                </label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={editState.priceRs}
+                                  onChange={(e) =>
+                                    setCtEdits((prev) => ({
+                                      ...prev,
+                                      [ct.id]: {
+                                        ...editState,
+                                        priceRs: Number(e.target.value) || 0
+                                      }
+                                    }))
+                                  }
+                                  className="w-full px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-black text-emerald-800"
+                                />
+                              </div>
+                              <div className="sm:col-span-3">
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Duration &amp; Mode
+                                </label>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  <input
+                                    type="text"
+                                    value={editState.duration}
+                                    onChange={(e) =>
+                                      setCtEdits((prev) => ({
+                                        ...prev,
+                                        [ct.id]: {
+                                          ...editState,
+                                          duration: e.target.value
+                                        }
+                                      }))
+                                    }
+                                    className="w-full px-2.5 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={editState.mode}
+                                    onChange={(e) =>
+                                      setCtEdits((prev) => ({
+                                        ...prev,
+                                        [ct.id]: {
+                                          ...editState,
+                                          mode: e.target.value
+                                        }
+                                      }))
+                                    }
+                                    className="w-full px-2.5 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                              <div className="sm:col-span-5">
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Description / Details
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  value={editState.description}
+                                  onChange={(e) =>
+                                    setCtEdits((prev) => ({
+                                      ...prev,
+                                      [ct.id]: {
+                                        ...editState,
+                                        description: e.target.value
+                                      }
+                                    }))
+                                  }
+                                  className="w-full px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-medium text-[#1A2138]"
+                                />
+                              </div>
+                              <div className="sm:col-span-4">
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Topics (One per line)
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  value={editState.topicsText}
+                                  onChange={(e) =>
+                                    setCtEdits((prev) => ({
+                                      ...prev,
+                                      [ct.id]: {
+                                        ...editState,
+                                        topicsText: e.target.value
+                                      }
+                                    }))
+                                  }
+                                  className="w-full px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-medium text-[#1A2138]"
+                                />
+                              </div>
+                              <div className="sm:col-span-3">
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const updatedTopics = editState.topicsText
+                                      .split(/\n|,/)
+                                      .map((s) => s.trim())
+                                      .filter(Boolean);
+                                    const nextList = liveCustomTrainings.map(
+                                      (item) =>
+                                        item.id === ct.id
+                                          ? {
+                                              ...item,
+                                              title: editState.title.trim() || item.title,
+                                              code: editState.code.trim() || item.code,
+                                              priceRs: Math.max(
+                                                0,
+                                                Number(editState.priceRs) || 0
+                                              ),
+                                              priceUsd: Math.max(
+                                                0,
+                                                Number(editState.priceUsd) || 15
+                                              ),
+                                              duration:
+                                                editState.duration.trim() ||
+                                                item.duration,
+                                              mode:
+                                                editState.mode.trim() || item.mode,
+                                              description:
+                                                editState.description.trim() ||
+                                                item.description,
+                                              topics:
+                                                updatedTopics.length > 0
+                                                  ? updatedTopics
+                                                  : item.topics
+                                            }
+                                          : item
+                                    );
+                                    await persistCustomTrainings(
+                                      nextList,
+                                      `Updated Custom Training "${editState.title}"!`
+                                    );
+                                  }}
+                                  className="w-full py-2 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <Check className="w-4 h-4" />
+                                  <span>Save Price &amp; Details</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* =================================================================
+                    CUSTOM TRAINING REGISTRATIONS INBOX (FROM USERS)
+                   ================================================================= */}
+                <div className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
+                    <div>
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold">
+                        Incoming Custom Training Applications
+                      </span>
+                      <h3 className="text-lg font-extrabold text-[#1A2138] mt-1">
+                        Custom Training User Registrations ({customTrainingRegistrations.length})
+                      </h3>
+                      <p className="text-xs text-[#4A5568]">
+                        Every user who fills out the registration form under <strong>Custom Trainings</strong> (Name, Father Name, Education, Designation, DOB, Email, Mobile No) appears here in real time.
+                      </p>
+                    </div>
+                  </div>
+
+                  {customTrainingRegistrations.length === 0 ? (
+                    <div className="p-6 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-center text-xs font-semibold text-[#4A5568]">
+                      No Custom Training registrations submitted yet. When a user registers for any Custom Training, their full details will appear here automatically.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {customTrainingRegistrations.map((reg) => (
+                        <div
+                          key={reg.id}
+                          className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex flex-col sm:flex-row sm:items-center justify-between gap-3.5"
+                        >
+                          <div className="space-y-1.5 min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="px-2.5 py-0.5 rounded-md bg-[#1673B8] text-white text-[10.5px] font-extrabold">
+                                {reg.trainingCode || 'CUSTOM'} · {reg.trainingTitle}
+                              </span>
+                              <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10.5px] font-extrabold">
+                                Fee:{' '}
+                                {reg.trainingFee ||
+                                  `Rs. ${Number(reg.trainingPriceRs || 0).toLocaleString()}`}
+                              </span>
+                              <span
+                                className={`px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
+                                  reg.status === 'enrolled'
+                                    ? 'bg-emerald-600 text-white'
+                                    : reg.status === 'contacted'
+                                    ? 'bg-sky-600 text-white'
+                                    : 'bg-amber-200 text-amber-950'
+                                }`}
+                              >
+                                {reg.status || 'pending'}
+                              </span>
+                              <span className="text-[10.5px] font-semibold text-slate-500">
+                                {reg.submittedAt
+                                  ? new Date(reg.submittedAt).toLocaleString()
+                                  : ''}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs pt-1">
+                              <div>
+                                <span className="text-slate-500 font-semibold">Name: </span>
+                                <strong className="text-[#1A2138]">{reg.name}</strong>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 font-semibold">Father Name: </span>
+                                <strong className="text-[#1A2138]">{reg.fatherName}</strong>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 font-semibold">DOB: </span>
+                                <strong className="text-[#1A2138]">{reg.dob}</strong>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 font-semibold">Education: </span>
+                                <strong className="text-[#1A2138]">{reg.education}</strong>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 font-semibold">Designation: </span>
+                                <strong className="text-[#1A2138]">{reg.designation}</strong>
+                              </div>
+                              <div>
+                                <span className="text-slate-500 font-semibold">Mobile No: </span>
+                                <strong className="text-[#1673B8] font-mono">{reg.mobileNo}</strong>
+                              </div>
+                              <div className="sm:col-span-3">
+                                <span className="text-slate-500 font-semibold">Email: </span>
+                                <strong className="text-[#1A2138]">{reg.email}</strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                            {onUpdateCustomTrainingRegistrationStatus && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    onUpdateCustomTrainingRegistrationStatus(
+                                      reg.id,
+                                      'contacted'
+                                    )
+                                  }
+                                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#1673B8] text-[#1673B8] text-xs font-extrabold cursor-pointer"
+                                >
+                                  Mark Contacted
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    onUpdateCustomTrainingRegistrationStatus(
+                                      reg.id,
+                                      'enrolled'
+                                    )
+                                  }
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold cursor-pointer"
+                                >
+                                  Mark Enrolled
+                                </button>
+                              </>
+                            )}
+                            {onDeleteCustomTrainingRegistration && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onDeleteCustomTrainingRegistration(reg.id)
+                                }
+                                className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

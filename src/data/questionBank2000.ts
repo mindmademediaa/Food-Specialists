@@ -785,8 +785,14 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
     'Frozen Ready Meals & Catering Central Kitchen'
   ];
 
-  for (const line of microLines) {
-    for (const p of PATHOGEN_MATRIX) {
+  for (let lIdx = 0; lIdx < microLines.length; lIdx++) {
+    const line = microLines[lIdx];
+    for (let pIdx = 0; pIdx < PATHOGEN_MATRIX.length; pIdx++) {
+      const p = PATHOGEN_MATRIX[pIdx];
+      const p1 = PATHOGEN_MATRIX[(pIdx + 1 + lIdx) % PATHOGEN_MATRIX.length];
+      const p2 = PATHOGEN_MATRIX[(pIdx + 3 + lIdx) % PATHOGEN_MATRIX.length];
+      const p3 = PATHOGEN_MATRIX[(pIdx + 6 + lIdx) % PATHOGEN_MATRIX.length];
+
       if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
@@ -796,9 +802,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${line}] During microbiological hazard analysis for ${p.name}, what is the minimum water activity (aw) and growth temperature profile that the HACCP team must evaluate?`,
         options: [
           `Minimum aw of ${p.minAw} and growth temperature range of ${p.tempRange}`,
-          `Minimum aw of 0.55 and growth only above 68°C in dry ovens`,
-          `Minimum aw of 0.999 and growth strictly at -25°C in blast freezers`,
-          `Water activity has zero effect on ${p.name} growth kinetics`
+          `Minimum aw of ${p1.minAw} and growth temperature range of ${p1.tempRange}`,
+          `Minimum aw of ${p2.minAw} and growth temperature range of ${p2.tempRange}`,
+          `Minimum aw of ${p3.minAw} and growth temperature range of ${p3.tempRange}`
         ],
         correctAnswerIndex: 0,
         explanation: `${p.name} (${p.gramAndShape}) has a minimum water activity limit of aw = ${p.minAw} and grows within ${p.tempRange}. It is primarily associated with ${p.keyFood}.`
@@ -814,9 +820,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${line}] Which validated control measure and official ISO microbiological reference method are required to verify control of ${p.name} in ${p.keyFood}?`,
         options: [
           `Control via ${p.controlStep}; verified using ${p.isoTestMethod}`,
-          `Control via ambient air fan cooling at 32°C; verified using Brix refractometer`,
-          `Control via visual color sorting only; verified using Hagberg Falling Number`,
-          `No thermal or hygiene control is needed because ${p.name} is a beneficial starter culture`
+          `Control via ${p1.controlStep}; verified using ${p1.isoTestMethod}`,
+          `Control via ${p2.controlStep}; verified using ${p2.isoTestMethod}`,
+          `Control via ${p3.controlStep}; verified using ${p3.isoTestMethod}`
         ],
         correctAnswerIndex: 0,
         explanation: `To prevent ${p.toxinOrDisease}, plants implement ${p.controlStep} and verify compliance using ${p.isoTestMethod}.`
@@ -832,9 +838,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${line}] If a batch of ${p.keyFood} suffers temperature abuse, what clinical foodborne illness or toxin hazard is specifically linked to ${p.name}?`,
         options: [
           `Causes ${p.toxinOrDisease} (Morphology: ${p.gramAndShape})`,
-          `Causes vitamin C scurvy deficiency without any microbial infection`,
-          `Produces harmless lactose crystallization without health impact`,
-          `Only causes packaging ink fading on outer corrugated cartons`
+          `Causes ${p1.toxinOrDisease} (Morphology: ${p1.gramAndShape})`,
+          `Causes ${p2.toxinOrDisease} (Morphology: ${p2.gramAndShape})`,
+          `Causes ${p3.toxinOrDisease} (Morphology: ${p3.gramAndShape})`
         ],
         correctAnswerIndex: 0,
         explanation: `${p.name} is a ${p.gramAndShape} associated with ${p.keyFood} that causes ${p.toxinOrDisease}.`
@@ -857,8 +863,14 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
     'Nutraceutical & Fortified Cereal Plant'
   ];
 
-  for (const sector of auditSectors) {
-    for (const c of STANDARD_CLAUSES_MATRIX) {
+  for (let sIdx = 0; sIdx < auditSectors.length; sIdx++) {
+    const sector = auditSectors[sIdx];
+    for (let cIdx = 0; cIdx < STANDARD_CLAUSES_MATRIX.length; cIdx++) {
+      const c = STANDARD_CLAUSES_MATRIX[cIdx];
+      const c1 = STANDARD_CLAUSES_MATRIX[(cIdx + 1 + sIdx) % STANDARD_CLAUSES_MATRIX.length];
+      const c2 = STANDARD_CLAUSES_MATRIX[(cIdx + 3 + sIdx) % STANDARD_CLAUSES_MATRIX.length];
+      const c3 = STANDARD_CLAUSES_MATRIX[(cIdx + 5 + sIdx) % STANDARD_CLAUSES_MATRIX.length];
+
       const mappedSubject: ExamSubjectCategory =
         c.standard === 'ISO 9001:2015'
           ? 'ISO 9001'
@@ -877,9 +889,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${c.standard} — ${c.clauseCode} Audit in ${sector}] What is the primary compliance requirement and objective audit evidence for "${c.clauseTitle}"?`,
         options: [
           `Requirement: ${c.coreRequirement} | Objective Evidence: ${c.auditEvidence}`,
-          `Requirement: Increase advertising budget by 20% | Evidence: Social media impressions`,
-          `Requirement: Eliminate all written SOPs | Evidence: Verbal operator statements only`,
-          `Requirement: Bypass QA testing during peak season | Evidence: Dispatch invoices`
+          `Requirement: ${c1.coreRequirement} | Objective Evidence: ${c1.auditEvidence}`,
+          `Requirement: ${c2.coreRequirement} | Objective Evidence: ${c2.auditEvidence}`,
+          `Requirement: ${c3.coreRequirement} | Objective Evidence: ${c3.auditEvidence}`
         ],
         correctAnswerIndex: 0,
         explanation: `Under ${c.standard} (${c.clauseCode} — ${c.clauseTitle}), organizations in ${sector} must ensure: ${c.coreRequirement} Auditors verify this via ${c.auditEvidence}`
@@ -895,9 +907,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${c.standard} Lead Auditor Scenario — ${sector}] During a third-party certification audit under ${c.clauseCode} (${c.clauseTitle}), the auditor observes: "${c.nonConformityExample}" What is the most effective Root Cause Corrective Action (CAPA)?`,
         options: [
           c.correctiveStrategy,
-          'Hide the batch records from the external auditor and continue normal dispatch',
-          'Reprimand the line helper verbally without changing any system control or SOP',
-          'Delete the clause from the plant Quality & Food Safety Manual'
+          c1.correctiveStrategy,
+          c2.correctiveStrategy,
+          c3.correctiveStrategy
         ],
         correctAnswerIndex: 0,
         explanation: `In ${c.standard} (${c.clauseCode}), when "${c.nonConformityExample}" occurs, true systemic CAPA requires: ${c.correctiveStrategy}`
@@ -913,9 +925,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${c.standard} Compliance Check — ${sector}] Which observation during an internal audit of ${sector} would trigger a Non-Conformity against ${c.clauseCode} (${c.clauseTitle})?`,
         options: [
           c.nonConformityExample,
-          `Maintaining up-to-date ${c.auditEvidence} reviewed by the Food Safety Team`,
-          `Conducting scheduled verification and training line personnel on ${c.clauseTitle}`,
-          `Completing root cause analysis and closing CAPA within the target timeframe`
+          `Maintaining verified ${c.auditEvidence} reviewed by the Food Safety Team`,
+          `Conducting scheduled internal verification and competency training on ${c.clauseTitle}`,
+          `Executing root-cause analysis and verifying CAPA effectiveness within the target window`
         ],
         correctAnswerIndex: 0,
         explanation: `"${c.nonConformityExample}" is a direct violation of ${c.standard} ${c.clauseCode} (${c.clauseTitle}).`
@@ -925,8 +937,14 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
   }
 
   // B2. Generate Dedicated ISO 9001:2015 Lead Auditor Program MCQs across 10 audit contexts
-  for (const sector of auditSectors) {
-    for (const isoSpec of ISO_9001_LEAD_AUDITOR_MATRIX) {
+  for (let sIdx = 0; sIdx < auditSectors.length; sIdx++) {
+    const sector = auditSectors[sIdx];
+    for (let iIdx = 0; iIdx < ISO_9001_LEAD_AUDITOR_MATRIX.length; iIdx++) {
+      const isoSpec = ISO_9001_LEAD_AUDITOR_MATRIX[iIdx];
+      const iso1 = ISO_9001_LEAD_AUDITOR_MATRIX[(iIdx + 1 + sIdx) % ISO_9001_LEAD_AUDITOR_MATRIX.length];
+      const iso2 = ISO_9001_LEAD_AUDITOR_MATRIX[(iIdx + 3 + sIdx) % ISO_9001_LEAD_AUDITOR_MATRIX.length];
+      const iso3 = ISO_9001_LEAD_AUDITOR_MATRIX[(iIdx + 5 + sIdx) % ISO_9001_LEAD_AUDITOR_MATRIX.length];
+
       if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
@@ -936,9 +954,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[ISO 9001 Lead Auditor Exam — ${sector}] When auditing ${isoSpec.clauseOrTopic} (${isoSpec.title}), what is the core standard requirement and Lead Auditor verification method?`,
         options: [
           `${isoSpec.coreRequirement} | Lead Auditor Action: ${isoSpec.leadAuditorAction}`,
-          `Only check financial tax returns and ignore operational process controls`,
-          `Allow operators to write their own specifications without document control`,
-          `Skip Stage 2 on-site audit and issue ISO 9001 certificate via email`
+          `${iso1.coreRequirement} | Lead Auditor Action: ${iso1.leadAuditorAction}`,
+          `${iso2.coreRequirement} | Lead Auditor Action: ${iso2.leadAuditorAction}`,
+          `${iso3.coreRequirement} | Lead Auditor Action: ${iso3.leadAuditorAction}`
         ],
         correctAnswerIndex: 0,
         explanation: `Under ${isoSpec.clauseOrTopic} (${isoSpec.title}): ${isoSpec.coreRequirement} The Lead Auditor verifies this by: ${isoSpec.leadAuditorAction}`
@@ -954,9 +972,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[ISO 9001 Lead Auditor NCR & CAPA Grading — ${sector}] During an ISO 9001:2015 certification audit of ${isoSpec.clauseOrTopic}, how should the Lead Auditor grade non-conformities and verify CAPA?`,
         options: [
           `${isoSpec.ncrGradingRule} | CAPA Verification: ${isoSpec.capaVerification}`,
-          `Never write an NCR if the plant manager promises verbally to fix it next year`,
-          `Close all Major NCRs immediately without checking root cause or objective evidence`,
-          `Cancel the audit opening and closing meetings to save time`
+          `${iso1.ncrGradingRule} | CAPA Verification: ${iso1.capaVerification}`,
+          `${iso2.ncrGradingRule} | CAPA Verification: ${iso2.capaVerification}`,
+          `${iso3.ncrGradingRule} | CAPA Verification: ${iso3.capaVerification}`
         ],
         correctAnswerIndex: 0,
         explanation: `In ISO 9001 Lead Auditing (${isoSpec.clauseOrTopic}): ${isoSpec.ncrGradingRule} For effective closure: ${isoSpec.capaVerification}`
@@ -979,8 +997,14 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
     'Plant Commissioning & Hygienic Design Review'
   ];
 
-  for (const ctx of processContexts) {
-    for (const fs of FOOD_SCIENCE_MATRIX) {
+  for (let cIdx = 0; cIdx < processContexts.length; cIdx++) {
+    const ctx = processContexts[cIdx];
+    for (let fIdx = 0; fIdx < FOOD_SCIENCE_MATRIX.length; fIdx++) {
+      const fs = FOOD_SCIENCE_MATRIX[fIdx];
+      const fs1 = FOOD_SCIENCE_MATRIX[(fIdx + 1 + cIdx) % FOOD_SCIENCE_MATRIX.length];
+      const fs2 = FOOD_SCIENCE_MATRIX[(fIdx + 4 + cIdx) % FOOD_SCIENCE_MATRIX.length];
+      const fs3 = FOOD_SCIENCE_MATRIX[(fIdx + 7 + cIdx) % FOOD_SCIENCE_MATRIX.length];
+
       if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
@@ -990,9 +1014,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${fs.subTopic} — ${ctx}] What are the standard operating parameters for ${fs.processOrTest}?`,
         options: [
           fs.standardParameter,
-          'Ambient storage at 40°C with 95% relative humidity and zero thermal or pH control',
-          'Freezing at -80°C followed by open-sun drying for 14 days without packaging',
-          'Adding 15% industrial sodium hydroxide directly into finished food packs'
+          fs1.standardParameter,
+          fs2.standardParameter,
+          fs3.standardParameter
         ],
         correctAnswerIndex: 0,
         explanation: `In ${fs.subTopic}, the validated standard parameter for ${fs.processOrTest} is: ${fs.standardParameter}.`
@@ -1008,9 +1032,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${fs.subTopic} — ${ctx}] What is the underlying Food Science & biochemical principle governing ${fs.processOrTest}?`,
         options: [
           fs.scientificPrinciple,
-          'Spontaneous conversion of carbohydrates into heavy metals at room temperature',
-          'Complete elimination of all minerals and dietary fiber through magnetic filtration',
-          'Sublimation of stainless steel equipment into volatile aroma compounds'
+          fs1.scientificPrinciple,
+          fs2.scientificPrinciple,
+          fs3.scientificPrinciple
         ],
         correctAnswerIndex: 0,
         explanation: `The core scientific mechanism in ${fs.subTopic} is: ${fs.scientificPrinciple}.`
@@ -1026,9 +1050,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${fs.subTopic} — ${ctx}] During production, the QA team encounters: "${fs.defectOrFailure}". Which engineering and QA control prevents this defect?`,
         options: [
           fs.preventiveControl,
-          'Turn off all inline temperature and pH recorders to avoid alarm logs',
-          'Increase water activity above 0.99 and store product in unventilated warehouses',
-          'Blend rejected spoiled batches 50:50 into fresh infant food without testing'
+          fs1.preventiveControl,
+          fs2.preventiveControl,
+          fs3.preventiveControl
         ],
         correctAnswerIndex: 0,
         explanation: `To prevent "${fs.defectOrFailure}" in ${fs.subTopic}, the plant must implement: ${fs.preventiveControl}.`
@@ -1051,8 +1075,14 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
     'Ready-to-Cook Sauces, Mayonnaise & Dressings'
   ];
 
-  for (const comm of commodities) {
-    for (const hz of HAZARD_CONTROL_MATRIX) {
+  for (let mIdx = 0; mIdx < commodities.length; mIdx++) {
+    const comm = commodities[mIdx];
+    for (let hIdx = 0; hIdx < HAZARD_CONTROL_MATRIX.length; hIdx++) {
+      const hz = HAZARD_CONTROL_MATRIX[hIdx];
+      const hz1 = HAZARD_CONTROL_MATRIX[(hIdx + 1 + mIdx) % HAZARD_CONTROL_MATRIX.length];
+      const hz2 = HAZARD_CONTROL_MATRIX[(hIdx + 3 + mIdx) % HAZARD_CONTROL_MATRIX.length];
+      const hz3 = HAZARD_CONTROL_MATRIX[(hIdx + 5 + mIdx) % HAZARD_CONTROL_MATRIX.length];
+
       if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
@@ -1062,9 +1092,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[Hazard Analysis — ${comm}] When evaluating "${hz.hazardName}" (${hz.category}), what is the regulatory limit and primary source of contamination?`,
         options: [
           `Limit: ${hz.regulatoryLimit} | Source: ${hz.primarySource}`,
-          `Limit: 50,000 ppm (5%) | Source: Normal potable municipal water vapor`,
-          `Limit: No regulatory limit exists | Source: Food-grade nitrogen gas flushing`,
-          `Limit: 100 g/kg | Source: Certified SS 316L passivated sanitary piping`
+          `Limit: ${hz1.regulatoryLimit} | Source: ${hz1.primarySource}`,
+          `Limit: ${hz2.regulatoryLimit} | Source: ${hz2.primarySource}`,
+          `Limit: ${hz3.regulatoryLimit} | Source: ${hz3.primarySource}`
         ],
         correctAnswerIndex: 0,
         explanation: `For ${hz.hazardName} (${hz.category}), the regulatory standard is ${hz.regulatoryLimit}, originating primarily from ${hz.primarySource}.`
@@ -1080,9 +1110,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[Analytical QA & CCP Control — ${comm}] How should "${hz.hazardName}" be detected and controlled to prevent "${hz.healthImpact}"?`,
         options: [
           `Detection: ${hz.analyticalOrDetectionMethod} | Control: ${hz.plantControlStep}`,
-          `Detection: Visual smell test only | Control: Open-window natural ventilation`,
-          `Detection: Measuring carton weight | Control: Increasing conveyor belt speed by 50%`,
-          `Detection: None required | Control: Shipping directly to retail without CoA`
+          `Detection: ${hz1.analyticalOrDetectionMethod} | Control: ${hz1.plantControlStep}`,
+          `Detection: ${hz2.analyticalOrDetectionMethod} | Control: ${hz2.plantControlStep}`,
+          `Detection: ${hz3.analyticalOrDetectionMethod} | Control: ${hz3.plantControlStep}`
         ],
         correctAnswerIndex: 0,
         explanation: `To protect consumers from ${hz.healthImpact}, QA uses ${hz.analyticalOrDetectionMethod} and enforces ${hz.plantControlStep}.`
@@ -1107,8 +1137,14 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
     'Public Analyst Food Laboratory Legal Sample Review'
   ];
 
-  for (const dist of authorityDistricts) {
-    for (const fa of FOOD_AUTHORITY_REGULATORY_MATRIX) {
+  for (let dIdx = 0; dIdx < authorityDistricts.length; dIdx++) {
+    const dist = authorityDistricts[dIdx];
+    for (let fIdx = 0; fIdx < FOOD_AUTHORITY_REGULATORY_MATRIX.length; fIdx++) {
+      const fa = FOOD_AUTHORITY_REGULATORY_MATRIX[fIdx];
+      const fa1 = FOOD_AUTHORITY_REGULATORY_MATRIX[(fIdx + 1 + dIdx) % FOOD_AUTHORITY_REGULATORY_MATRIX.length];
+      const fa2 = FOOD_AUTHORITY_REGULATORY_MATRIX[(fIdx + 3 + dIdx) % FOOD_AUTHORITY_REGULATORY_MATRIX.length];
+      const fa3 = FOOD_AUTHORITY_REGULATORY_MATRIX[(fIdx + 5 + dIdx) % FOOD_AUTHORITY_REGULATORY_MATRIX.length];
+
       if (counter > TARGET_TOTAL_EXAM_MCQS) break;
       result.push({
         id: `mcq-bank-${counter}`,
@@ -1118,9 +1154,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${dist} — ${fa.topicTitle}] Under ${fa.authorityOrLaw}, what is the mandatory legal standard and official Food Safety Officer testing/inspection procedure?`,
         options: [
           `${fa.legalStandardOrRule} | Procedure/Test: ${fa.inspectorProcedureOrTest}`,
-          `No laboratory test or legal notice is required; verbal estimation is sufficient`,
-          `Adulterants up to 25% by weight are permitted if declared on the invoice`,
-          `Samples can be collected in open plastic bags without witness signatures`
+          `${fa1.legalStandardOrRule} | Procedure/Test: ${fa1.inspectorProcedureOrTest}`,
+          `${fa2.legalStandardOrRule} | Procedure/Test: ${fa2.inspectorProcedureOrTest}`,
+          `${fa3.legalStandardOrRule} | Procedure/Test: ${fa3.inspectorProcedureOrTest}`
         ],
         correctAnswerIndex: 0,
         explanation: `Under ${fa.authorityOrLaw} (${fa.topicTitle}): ${fa.legalStandardOrRule} The official inspection/lab procedure is: ${fa.inspectorProcedureOrTest}`
@@ -1136,9 +1172,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[${dist} — Violation & Enforcement Case] During an inspection under ${fa.authorityOrLaw}, the Food Safety Officer detects: "${fa.violationOrAdulterationScenario}" What is the correct regulatory enforcement action?`,
         options: [
           fa.enforcementAction,
-          'Allow the adulterated batch to be sold at a 20% discount to school canteens',
-          'Ignore the laboratory failure and issue a clean hygiene rating certificate',
-          'Wait 2 years for the business operator to voluntarily dispose of the stock'
+          fa1.enforcementAction,
+          fa2.enforcementAction,
+          fa3.enforcementAction
         ],
         correctAnswerIndex: 0,
         explanation: `When "${fa.violationOrAdulterationScenario}" is found under ${fa.authorityOrLaw}, the statutory enforcement action is: ${fa.enforcementAction}`
@@ -1155,6 +1191,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       const dVal = Number((0.18 + (calcSeed % 15) * 0.02).toFixed(2));
       const logRed = 6 + (calcSeed % 7); // 6D to 12D
       const totalMin = Number((dVal * logRed).toFixed(2));
+      const altMin1 = Number((dVal * (logRed - 2)).toFixed(2));
+      const altMin2 = Number((dVal * (logRed + 2)).toFixed(2));
+      const altMin3 = Number(((dVal + 0.08) * logRed).toFixed(2));
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -1162,10 +1201,10 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         subject: 'Food Science & Tech',
         question: `[Thermal Process Calculation #${calcSeed}] A target spore-forming organism in a canned food product has a D-value at 121.1°C of D₁₂₁ = ${dVal} minutes. How many minutes of thermal holding at 121.1°C are required to achieve a ${logRed}-log (${logRed}D) reduction?`,
         options: [
-          `${totalMin} minutes (calculated as ${logRed} × ${dVal} min)`,
-          `${Number((totalMin / 3).toFixed(2))} minutes`,
-          `${Number((totalMin * 2.5).toFixed(2))} minutes`,
-          `0.05 minutes regardless of log reduction target`
+          `${totalMin} minutes (calculated as F = ${logRed} × ${dVal} min at 121.1°C)`,
+          `${altMin1} minutes (calculated as F = ${logRed - 2} × ${dVal} min at 121.1°C)`,
+          `${altMin2} minutes (calculated as F = ${logRed + 2} × ${dVal} min at 121.1°C)`,
+          `${altMin3} minutes (calculated as F = ${logRed} × ${Number((dVal + 0.08).toFixed(2))} min at 121.1°C)`
         ],
         correctAnswerIndex: 0,
         explanation: `Thermal lethality time F = n × D. For a ${logRed}D reduction with D₁₂₁ = ${dVal} min, required hold time = ${logRed} × ${dVal} = ${totalMin} minutes.`
@@ -1175,6 +1214,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       const carbG = 25 + (calcSeed % 45);
       const fatG = 6 + (calcSeed % 18);
       const totalKcal = protG * 4 + carbG * 4 + fatG * 9;
+      const wrongFat4 = (protG + carbG + fatG) * 4;
+      const wrongProt9 = protG * 9 + carbG * 4 + fatG * 4;
+      const wrongCarb7 = protG * 4 + carbG * 7 + fatG * 9;
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -1183,9 +1225,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[Nutrition Labeling Calculation #${calcSeed}] A 100g serving of a formulated functional food contains ${protG}g Protein, ${carbG}g Available Carbohydrates, and ${fatG}g Total Fat. Using Atwater physiological fuel factors (4-4-9 kcal/g), what is the exact energy value per 100g?`,
         options: [
           `${totalKcal} kcal (${protG * 4} kcal from protein + ${carbG * 4} kcal from carbs + ${fatG * 9} kcal from fat)`,
-          `${totalKcal + 85} kcal`,
-          `${Math.max(50, totalKcal - 70)} kcal`,
-          `${(protG + carbG + fatG) * 4} kcal`
+          `${wrongFat4} kcal (applying 4 kcal/g uniformly across protein, carbohydrates, and lipids)`,
+          `${wrongProt9} kcal (applying 9 kcal/g to protein and 4 kcal/g to carbohydrates and lipids)`,
+          `${wrongCarb7} kcal (applying 7 kcal/g to carbohydrates and 9 kcal/g to total lipids)`
         ],
         correctAnswerIndex: 0,
         explanation: `Using Atwater factors: Protein (${protG}g × 4 = ${protG * 4} kcal) + Carbs (${carbG}g × 4 = ${carbG * 4} kcal) + Fat (${fatG}g × 9 = ${fatG * 9} kcal) = ${totalKcal} kcal per 100g.`
@@ -1194,6 +1236,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
       const wetWt = 150 + (calcSeed % 90);
       const dryWt = Math.round(wetWt * (0.84 + (calcSeed % 6) * 0.01));
       const moisturePct = Number((((wetWt - dryWt) / wetWt) * 100).toFixed(2));
+      const dryBasisPct = Number((((wetWt - dryWt) / dryWt) * 100).toFixed(2));
+      const totalSolidsPct = Number(((dryWt / wetWt) * 100).toFixed(2));
+      const halfLossPct = Number((((wetWt - dryWt) / (wetWt + dryWt)) * 100).toFixed(2));
       result.push({
         id: `mcq-bank-${counter}`,
         questionNumber: counter,
@@ -1201,10 +1246,10 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         subject: 'Food Chemistry & Nutrition',
         question: `[AOAC Gravimetric Moisture Analysis #${calcSeed}] A food analyst weighs ${wetWt}g of food sample into a tared aluminum dish. After drying in a hot-air oven at 105°C to constant weight, the dry residue weighs ${dryWt}g. What is the wet-basis moisture percentage?`,
         options: [
-          `${moisturePct}% moisture (Loss of ${wetWt - dryWt}g divided by initial ${wetWt}g × 100)`,
-          `${Number((moisturePct + 8.5).toFixed(2))}% moisture`,
-          `${Number((100 - moisturePct).toFixed(2))}% moisture`,
-          `${Number((moisturePct / 2).toFixed(2))}% moisture`
+          `${moisturePct}% moisture (Loss of ${wetWt - dryWt}g divided by initial wet weight ${wetWt}g × 100)`,
+          `${dryBasisPct}% moisture (Loss of ${wetWt - dryWt}g divided by dry residue weight ${dryWt}g × 100)`,
+          `${totalSolidsPct}% moisture (Dry residue weight ${dryWt}g divided by initial wet weight ${wetWt}g × 100)`,
+          `${halfLossPct}% moisture (Loss of ${wetWt - dryWt}g divided by combined weight ${wetWt + dryWt}g × 100)`
         ],
         correctAnswerIndex: 0,
         explanation: `Wet-basis Moisture % = [(Initial Weight - Dry Weight) / Initial Weight] × 100 = [(${wetWt} - ${dryWt}) / ${wetWt}] × 100 = ${moisturePct}%.`
@@ -1220,10 +1265,10 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         subject: 'ISO 22000',
         question: `[ISO 22000:2018 Clause 8.3 Mock Recall Mass Balance #${calcSeed}] A plant produced ${batchKg} kg of finished product from a single raw material lot. During a 4-hour mock traceability challenge, ${recoveredKg} kg was accounted for across warehouse stock, dispatches, and QC retention samples. What is the mass-balance recovery percentage?`,
         options: [
-          `${recoveryPct}% mass balance recovery (${recoveredKg} kg / ${batchKg} kg × 100), meeting the GFSI 98%–100% target`,
-          `64.0% mass balance recovery, requiring an immediate Major Non-Conformity`,
-          `118.5% mass balance recovery due to unrecorded water evaporation`,
-          `50.0% recovery because warehouse stock is excluded from traceability`
+          `${recoveryPct}% mass balance recovery (${recoveredKg} kg / ${batchKg} kg × 100), meeting the GFSI 98%–102% target`,
+          `${Number((100 - recoveryPct).toFixed(1))}% mass balance recovery, calculated from unaccounted process shrinkage only`,
+          `${Number(((batchKg / recoveredKg) * 100).toFixed(1))}% mass balance recovery, calculated by inverting input and recovered mass`,
+          `${Number(((recoveredKg / (batchKg * 1.15)) * 100).toFixed(1))}% mass balance recovery after adding 15% packaging tare weight`
         ],
         correctAnswerIndex: 0,
         explanation: `Mass-balance recovery = (${recoveredKg} / ${batchKg}) × 100 = ${recoveryPct}%, which satisfies ISO 22000 Clause 8.3 and FSSC 22000 traceability benchmarks (target 98%–102% within ≤4 hours).`
@@ -1240,9 +1285,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[Sanitation & CIP Dilution Calculation #${calcSeed}] A sanitation supervisor needs to prepare ${tankLiters} Liters of chlorinated sanitizing solution at ${targetClPpm} ppm free chlorine using commercial sodium hypochlorite stock solution containing 5% (50,000 ppm) available chlorine. How many milliliters (mL) of stock bleach are required?`,
         options: [
           `${mlNeeded} mL of 5% sodium hypochlorite diluted to ${tankLiters} Liters (using C₁V₁ = C₂V₂)`,
-          `${mlNeeded * 10} mL of 5% sodium hypochlorite`,
-          `${Math.max(5, Math.round(mlNeeded / 5))} mL of 5% sodium hypochlorite`,
-          `5,000 mL regardless of tank volume`
+          `${Math.round(mlNeeded * 2.5)} mL of 5% sodium hypochlorite diluted to ${tankLiters} Liters (assuming 2% stock strength)`,
+          `${Math.max(10, Math.round(mlNeeded * 0.5))} mL of 5% sodium hypochlorite diluted to ${tankLiters} Liters (assuming 10% stock strength)`,
+          `${Math.round(mlNeeded * 1.4)} mL of 5% sodium hypochlorite diluted to ${tankLiters} Liters (uncorrected for density)`
         ],
         correctAnswerIndex: 0,
         explanation: `Using C₁V₁ = C₂V₂: (50,000 ppm) × V₁ = (${targetClPpm} ppm) × (${tankLiters * 1000} mL) → V₁ = ${mlNeeded} mL. Always verify final concentration with chlorine test strips.`
@@ -1259,9 +1304,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[FSSC 22000 v6 & ISO 22000 Quality Control AQL Inspection #${calcSeed}] During pre-dispatch Acceptable Quality Limit (AQL) inspection, a QC inspector examines ${sampleUnits} pouches and finds ${defectUnits} pouches with minor date-code smudging. What is the defect rate percentage, and what action is required under FSSC 22000 Additional Requirement 2.5.2 (Product Labeling)?`,
         options: [
           `${defectPct}% defect rate; segregate affected lot on QA Hold, adjust thermal-transfer printer ribbon, and re-inspect 100% of affected pallets`,
-          `${defectPct * 5}% defect rate; ship without date codes since expiry dates are optional`,
-          `0% defect rate; date code legibility is not part of FSSC 22000`,
-          `Destroy the entire factory building immediately`
+          `${defectPct}% defect rate; release the lot under production concession and notify retailers to apply manual stickers`,
+          `${Number((defectPct * 2).toFixed(2))}% defect rate; downgrade the batch to animal feed without conducting root-cause analysis`,
+          `${Number((defectPct / 2).toFixed(2))}% defect rate; log as a minor observation and continue packing without printer adjustment`
         ],
         correctAnswerIndex: 0,
         explanation: `Defect rate = (${defectUnits} / ${sampleUnits}) × 100 = ${defectPct}%. Under FSSC 22000 Additional Requirement 2.5.2 (Product Labeling) and ISO 22000 Clause 8.9, illegible date/lot codes break traceability and must be placed on hold and corrected.`
@@ -1278,9 +1323,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[ISO 9001:2015 Lead Auditor Case #${calcSeed}] During an ISO 9001:2015 Surveillance Audit under Clause 8.4 (Control of Externally Provided Processes, Products and Services), an organization has ${totalSuppliers} critical raw material suppliers, of which ${auditedSuppliers} have completed annual performance evaluation (${onTimePct}%). The remaining ${totalSuppliers - auditedSuppliers} suppliers were used without re-evaluation. How should the Lead Auditor classify this finding?`,
         options: [
           `Raise a Non-Conformity against ISO 9001:2015 Clause 8.4.1 because criteria for periodic re-evaluation of ${totalSuppliers - auditedSuppliers} active critical suppliers were not fulfilled`,
-          `Commend the organization because supplier evaluation is optional in ISO 9001:2015`,
-          `Raise a finding against Clause 4.1 only and ignore purchasing records`,
-          `Terminate the audit immediately without holding a closing meeting`
+          `Raise a Non-Conformity against ISO 9001:2015 Clause 7.1.5 (Monitoring and Measuring Resources) for uncalibrated procurement software`,
+          `Record an Opportunity for Improvement (OFI) under Clause 9.3 since over 80% of critical suppliers were evaluated on time`,
+          `Issue an immediate suspension of the ISO 9001 certificate under Clause 10.2 without allowing a 30-day CAPA submission`
         ],
         correctAnswerIndex: 0,
         explanation: `ISO 9001:2015 Clause 8.4.1 requires the organization to determine and apply criteria for the evaluation, selection, monitoring of performance, and re-evaluation of external providers, and retain documented information.`
@@ -1296,9 +1341,9 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
         question: `[Food Authority Mobile Lab Milk Inspection #${calcSeed}] A Food Safety Officer inspects a commercial milk chiller and records a corrected Lactometer Reading (CLR) of ${lactometerReading} at 20°C (standard pure milk CLR ≥ 28) along with a Cryoscope freezing point of -0.435°C (standard -0.540°C). Approximately ${estWaterPct}% extraneous water adulteration is indicated. Under Food Authority Regulations, what action is required?`,
         options: [
           `Divide a legal sample into 4 sealed portions (Form-A), quarantine/discard adulterated milk per statutory protocol, and initiate legal prosecution against the supplier`,
-          `Add common salt and sugar to the chiller tank to artificially raise the lactometer reading back to 28`,
-          `Permit sale of the diluted milk as premium full-cream buffalo milk`,
-          `No action is needed unless extraneous water exceeds 80%`
+          `Standardize the adulterated milk on-site by adding skimmed milk powder to restore CLR to 28 and release for retail sale`,
+          `Issue a 90-day improvement notice while allowing the chiller operator to dispatch the current tank for UHT processing`,
+          `Collect a single unsealed sample for internal reference only and defer action until the next quarterly surveillance visit`
         ],
         correctAnswerIndex: 0,
         explanation: `A depressed CLR (${lactometerReading} vs ≥28) and elevated freezing point (-0.435°C vs -0.540°C) prove extraneous water adulteration (~${estWaterPct}%), requiring formal 4-part legal sampling and enforcement under Food Authority Pure Food Regulations.`
@@ -1308,10 +1353,35 @@ function buildAll2000ExamMcqs(): UnifiedExamQuestion[] {
     counter++;
   }
 
-  return result.slice(0, TARGET_TOTAL_EXAM_MCQS).map((item) => ({
-    ...item,
-    question: item.question.replace(/^\[[^\]]+\]\s*/, '').trim()
-  }));
+  // Deterministically rotate option positions across A (0), B (1), C (2), and D (3)
+  // so the correct answer is never predictably at index 0.
+  return result.slice(0, TARGET_TOTAL_EXAM_MCQS).map((item, idx) => {
+    const cleanQuestion = item.question.replace(/^\[[^\]]+\]\s*/, '').trim();
+    const targetCorrectIndex = (idx * 3 + item.questionNumber) % 4;
+    if (item.correctAnswerIndex === targetCorrectIndex) {
+      return {
+        ...item,
+        question: cleanQuestion
+      };
+    }
+    const correctText = item.options[item.correctAnswerIndex];
+    const wrongOptions = item.options.filter((_, i) => i !== item.correctAnswerIndex);
+    const rotatedOptions: [string, string, string, string] = ['', '', '', ''];
+    let wPtr = 0;
+    for (let pos = 0; pos < 4; pos++) {
+      if (pos === targetCorrectIndex) {
+        rotatedOptions[pos] = correctText;
+      } else {
+        rotatedOptions[pos] = wrongOptions[wPtr++] || '';
+      }
+    }
+    return {
+      ...item,
+      question: cleanQuestion,
+      options: rotatedOptions,
+      correctAnswerIndex: targetCorrectIndex
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,9 @@ import {
   XCircle
 } from 'lucide-react';
 import {
+  CustomTrainingItem,
+  CustomTrainingRegistration,
+  DEFAULT_CUSTOM_TRAININGS,
   HubCertificate,
   HubPaymentRequest,
   HubTraining,
@@ -33,6 +36,7 @@ import {
   InternationalTrainingCourse,
   get40CourseExamQuestions
 } from '../data/internationalTrainingsData';
+import { hasLegacyTrivialOptions } from '../data/coursesHaccp3And4';
 import {
   buildDirectCertificateVerifyUrl,
   downloadOfficialCourseCertificatePdf,
@@ -80,9 +84,19 @@ interface TrainingsAcademyViewProps {
   }) => Promise<void>;
   onOpenUpgradeModal: () => void;
   onRequireSignIn?: () => void;
-  requestedSubTab?: 'catalog' | 'my-certificates' | 'verify-portal';
+  requestedSubTab?:
+    | 'catalog'
+    | 'custom-trainings'
+    | 'my-certificates'
+    | 'verify-portal';
   requestedSubTabKey?: number;
-  onSubTabChange?: (tab: 'catalog' | 'my-certificates' | 'verify-portal') => void;
+  onSubTabChange?: (
+    tab: 'catalog' | 'custom-trainings' | 'my-certificates' | 'verify-portal'
+  ) => void;
+  customTrainings?: CustomTrainingItem[];
+  onSubmitCustomTrainingRegistration?: (
+    reg: Omit<CustomTrainingRegistration, 'id' | 'status' | 'submittedAt'>
+  ) => Promise<void>;
 }
 
 function makeDeterministicCertNumber(uid: string, courseCode: string): string {
@@ -106,11 +120,21 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   onRequireSignIn,
   requestedSubTab,
   requestedSubTabKey,
-  onSubTabChange
+  onSubTabChange,
+  customTrainings,
+  onSubmitCustomTrainingRegistration
 }) => {
   const geo = useGeoCurrency();
-  const [activeSubTab, setActiveSubTab] = useState<'catalog' | 'my-certificates' | 'verify-portal'>(() => {
-    if (requestedSubTab) return requestedSubTab;
+  const isLoggedInUser = Boolean(currentUser?.uid);
+  const [activeSubTab, setActiveSubTab] = useState<
+    'catalog' | 'custom-trainings' | 'my-certificates' | 'verify-portal'
+  >(() => {
+    if (requestedSubTab) {
+      if (requestedSubTab === 'my-certificates' && !currentUser?.uid) {
+        return 'catalog';
+      }
+      return requestedSubTab;
+    }
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = (params.get('tab') || '').toLowerCase();
@@ -123,12 +147,33 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       ) {
         return 'verify-portal';
       }
-      if (tabParam === 'my-certificates') {
+      if (tabParam === 'custom-trainings') {
+        return 'custom-trainings';
+      }
+      if (tabParam === 'my-certificates' && currentUser?.uid) {
         return 'my-certificates';
       }
     }
     return 'catalog';
   });
+
+  // Custom Training Registration Modal / Form State
+  const [selectedCustomTrainingForReg, setSelectedCustomTrainingForReg] =
+    useState<CustomTrainingItem | null>(null);
+  const [regName, setRegName] = useState('');
+  const [regFatherName, setRegFatherName] = useState('');
+  const [regEducation, setRegEducation] = useState('');
+  const [regDesignation, setRegDesignation] = useState('');
+  const [regDob, setRegDob] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regMobileNo, setRegMobileNo] = useState('');
+  const [isSubmittingCustomReg, setIsSubmittingCustomReg] = useState(false);
+  const [customRegSuccessMsg, setCustomRegSuccessMsg] = useState<string | null>(
+    null
+  );
+  const [customRegErrorMsg, setCustomRegErrorMsg] = useState<string | null>(
+    null
+  );
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeModuleIdx, setActiveModuleIdx] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'overview' | 'study' | 'exam' | 'exam-result' | 'certificate-preview'>('overview');
@@ -207,10 +252,20 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
   useEffect(() => {
     if (!requestedSubTab) return;
+    if (requestedSubTab === 'my-certificates' && !isLoggedInUser) {
+      setActiveSubTab('catalog');
+      return;
+    }
     setActiveSubTab(requestedSubTab);
     setSelectedCourseId(null);
     setViewMode('overview');
-  }, [requestedSubTab, requestedSubTabKey]);
+  }, [requestedSubTab, requestedSubTabKey, isLoggedInUser]);
+
+  useEffect(() => {
+    if (!isLoggedInUser && activeSubTab === 'my-certificates') {
+      setActiveSubTab('catalog');
+    }
+  }, [isLoggedInUser, activeSubTab]);
 
   useEffect(() => {
     onSubTabChange?.(activeSubTab);
@@ -229,7 +284,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       } else if (existingVerify) {
         nextParams.set('verify', existingVerify);
       }
-    } else if (activeSubTab === 'my-certificates') {
+    } else if (activeSubTab === 'custom-trainings') {
+      nextParams.set('tab', 'custom-trainings');
+    } else if (activeSubTab === 'my-certificates' && isLoggedInUser) {
       nextParams.set('tab', 'my-certificates');
     } else if (selectedCourseId) {
       nextParams.set('course', selectedCourseId);
@@ -611,19 +668,23 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
   const handleStart40McqExam = (course: InternationalTrainingCourse) => {
     const matchedTr = trainings.find((t) => t.id === course.id);
-    const customQuestions: CourseExamMCQ[] =
-      matchedTr?.customMcqs && matchedTr.customMcqs.length > 0
-        ? matchedTr.customMcqs.map((q, idx) => ({
-            id: q.id || `mcq-${idx + 1}`,
-            questionNumber: idx + 1,
-            question: q.question,
-            options: q.options,
-            correctIndex: q.correctIndex,
-            explanation:
-              q.explanation ||
-              `Correct Answer: ${q.options[q.correctIndex] || `Option ${q.correctIndex + 1}`}`
-          }))
-        : get40CourseExamQuestions(course.id);
+    const hasValidManualMcqs =
+      matchedTr?.customMcqs &&
+      matchedTr.customMcqs.length > 0 &&
+      !matchedTr.customMcqs.some((q) => hasLegacyTrivialOptions(q.options));
+
+    const customQuestions: CourseExamMCQ[] = hasValidManualMcqs
+      ? matchedTr!.customMcqs!.map((q, idx) => ({
+          id: q.id || `mcq-${idx + 1}`,
+          questionNumber: idx + 1,
+          question: q.question,
+          options: q.options,
+          correctIndex: q.correctIndex,
+          explanation:
+            q.explanation ||
+            `Correct Answer: ${q.options[q.correctIndex] || `Option ${q.correctIndex + 1}`}`
+        }))
+      : get40CourseExamQuestions(course.id);
 
     setSelectedCourseId(course.id);
     setExamQuestions(customQuestions);
@@ -969,6 +1030,37 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     );
     const qrMatrix = generateQrCodeMatrix(directVerifyUrl);
 
+    if (!isLoggedInUser) {
+      return (
+        <div className="rounded-2xl border-2 border-[#1673B8]/35 bg-[#F0F6FC] p-5 sm:p-6 shadow-sm space-y-3 text-center max-w-2xl mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-white border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center mx-auto shadow-2xs">
+            <Lock className="w-6 h-6" />
+          </div>
+          <h4 className="text-base sm:text-lg font-black text-[#1A2138]">
+            Sign In to Access &ldquo;My Certificates&rdquo; &amp; View Your Certificate Preview
+          </h4>
+          <p className="text-xs text-slate-600 max-w-lg mx-auto leading-relaxed">
+            Guest visitors can study all modules and take the 40-MCQ Final Exam for free. Sign in with your account to save your completed course in <strong>My Certificates</strong>, view your personalized Certificate Pattern Preview, and unlock your official Portrait PDF Certificate.
+          </p>
+          {onRequireSignIn && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={onRequireSignIn}
+                className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs shadow-sm cursor-pointer transition"
+              >
+                Sign In / Create Free Account
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const demoBlurClass = !isUnlocked
+      ? 'blur-[6px] select-none pointer-events-none transition-all'
+      : '';
+
     return (
       <div className="space-y-4">
         {/* Official FS Portal Portrait A4 Certificate Visual Pattern Card */}
@@ -989,10 +1081,13 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
           {/* Right Main White Certificate Canvas (No background "U" watermark; strict margin containment) */}
           <div className="flex-1 min-w-0 p-4 sm:p-7 relative z-10 flex flex-col justify-between text-left overflow-hidden bg-white">
-            {/* Preview Watermark if not yet unlocked */}
+            {/* Thicker / Prominent Preview Watermark if not yet unlocked */}
             {!isUnlocked && (
               <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center z-20 p-4">
-                <span className="rotate-[-20deg] border-2 border-[#1673B8]/30 bg-white/85 px-4 py-2 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-widest text-[#1673B8]/60 shadow-xs text-center max-w-full break-words">
+                <span
+                  className="rotate-[-20deg] border-4 border-[#1673B8]/85 bg-white/95 px-5 sm:px-7 py-3 sm:py-4 rounded-2xl text-xs sm:text-base font-black uppercase tracking-[0.18em] text-[#1673B8] shadow-xl text-center max-w-full break-words"
+                  style={{ WebkitTextStroke: '0.4px #105E9A' }}
+                >
                   {isPendingAdminApproval
                     ? 'PENDING ADMIN APPROVAL · CERTIFICATE PREVIEW'
                     : 'CERTIFICATE PATTERN PREVIEW'}
@@ -1002,8 +1097,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
             {/* Top Section: Brand Logo, Rosette Seal, Title, User & Training Info */}
             <div className="space-y-4 relative z-10 min-w-0">
-              {/* Top Row: Large Food Science Portal Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right */}
-              <div className="flex items-start justify-between gap-2.5 min-w-0">
+              {/* Top Row: Large Food Science Portal Logo on Left + Blue Scalloped Rosette Seal with Ribbons on Right (Blurred on Demo Preview) */}
+              <div
+                className={`flex items-start justify-between gap-2.5 min-w-0 ${demoBlurClass}`}
+              >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div className="w-12 h-12 sm:w-15 sm:h-15 rounded-xl border-2 border-[#1673B8] bg-white p-0.5 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
                     <img
@@ -1092,17 +1189,21 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 </p>
               </div>
 
-              {/* 2. "This is to certify that" + Recipient Name + User Profile Picture */}
+              {/* 2. "This is to certify that" + Recipient Name + User Profile Picture (Recipient Name & Photo Blurred on Demo Preview) */}
               <div className="flex items-end justify-between gap-3 border-b border-[#D8E4EE] pb-2.5 min-w-0">
                 <div className="space-y-1 min-w-0 flex-1">
                   <p className="text-xs sm:text-sm text-[#1C2336]">
                     This is to certify that
                   </p>
-                  <p className="text-lg sm:text-2xl font-black text-[#162038] tracking-tight break-words leading-snug">
+                  <p
+                    className={`text-lg sm:text-2xl font-black text-[#162038] tracking-tight break-words leading-snug ${demoBlurClass}`}
+                  >
                     {holderName}
                   </p>
                 </div>
-                <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-xl border-2 border-[#1673B8] bg-[#F0F7FF] overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                <div
+                  className={`w-13 h-13 sm:w-16 sm:h-16 rounded-xl border-2 border-[#1673B8] bg-[#F0F7FF] overflow-hidden flex items-center justify-center shrink-0 shadow-xs ${demoBlurClass}`}
+                >
                   {currentUser?.profilePicUrl ? (
                     <img
                       src={currentUser.profilePicUrl}
@@ -1154,7 +1255,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               {/* 4. 3-Column Underlined Metrics Row: Certificate No. | Awarded | Exam Score (Aligned on the exact same horizontal baseline) */}
               <div className="grid grid-cols-3 items-end gap-2 sm:gap-3 pt-2 text-center min-w-0">
                 <div className="flex flex-col justify-end min-w-0 px-0.5">
-                  <div className="min-h-[24px] flex items-end justify-center border-b border-[#D2DEEA] pb-1.5 text-[9.5px] sm:text-[11px] font-black text-[#162038] font-mono whitespace-nowrap overflow-hidden text-ellipsis">
+                  <div
+                    className={`min-h-[24px] flex items-end justify-center border-b border-[#D2DEEA] pb-1.5 text-[9.5px] sm:text-[11px] font-black text-[#162038] font-mono whitespace-nowrap overflow-hidden text-ellipsis ${demoBlurClass}`}
+                  >
                     {certNo}
                   </div>
                   <p className="text-[10px] sm:text-[10.5px] text-slate-700 mt-1 leading-tight">
@@ -1182,10 +1285,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               </div>
             </div>
 
-            {/* Bottom Section: Cursive Signature, "Endorsed by FS Portal", Website Verification Link & Scannable QR Code */}
+            {/* Bottom Section: Cursive Signature, "Endorsed by FS Portal", Website Verification Link & Scannable QR Code (Blurred on Demo Preview) */}
             <div className="pt-5 space-y-4 relative z-10 min-w-0">
               {/* Row 1: Permanent No. 3 Intertwined MK Monogram Signature on Left + Endorsed by Food Science Portal on Right */}
-              <div className="flex flex-wrap items-end justify-between gap-3 min-w-0">
+              <div
+                className={`flex flex-wrap items-end justify-between gap-3 min-w-0 ${demoBlurClass}`}
+              >
                 <div className="w-44 text-center shrink-0">
                   <svg
                     viewBox="0 0 190 48"
@@ -1262,15 +1367,18 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         rel="noopener noreferrer"
                         onClick={(e) => {
                           e.preventDefault();
+                          if (!isUnlocked) return;
                           setActiveSubTab('verify-portal');
                           setVerifyQuery(certNo);
                           setHasSearchedVerify(true);
                         }}
-                        className="text-left text-[#1673B8] hover:underline font-bold text-[10.5px] leading-snug cursor-pointer block break-all"
+                        className={`text-left text-[#1673B8] hover:underline font-bold text-[10.5px] leading-snug cursor-pointer block break-all ${demoBlurClass}`}
                       >
                         {shortVerifyDisplayUrl}
                       </a>
-                      <p className="text-[10px] text-slate-600 font-medium leading-snug break-words">
+                      <p
+                        className={`text-[10px] text-slate-600 font-medium leading-snug break-words ${demoBlurClass}`}
+                      >
                         Enter Certificate No: <strong className="font-mono text-slate-900">{certNo}</strong> on the Website Verification Portal
                       </p>
                     </div>
@@ -1283,7 +1391,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 </div>
 
                 {/* Scannable QR Code for Direct Certificate Verification */}
-                <div className="flex flex-col items-center bg-white border border-slate-300 rounded-xl p-2 shadow-xs shrink-0 max-w-[112px]">
+                <div
+                  className={`flex flex-col items-center bg-white border border-slate-300 rounded-xl p-2 shadow-xs shrink-0 max-w-[112px] ${demoBlurClass}`}
+                >
                   {qrMatrix.length > 0 && (
                     <svg
                       viewBox={`0 0 ${qrMatrix.length} ${qrMatrix.length}`}
@@ -1461,17 +1571,37 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             <button
               type="button"
               onClick={() => {
-                setActiveSubTab('my-certificates');
+                setActiveSubTab('custom-trainings');
                 setSelectedCourseId(null);
+                setSelectedCustomTrainingForReg(null);
+                setCustomRegSuccessMsg(null);
+                setCustomRegErrorMsg(null);
               }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
-                activeSubTab === 'my-certificates'
+              className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 ${
+                activeSubTab === 'custom-trainings'
                   ? 'bg-white text-[#1673B8] shadow-sm'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
-              My Certificates
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              Custom Trainings
             </button>
+            {isLoggedInUser && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSubTab('my-certificates');
+                  setSelectedCourseId(null);
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                  activeSubTab === 'my-certificates'
+                    ? 'bg-white text-[#1673B8] shadow-sm'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                My Certificates
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -1490,6 +1620,409 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ==================== TAB: CUSTOM TRAININGS & REGISTRATION FORM ==================== */}
+      {activeSubTab === 'custom-trainings' && (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-[#D2DEEA] bg-white p-5 sm:p-6 shadow-sm space-y-2">
+            <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-[#1673B8]">
+              <Sparkles className="w-4 h-4" />
+              Specialized Industrial &amp; Custom Training Programs
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-[#1A2138]">
+              Custom Trainings &amp; Direct Enrollment Registration
+            </h2>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-3xl">
+              Select any specialized industrial Custom Training below to view its curriculum, fee, duration, and training mode. Click on any Custom Training to fill out the Registration Form and send your enrollment request directly to Administration.
+            </p>
+          </div>
+
+          {/* Registration Form Modal / Card when a Custom Training is clicked */}
+          {selectedCustomTrainingForReg && (
+            <div className="rounded-2xl border-2 border-[#1673B8] bg-[#F0F6FC] p-5 sm:p-6 shadow-md space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#D2DEEA] pb-3.5">
+                <div className="space-y-1">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold uppercase tracking-wider">
+                    Custom Training Registration · {selectedCustomTrainingForReg.code}
+                  </span>
+                  <h3 className="text-base sm:text-lg font-black text-[#1A2138]">
+                    {selectedCustomTrainingForReg.title}
+                  </h3>
+                  <p className="text-xs text-[#105E9A] font-bold">
+                    Fee: Rs. {Number(selectedCustomTrainingForReg.priceRs || 0).toLocaleString()}
+                    {selectedCustomTrainingForReg.priceUsd
+                      ? ` ($${selectedCustomTrainingForReg.priceUsd} USD)`
+                      : ''}{' '}
+                    · Duration: {selectedCustomTrainingForReg.duration} · Mode:{' '}
+                    {selectedCustomTrainingForReg.mode}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCustomTrainingForReg(null);
+                    setCustomRegSuccessMsg(null);
+                    setCustomRegErrorMsg(null);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-[#D2DEEA] text-xs font-extrabold text-slate-700 cursor-pointer"
+                >
+                  ✕ Close Form
+                </button>
+              </div>
+
+              {customRegSuccessMsg ? (
+                <div className="rounded-2xl bg-white border border-emerald-300 p-5 text-center space-y-3">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+                  <h4 className="text-base font-black text-[#1A2138]">
+                    Registration Request Sent to Admin Control Panel!
+                  </h4>
+                  <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                    {customRegSuccessMsg}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCustomTrainingForReg(null);
+                      setCustomRegSuccessMsg(null);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer"
+                  >
+                    Back to Custom Trainings
+                  </button>
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (
+                      !regName.trim() ||
+                      !regFatherName.trim() ||
+                      !regEducation.trim() ||
+                      !regDesignation.trim() ||
+                      !regDob.trim() ||
+                      !regEmail.trim() ||
+                      !regMobileNo.trim()
+                    ) {
+                      setCustomRegErrorMsg(
+                        'Please fill in all 7 required fields (Name, Father Name, Education, Designation, Date of Birth, Email, and Mobile No).'
+                      );
+                      return;
+                    }
+                    setCustomRegErrorMsg(null);
+                    setIsSubmittingCustomReg(true);
+                    try {
+                      const numericFee = Number(
+                        selectedCustomTrainingForReg.priceRs ??
+                          selectedCustomTrainingForReg.feeRs ??
+                          0
+                      );
+                      await onSubmitCustomTrainingRegistration?.({
+                        trainingId: selectedCustomTrainingForReg.id,
+                        trainingTitle: selectedCustomTrainingForReg.title,
+                        trainingFee:
+                          selectedCustomTrainingForReg.fee ||
+                          `Rs. ${numericFee.toLocaleString()}`,
+                        trainingCode: selectedCustomTrainingForReg.code,
+                        trainingPriceRs: numericFee,
+                        name: regName.trim(),
+                        fatherName: regFatherName.trim(),
+                        education: regEducation.trim(),
+                        designation: regDesignation.trim(),
+                        dob: regDob.trim(),
+                        email: regEmail.trim(),
+                        mobileNo: regMobileNo.trim(),
+                        uid: currentUser?.uid || undefined
+                      });
+                      setCustomRegSuccessMsg(
+                        `Your registration for "${selectedCustomTrainingForReg.title}" has been received in the Admin Control Panel. Our Training Coordinator will contact you via Email (${regEmail.trim()}) or Mobile/WhatsApp (${regMobileNo.trim()}) with schedule and enrollment details.`
+                      );
+                    } catch {
+                      setCustomRegErrorMsg(
+                        'Could not submit registration right now. Please check your connection and try again.'
+                      );
+                    } finally {
+                      setIsSubmittingCustomReg(false);
+                    }
+                  }}
+                  className="bg-white rounded-2xl border border-[#D2DEEA] p-4 sm:p-5 space-y-4"
+                >
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-black text-[#1A2138]">
+                      Participant Registration Form
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Please enter your accurate details below. Your registration will be sent directly to the Admin Control Panel.
+                    </p>
+                  </div>
+
+                  {customRegErrorMsg && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800">
+                      {customRegErrorMsg}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        1. Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={regName}
+                        onChange={(e) => setRegName(e.target.value)}
+                        placeholder="Enter your full name"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#94B8D7] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8] focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        2. Father Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={regFatherName}
+                        onChange={(e) => setRegFatherName(e.target.value)}
+                        placeholder="Enter your father's full name"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#94B8D7] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8] focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        3. Education / Qualification *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={regEducation}
+                        onChange={(e) => setRegEducation(e.target.value)}
+                        placeholder="e.g., BS / MSc Food Science & Technology"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#94B8D7] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8] focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        4. Current Designation / Role *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={regDesignation}
+                        onChange={(e) => setRegDesignation(e.target.value)}
+                        placeholder="e.g., QA/QC Officer, Food Technologist, Student"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#94B8D7] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8] focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        5. Date of Birth (DOB) *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={regDob}
+                        onChange={(e) => setRegDob(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#94B8D7] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8] focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        6. Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        placeholder="e.g., name@example.com"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#94B8D7] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8] focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                        7. Mobile / WhatsApp Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={regMobileNo}
+                        onChange={(e) => setRegMobileNo(e.target.value)}
+                        placeholder="e.g., +92 300 1234567"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#94B8D7] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCustomTrainingForReg(null)}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingCustomReg}
+                      className="px-6 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-xs font-extrabold shadow-sm cursor-pointer transition"
+                    >
+                      {isSubmittingCustomReg
+                        ? 'Submitting Registration...'
+                        : 'Submit Registration to Admin'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* Grid of Active Custom Trainings */}
+          {(() => {
+            const activeCustomList = (
+              customTrainings && customTrainings.length > 0
+                ? customTrainings
+                : DEFAULT_CUSTOM_TRAININGS
+            ).filter((ct) => ct.isActive !== false);
+
+            if (activeCustomList.length === 0) {
+              return (
+                <div className="rounded-2xl border border-[#D2DEEA] bg-white p-8 text-center space-y-2">
+                  <Award className="w-10 h-10 text-slate-400 mx-auto" />
+                  <h3 className="text-base font-black text-[#1A2138]">
+                    No Custom Trainings Available Right Now
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    New specialized industrial Custom Trainings will appear here as soon as they are published by Administration.
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeCustomList.map((ct, idx) => (
+                  <div
+                    key={ct.id}
+                    onClick={() => {
+                      setSelectedCustomTrainingForReg(ct);
+                      setCustomRegSuccessMsg(null);
+                      setCustomRegErrorMsg(null);
+                      if (currentUser?.name && !regName) setRegName(currentUser.name);
+                      if (currentUser?.email && !regEmail) setRegEmail(currentUser.email);
+                      if (
+                        (currentUser?.whatsappNumber || currentUser?.phone) &&
+                        !regMobileNo
+                      ) {
+                        setRegMobileNo(
+                          currentUser.whatsappNumber || currentUser.phone || ''
+                        );
+                      }
+                      if (currentUser?.title && !regDesignation) {
+                        setRegDesignation(currentUser.title);
+                      }
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="rounded-2xl border border-[#D2DEEA] bg-white p-5 shadow-sm hover:shadow-md hover:border-[#1673B8] transition flex flex-col justify-between space-y-4 cursor-pointer"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] text-[10px] font-extrabold uppercase tracking-wider">
+                          #{idx + 1} · {ct.code} · {ct.mode}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black">
+                          Fee: Rs. {Number(ct.priceRs || 0).toLocaleString()}
+                          {ct.priceUsd ? ` ($${ct.priceUsd})` : ''}
+                        </span>
+                      </div>
+
+                      <h3 className="text-base sm:text-lg font-black text-[#1A2138] leading-snug">
+                        {ct.title}
+                      </h3>
+
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        {ct.description}
+                      </p>
+
+                      <div className="text-[11px] text-slate-600 font-semibold space-y-1 pt-1">
+                        {ct.accreditationStandard && (
+                          <div className="flex items-center gap-1.5">
+                            <BookOpen className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                            <span>Standard: {ct.accreditationStandard}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-[#1673B8] shrink-0" />
+                          <span>
+                            Duration: {ct.duration} · Mode: {ct.mode}
+                            {ct.instructor ? ` · ${ct.instructor}` : ''}
+                          </span>
+                        </div>
+                      </div>
+
+                      {ct.topics && ct.topics.length > 0 && (
+                        <div className="bg-[#F8FAFC] border border-slate-200/80 rounded-xl p-3 space-y-1.5">
+                          <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
+                            Key Training Topics Covered:
+                          </span>
+                          <ul className="space-y-1 text-[11px] text-slate-700 font-medium list-disc pl-4">
+                            {ct.topics.map((topic, tIdx) => (
+                              <li key={tIdx}>{topic}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-slate-500">
+                        Click to fill registration form
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCustomTrainingForReg(ct);
+                          setCustomRegSuccessMsg(null);
+                          setCustomRegErrorMsg(null);
+                          if (currentUser?.name && !regName)
+                            setRegName(currentUser.name);
+                          if (currentUser?.email && !regEmail)
+                            setRegEmail(currentUser.email);
+                          if (
+                            (currentUser?.whatsappNumber || currentUser?.phone) &&
+                            !regMobileNo
+                          ) {
+                            setRegMobileNo(
+                              currentUser.whatsappNumber ||
+                                currentUser.phone ||
+                                ''
+                            );
+                          }
+                          if (currentUser?.title && !regDesignation) {
+                            setRegDesignation(currentUser.title);
+                          }
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs shadow-xs cursor-pointer transition"
+                      >
+                        <span>Register Now</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* ==================== TAB 3: ONLINE CERTIFICATE VERIFICATION PORTAL ==================== */}
       {activeSubTab === 'verify-portal' && (
@@ -1883,13 +2416,15 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 >
                   Verify Certificate
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveSubTab('my-certificates')}
-                  className="px-4 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] text-xs font-extrabold cursor-pointer transition-colors"
-                >
-                  View My Certificates
-                </button>
+                {isLoggedInUser && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubTab('my-certificates')}
+                    className="px-4 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#EBF4FC] border border-[#D2DEEA] text-[#1A2138] text-xs font-extrabold cursor-pointer transition-colors"
+                  >
+                    View My Certificates
+                  </button>
+                )}
               </div>
             </div>
           ) : (

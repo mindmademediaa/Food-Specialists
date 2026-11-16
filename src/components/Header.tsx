@@ -137,17 +137,17 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="shrink-0 z-30 bg-white border-b border-[#D2DEEA] shadow-2xs">
       {/* Main Header Container — Full-Width Edge-to-Edge with Centered 1440px Website Alignment */}
-      <div className="max-w-[1440px] mx-auto px-3.5 sm:px-6 lg:px-10 py-2.5 md:py-3 flex items-center justify-between gap-3 lg:gap-4">
-        {/* Left: Back Button + Brand Emblem + Brand Name (shrink-0 & whitespace-nowrap so it NEVER overlaps) */}
-        <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
+      <div className="max-w-[1440px] mx-auto px-2.5 sm:px-6 lg:px-10 py-2 md:py-3 flex items-center justify-between gap-1.5 sm:gap-3 lg:gap-4 w-full">
+        {/* Left: Back Button + Brand Emblem + Brand Name */}
+        <div className="flex items-center gap-1.5 sm:gap-3.5 min-w-0 flex-1 sm:flex-initial">
           {showBack && onBack && (
             <button
               type="button"
               onClick={onBack}
               aria-label="Go Back"
-              className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+              className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4 text-[#1A2138]" />
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1A2138]" />
             </button>
           )}
 
@@ -157,9 +157,9 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onHomeClick}
             aria-label="Food Science Portal Home"
             title="Food Science Portal"
-            className="flex items-center gap-2.5 sm:gap-3 shrink-0 cursor-pointer text-left group"
+            className="flex items-center gap-1.5 sm:gap-3 min-w-0 cursor-pointer text-left group"
           >
-            <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white border border-[#1673B8]/35 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs group-hover:border-[#1673B8] transition-colors">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl bg-white border border-[#1673B8]/35 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs group-hover:border-[#1673B8] transition-colors">
               <img
                 src={FS_PORTAL_LOGO_DATA_URI}
                 alt="Food Science Portal"
@@ -167,11 +167,11 @@ export const Header: React.FC<HeaderProps> = ({
               />
             </div>
 
-            <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0 leading-none">
-              <span className="text-[16px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight text-[#0C182D]">
+            <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap min-w-0 leading-none">
+              <span className="text-[13.5px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight text-[#0C182D] truncate">
                 Food Science
               </span>
-              <span className="text-[16px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight text-[#1673B8] underline decoration-[#1673B8] decoration-2 underline-offset-4">
+              <span className="text-[13.5px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight text-[#1673B8] underline decoration-[#1673B8] decoration-2 underline-offset-4 shrink-0">
                 Portal
               </span>
             </div>
@@ -213,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Right Actions: Desktop Quick Search Pill, Install App Button, Admin, Bell, User Avatar, 3-Dots Menu */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Desktop Inline Quick Search Button */}
           <button
             type="button"
@@ -232,9 +232,9 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onInstallAppClick}
               title="Download & Install Food Science Portal Mobile App"
-              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] hover:from-[#105E9A] hover:to-[#1673B8] text-white text-[10.5px] sm:text-xs font-extrabold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] hover:from-[#105E9A] hover:to-[#1673B8] text-white text-[10px] sm:text-xs font-extrabold flex items-center gap-1 sm:gap-1.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
-              <Download className="w-3.5 h-3.5 text-sky-200 shrink-0" />
+              <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sky-200 shrink-0" />
               <span className="hidden sm:inline">Install App</span>
               <span className="inline sm:hidden">App</span>
             </button>
@@ -245,9 +245,9 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onAdminClick}
               title="Open Admin Panel"
-              className="relative px-2.5 py-1.5 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] text-[10.5px] sm:text-xs font-extrabold text-[#1673B8] border border-[#1673B8]/40 flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+              className="relative px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] text-[10px] sm:text-xs font-extrabold text-[#1673B8] border border-[#1673B8]/40 flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
-              <Shield className="w-3.5 h-3.5 text-[#1673B8]" />
+              <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#1673B8]" />
               <span>Admin</span>
               {pendingAdminCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full bg-red-600 text-white text-[9px] font-extrabold tabular-nums">
@@ -258,7 +258,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* Bell Job Notifications Menu */}
-          <div className="relative" ref={notifRef}>
+          <div className="relative shrink-0" ref={notifRef}>
             <button
               type="button"
               onClick={() => {
@@ -267,15 +267,15 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               aria-label="Job Notifications"
               title="New Job Notifications"
-              className={`relative w-8 h-8 md:w-9 md:h-9 rounded-full border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+              className={`relative w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                 notifOpen
                   ? 'bg-[#EBF4FC] border-[#1673B8] text-[#1673B8]'
                   : 'bg-[#F0F6FC] hover:bg-[#E1EEF9] border-[#D2DEEA] text-[#1A2138]'
               }`}
             >
-              <Bell className="w-4 h-4 stroke-[2.2]" />
+              <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-[#1673B8] text-white text-[9.5px] font-extrabold flex items-center justify-center border-2 border-white shadow-2xs tabular-nums">
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-[#1673B8] text-white text-[9px] font-extrabold flex items-center justify-center border-2 border-white shadow-2xs tabular-nums">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -411,9 +411,9 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onSignInClick}
               title="Sign In or Create Free Account"
-              className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+              className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1 sm:gap-1.5 shadow-2xs transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             >
-              <User className="w-3.5 h-3.5 text-white shrink-0" />
+              <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white shrink-0" />
               <span>Sign In</span>
             </button>
           ) : (
@@ -437,7 +437,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* 3-Dots Google Play Store Policy & App Closure Menu — Visible Only to Signed-In Users */}
           {!isGuest && (
-            <div className="relative" ref={menuRef}>
+            <div className="relative shrink-0" ref={menuRef}>
               <button
                 type="button"
                 onClick={() => {
@@ -446,9 +446,9 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 aria-label="Policies, Legal & App Closure Menu"
                 title="Policies & App Options"
-                className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1A2138] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1A2138] flex items-center justify-center transition-colors cursor-pointer shrink-0"
               >
-                <MoreVertical className="w-4 h-4 stroke-[2.2]" />
+                <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
               </button>
 
               {menuOpen && (

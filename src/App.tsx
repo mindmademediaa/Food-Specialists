@@ -91,6 +91,9 @@ import {
   HubPaymentRequest,
   HubCertificate,
   CloudStorageConfig,
+  CustomTrainingItem,
+  CustomTrainingRegistration,
+  DEFAULT_CUSTOM_TRAININGS,
   DevRole,
   SpecializationTag,
   NavTab,
@@ -104,6 +107,7 @@ import {
   makeAvatarSvg
 } from './data/mockHubData';
 import { INTERNATIONAL_TRAINING_COURSES } from './data/internationalTrainingsData';
+import { hasLegacyTrivialOptions } from './data/coursesHaccp3And4';
 import { DEFAULT_USER_TOOLS_DATA } from './data/examPrepData';
 import {
   uploadMediaFile,
@@ -297,7 +301,11 @@ type RouteView =
   | { name: 'community-member'; uid: string }
   | {
       name: 'trainings';
-      initialSubTab?: 'catalog' | 'my-certificates' | 'verify-portal';
+      initialSubTab?:
+        | 'catalog'
+        | 'custom-trainings'
+        | 'my-certificates'
+        | 'verify-portal';
       navKey?: number;
     }
   | { name: 'trainings-highfield' }
@@ -450,7 +458,7 @@ export default function App() {
   const [showGuestAuthModal, setShowGuestAuthModal] = useState<boolean>(false);
 
   const [activeTrainingsSubTab, setActiveTrainingsSubTab] = useState<
-    'catalog' | 'my-certificates' | 'verify-portal'
+    'catalog' | 'custom-trainings' | 'my-certificates' | 'verify-portal'
   >(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -464,6 +472,9 @@ export default function App() {
         pageParam === 'verify-certificate'
       ) {
         return 'verify-portal';
+      }
+      if (tabParam === 'custom-trainings') {
+        return 'custom-trainings';
       }
       if (tabParam === 'my-certificates') {
         return 'my-certificates';
@@ -495,6 +506,8 @@ export default function App() {
           tabParam === 'verify-portal' ||
           pageParam === 'verify-certificate'
             ? 'verify-portal'
+            : tabParam === 'custom-trainings'
+            ? 'custom-trainings'
             : tabParam === 'my-certificates'
             ? 'my-certificates'
             : 'catalog';
@@ -527,6 +540,8 @@ export default function App() {
   const [paymentRequests, setPaymentRequests] = useState<HubPaymentRequest[]>(
     []
   );
+  const [customTrainingRegistrations, setCustomTrainingRegistrations] =
+    useState<CustomTrainingRegistration[]>([]);
   const [storageConfig, setStorageConfig] = useState<CloudStorageConfig>({
     provider: 'cloudinary',
     cloudinaryCloudName: 'mhjkrdlh',
@@ -1102,7 +1117,19 @@ export default function App() {
           INITIAL_TRAININGS.forEach((t) => map.set(t.id, t));
           fsTr.forEach((t) => {
             const initMatch = INITIAL_TRAININGS.find((it) => it.id === t.id);
-            map.set(t.id, initMatch ? { ...initMatch, ...t } : t);
+            if (initMatch) {
+              const hasLegacyMcqs =
+                !t.customMcqs ||
+                t.customMcqs.length === 0 ||
+                t.customMcqs.some((q) => hasLegacyTrivialOptions(q.options));
+              map.set(t.id, {
+                ...initMatch,
+                ...t,
+                customMcqs: hasLegacyMcqs ? initMatch.customMcqs : t.customMcqs
+              });
+            } else {
+              map.set(t.id, t);
+            }
           });
           return Array.from(map.values());
         });
@@ -1189,6 +1216,9 @@ export default function App() {
             frontPageConfig: data.frontPageConfig || undefined,
             manualRevenueEntries: Array.isArray(data.manualRevenueEntries)
               ? data.manualRevenueEntries
+              : undefined,
+            customTrainings: Array.isArray(data.customTrainings)
+              ? data.customTrainings
               : undefined
           };
           setStorageConfig(hydrated);
@@ -1290,9 +1320,29 @@ export default function App() {
       () => {}
     );
 
+    let unsubCustomRegs: (() => void) | null = null;
+    if (isAdminUser) {
+      unsubCustomRegs = onSnapshot(
+        collection(db, 'customTrainingRegistrations'),
+        (snap) => {
+          const list = snap.docs
+            .map((d) => ({
+              ...(d.data() as CustomTrainingRegistration),
+              id: d.id
+            }))
+            .sort((a, b) =>
+              (b.submittedAt || '').localeCompare(a.submittedAt || '')
+            );
+          setCustomTrainingRegistrations(list);
+        },
+        () => {}
+      );
+    }
+
     return () => {
       unsubMyDoc();
       unsubPay();
+      if (unsubCustomRegs) unsubCustomRegs();
     };
   }, [authUser]);
 
@@ -3515,6 +3565,76 @@ export default function App() {
     } catch {}
   };
 
+  const handleSaveCustomTrainingsList = async (
+    nextList: CustomTrainingItem[]
+  ) => {
+    const updated: CloudStorageConfig = {
+      ...storageConfig,
+      customTrainings: nextList,
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    };
+    setStorageConfig(updated);
+    try {
+      await setDoc(doc(db, 'settings', 'storageConfig'), updated, {
+        merge: true
+      });
+    } catch {}
+  };
+
+  const handleSubmitCustomTrainingRegistration = async (
+    reg: Omit<CustomTrainingRegistration, 'id' | 'status' | 'submittedAt'>
+  ) => {
+    const regId = `ctreg-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const numericFee = Math.max(0, Number(reg.trainingPriceRs) || 0);
+    const feeLabel = (
+      reg.trainingFee || `Rs. ${numericFee.toLocaleString()}`
+    ).slice(0, 95);
+    const payload: CustomTrainingRegistration = {
+      id: regId,
+      trainingId: reg.trainingId.slice(0, 115),
+      trainingTitle: reg.trainingTitle.slice(0, 230),
+      trainingFee: feeLabel,
+      name: reg.name.slice(0, 135),
+      fatherName: reg.fatherName.slice(0, 135),
+      education: reg.education.slice(0, 195),
+      designation: reg.designation.slice(0, 190),
+      dob: reg.dob.slice(0, 55),
+      email: reg.email.slice(0, 190),
+      mobileNo: reg.mobileNo.slice(0, 55),
+      uid: reg.uid ? reg.uid.slice(0, 120) : '',
+      status: 'pending',
+      submittedAt: new Date().toISOString()
+    };
+    await setDoc(doc(db, 'customTrainingRegistrations', regId), payload);
+  };
+
+  const handleUpdateCustomTrainingRegistrationStatus = async (
+    id: string,
+    status: CustomTrainingRegistration['status']
+  ) => {
+    try {
+      await setDoc(
+        doc(db, 'customTrainingRegistrations', id),
+        { status },
+        { merge: true }
+      );
+      setCustomTrainingRegistrations((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status } : r))
+      );
+      setAdminStatusBanner(`Updated registration status to "${status}".`);
+      setTimeout(() => setAdminStatusBanner(null), 3500);
+    } catch {}
+  };
+
+  const handleDeleteCustomTrainingRegistration = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'customTrainingRegistrations', id));
+      setCustomTrainingRegistrations((prev) => prev.filter((r) => r.id !== id));
+      setAdminStatusBanner('Deleted Custom Training registration record.');
+      setTimeout(() => setAdminStatusBanner(null), 3500);
+    } catch {}
+  };
+
   const handleExportFullBackupJson = () => {
     const backupPayload = {
       exportedAt: new Date().toISOString(),
@@ -3613,25 +3733,15 @@ export default function App() {
     if (showGuestAuthModal || route.name === 'profile') {
       return (
         <div className="min-h-screen bg-[#F0F6FC] flex flex-col">
-          <div className="w-full bg-[#0C182D] text-white px-4 py-2.5 flex items-center justify-between gap-2 shadow-sm">
-            <span className="text-xs font-bold text-sky-200">
-              Sign in to save your profile, log batch records, or unlock verified certificates
-            </span>
-            <button
-              type="button"
-              onClick={() => {
+          <div className="flex-1">
+            <AuthScreen
+              onBackToPublicPortal={() => {
                 setShowGuestAuthModal(false);
                 if (route.name === 'profile') {
                   setRoute({ name: 'home' });
                 }
               }}
-              className="px-3 py-1 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer whitespace-nowrap"
-            >
-              ← Browse Public Portal
-            </button>
-          </div>
-          <div className="flex-1">
-            <AuthScreen />
+            />
           </div>
         </div>
       );
@@ -3670,6 +3780,14 @@ export default function App() {
         onDeleteCertificate={handleDeleteDirectCertificate}
         onChangeStorageConfig={setStorageConfig}
         onSaveStorageConfig={handleSaveStorageConfig}
+        onSaveCustomTrainingsList={handleSaveCustomTrainingsList}
+        customTrainingRegistrations={customTrainingRegistrations}
+        onUpdateCustomTrainingRegistrationStatus={
+          handleUpdateCustomTrainingRegistrationStatus
+        }
+        onDeleteCustomTrainingRegistration={
+          handleDeleteCustomTrainingRegistration
+        }
         onExportBackup={handleExportFullBackupJson}
         onPreviewUserApp={() => setAdminPreviewUserMode(true)}
         onSignOut={handleSignOut}
@@ -5997,7 +6115,7 @@ export default function App() {
             route.name === 'training-detail') && (
             <TrainingsAcademyView
               trainings={trainings}
-              currentUser={myProfile}
+              currentUser={authUser ? myProfile : null}
               users={users}
               certificates={certificates}
               paymentRequests={adminAllPaymentRequests}
@@ -6022,6 +6140,12 @@ export default function App() {
                 route.name === 'trainings' ? route.navKey : undefined
               }
               onSubTabChange={(subTab) => setActiveTrainingsSubTab(subTab)}
+              customTrainings={
+                storageConfig.customTrainings || DEFAULT_CUSTOM_TRAININGS
+              }
+              onSubmitCustomTrainingRegistration={
+                handleSubmitCustomTrainingRegistration
+              }
             />
           )}
 
