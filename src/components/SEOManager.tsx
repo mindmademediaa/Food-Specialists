@@ -70,7 +70,7 @@ const TOOL_SEO_METADATA: Record<
     title:
       'Food Safety, HACCP & Food Science Exam Prep (2,000+ MCQs Bank) | Food Science Portal',
     description:
-      'Practice 2,000+ MCQs for PPSC, FPSC, Food Safety Officer, Highfield HACCP, ISO 22000, Dairy, Cereal, and Meat Technology exams.'
+      'Practice 2,000+ MCQs for Food Safety Officer, Highfield HACCP, ISO 22000, Dairy, Cereal, and Meat Technology exams.'
   },
   interview: {
     title:

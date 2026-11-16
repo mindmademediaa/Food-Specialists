@@ -131,7 +131,6 @@ import { TrainingsAcademyView } from './components/TrainingsAcademyView';
 import { ScrollingAdBanner } from './components/ScrollingAdBanner';
 import { SEOManager, SEODirectoryFooter } from './components/SEOManager';
 import {
-  FreeVsPremiumComparisonCard,
   CertificateBundleOffersCard
 } from './components/PricingAndBundlesSection';
 
@@ -1729,7 +1728,7 @@ export default function App() {
       {
         id: 'exam' as const,
         title: 'Food Science & Safety Exam Prep (2,000+ MCQs)',
-        category: 'Exam & PPSC/FPSC Prep',
+        category: 'Food Science & Safety Exam Prep',
         description:
           'Practice 2,000+ food technology, microbiology, dairy, meat, cereals, and food safety exam questions.'
       },
@@ -4182,7 +4181,7 @@ export default function App() {
                       </div>
                       <div>
                         <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
-                          PPSC / FPSC / Global
+                          Food Science / Global
                         </span>
                         <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug mt-0.5">
                           Exam Prep &amp; PDF Notes
@@ -6849,484 +6848,496 @@ export default function App() {
           </div>
         )}
 
-        {/* ==================== PREMIUM MEMBERSHIP & FREE VS. PREMIUM ACCESS COMPARISON POPUP NOTIFICATION ==================== */}
+        {/* ==================== PAID MEMBERSHIP UPGRADE & PAYMENT MODAL ==================== */}
         {showPremiumUpgradeModal && (
-          <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3.5 overflow-y-auto">
-            <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto bg-white rounded-[30px] p-4 sm:p-6 shadow-2xl space-y-5 border-2 border-[#1673B8]">
-              {/* Free Access vs. Premium Access Comparison Notification with Close Button */}
-              <FreeVsPremiumComparisonCard
-                isCurrentUserPaid={isCurrentUserPaid}
-                monthlyFeeRs={liveGateway.monthlyFeeRs}
-                yearlyFeeRs={liveGateway.yearlyFeeRs}
-                onClose={() => setShowPremiumUpgradeModal(false)}
-                onSelectPlanUpgrade={(plan) => {
-                  setSelectedPlanDuration(plan);
-                  setPayAmount(
-                    plan === '1-year'
-                      ? `Rs. ${liveGateway.yearlyFeeRs}`
-                      : `Rs. ${liveGateway.monthlyFeeRs}`
-                  );
-                }}
-                onNavigateTools={() => {
-                  setShowPremiumUpgradeModal(false);
-                  setActiveToolSection('hub');
-                  setToolsResetKey((k) => k + 1);
-                  setRoute({ name: 'tools', initialSection: 'hub' });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                onNavigateTrainings={() => {
-                  setShowPremiumUpgradeModal(false);
-                  setRoute({ name: 'trainings' });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              />
-
-              {!authUser && (
-                <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-400 space-y-2 text-xs text-[#1A2138]">
-                  <div className="font-extrabold text-amber-900">
-                    ⚠️ Account Registration &amp; Login Mandatory for Paid Membership
+          <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs overflow-y-auto p-3 sm:p-6">
+            <div className="min-h-full flex items-start sm:items-center justify-center">
+              <div className="w-full max-w-2xl bg-white rounded-[28px] p-4 sm:p-6 shadow-2xl space-y-5 border-2 border-[#1673B8] my-auto">
+                {/* Clean Responsive Modal Header (No Comparison Table) */}
+                <div className="flex items-start justify-between gap-3 border-b border-[#D2DEEA] pb-3.5">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-2xl bg-[#1673B8] text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Crown className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="text-base sm:text-xl font-black text-[#1A2138] leading-snug">
+                        Upgrade to Paid Member
+                      </h2>
+                      <p className="text-xs text-[#4A5568] font-medium mt-0.5 leading-relaxed">
+                        Unlock verified specialist visibility, full detailed reports, cloud directories, and official PDF exports across the portal.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-[11.5px] text-amber-800 leading-relaxed">
-                    Free tools, jobs, scholarships, and training study are open without login. However, activating <strong>Premium Access</strong> (Cloud Directory Saving, PDF Reports &amp; Verified Specialist Listing) requires a registered user account.
-                  </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowPremiumUpgradeModal(false);
-                      setShowGuestAuthModal(true);
-                    }}
-                    className="w-full py-2.5 px-4 rounded-xl bg-[#0C182D] hover:bg-[#1673B8] text-white font-extrabold text-xs cursor-pointer transition-colors"
+                    onClick={() => setShowPremiumUpgradeModal(false)}
+                    className="p-2 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] text-[#1A2138] border border-[#D2DEEA] shrink-0 cursor-pointer transition-colors"
+                    aria-label="Close modal"
                   >
-                    Sign In / Register Free Account First →
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
-              )}
 
-              {/* STEP 1: CHOOSE SUBSCRIPTION PLAN (1 MONTH vs FULL YEAR DISCOUNT) */}
-              <div className="space-y-2">
-                <label className="block text-xs font-extrabold text-[#1A2138]">
-                  1. Select Subscription Plan
-                </label>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {/* 1-Month Plan Card */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedPlanDuration('1-month');
-                      setPayAmount(`Rs. ${liveGateway.monthlyFeeRs}`);
-                    }}
-                    className={`p-3 rounded-2xl border-2 text-left transition-all cursor-pointer relative ${
-                      selectedPlanDuration === '1-month'
-                        ? 'bg-[#EBF4FC] border-[#1673B8] shadow-xs'
-                        : 'bg-white border-gray-200 hover:border-[#9AC2E6]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#105E9A]">
-                        1 Month Plan
-                      </span>
-                      {selectedPlanDuration === '1-month' && (
-                        <CheckCircle2 className="w-4 h-4 text-[#1673B8]" />
-                      )}
+                {!authUser && (
+                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 space-y-2 text-xs text-[#1A2138]">
+                    <div className="font-extrabold text-amber-900">
+                      Account Registration Required Before Activating Paid Membership
                     </div>
-                    <div className="text-lg font-black text-[#1A2138] mt-1">
-                      Rs. {liveGateway.monthlyFeeRs.toLocaleString()}
-                    </div>
-                    <div className="text-[10.5px] font-semibold text-gray-600">
-                      Valid for 30 Days
-                    </div>
-                  </button>
+                    <p className="text-[11.5px] text-amber-800 leading-relaxed">
+                      All learning modules, calculators, jobs, scholarships, and unlimited practice exams work without login. Please sign in or register a free account first so your Paid Membership links to your profile.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPremiumUpgradeModal(false);
+                        setShowGuestAuthModal(true);
+                      }}
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#0C182D] hover:bg-[#1673B8] text-white font-extrabold text-xs cursor-pointer transition-colors"
+                    >
+                      Sign In / Register Free Account First →
+                    </button>
+                  </div>
+                )}
 
-                  {/* Full Year Plan Card (Dynamic Discount %) */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedPlanDuration('1-year');
-                      setPayAmount(`Rs. ${liveGateway.yearlyFeeRs}`);
-                    }}
-                    className={`p-3 rounded-2xl border-2 text-left transition-all cursor-pointer relative ${
-                      selectedPlanDuration === '1-year'
-                        ? 'bg-[#EBF4FC] border-[#1673B8] shadow-xs'
-                        : 'bg-white border-gray-200 hover:border-[#9AC2E6]'
-                    }`}
-                  >
-                    <span className="inline-block px-2 py-0.5 rounded-full bg-[#1673B8] text-white text-[9.5px] font-extrabold uppercase tracking-wider mb-1">
-                      🔥 {liveGateway.yearlyDiscountPct}% Discount
-                    </span>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#105E9A]">
-                        Full Year (12 Mo)
-                      </span>
-                      {selectedPlanDuration === '1-year' && (
-                        <CheckCircle2 className="w-4 h-4 text-[#1673B8]" />
-                      )}
-                    </div>
-                    <div className="flex items-baseline gap-1.5 mt-0.5">
-                      <span className="text-lg font-black text-[#1A2138]">
-                        Rs. {liveGateway.yearlyFeeRs.toLocaleString()}
-                      </span>
-                      <span className="text-[10.5px] font-bold text-gray-400 line-through">
-                        Rs. {(liveGateway.monthlyFeeRs * 12).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="text-[10.5px] font-extrabold text-[#1673B8]">
-                      Save Rs.{' '}
-                      {Math.max(
-                        0,
-                        liveGateway.monthlyFeeRs * 12 - liveGateway.yearlyFeeRs
-                      ).toLocaleString()}{' '}
-                      (365 Days)
-                    </div>
-                  </button>
+                {/* STEP 1: CHOOSE SUBSCRIPTION PLAN (1 MONTH vs FULL YEAR DISCOUNT) */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-extrabold text-[#1A2138]">
+                    1. Select Paid Membership Plan
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* 1-Month Plan Card */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPlanDuration('1-month');
+                        setPayAmount(`Rs. ${liveGateway.monthlyFeeRs}`);
+                      }}
+                      className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
+                        selectedPlanDuration === '1-month'
+                          ? 'bg-[#EBF4FC] border-[#1673B8] shadow-xs'
+                          : 'bg-white border-gray-200 hover:border-[#9AC2E6]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#105E9A]">
+                          1 Month Plan
+                        </span>
+                        {selectedPlanDuration === '1-month' && (
+                          <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0" />
+                        )}
+                      </div>
+                      <div className="text-lg sm:text-xl font-black text-[#1A2138] mt-1">
+                        Rs. {liveGateway.monthlyFeeRs.toLocaleString()}
+                      </div>
+                      <div className="text-[11px] font-semibold text-gray-600">
+                        Valid for 30 Days • Instant Renewal Anytime
+                      </div>
+                    </button>
+
+                    {/* Full Year Plan Card (Dynamic Discount %) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPlanDuration('1-year');
+                        setPayAmount(`Rs. ${liveGateway.yearlyFeeRs}`);
+                      }}
+                      className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
+                        selectedPlanDuration === '1-year'
+                          ? 'bg-[#EBF4FC] border-[#1673B8] shadow-xs'
+                          : 'bg-white border-gray-200 hover:border-[#9AC2E6]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#105E9A]">
+                          Full Year (12 Months)
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold uppercase tracking-wider shrink-0">
+                          {liveGateway.yearlyDiscountPct}% OFF
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-baseline gap-2 mt-1">
+                        <span className="text-lg sm:text-xl font-black text-[#1A2138]">
+                          Rs. {liveGateway.yearlyFeeRs.toLocaleString()}
+                        </span>
+                        <span className="text-xs font-bold text-gray-400 line-through">
+                          Rs. {(liveGateway.monthlyFeeRs * 12).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-extrabold text-[#1673B8]">
+                        Save Rs.{' '}
+                        {Math.max(
+                          0,
+                          liveGateway.monthlyFeeRs * 12 - liveGateway.yearlyFeeRs
+                        ).toLocaleString()}{' '}
+                        (365 Days Access)
+                      </div>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Premium Member Features List */}
-              <div className="bg-[#F0F6FC] border border-[#BBD6EE] rounded-2xl p-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A]">
-                    Premium Member Benefits
-                  </h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#1673B8] text-white text-[11px] font-extrabold">
-                    {selectedPlanDuration === '1-year'
-                      ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Year (${liveGateway.yearlyDiscountPct}% OFF)`
-                      : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / Month`}
-                  </span>
+                {/* PAID MEMBER BENEFITS (ALL REAL PLATFORM CAPABILITIES) */}
+                <div className="bg-[#F0F6FC] border border-[#BBD6EE] rounded-2xl p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-2">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A]">
+                      Paid Member Benefits Included
+                    </h3>
+                    <span className="px-2.5 py-1 rounded-md bg-[#1673B8] text-white text-[11px] font-extrabold">
+                      {selectedPlanDuration === '1-year'
+                        ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Year (${liveGateway.yearlyDiscountPct}% OFF)`
+                        : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / Month`}
+                    </span>
+                  </div>
+
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-gray-800 font-medium leading-relaxed">
+                    <li className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#D2DEEA]">
+                      <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
+                      <span className="min-w-0">
+                        <strong className="text-[#1A2138]">Verified Community Listing:</strong> Publish your profile with Verified badge so specialists &amp; recruiters can view your profile and message you.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#D2DEEA]">
+                      <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
+                      <span className="min-w-0">
+                        <strong className="text-[#1A2138]">Full Profiles, CVs &amp; Direct Contact:</strong> View complete member profiles, LinkedIn URLs, download CVs, and use direct WhatsApp, Email &amp; Chat.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#D2DEEA]">
+                      <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
+                      <span className="min-w-0">
+                        <strong className="text-[#1A2138]">Exam Detailed Answer Keys &amp; PDFs:</strong> Unlock all 30-MCQ correct answers with explanations, 5-Page Exam Report PDFs &amp; Exam Certificates.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#D2DEEA]">
+                      <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
+                      <span className="min-w-0">
+                        <strong className="text-[#1A2138]">Research Paper, ANOVA &amp; Citation Exports:</strong> Download Manuscripts (PDF/Word), ANOVA PDF/CSV &amp; Reference PDFs, and save custom journal rules.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#D2DEEA]">
+                      <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
+                      <span className="min-w-0">
+                        <strong className="text-[#1A2138]">Industrial Calculators Directory &amp; PDFs:</strong> Save custom chemicals/products/batches and export official PDFs in Pearson Square, Sanitizer, Molarity, Moisture &amp; OEE tools.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#D2DEEA]">
+                      <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
+                      <span className="min-w-0">
+                        <strong className="text-[#1A2138]">Clinical Nutrition &amp; Cover Letter PDFs:</strong> Save patient clinical diet plans, export Clinical Nutrition PDFs, and download Job/Scholarship Cover Letter PDFs.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#D2DEEA] sm:col-span-2">
+                      <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
+                      <span className="min-w-0">
+                        <strong className="text-[#1A2138]">2,000+ Interview Q&amp;A Full Access &amp; Bonus Membership:</strong> Unlock full 30-Q&amp;A interview sessions + PDF exports. Purchasing any Training Certificate also grants complimentary Paid Membership!
+                      </span>
+                    </li>
+                  </ul>
                 </div>
 
-                <ul className="space-y-2 text-xs text-gray-800 font-semibold">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
-                    <span>
-                      <strong>Show Your Profile in Community:</strong> Your profile appears in the Community directory so other Premium specialists &amp; recruiters can view your profile.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
-                    <span>
-                      <strong>View Full Profiles &amp; LinkedIn:</strong> Access complete profiles, experience, education &amp; LinkedIn links of fellow specialists.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
-                    <span>
-                      <strong>CV Vault Access &amp; Downloads:</strong> Download CVs/Resumes of other Premium members and showcase your CV to recruiters.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
-                    <span>
-                      <strong>Direct Contact &amp; Hiring:</strong> Enable direct WhatsApp, Email &amp; Message buttons to connect with members and recruiters.
-                    </span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Payment Options: Bank Transfer First/Top, JazzCash, EasyPaisa */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-extrabold text-[#1A2138]">
+                {/* Payment Options: Bank Transfer, JazzCash, EasyPaisa */}
+                <div className="space-y-3">
+                  <label className="block text-xs font-extrabold text-[#1A2138]">
                     2. Choose Payment Method (
                     {selectedPlanDuration === '1-year'
                       ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Full Year`
                       : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month`}
                     )
                   </label>
-                </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  {(['Bank Transfer', 'JazzCash', 'EasyPaisa'] as const).map(
-                    (method) => (
-                      <button
-                        key={method}
-                        type="button"
-                        onClick={() => setPayMethod(method)}
-                        className={`py-2.5 px-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer whitespace-nowrap ${
-                          payMethod === method
-                            ? 'bg-[#1673B8] text-white border-[#1673B8] shadow-xs'
-                            : 'bg-[#F0F6FC] text-[#1A2138] border-[#D2DEEA] hover:bg-[#E1EEF9]'
-                        }`}
-                      >
-                        {method === 'Bank Transfer' ? 'Bank Account' : method}
-                      </button>
-                    )
-                  )}
-                </div>
-
-                {/* Selected Payment Account Instructions (Live from Admin Payment Gateway Settings) */}
-                <div className="bg-[#F0F6FC] border border-[#1673B8]/40 rounded-2xl p-3.5 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-extrabold text-[#1A2138]">
-                      {payMethod} Account Details
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const copyTarget =
-                          payMethod === 'JazzCash'
-                            ? liveGateway.jazzCashNumber
-                            : payMethod === 'EasyPaisa'
-                            ? liveGateway.easyPaisaNumber
-                            : liveGateway.bankAccountOrIban !==
-                              'Contact on WhatsApp for IBAN'
-                            ? liveGateway.bankAccountOrIban
-                            : liveGateway.bankWhatsapp;
-                        handleCopyText(copyTarget, 'pay-acc-num');
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-white border border-[#BBD6EE] text-[#1673B8] text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      {copiedId === 'pay-acc-num' ? (
-                        <>
-                          <Check className="w-3 h-3 text-[#1673B8]" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>Copy Details</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {payMethod === 'JazzCash' && (
-                    <div className="text-gray-800 space-y-0.5">
-                      <div>
-                        Account Title:{' '}
-                        <strong>{liveGateway.jazzCashTitle}</strong>
-                      </div>
-                      <div>
-                        JazzCash Number:{' '}
-                        <strong>{liveGateway.jazzCashNumber}</strong>
-                      </div>
-                      <div>
-                        Subscription Fee:{' '}
-                        <strong>
-                          {selectedPlanDuration === '1-year'
-                            ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - 25% Discount)`
-                            : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
-                        </strong>
-                      </div>
-                    </div>
-                  )}
-
-                  {payMethod === 'EasyPaisa' && (
-                    <div className="text-gray-800 space-y-0.5">
-                      <div>
-                        Account Title:{' '}
-                        <strong>{liveGateway.easyPaisaTitle}</strong>
-                      </div>
-                      <div>
-                        EasyPaisa Number:{' '}
-                        <strong>{liveGateway.easyPaisaNumber}</strong>
-                      </div>
-                      <div>
-                        Subscription Fee:{' '}
-                        <strong>
-                          {selectedPlanDuration === '1-year'
-                            ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - 25% Discount)`
-                            : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
-                        </strong>
-                      </div>
-                    </div>
-                  )}
-
-                  {payMethod === 'Bank Transfer' && (
-                    <div className="text-gray-800 space-y-0.5">
-                      <div>
-                        Account Title: <strong>{liveGateway.bankTitle}</strong>
-                      </div>
-                      <div>
-                        Bank Name: <strong>{liveGateway.bankName}</strong>
-                      </div>
-                      <div>
-                        Account / IBAN:{' '}
-                        <strong>{liveGateway.bankAccountOrIban}</strong>
-                      </div>
-                      <div>
-                        WhatsApp / Contact:{' '}
-                        <strong>{liveGateway.bankWhatsapp}</strong>
-                      </div>
-                      <div>
-                        Subscription Fee:{' '}
-                        <strong>
-                          {selectedPlanDuration === '1-year'
-                            ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - 25% Discount)`
-                            : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
-                        </strong>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Upload Screenshot, Applicant Details & Transaction Details */}
-              <div className="space-y-3">
-                <label className="block text-xs font-extrabold text-[#1A2138]">
-                  3. Enter Your Details, Transaction / Reference ID &amp; Upload Payment Screenshot (Rs.{' '}
-                  {selectedPlanDuration === '1-year'
-                    ? liveGateway.yearlyFeeRs.toLocaleString()
-                    : liveGateway.monthlyFeeRs.toLocaleString()}
-                  )
-                </label>
-
-                {/* Applicant Details Summary & WhatsApp/Phone Input for Admin Verification */}
-                <div className="p-3 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2">
-                  <div className="text-[11px] font-extrabold text-[#1A2138]">
-                    Applicant Details Sent to Admin:
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div>
-                      <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                        Full Name *
-                      </span>
-                      <input
-                        type="text"
-                        value={myProfile.name || ''}
-                        onChange={(e) =>
-                          setMyProfile({ ...myProfile, name: e.target.value })
-                        }
-                        placeholder="Your Full Name"
-                        className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#D2DEEA] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#1673B8]"
-                      />
-                    </div>
-                    <div>
-                      <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                        WhatsApp / Phone Number *
-                      </span>
-                      <input
-                        type="text"
-                        value={
-                          myProfile.whatsappNumber ?? myProfile.phone ?? ''
-                        }
-                        onChange={(e) =>
-                          setMyProfile({
-                            ...myProfile,
-                            whatsappNumber: e.target.value,
-                            phone: e.target.value
-                          })
-                        }
-                        placeholder="e.g. +92 300 1234567"
-                        className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#D2DEEA] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#1673B8]"
-                      />
-                    </div>
-                  </div>
-                  <div className="text-[10.5px] font-semibold text-slate-600">
-                    Email:{' '}
-                    <strong>
-                      {myProfile.email || authUser?.email || 'Guest (Sign in required)'}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <span className="block text-[10.5px] font-bold text-gray-500 mb-1">
-                      Selected Plan &amp; Fee
-                    </span>
-                    <div className="w-full px-3 py-2.5 rounded-xl bg-[#EBF4FC] border border-[#BBD6EE] text-xs font-extrabold text-[#1A2138]">
-                      {selectedPlanDuration === '1-year'
-                        ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / 1 Year (25% OFF)`
-                        : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month`}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
-                      TRX ID / Reference No. (Required *)
-                    </span>
-                    <input
-                      type="text"
-                      required
-                      value={payTransactionId}
-                      onChange={(e) => setPayTransactionId(e.target.value)}
-                      placeholder="Enter TRX / Reference No..."
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border-2 border-[#1673B8] text-xs font-bold text-gray-900 focus:outline-none focus:bg-white"
-                    />
-                  </div>
-                </div>
-
-                {/* Screenshot Upload Box */}
-                <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border-2 border-dashed border-[#1673B8] space-y-2.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <ImageIcon className="w-5 h-5 text-[#1673B8] shrink-0" />
-                      <div className="min-w-0">
-                        <span className="text-xs font-extrabold text-[#1A2138] block truncate">
-                          {payReceiptUrl
-                            ? 'Payment Screenshot Uploaded ✓'
-                            : 'Upload Payment Screenshot (Required *)'}
-                        </span>
-                        <span className="text-[10.5px] text-gray-500 block">
-                          Attach screenshot of your Rs.{' '}
-                          {selectedPlanDuration === '1-year'
-                            ? liveGateway.yearlyFeeRs.toLocaleString()
-                            : liveGateway.monthlyFeeRs.toLocaleString()}{' '}
-                          payment
-                        </span>
-                      </div>
-                    </div>
-                    <input
-                      ref={receiptInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePaymentReceiptUpload}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => receiptInputRef.current?.click()}
-                      disabled={isUploadingMedia}
-                      className="px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
-                    >
-                      {isUploadingMedia ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Upload className="w-3.5 h-3.5" />
-                      )}
-                      <span>{payReceiptUrl ? 'Change' : 'Upload'}</span>
-                    </button>
-                  </div>
-
-                  {payReceiptUrl && (
-                    <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2">
-                      <img
-                        src={payReceiptUrl}
-                        alt="Uploaded Payment Screenshot"
-                        className="max-h-40 mx-auto object-contain rounded-lg"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {paySubmitBanner && (
-                  <div className="p-3 rounded-xl bg-[#EBF4FC] border border-[#1673B8] text-[#1A2138] text-xs font-extrabold leading-relaxed">
-                    {paySubmitBanner}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={handleSubmitPaymentVerification}
-                    disabled={isUploadingMedia || isSubmittingPayment}
-                    className="flex-1 py-3.5 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
-                  >
-                    {isSubmittingPayment && (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {(['Bank Transfer', 'JazzCash', 'EasyPaisa'] as const).map(
+                      (method) => (
+                        <button
+                          key={method}
+                          type="button"
+                          onClick={() => setPayMethod(method)}
+                          className={`py-2.5 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                            payMethod === method
+                              ? 'bg-[#1673B8] text-white border-[#1673B8] shadow-xs'
+                              : 'bg-[#F0F6FC] text-[#1A2138] border-[#D2DEEA] hover:bg-[#E1EEF9]'
+                          }`}
+                        >
+                          {method === 'Bank Transfer' ? 'Bank Account' : method}
+                        </button>
+                      )
                     )}
-                    <span>
-                      {isSubmittingPayment
-                        ? 'Submitting Request...'
-                        : 'Submit Payment Screenshot for Approval'}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPremiumUpgradeModal(false)}
-                    className="py-3.5 px-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-extrabold cursor-pointer"
-                  >
-                    Close
-                  </button>
+                  </div>
+
+                  {/* Selected Payment Account Instructions (Live from Admin Payment Gateway Settings) */}
+                  <div className="bg-[#F0F6FC] border border-[#1673B8]/40 rounded-2xl p-3.5 space-y-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-extrabold text-[#1A2138]">
+                        {payMethod} Account Details
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const copyTarget =
+                            payMethod === 'JazzCash'
+                              ? liveGateway.jazzCashNumber
+                              : payMethod === 'EasyPaisa'
+                              ? liveGateway.easyPaisaNumber
+                              : liveGateway.bankAccountOrIban !==
+                                'Contact on WhatsApp for IBAN'
+                              ? liveGateway.bankAccountOrIban
+                              : liveGateway.bankWhatsapp;
+                          handleCopyText(copyTarget, 'pay-acc-num');
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-[#BBD6EE] text-[#1673B8] text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer shrink-0"
+                      >
+                        {copiedId === 'pay-acc-num' ? (
+                          <>
+                            <Check className="w-3 h-3 text-[#1673B8]" />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy Details</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {payMethod === 'JazzCash' && (
+                      <div className="text-gray-800 space-y-1 leading-relaxed">
+                        <div>
+                          Account Title:{' '}
+                          <strong>{liveGateway.jazzCashTitle}</strong>
+                        </div>
+                        <div>
+                          JazzCash Number:{' '}
+                          <strong>{liveGateway.jazzCashNumber}</strong>
+                        </div>
+                        <div>
+                          Subscription Fee:{' '}
+                          <strong>
+                            {selectedPlanDuration === '1-year'
+                              ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - ${liveGateway.yearlyDiscountPct}% Discount)`
+                              : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
+                          </strong>
+                        </div>
+                      </div>
+                    )}
+
+                    {payMethod === 'EasyPaisa' && (
+                      <div className="text-gray-800 space-y-1 leading-relaxed">
+                        <div>
+                          Account Title:{' '}
+                          <strong>{liveGateway.easyPaisaTitle}</strong>
+                        </div>
+                        <div>
+                          EasyPaisa Number:{' '}
+                          <strong>{liveGateway.easyPaisaNumber}</strong>
+                        </div>
+                        <div>
+                          Subscription Fee:{' '}
+                          <strong>
+                            {selectedPlanDuration === '1-year'
+                              ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - ${liveGateway.yearlyDiscountPct}% Discount)`
+                              : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
+                          </strong>
+                        </div>
+                      </div>
+                    )}
+
+                    {payMethod === 'Bank Transfer' && (
+                      <div className="text-gray-800 space-y-1 leading-relaxed">
+                        <div>
+                          Account Title: <strong>{liveGateway.bankTitle}</strong>
+                        </div>
+                        <div>
+                          Bank Name: <strong>{liveGateway.bankName}</strong>
+                        </div>
+                        <div className="break-all">
+                          Account / IBAN:{' '}
+                          <strong>{liveGateway.bankAccountOrIban}</strong>
+                        </div>
+                        <div>
+                          WhatsApp / Contact:{' '}
+                          <strong>{liveGateway.bankWhatsapp}</strong>
+                        </div>
+                        <div>
+                          Subscription Fee:{' '}
+                          <strong>
+                            {selectedPlanDuration === '1-year'
+                              ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - ${liveGateway.yearlyDiscountPct}% Discount)`
+                              : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
+                          </strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Upload Screenshot, Applicant Details & Transaction Details */}
+                <div className="space-y-3">
+                  <label className="block text-xs font-extrabold text-[#1A2138] leading-relaxed">
+                    3. Enter Your Details, Transaction / Reference ID &amp; Upload Payment Screenshot (Rs.{' '}
+                    {selectedPlanDuration === '1-year'
+                      ? liveGateway.yearlyFeeRs.toLocaleString()
+                      : liveGateway.monthlyFeeRs.toLocaleString()}
+                    )
+                  </label>
+
+                  {/* Applicant Details Summary & WhatsApp/Phone Input for Admin Verification */}
+                  <div className="p-3 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2">
+                    <div className="text-[11px] font-extrabold text-[#1A2138]">
+                      Applicant Details Sent to Admin:
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                          Full Name *
+                        </span>
+                        <input
+                          type="text"
+                          value={myProfile.name || ''}
+                          onChange={(e) =>
+                            setMyProfile({ ...myProfile, name: e.target.value })
+                          }
+                          placeholder="Your Full Name"
+                          className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#D2DEEA] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#1673B8]"
+                        />
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                          WhatsApp / Phone Number *
+                        </span>
+                        <input
+                          type="text"
+                          value={
+                            myProfile.whatsappNumber ?? myProfile.phone ?? ''
+                          }
+                          onChange={(e) =>
+                            setMyProfile({
+                              ...myProfile,
+                              whatsappNumber: e.target.value,
+                              phone: e.target.value
+                            })
+                          }
+                          placeholder="e.g. +92 300 1234567"
+                          className="w-full px-2.5 py-2 rounded-lg bg-white border border-[#D2DEEA] text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#1673B8]"
+                        />
+                      </div>
+                    </div>
+                    <div className="text-[10.5px] font-semibold text-slate-600 break-words">
+                      Email:{' '}
+                      <strong>
+                        {myProfile.email || authUser?.email || 'Guest (Sign in required)'}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <span className="block text-[10.5px] font-bold text-gray-500 mb-1">
+                        Selected Plan &amp; Fee
+                      </span>
+                      <div className="w-full px-3 py-2.5 rounded-xl bg-[#EBF4FC] border border-[#BBD6EE] text-xs font-extrabold text-[#1A2138]">
+                        {selectedPlanDuration === '1-year'
+                          ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / 1 Year (${liveGateway.yearlyDiscountPct}% OFF)`
+                          : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month`}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="block text-[10.5px] font-extrabold text-[#1A2138] mb-1">
+                        TRX ID / Reference No. (Required *)
+                      </span>
+                      <input
+                        type="text"
+                        required
+                        value={payTransactionId}
+                        onChange={(e) => setPayTransactionId(e.target.value)}
+                        placeholder="Enter TRX / Reference No..."
+                        className="w-full px-3 py-2.5 rounded-xl bg-[#F0F6FC] border-2 border-[#1673B8] text-xs font-bold text-gray-900 focus:outline-none focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Screenshot Upload Box */}
+                  <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border-2 border-dashed border-[#1673B8] space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <ImageIcon className="w-5 h-5 text-[#1673B8] shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-xs font-extrabold text-[#1A2138] block truncate">
+                            {payReceiptUrl
+                              ? 'Payment Screenshot Uploaded ✓'
+                              : 'Upload Payment Screenshot (Required *)'}
+                          </span>
+                          <span className="text-[10.5px] text-gray-500 block">
+                            Attach screenshot of your Rs.{' '}
+                            {selectedPlanDuration === '1-year'
+                              ? liveGateway.yearlyFeeRs.toLocaleString()
+                              : liveGateway.monthlyFeeRs.toLocaleString()}{' '}
+                            payment
+                          </span>
+                        </div>
+                      </div>
+                      <input
+                        ref={receiptInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePaymentReceiptUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => receiptInputRef.current?.click()}
+                        disabled={isUploadingMedia}
+                        className="px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shrink-0 cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                      >
+                        {isUploadingMedia ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5" />
+                        )}
+                        <span>{payReceiptUrl ? 'Change' : 'Upload'}</span>
+                      </button>
+                    </div>
+
+                    {payReceiptUrl && (
+                      <div className="rounded-xl overflow-hidden border border-[#D2DEEA] bg-white p-2">
+                        <img
+                          src={payReceiptUrl}
+                          alt="Uploaded Payment Screenshot"
+                          className="max-h-40 mx-auto object-contain rounded-lg"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {paySubmitBanner && (
+                    <div className="p-3 rounded-xl bg-[#EBF4FC] border border-[#1673B8] text-[#1A2138] text-xs font-extrabold leading-relaxed">
+                      {paySubmitBanner}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleSubmitPaymentVerification}
+                      disabled={isUploadingMedia || isSubmittingPayment}
+                      className="flex-1 min-w-[200px] py-3.5 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+                    >
+                      {isSubmittingPayment && (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      )}
+                      <span>
+                        {isSubmittingPayment
+                          ? 'Submitting Request...'
+                          : 'Submit Payment Screenshot for Approval'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPremiumUpgradeModal(false)}
+                      className="py-3.5 px-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-extrabold cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

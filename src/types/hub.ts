@@ -380,8 +380,8 @@ export interface PearsonBatchSavedRecord {
   dairyAddWaterKg?: number;
   dairyFinalMass?: number;
 
-  // Mode 3: Sauces, Ketchup & Mayonnaise Batch Standardizer
-  sauceSubType?: 'ketchup_sauce' | 'mayo_emulsion';
+  // Mode 3: Ketchup, Mayonnaise & Jams Batch Standardizer
+  sauceSubType?: 'ketchup_sauce' | 'mayo_emulsion' | 'jam_preserve';
   sauceBatchKg?: number;
   sauceCurrentTssOrOil?: number;
   sauceTargetTssOrOil?: number;
@@ -392,11 +392,32 @@ export interface PearsonBatchSavedRecord {
   sauceCurrentPh?: number;
   sauceTargetPh?: number;
   sauceVinegarStrength?: number;
+  // Ketchup specific (Bostwick, Color)
+  sauceCurrentBostwick?: number;
+  sauceTargetBostwick?: number;
+  sauceCurrentColor?: number;
+  sauceTargetColor?: number;
+  // Mayonnaise specific (Viscosity cP, Water Activity aw, Specific Gravity, Density g/mL)
+  mayoCurrentViscosity?: number;
+  mayoTargetViscosity?: number;
+  mayoCurrentWaterActivity?: number;
+  mayoTargetWaterActivity?: number;
+  mayoCurrentSpecificGravity?: number;
+  mayoTargetSpecificGravity?: number;
+  mayoCurrentDensity?: number;
+  mayoTargetDensity?: number;
+  // Jams specific (Texture Bloom Firmness g)
+  jamCurrentTexture?: number;
+  jamTargetTexture?: number;
+  // Outputs
   sauceAddSolidsOrOilKg?: number;
   sauceAddVinegarKg?: number;
   sauceAddSaltKg?: number;
   sauceAddWaterKg?: number;
+  sauceAddStabilizerGrams?: number;
+  sauceStabilizerLabel?: string;
   saucePhStatus?: string;
+  sauceExtraGuidance?: string;
   sauceFinalBatchKg?: number;
 
   // Mode 4: Baking, Biscuits & Dough Batch Standardizer

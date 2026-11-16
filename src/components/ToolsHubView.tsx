@@ -1235,7 +1235,12 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           VIEW 9: JOB APPLICATION EMAIL & COVER LETTER GENERATOR
          ===================================================================== */}
       {activeSection === 'job-cover-letter' && (
-        <JobEmailCoverLetterTool user={user} />
+        <JobEmailCoverLetterTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
       )}
 
       {/* =====================================================================

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   BarChart3,
   Beaker,
@@ -12,8 +12,10 @@ import {
   FileText,
   FlaskConical,
   Layers,
+  Lock,
   Mail,
   Plus,
+  RotateCcw,
   Scale,
   Search,
   Send,
@@ -1959,13 +1961,16 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   ]);
 
   // =========================================================================
-  // MODE 3: SAUCES, KETCHUP & MAYONNAISE STANDARDIZER
-  //         (TSS/Brix or Oil Phase %, Acidity %, Salt NaCl %, pH & Vinegar)
+  // MODE 3: KETCHUP, MAYONNAISE & JAMS STANDARDIZER
+  //   Ketchup: pH, Brix, Acidity, Bostwick, Color (Current & Target)
+  //   Mayonnaise: pH, Viscosity (cP), Acidity, Color, Water Activity (aw), Specific Gravity, Density (Current & Target)
+  //   Jams: Texture (g), Brix, pH, Acidity (Current & Target)
   // =========================================================================
   const [sauceSubType, setSauceSubType] = useState<
-    'ketchup_sauce' | 'mayo_emulsion'
+    'ketchup_sauce' | 'mayo_emulsion' | 'jam_preserve'
   >('ketchup_sauce');
   const [sauceBatchKg, setSauceBatchKg] = useState<string>('500');
+  // Brix (Ketchup/Jams) or Oil/Emulsion Solids % (Mayonnaise internal estimate derived/editable)
   const [sauceCurrentTssOrOil, setSauceCurrentTssOrOil] =
     useState<string>('25.5');
   const [sauceTargetTssOrOil, setSauceTargetTssOrOil] =
@@ -1977,84 +1982,246 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   const [sauceCurrentPh, setSauceCurrentPh] = useState<string>('4.12');
   const [sauceTargetPh, setSauceTargetPh] = useState<string>('3.75');
   const [sauceVinegarStrength, setSauceVinegarStrength] =
-    useState<string>('10'); // 10% distilled vinegar or 100% glacial/citric
+    useState<string>('10'); // 10% vinegar for Ketchup/Mayo, 100% Citric Acid for Jams
+
+  // Ketchup specific: Bostwick (cm/30s) & Color (Hunter a/b ratio)
+  const [sauceCurrentBostwick, setSauceCurrentBostwick] =
+    useState<string>('7.8');
+  const [sauceTargetBostwick, setSauceTargetBostwick] =
+    useState<string>('5.5');
+  const [sauceCurrentColor, setSauceCurrentColor] = useState<string>('1.85');
+  const [sauceTargetColor, setSauceTargetColor] = useState<string>('2.15');
+
+  // Mayonnaise specific: Viscosity (cP), Color (L*), Water Activity (aw), Specific Gravity, Density (g/mL)
+  const [mayoCurrentViscosity, setMayoCurrentViscosity] =
+    useState<string>('18500');
+  const [mayoTargetViscosity, setMayoTargetViscosity] =
+    useState<string>('26000');
+  const [mayoCurrentWaterActivity, setMayoCurrentWaterActivity] =
+    useState<string>('0.94');
+  const [mayoTargetWaterActivity, setMayoTargetWaterActivity] =
+    useState<string>('0.91');
+  const [mayoCurrentSpecificGravity, setMayoCurrentSpecificGravity] =
+    useState<string>('0.935');
+  const [mayoTargetSpecificGravity, setMayoTargetSpecificGravity] =
+    useState<string>('0.920');
+  const [mayoCurrentDensity, setMayoCurrentDensity] =
+    useState<string>('0.935');
+  const [mayoTargetDensity, setMayoTargetDensity] =
+    useState<string>('0.920');
+
+  // Jams specific: Texture (Bloom / Gel Firmness g)
+  const [jamCurrentTexture, setJamCurrentTexture] = useState<string>('68');
+  const [jamTargetTexture, setJamTargetTexture] = useState<string>('95');
 
   const sauceMayoCorrection = useMemo(() => {
     const M0 = Math.max(1, Number(sauceBatchKg) || 500);
-    const T0 = Math.max(0, Number(sauceCurrentTssOrOil) || 0);
-    const Tt = Math.max(0.5, Number(sauceTargetTssOrOil) || 28);
     const A0 = Math.max(0, Number(sauceCurrentAcid) || 0);
     const At = Math.max(0.05, Number(sauceTargetAcid) || 1.2);
-    const S0 = Math.max(0, Number(sauceCurrentSalt) || 0);
-    const St = Math.max(0.05, Number(sauceTargetSalt) || 2.0);
     const pH0 = Math.max(1, Number(sauceCurrentPh) || 4.1);
-    const pHt = Math.max(1, Number(sauceTargetPh) || 3.8);
+    const pHt = Math.max(1, Number(sauceTargetPh) || 3.75);
     const vinPct = Math.max(2, Number(sauceVinegarStrength) || 10);
 
-    const curSolidsOrOilKg = M0 * (T0 / 100);
+    const pHDiff = pH0 - pHt;
+    const phStatus =
+      Math.abs(pHDiff) <= 0.05
+        ? `ON TARGET (pH ${pH0.toFixed(2)})`
+        : pHDiff > 0
+        ? `HIGH BY +${pHDiff.toFixed(2)} pH (Acid Addition Lowers to ${pHt.toFixed(2)})`
+        : `LOW BY ${pHDiff.toFixed(2)} pH (Slightly Excess Acidity)`;
+
+    if (sauceSubType === 'mayo_emulsion') {
+      // Mayonnaise balance using Specific Gravity / Density + Acidity + Viscosity (cP) + Color + Water Activity (aw)
+      const sg0 = Math.max(0.75, Math.min(1.25, Number(mayoCurrentSpecificGravity) || 0.935));
+      const sgt = Math.max(0.75, Math.min(1.25, Number(mayoTargetSpecificGravity) || 0.92));
+      const dens0 = Math.max(0.75, Math.min(1.25, Number(mayoCurrentDensity) || sg0));
+      const denst = Math.max(0.75, Math.min(1.25, Number(mayoTargetDensity) || sgt));
+      const visc0 = Math.max(100, Number(mayoCurrentViscosity) || 18500);
+      const visct = Math.max(100, Number(mayoTargetViscosity) || 26000);
+      const aw0 = Math.max(0.5, Math.min(1.0, Number(mayoCurrentWaterActivity) || 0.94));
+      const awt = Math.max(0.5, Math.min(1.0, Number(mayoTargetWaterActivity) || 0.91));
+      const col0 = Number(sauceCurrentColor) || 82.5;
+      const colt = Number(sauceTargetColor) || 86.0;
+
+      // Estimate oil mass fraction shift from SG/Density (oil density ~0.918 g/mL vs aqueous phase ~1.035 g/mL)
+      const rhoOil = 0.918;
+      const rhoAq = 1.035;
+      const estOilPct0 = Math.max(25, Math.min(85, ((rhoAq - dens0) / (rhoAq - rhoOil)) * 100));
+      const estOilPctT = Math.max(25, Math.min(85, ((rhoAq - denst) / (rhoAq - rhoOil)) * 100));
+
+      const curOilKg = M0 * (estOilPct0 / 100);
+      const curAcidKg = M0 * (A0 / 100);
+      const minMassOil = curOilKg / (estOilPctT / 100);
+      const minMassAcid = curAcidKg / (At / 100);
+
+      const estVinegarKg = Math.max(0, M0 * (At / 100) - curAcidKg) / (vinPct / 100);
+      const estOilAddKg = Math.max(0, M0 * (estOilPctT / 100) - curOilKg);
+
+      const Mf = Math.max(M0 + estVinegarKg + estOilAddKg, minMassOil, minMassAcid);
+      const addSolidsOrOilKg = Math.max(0, Mf * (estOilPctT / 100) - curOilKg);
+      const addAcidPureKg = Math.max(0, Mf * (At / 100) - curAcidKg);
+      const addVinegarKg = addAcidPureKg / (vinPct / 100);
+      const addWaterKg = Math.max(0, Mf - M0 - addSolidsOrOilKg - addVinegarKg);
+      const finalBatchKg = M0 + addSolidsOrOilKg + addVinegarKg + addWaterKg;
+
+      // Viscosity & Water Activity stabilizer calculation
+      const viscGap = Math.max(0, visct - visc0);
+      // Approx 0.35 g/kg xanthan/guar/modified starch per 1,000 cP lift needed
+      const stabilizerGrams = Math.round((viscGap / 1000) * 0.38 * finalBatchKg);
+      const awDiff = aw0 - awt;
+      const humectantSaltKg = awDiff > 0 ? Number((awDiff * 0.08 * finalBatchKg).toFixed(3)) : 0;
+      const finalVolumeLiters = Number((finalBatchKg / Math.max(0.5, denst)).toFixed(2));
+      const colorDelta = colt - col0;
+
+      const extraGuidance = `Density ${dens0.toFixed(3)} -> ${denst.toFixed(3)} g/mL (SG ${sg0.toFixed(3)} -> ${sgt.toFixed(3)}) | Viscosity: ${visc0.toLocaleString()} -> ${visct.toLocaleString()} cP (${stabilizerGrams > 0 ? `+${stabilizerGrams} g Emulsifier/Xanthan` : 'Within Spec'}) | aw ${aw0.toFixed(2)} -> ${awt.toFixed(2)} (${humectantSaltKg > 0 ? `+${humectantSaltKg} kg Salt/Humectant` : 'Safe aw'}) | Color L*: ${col0.toFixed(1)} -> ${colt.toFixed(1)} (${colorDelta > 0.5 ? 'Increase homogenizer RPM / Egg Yolk lightness' : 'On Target'}) | Vol: ${finalVolumeLiters} L`;
+
+      return {
+        addSolidsOrOilKg: Number(addSolidsOrOilKg.toFixed(2)),
+        addVinegarKg: Number(addVinegarKg.toFixed(2)),
+        addSaltKg: humectantSaltKg,
+        addSaltGrams: Math.round(humectantSaltKg * 1000),
+        addWaterKg: Number(addWaterKg.toFixed(2)),
+        addStabilizerGrams: stabilizerGrams,
+        stabilizerLabel: viscGap > 0 ? 'Xanthan / Modified Starch Stabilizer' : 'Water Phase / Shear Thinning',
+        phStatus,
+        extraGuidance,
+        finalVolumeLiters,
+        finalBatchKg: Number(finalBatchKg.toFixed(2))
+      };
+    }
+
+    if (sauceSubType === 'jam_preserve') {
+      // Jams: Texture (g), Brix, pH, Acidity (% Citric)
+      const B0 = Math.max(0, Number(sauceCurrentTssOrOil) || 61.5);
+      const Bt = Math.max(10, Number(sauceTargetTssOrOil) || 66.5);
+      const tex0 = Math.max(1, Number(jamCurrentTexture) || 68);
+      const text = Math.max(1, Number(jamTargetTexture) || 95);
+
+      const curSolidsKg = M0 * (B0 / 100);
+      const curAcidKg = M0 * (A0 / 100);
+      const minMassBrix = Bt > 0 ? curSolidsKg / (Bt / 100) : M0;
+      const minMassAcid = At > 0 ? curAcidKg / (At / 100) : M0;
+
+      const estSugarKg = Math.max(0, M0 * (Bt / 100) - curSolidsKg);
+      const estAcidPureKg = Math.max(0, M0 * (At / 100) - curAcidKg);
+      const estAcidAddKg = estAcidPureKg / (vinPct / 100);
+
+      const Mf = Math.max(M0 + estSugarKg + estAcidAddKg, minMassBrix, minMassAcid);
+      const addSolidsOrOilKg = Math.max(0, Mf * (Bt / 100) - curSolidsKg);
+      const addAcidActualPure = Math.max(0, Mf * (At / 100) - curAcidKg);
+      const addVinegarKg = addAcidActualPure / (vinPct / 100);
+      const addWaterKg = Math.max(0, Mf - M0 - addSolidsOrOilKg - addVinegarKg);
+      const finalBatchKg = M0 + addSolidsOrOilKg + addVinegarKg + addWaterKg;
+
+      // Texture (Bloom firmness g): ~0.12 g HM Pectin per kg per 1 g Bloom firmness lift needed
+      const texGap = text - tex0;
+      const stabilizerGrams =
+        texGap > 0 ? Math.round((texGap / 10) * 1.2 * finalBatchKg) : 0;
+
+      const extraGuidance = `Texture (Gel Firmness): ${tex0} g -> ${text} g (${
+        texGap > 0
+          ? `Add +${stabilizerGrams} g HM Pectin (at pH ${pHt.toFixed(2)} for optimal gelation)`
+          : texGap < -5
+          ? 'Reduce pectin / shorten boiling duration to soften gel'
+          : 'Optimal jam gel texture'
+      }) | Sugar Solids Balance: ${B0}°Bx -> ${Bt}°Bx | pH ${pH0.toFixed(2)} -> ${pHt.toFixed(2)}`;
+
+      return {
+        addSolidsOrOilKg: Number(addSolidsOrOilKg.toFixed(2)),
+        addVinegarKg: Number(addVinegarKg.toFixed(3)),
+        addSaltKg: 0,
+        addSaltGrams: Math.round(addVinegarKg * 1000),
+        addWaterKg: Number(addWaterKg.toFixed(2)),
+        addStabilizerGrams: stabilizerGrams,
+        stabilizerLabel: 'HM / LM Pectin (Gel Strength)',
+        phStatus,
+        extraGuidance,
+        finalVolumeLiters: 0,
+        finalBatchKg: Number(finalBatchKg.toFixed(2))
+      };
+    }
+
+    // Default: Tomato Ketchup (pH, Brix, Acidity, Bostwick, Color)
+    const B0 = Math.max(0, Number(sauceCurrentTssOrOil) || 25.5);
+    const Bt = Math.max(1, Number(sauceTargetTssOrOil) || 29.0);
+    const bos0 = Math.max(0.5, Number(sauceCurrentBostwick) || 7.8);
+    const bost = Math.max(0.5, Number(sauceTargetBostwick) || 5.5);
+    const col0 = Math.max(0.1, Number(sauceCurrentColor) || 1.85);
+    const colt = Math.max(0.1, Number(sauceTargetColor) || 2.15);
+
+    const curSolidsKg = M0 * (B0 / 100);
     const curAcidKg = M0 * (A0 / 100);
-    const curSaltKg = M0 * (S0 / 100);
 
-    // Minimum final mass if any parameter is over-spec and requires dilution
-    const minMassT = Tt > 0 ? curSolidsOrOilKg / (Tt / 100) : M0;
+    const minMassT = Bt > 0 ? curSolidsKg / (Bt / 100) : M0;
     const minMassA = At > 0 ? curAcidKg / (At / 100) : M0;
-    const minMassS = St > 0 ? curSaltKg / (St / 100) : M0;
 
-    // Estimate final batch mass Mf accounting for Vinegar water content
-    const extraAcidNeededBase = Math.max(0, M0 * (At / 100) - curAcidKg);
-    const vinegarEstKg = extraAcidNeededBase / (vinPct / 100);
-    const solidsEstKg = Math.max(0, M0 * (Tt / 100) - curSolidsOrOilKg);
-    const saltEstKg = Math.max(0, M0 * (St / 100) - curSaltKg);
+    const extraAcidBase = Math.max(0, M0 * (At / 100) - curAcidKg);
+    const vinegarEstKg = extraAcidBase / (vinPct / 100);
+    const solidsEstKg = Math.max(0, M0 * (Bt / 100) - curSolidsKg);
 
-    const Mf = Math.max(
-      M0 + vinegarEstKg + solidsEstKg + saltEstKg,
-      minMassT,
-      minMassA,
-      minMassS
-    );
+    const Mf = Math.max(M0 + vinegarEstKg + solidsEstKg, minMassT, minMassA);
 
+    const addSolidsOrOilKg = Math.max(0, Mf * (Bt / 100) - curSolidsKg);
     const addPureAcidKg = Math.max(0, Mf * (At / 100) - curAcidKg);
     const addVinegarKg = addPureAcidKg / (vinPct / 100);
-    const addSaltKg = Math.max(0, Mf * (St / 100) - curSaltKg);
-    const addSolidsOrOilKg = Math.max(
-      0,
-      Mf * (Tt / 100) - curSolidsOrOilKg
-    );
-    const addWaterKg = Math.max(
-      0,
-      Mf - M0 - addVinegarKg - addSaltKg - addSolidsOrOilKg
-    );
-    const finalBatchKg =
-      M0 + addSolidsOrOilKg + addVinegarKg + addSaltKg + addWaterKg;
+    const addWaterKg = Math.max(0, Mf - M0 - addVinegarKg - addSolidsOrOilKg);
+    const finalBatchKg = M0 + addSolidsOrOilKg + addVinegarKg + addWaterKg;
 
-    const phDiff = pH0 - pHt;
-    const phStatus =
-      Math.abs(phDiff) <= 0.05
-        ? `SAFE ON TARGET (pH ${pH0.toFixed(2)})`
-        : phDiff > 0
-        ? `HIGH BY +${phDiff.toFixed(2)} pH (Vinegar/Acid Addition Drops pH to ${pHt.toFixed(2)})`
-        : `LOW BY ${phDiff.toFixed(2)} pH (High Acidity / Dilute slightly)`;
+    // Bostwick correction: Lower Bostwick cm = thicker ketchup. If current > target, add Xanthan/Modified Starch (~0.45 g/kg per 1.0 cm reduction)
+    const bosDiff = bos0 - bost;
+    const stabilizerGrams =
+      bosDiff > 0 ? Math.round(bosDiff * 0.45 * finalBatchKg) : 0;
+    const colorDiff = colt - col0;
+
+    const extraGuidance = `Bostwick Consistency: ${bos0.toFixed(1)} cm -> ${bost.toFixed(1)} cm (${
+      bosDiff > 0.1
+        ? `Add +${stabilizerGrams} g Xanthan / Modified Corn Starch to thicken flow`
+        : bosDiff < -0.1
+        ? 'Too thick: Add warm treated water / blend higher-serum tomato pulp'
+        : 'Within Bostwick Target Spec'
+    }) | Hunter Color (a/b): ${col0.toFixed(2)} -> ${colt.toFixed(2)} (${
+      colorDiff > 0.05
+        ? 'Blend 36–38°Bx high-lycopene cold-break tomato paste to boost redness'
+        : 'Color Index On Target'
+    })`;
 
     return {
       addSolidsOrOilKg: Number(addSolidsOrOilKg.toFixed(2)),
       addVinegarKg: Number(addVinegarKg.toFixed(2)),
-      addSaltKg: Number(addSaltKg.toFixed(3)),
-      addSaltGrams: Math.round(addSaltKg * 1000),
+      addSaltKg: 0,
+      addSaltGrams: 0,
       addWaterKg: Number(addWaterKg.toFixed(2)),
+      addStabilizerGrams: stabilizerGrams,
+      stabilizerLabel: 'Xanthan / Modified Starch (Bostwick)',
       phStatus,
+      extraGuidance,
+      finalVolumeLiters: 0,
       finalBatchKg: Number(finalBatchKg.toFixed(2))
     };
   }, [
+    sauceSubType,
     sauceBatchKg,
     sauceCurrentTssOrOil,
     sauceTargetTssOrOil,
     sauceCurrentAcid,
     sauceTargetAcid,
-    sauceCurrentSalt,
-    sauceTargetSalt,
     sauceCurrentPh,
     sauceTargetPh,
-    sauceVinegarStrength
+    sauceVinegarStrength,
+    sauceCurrentBostwick,
+    sauceTargetBostwick,
+    sauceCurrentColor,
+    sauceTargetColor,
+    mayoCurrentViscosity,
+    mayoTargetViscosity,
+    mayoCurrentWaterActivity,
+    mayoTargetWaterActivity,
+    mayoCurrentSpecificGravity,
+    mayoTargetSpecificGravity,
+    mayoCurrentDensity,
+    mayoTargetDensity,
+    jamCurrentTexture,
+    jamTargetTexture
   ]);
 
   // =========================================================================
@@ -2379,11 +2546,28 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         sauceCurrentPh: Number(sauceCurrentPh) || 4.1,
         sauceTargetPh: Number(sauceTargetPh) || 3.75,
         sauceVinegarStrength: Number(sauceVinegarStrength) || 10,
+        sauceCurrentBostwick: Number(sauceCurrentBostwick) || 7.8,
+        sauceTargetBostwick: Number(sauceTargetBostwick) || 5.5,
+        sauceCurrentColor: Number(sauceCurrentColor) || 1.85,
+        sauceTargetColor: Number(sauceTargetColor) || 2.15,
+        mayoCurrentViscosity: Number(mayoCurrentViscosity) || 18500,
+        mayoTargetViscosity: Number(mayoTargetViscosity) || 26000,
+        mayoCurrentWaterActivity: Number(mayoCurrentWaterActivity) || 0.94,
+        mayoTargetWaterActivity: Number(mayoTargetWaterActivity) || 0.91,
+        mayoCurrentSpecificGravity: Number(mayoCurrentSpecificGravity) || 0.935,
+        mayoTargetSpecificGravity: Number(mayoTargetSpecificGravity) || 0.92,
+        mayoCurrentDensity: Number(mayoCurrentDensity) || 0.935,
+        mayoTargetDensity: Number(mayoTargetDensity) || 0.92,
+        jamCurrentTexture: Number(jamCurrentTexture) || 68,
+        jamTargetTexture: Number(jamTargetTexture) || 95,
         sauceAddSolidsOrOilKg: sauceMayoCorrection.addSolidsOrOilKg,
         sauceAddVinegarKg: sauceMayoCorrection.addVinegarKg,
         sauceAddSaltKg: sauceMayoCorrection.addSaltKg,
         sauceAddWaterKg: sauceMayoCorrection.addWaterKg,
+        sauceAddStabilizerGrams: sauceMayoCorrection.addStabilizerGrams,
+        sauceStabilizerLabel: sauceMayoCorrection.stabilizerLabel,
         saucePhStatus: sauceMayoCorrection.phStatus,
+        sauceExtraGuidance: sauceMayoCorrection.extraGuidance,
         sauceFinalBatchKg: sauceMayoCorrection.finalBatchKg
       };
     }
@@ -2503,6 +2687,20 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       setSauceCurrentPh(String(rec.sauceCurrentPh ?? 4.12));
       setSauceTargetPh(String(rec.sauceTargetPh ?? 3.75));
       setSauceVinegarStrength(String(rec.sauceVinegarStrength ?? 10));
+      setSauceCurrentBostwick(String(rec.sauceCurrentBostwick ?? 7.8));
+      setSauceTargetBostwick(String(rec.sauceTargetBostwick ?? 5.5));
+      setSauceCurrentColor(String(rec.sauceCurrentColor ?? 1.85));
+      setSauceTargetColor(String(rec.sauceTargetColor ?? 2.15));
+      setMayoCurrentViscosity(String(rec.mayoCurrentViscosity ?? 18500));
+      setMayoTargetViscosity(String(rec.mayoTargetViscosity ?? 26000));
+      setMayoCurrentWaterActivity(String(rec.mayoCurrentWaterActivity ?? 0.94));
+      setMayoTargetWaterActivity(String(rec.mayoTargetWaterActivity ?? 0.91));
+      setMayoCurrentSpecificGravity(String(rec.mayoCurrentSpecificGravity ?? 0.935));
+      setMayoTargetSpecificGravity(String(rec.mayoTargetSpecificGravity ?? 0.92));
+      setMayoCurrentDensity(String(rec.mayoCurrentDensity ?? 0.935));
+      setMayoTargetDensity(String(rec.mayoTargetDensity ?? 0.92));
+      setJamCurrentTexture(String(rec.jamCurrentTexture ?? 68));
+      setJamTargetTexture(String(rec.jamTargetTexture ?? 95));
     } else if (rec.calculatorMode === 'baking_biscuits') {
       setIndustryMode('baking_biscuits');
       setBakingBatchKg(String(rec.bakingBatchKg ?? 500));
@@ -2716,35 +2914,42 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       );
     } else if (rec.calculatorMode === 'sauces_mayo') {
       const isMayo = rec.sauceSubType === 'mayo_emulsion';
-      renderSpecTableAndBox(
-        `1. ${isMayo ? 'MAYONNAISE / DRESSING' : 'KETCHUP / SAUCE'} BATCH ANALYSIS VS. TARGET SPEC`,
-        [
-          ['Current Batch Weight', `${rec.sauceBatchKg} kg`],
-          [
-            isMayo
-              ? 'Oil / Fat Phase (%) — Current vs. Target'
-              : 'Total Soluble Solids (°Brix) — Current vs. Target',
-            `Current: ${rec.sauceCurrentTssOrOil}%   -->   Target: ${rec.sauceTargetTssOrOil}%`
-          ],
-          [
-            'Acidity (% Acetic) — Current vs. Target',
-            `Current: ${rec.sauceCurrentAcid}%   -->   Target: ${rec.sauceTargetAcid}%`
-          ],
-          [
-            'Salt (% NaCl) — Current vs. Target',
-            `Current: ${rec.sauceCurrentSalt}%   -->   Target: ${rec.sauceTargetSalt}%`
-          ],
-          [
-            'pH — Current vs. Required Target pH',
-            `Current pH: ${rec.sauceCurrentPh}   -->   Target pH: ${rec.sauceTargetPh} (${rec.saucePhStatus})`
+      const isJam = rec.sauceSubType === 'jam_preserve';
+      const specRows: [string, string][] = isMayo
+        ? [
+            ['Current Batch Weight', `${rec.sauceBatchKg} kg`],
+            ['pH — Current vs. Target', `pH ${rec.sauceCurrentPh}  -->  Target pH: ${rec.sauceTargetPh}`],
+            ['Acidity (% Acetic) — Current vs. Target', `${rec.sauceCurrentAcid}%  -->  Target: ${rec.sauceTargetAcid}%`],
+            ['Viscosity (cP) — Current vs. Target', `${rec.mayoCurrentViscosity ?? 18500} cP  -->  Target: ${rec.mayoTargetViscosity ?? 26000} cP`],
+            ['Color (L* Index) — Current vs. Target', `${rec.sauceCurrentColor ?? 82.5}  -->  Target: ${rec.sauceTargetColor ?? 86.0}`],
+            ['Water Activity (aw) — Current vs. Target', `${rec.mayoCurrentWaterActivity ?? 0.94}  -->  Target: ${rec.mayoTargetWaterActivity ?? 0.91}`],
+            ['Specific Gravity & Density', `SG ${rec.mayoCurrentSpecificGravity ?? 0.935} -> ${rec.mayoTargetSpecificGravity ?? 0.92} | Density ${rec.mayoCurrentDensity ?? 0.935} -> ${rec.mayoTargetDensity ?? 0.92} g/mL`]
           ]
-        ],
-        `2. EXACT ${isMayo ? 'MAYONNAISE' : 'KETCHUP / SAUCE'} STANDARDIZATION ADDITIONS`,
+        : isJam
+        ? [
+            ['Current Batch Weight', `${rec.sauceBatchKg} kg`],
+            ['Texture (Gel Firmness g) — Current vs. Target', `${rec.jamCurrentTexture ?? 68} g  -->  Target: ${rec.jamTargetTexture ?? 95} g`],
+            ['Brix (°Bx) — Current vs. Target', `${rec.sauceCurrentTssOrOil}°Bx  -->  Target: ${rec.sauceTargetTssOrOil}°Bx`],
+            ['pH — Current vs. Target', `pH ${rec.sauceCurrentPh}  -->  Target pH: ${rec.sauceTargetPh}`],
+            ['Acidity (% Citric) — Current vs. Target', `${rec.sauceCurrentAcid}%  -->  Target: ${rec.sauceTargetAcid}%`]
+          ]
+        : [
+            ['Current Batch Weight', `${rec.sauceBatchKg} kg`],
+            ['pH — Current vs. Target', `pH ${rec.sauceCurrentPh}  -->  Target pH: ${rec.sauceTargetPh}`],
+            ['Brix (°Bx) — Current vs. Target', `${rec.sauceCurrentTssOrOil}°Bx  -->  Target: ${rec.sauceTargetTssOrOil}°Bx`],
+            ['Acidity (% Acetic) — Current vs. Target', `${rec.sauceCurrentAcid}%  -->  Target: ${rec.sauceTargetAcid}%`],
+            ['Bostwick Consistency (cm/30s)', `${rec.sauceCurrentBostwick ?? 7.8} cm  -->  Target: ${rec.sauceTargetBostwick ?? 5.5} cm`],
+            ['Color (Hunter a/b Ratio)', `${rec.sauceCurrentColor ?? 1.85}  -->  Target: ${rec.sauceTargetColor ?? 2.15}`]
+          ];
+      renderSpecTableAndBox(
+        `1. ${isMayo ? 'MAYONNAISE / EMULSION' : isJam ? 'JAMS & FRUIT PRESERVES' : 'TOMATO KETCHUP / SAUCE'} BATCH ANALYSIS VS. TARGET SPEC`,
+        specRows,
+        `2. EXACT ${isMayo ? 'MAYONNAISE' : isJam ? 'JAM' : 'KETCHUP / SAUCE'} STANDARDIZATION ADDITIONS`,
         [
-          `• Add ${isMayo ? 'Vegetable Oil Phase' : 'Sugar / Paste Solids'}:  + ${rec.sauceAddSolidsOrOilKg} kg`,
-          `• Add Vinegar / Acidulant (${rec.sauceVinegarStrength}% Strength):  + ${rec.sauceAddVinegarKg} kg`,
-          `• Add Refined Food-Grade Salt (NaCl):  + ${rec.sauceAddSaltKg} kg`,
-          `• Add Treated Water:  + ${rec.sauceAddWaterKg} kg`
+          `• Add ${isMayo ? 'Oil / Emulsion Phase' : isJam ? 'Sugar / Syrup Solids' : 'Tomato Paste / Sugar Solids'}:  + ${rec.sauceAddSolidsOrOilKg} kg`,
+          `• Add ${isJam ? 'Citric Acid' : 'Vinegar / Acidulant'} (${rec.sauceVinegarStrength}%):  + ${rec.sauceAddVinegarKg} kg`,
+          `• ${rec.sauceStabilizerLabel || 'Stabilizer / Pectin / Hydrocolloid'}:  + ${(rec.sauceAddStabilizerGrams || 0).toLocaleString()} g`,
+          `• Add Treated Water (Dilution / Carrier):  + ${rec.sauceAddWaterKg} kg`
         ],
         `Final Standardized Batch Weight: ${rec.sauceFinalBatchKg} kg (Target pH ${rec.sauceTargetPh})`
       );
@@ -3019,7 +3224,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
             { id: 'dairy' as const, label: 'Dairy Fat & SNF Standardizer' },
             {
               id: 'sauces_mayo' as const,
-              label: 'Ketchup, Sauces & Mayonnaise'
+              label: 'Ketchup, Mayonnaise & Jams'
             },
             {
               id: 'baking_biscuits' as const,
@@ -3674,27 +3879,30 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       )}
 
       {/* =====================================================================
-          MODE 3: KETCHUP, SAUCES & MAYONNAISE STANDARDIZER
+          MODE 3: KETCHUP, MAYONNAISE & JAMS STANDARDIZER
          ===================================================================== */}
       {industryMode === 'sauces_mayo' && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 bg-[#F8FAFC] p-3 rounded-xl border border-[#D2DEEA]">
             <div className="text-xs font-extrabold text-[#1A2138]">
-              Select Product Sub-Type Parameters:
+              Select Product Category:
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setSauceSubType('ketchup_sauce');
+                  setSauceCurrentPh('4.12');
+                  setSauceTargetPh('3.75');
                   setSauceCurrentTssOrOil('25.5');
                   setSauceTargetTssOrOil('29.0');
                   setSauceCurrentAcid('0.95');
                   setSauceTargetAcid('1.25');
-                  setSauceCurrentSalt('1.70');
-                  setSauceTargetSalt('2.10');
-                  setSauceCurrentPh('4.12');
-                  setSauceTargetPh('3.75');
+                  setSauceCurrentBostwick('7.8');
+                  setSauceTargetBostwick('5.5');
+                  setSauceCurrentColor('1.85');
+                  setSauceTargetColor('2.15');
+                  setSauceVinegarStrength('10');
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
                   sauceSubType === 'ketchup_sauce'
@@ -3702,21 +3910,27 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                     : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
                 }`}
               >
-                Tomato Ketchup / Chili &amp; Culinary Sauces (TSS °Brix, Acid,
-                Salt, pH)
+                Ketchup (pH, Brix, Acidity, Bostwick, Color)
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setSauceSubType('mayo_emulsion');
-                  setSauceCurrentTssOrOil('61.5');
-                  setSauceTargetTssOrOil('65.0');
-                  setSauceCurrentAcid('0.45');
-                  setSauceTargetAcid('0.65');
-                  setSauceCurrentSalt('1.30');
-                  setSauceTargetSalt('1.60');
                   setSauceCurrentPh('4.25');
                   setSauceTargetPh('3.85');
+                  setMayoCurrentViscosity('18500');
+                  setMayoTargetViscosity('26000');
+                  setSauceCurrentAcid('0.45');
+                  setSauceTargetAcid('0.65');
+                  setSauceCurrentColor('82.5');
+                  setSauceTargetColor('86.0');
+                  setMayoCurrentWaterActivity('0.94');
+                  setMayoTargetWaterActivity('0.91');
+                  setMayoCurrentSpecificGravity('0.935');
+                  setMayoTargetSpecificGravity('0.920');
+                  setMayoCurrentDensity('0.935');
+                  setMayoTargetDensity('0.920');
+                  setSauceVinegarStrength('10');
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
                   sauceSubType === 'mayo_emulsion'
@@ -3724,153 +3938,547 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                     : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
                 }`}
               >
-                Mayonnaise &amp; Emulsified Dressings (Oil Phase %, Acid, Salt,
-                pH)
+                Mayonnaise (pH, Viscosity, Acidity, Color, aw, SG, Density)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSauceSubType('jam_preserve');
+                  setJamCurrentTexture('68');
+                  setJamTargetTexture('95');
+                  setSauceCurrentTssOrOil('61.5');
+                  setSauceTargetTssOrOil('66.5');
+                  setSauceCurrentPh('3.65');
+                  setSauceTargetPh('3.20');
+                  setSauceCurrentAcid('0.48');
+                  setSauceTargetAcid('0.75');
+                  setSauceVinegarStrength('100');
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
+                  sauceSubType === 'jam_preserve'
+                    ? 'bg-[#1673B8] text-white'
+                    : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
+                }`}
+              >
+                Jams (Texture, Brix, pH, Acidity)
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Current Out-of-Spec Batch */}
+            {/* SIDE 1: CURRENT DATA */}
             <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3">
               <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider border-b border-[#D2DEEA] pb-2">
-                1. Current {sauceSubType === 'mayo_emulsion' ? 'Mayonnaise' : 'Ketchup / Sauce'} Batch (Out-of-Spec)
+                1. Current Data —{' '}
+                {sauceSubType === 'mayo_emulsion'
+                  ? 'Mayonnaise Batch'
+                  : sauceSubType === 'jam_preserve'
+                  ? 'Jam Batch'
+                  : 'Ketchup Batch'}
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    Current Batch Weight (kg)
-                  </label>
-                  <input
-                    type="number"
-                    value={sauceBatchKg}
-                    onChange={(e) => setSauceBatchKg(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
+
+              {sauceSubType === 'ketchup_sauce' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Batch Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      value={sauceBatchKg}
+                      onChange={(e) => setSauceBatchKg(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current pH
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceCurrentPh}
+                      onChange={(e) => setSauceCurrentPh(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Brix (°Bx)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={sauceCurrentTssOrOil}
+                      onChange={(e) => setSauceCurrentTssOrOil(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Acidity (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceCurrentAcid}
+                      onChange={(e) => setSauceCurrentAcid(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Bostwick (cm)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={sauceCurrentBostwick}
+                      onChange={(e) => setSauceCurrentBostwick(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Color (a/b)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.05"
+                      value={sauceCurrentColor}
+                      onChange={(e) => setSauceCurrentColor(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    {sauceSubType === 'mayo_emulsion'
-                      ? 'Current Oil Phase (%)'
-                      : 'Current TSS / °Brix (%)'}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={sauceCurrentTssOrOil}
-                    onChange={(e) => setSauceCurrentTssOrOil(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
+              )}
+
+              {sauceSubType === 'mayo_emulsion' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Batch Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      value={sauceBatchKg}
+                      onChange={(e) => setSauceBatchKg(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current pH
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceCurrentPh}
+                      onChange={(e) => setSauceCurrentPh(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Viscosity (cP)
+                    </label>
+                    <input
+                      type="number"
+                      step="100"
+                      value={mayoCurrentViscosity}
+                      onChange={(e) => setMayoCurrentViscosity(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Acidity (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceCurrentAcid}
+                      onChange={(e) => setSauceCurrentAcid(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Color (L*)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={sauceCurrentColor}
+                      onChange={(e) => setSauceCurrentColor(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Water Activity (aw)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={mayoCurrentWaterActivity}
+                      onChange={(e) =>
+                        setMayoCurrentWaterActivity(e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Specific Gravity
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={mayoCurrentSpecificGravity}
+                      onChange={(e) =>
+                        setMayoCurrentSpecificGravity(e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Density (g/mL)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={mayoCurrentDensity}
+                      onChange={(e) => setMayoCurrentDensity(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    Current Acidity (% Acetic)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={sauceCurrentAcid}
-                    onChange={(e) => setSauceCurrentAcid(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
+              )}
+
+              {sauceSubType === 'jam_preserve' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Batch Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      value={sauceBatchKg}
+                      onChange={(e) => setSauceBatchKg(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Texture (g)
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={jamCurrentTexture}
+                      onChange={(e) => setJamCurrentTexture(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Brix (°Bx)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={sauceCurrentTssOrOil}
+                      onChange={(e) => setSauceCurrentTssOrOil(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current pH
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceCurrentPh}
+                      onChange={(e) => setSauceCurrentPh(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Current Acidity (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceCurrentAcid}
+                      onChange={(e) => setSauceCurrentAcid(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    Current Salt (% NaCl)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.05"
-                    value={sauceCurrentSalt}
-                    onChange={(e) => setSauceCurrentSalt(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    Current pH
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={sauceCurrentPh}
-                    onChange={(e) => setSauceCurrentPh(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Required Target Spec */}
+            {/* SIDE 2: TARGET DATA */}
             <div className="p-4 rounded-2xl bg-[#EBF4FC] border border-[#1673B8]/40 space-y-3">
               <div className="text-xs font-extrabold text-[#105E9A] uppercase tracking-wider border-b border-[#D2DEEA] pb-2">
-                2. Required Target Specification
+                2. Target Data —{' '}
+                {sauceSubType === 'mayo_emulsion'
+                  ? 'Mayonnaise Spec'
+                  : sauceSubType === 'jam_preserve'
+                  ? 'Jam Spec'
+                  : 'Ketchup Spec'}
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    {sauceSubType === 'mayo_emulsion'
-                      ? 'Target Oil Phase (%)'
-                      : 'Target TSS / °Brix (%)'}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={sauceTargetTssOrOil}
-                    onChange={(e) => setSauceTargetTssOrOil(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
+
+              {sauceSubType === 'ketchup_sauce' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target pH
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceTargetPh}
+                      onChange={(e) => setSauceTargetPh(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Brix (°Bx)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={sauceTargetTssOrOil}
+                      onChange={(e) => setSauceTargetTssOrOil(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Acidity (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceTargetAcid}
+                      onChange={(e) => setSauceTargetAcid(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Bostwick (cm)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={sauceTargetBostwick}
+                      onChange={(e) => setSauceTargetBostwick(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Color (a/b)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.05"
+                      value={sauceTargetColor}
+                      onChange={(e) => setSauceTargetColor(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Vinegar / Acid (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={sauceVinegarStrength}
+                      onChange={(e) => setSauceVinegarStrength(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    Target Acidity (% Acetic)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={sauceTargetAcid}
-                    onChange={(e) => setSauceTargetAcid(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
+              )}
+
+              {sauceSubType === 'mayo_emulsion' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target pH
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceTargetPh}
+                      onChange={(e) => setSauceTargetPh(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Viscosity (cP)
+                    </label>
+                    <input
+                      type="number"
+                      step="100"
+                      value={mayoTargetViscosity}
+                      onChange={(e) => setMayoTargetViscosity(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Acidity (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceTargetAcid}
+                      onChange={(e) => setSauceTargetAcid(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Color (L*)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={sauceTargetColor}
+                      onChange={(e) => setSauceTargetColor(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Water Activity (aw)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={mayoTargetWaterActivity}
+                      onChange={(e) =>
+                        setMayoTargetWaterActivity(e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Specific Gravity
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={mayoTargetSpecificGravity}
+                      onChange={(e) =>
+                        setMayoTargetSpecificGravity(e.target.value)
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Density (g/mL)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={mayoTargetDensity}
+                      onChange={(e) => setMayoTargetDensity(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Vinegar / Acid (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={sauceVinegarStrength}
+                      onChange={(e) => setSauceVinegarStrength(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    Target Salt (% NaCl)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.05"
-                    value={sauceTargetSalt}
-                    onChange={(e) => setSauceTargetSalt(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
+              )}
+
+              {sauceSubType === 'jam_preserve' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Texture (g)
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={jamTargetTexture}
+                      onChange={(e) => setJamTargetTexture(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Brix (°Bx)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={sauceTargetTssOrOil}
+                      onChange={(e) => setSauceTargetTssOrOil(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target pH
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceTargetPh}
+                      onChange={(e) => setSauceTargetPh(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Target Acidity (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={sauceTargetAcid}
+                      onChange={(e) => setSauceTargetAcid(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Citric Acid Strength (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={sauceVinegarStrength}
+                      onChange={(e) => setSauceVinegarStrength(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    Target pH
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={sauceTargetPh}
-                    onChange={(e) => setSauceTargetPh(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                    Vinegar / Acid Strength (%)
-                  </label>
-                  <input
-                    type="number"
-                    step="1"
-                    value={sauceVinegarStrength}
-                    onChange={(e) => setSauceVinegarStrength(e.target.value)}
-                    title="e.g. 10% for Distilled Vinegar or 100% for Glacial/Citric Acid"
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
-                  />
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -3879,8 +4487,10 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
               <div>
                 <div className="text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
                   {sauceSubType === 'mayo_emulsion'
-                    ? 'Mayonnaise & Emulsion Standardization Prescription'
-                    : 'Ketchup & Sauce Standardization Prescription'}
+                    ? 'Mayonnaise Emulsion, Density, aw & Viscosity Standardization'
+                    : sauceSubType === 'jam_preserve'
+                    ? 'Jams & Fruit Preserves Standardization (Brix, pH, Acidity & Gel Texture)'
+                    : 'Tomato Ketchup Standardization (pH, Brix, Acidity, Bostwick & Color)'}
                   {canUsePremium && productName ? ` — ${productName}` : ''}
                 </div>
                 <div className="text-xs text-slate-200 mt-0.5">
@@ -3888,7 +4498,11 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                 </div>
               </div>
               <div className="text-xs font-extrabold text-amber-300">
-                Final Standardized Batch: {sauceMayoCorrection.finalBatchKg} kg
+                Final Batch: {sauceMayoCorrection.finalBatchKg} kg
+                {sauceSubType === 'mayo_emulsion' &&
+                sauceMayoCorrection.finalVolumeLiters > 0
+                  ? ` (${sauceMayoCorrection.finalVolumeLiters} L)`
+                  : ''}
               </div>
             </div>
 
@@ -3897,8 +4511,10 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                 <div className="text-[11px] text-sky-200 font-bold">
                   1. Add{' '}
                   {sauceSubType === 'mayo_emulsion'
-                    ? 'Vegetable Oil Phase'
-                    : 'Sugar / Paste Solids'}
+                    ? 'Oil / Emulsion Phase'
+                    : sauceSubType === 'jam_preserve'
+                    ? 'Sugar / Glucose Solids'
+                    : 'Sugar / Tomato Paste Solids'}
                 </div>
                 <div className="text-lg font-extrabold font-mono mt-0.5">
                   + {sauceMayoCorrection.addSolidsOrOilKg} kg
@@ -3906,7 +4522,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
               </div>
               <div className="p-3 rounded-xl bg-white/10 border border-white/15">
                 <div className="text-[11px] text-sky-200 font-bold">
-                  2. Add Vinegar ({sauceVinegarStrength}%)
+                  2. Add {sauceSubType === 'jam_preserve' ? 'Citric Acid' : 'Vinegar / Acid'} ({sauceVinegarStrength}%)
                 </div>
                 <div className="text-lg font-extrabold text-amber-300 font-mono mt-0.5">
                   + {sauceMayoCorrection.addVinegarKg} kg
@@ -3914,14 +4530,17 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
               </div>
               <div className="p-3 rounded-xl bg-white/10 border border-white/15">
                 <div className="text-[11px] text-sky-200 font-bold">
-                  3. Add Refined Salt (NaCl)
+                  3. {sauceMayoCorrection.stabilizerLabel}
                 </div>
                 <div className="text-lg font-extrabold font-mono mt-0.5">
-                  + {sauceMayoCorrection.addSaltKg} kg
+                  + {sauceMayoCorrection.addStabilizerGrams.toLocaleString()} g
                 </div>
-                <div className="text-[10px] text-slate-300">
-                  ({sauceMayoCorrection.addSaltGrams.toLocaleString()} g)
-                </div>
+                {sauceSubType === 'mayo_emulsion' &&
+                  sauceMayoCorrection.addSaltKg > 0 && (
+                    <div className="text-[10px] text-slate-300">
+                      (+{sauceMayoCorrection.addSaltKg} kg Humectant/Salt for aw)
+                    </div>
+                  )}
               </div>
               <div className="p-3 rounded-xl bg-white/10 border border-white/15">
                 <div className="text-[11px] text-sky-200 font-bold">
@@ -3933,10 +4552,15 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
               </div>
             </div>
 
+            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-sky-100 leading-relaxed">
+              <strong>Rheology, Shelf-Life &amp; Quality Guidance:</strong>{' '}
+              {sauceMayoCorrection.extraGuidance}
+            </div>
+
             {canUsePremium ? (
               <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
                 <div className="text-[11px] text-slate-300">
-                  Save this Ketchup / Sauce / Mayonnaise batch record to your
+                  Save this Ketchup, Mayonnaise &amp; Jam batch record to your
                   directory or download its PDF report.
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -3965,7 +4589,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
             ) : (
               <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs text-slate-200">
-                  Want to save Ketchup, Sauce &amp; Mayonnaise batches and
+                  Want to save Ketchup, Mayonnaise &amp; Jam batches and
                   download PDF reports?
                 </span>
                 <button
@@ -4590,19 +5214,18 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                             Initial vs. Target:
                           </span>{' '}
                           <span className="font-extrabold text-[#1A2138]">
-                            {rec.sauceBatchKg} kg | TSS/Oil{' '}
-                            {rec.sauceCurrentTssOrOil}% →{' '}
-                            {rec.sauceTargetTssOrOil}% | Acid{' '}
-                            {rec.sauceCurrentAcid}% → {rec.sauceTargetAcid}% |
-                            Salt {rec.sauceCurrentSalt}% → {rec.sauceTargetSalt}
-                            % | pH {rec.sauceCurrentPh} → {rec.sauceTargetPh}
+                            {rec.sauceBatchKg} kg |{' '}
+                            {rec.sauceSubType === 'mayo_emulsion'
+                              ? `pH ${rec.sauceCurrentPh}->${rec.sauceTargetPh} | Visc ${rec.mayoCurrentViscosity ?? 18500}->${rec.mayoTargetViscosity ?? 26000} cP | Acid ${rec.sauceCurrentAcid}%->${rec.sauceTargetAcid}% | aw ${rec.mayoCurrentWaterActivity ?? 0.94}->${rec.mayoTargetWaterActivity ?? 0.91}`
+                              : rec.sauceSubType === 'jam_preserve'
+                              ? `Texture ${rec.jamCurrentTexture ?? 68}->${rec.jamTargetTexture ?? 95} g | Brix ${rec.sauceCurrentTssOrOil}->${rec.sauceTargetTssOrOil}°Bx | pH ${rec.sauceCurrentPh}->${rec.sauceTargetPh} | Acid ${rec.sauceCurrentAcid}%->${rec.sauceTargetAcid}%`
+                              : `pH ${rec.sauceCurrentPh}->${rec.sauceTargetPh} | Brix ${rec.sauceCurrentTssOrOil}->${rec.sauceTargetTssOrOil}°Bx | Acid ${rec.sauceCurrentAcid}%->${rec.sauceTargetAcid}% | Bostwick ${rec.sauceCurrentBostwick ?? 7.8}->${rec.sauceTargetBostwick ?? 5.5} cm`}
                           </span>
                         </div>
                         <div className="text-[#1673B8] font-extrabold">
                           Added: +{rec.sauceAddSolidsOrOilKg} kg Solids/Oil · +
-                          {rec.sauceAddVinegarKg} kg Vinegar · +
-                          {rec.sauceAddSaltKg} kg Salt · +{rec.sauceAddWaterKg}{' '}
-                          kg Water → Final: {rec.sauceFinalBatchKg} kg
+                          {rec.sauceAddVinegarKg} kg Acid/Vinegar · +
+                          {(rec.sauceAddStabilizerGrams || 0).toLocaleString()} g Stabilizer/Pectin · +{rec.sauceAddWaterKg} kg Water → Final: {rec.sauceFinalBatchKg} kg
                         </div>
                       </div>
                     )}
@@ -9705,7 +10328,21 @@ export const ENumbersInstantFinderTool: React.FC = () => {
 // ============================================================================
 // 7. JOB APPLICATION EMAIL & COVER LETTER GENERATOR (AUTO-SYNCED WITH USER PROFILE)
 // ============================================================================
-export const JobEmailCoverLetterTool: React.FC<{ user: HubUser }> = ({ user }) => {
+export const JobEmailCoverLetterTool: React.FC<{
+  user: HubUser;
+  isUserPaid?: boolean;
+  hasExpiredPremium?: boolean;
+  onOpenPremiumModal?: () => void;
+}> = ({
+  user,
+  isUserPaid = false,
+  hasExpiredPremium = false,
+  onOpenPremiumModal
+}) => {
+  const canUsePremium = Boolean((isUserPaid && !hasExpiredPremium) || user.isAdmin);
+  const [applicationPurpose, setApplicationPurpose] = useState<
+    'job' | 'scholarship'
+  >('job');
   const [jobTitle, setJobTitle] = useState<string>('');
   const [companyName, setCompanyName] = useState<string>('');
   const [hrEmail, setHrEmail] = useState<string>('');
@@ -9730,19 +10367,36 @@ export const JobEmailCoverLetterTool: React.FC<{ user: HubUser }> = ({ user }) =
       : 'hands-on experience in food safety management, quality assurance testing, hygiene compliance, and production line monitoring';
 
   const generatedDocs = useMemo(() => {
-    const cleanJob = jobTitle.trim() || '[Enter Job Title]';
-    const cleanComp = companyName.trim() || 'your esteemed organization';
+    const cleanTarget =
+      jobTitle.trim() ||
+      (applicationPurpose === 'scholarship'
+        ? '[Enter Scholarship / Degree Program]'
+        : '[Enter Job Title]');
+    const cleanOrg =
+      companyName.trim() ||
+      (applicationPurpose === 'scholarship'
+        ? 'your esteemed university / scholarship committee'
+        : 'your esteemed organization');
 
-    // Strictly "Application for the Position of [Job Title]" with no education/extra text appended
-    const subject = `Application for the Position of ${cleanJob}`;
+    const subject =
+      applicationPurpose === 'scholarship'
+        ? `Application for ${cleanTarget} — Statement of Motivation & Cover Letter`
+        : `Application for the Position of ${cleanTarget}`;
 
-    const introParagraph = `I am writing to formally apply for the position of ${cleanJob} at ${cleanComp}. Holding a qualification in ${applicantQualification} and working as a ${applicantCurrentRole}, I bring practical expertise in ${applicantExperienceSummary}.`;
+    const introParagraph =
+      applicationPurpose === 'scholarship'
+        ? `I am writing to express my strong interest in applying for the ${cleanTarget} at ${cleanOrg}. Holding a qualification in ${applicantQualification} and serving as a ${applicantCurrentRole}, I have developed a solid academic and practical foundation in ${applicantExperienceSummary}.`
+        : `I am writing to formally apply for the position of ${cleanTarget} at ${cleanOrg}. Holding a qualification in ${applicantQualification} and working as a ${applicantCurrentRole}, I bring practical expertise in ${applicantExperienceSummary}.`;
 
     const extraLine = customHighlight.trim()
       ? `\nIn addition, ${customHighlight.trim()}\n`
       : '';
 
-    const emailBody = `Dear Hiring Manager / HR Team,
+    const emailBody = `Dear ${
+      applicationPurpose === 'scholarship'
+        ? 'Admissions & Scholarship Committee'
+        : 'Hiring Manager / HR Team'
+    },
 
 ${introParagraph}
 
@@ -9750,7 +10404,7 @@ Key Highlights of My Profile:
 • Qualification: ${applicantQualification}
 • Core Competencies: ${applicantSkills}
 • Current Role & Location: ${applicantCurrentRole} (${applicantLocation})${extraLine}
-I have attached my updated CV/Resume for your review. I would welcome the opportunity to discuss how my technical background in Food Safety and Quality Assurance can contribute to ${cleanComp}.
+I have attached my updated CV/Resume and supporting documents for your review. I would welcome the opportunity to discuss how my background in Food Science and Safety aligns with ${cleanOrg}.
 
 Thank you for your time and consideration.
 
@@ -9774,23 +10428,39 @@ Phone: ${applicantPhone} | Email: ${applicantEmail}
 Date: ${todayStr}
 
 To,
-The Human Resources Manager / Hiring Committee,
-${companyName.trim() || '[Company / Organization Name]'}
+${
+  applicationPurpose === 'scholarship'
+    ? 'The Scholarship Selection & Admissions Committee,'
+    : 'The Human Resources Manager / Hiring Committee,'
+}
+${
+  companyName.trim() ||
+  (applicationPurpose === 'scholarship'
+    ? '[University / Scholarship Organization Name]'
+    : '[Company / Organization Name]')
+}
 
-Subject: Application for the Position of ${cleanJob}
+Subject: ${subject}
 
-Dear Hiring Manager,
+Dear ${applicationPurpose === 'scholarship' ? 'Selection Committee' : 'Hiring Manager'},
 
 ${introParagraph}
 
-Throughout my academic and professional journey, I have focused on maintaining strict compliance with international food safety and quality standards (${applicantSkills}). In my capacity as ${applicantCurrentRole}, I have consistently ensured that raw materials, in-process checks (CCPs/OPRPs), lab analyses, and finished product dispatches meet regulatory and customer specifications.${extraLine}
-
-What I bring to ${cleanComp} as a ${cleanJob}:
+${
+  applicationPurpose === 'scholarship'
+    ? `Throughout my academic and professional journey, I have focused on research, food safety systems, and nutritional science (${applicantSkills}). In my capacity as ${applicantCurrentRole}, I have applied analytical methodologies and quality assurance frameworks to solve real-world food industry challenges.${extraLine}
+Key Academic & Professional Strengths for ${cleanTarget}:
+1. Strong academic grounding in Food Science, Food Safety (HACCP, ISO 22000), and Research Methodology.
+2. Hands-on laboratory analysis, statistical evaluation, and scientific writing capability.
+3. Strong commitment to international collaboration, innovation, and contributing to sustainable food systems.`
+    : `Throughout my academic and professional journey, I have focused on maintaining strict compliance with international food safety and quality standards (${applicantSkills}). In my capacity as ${applicantCurrentRole}, I have consistently ensured that raw materials, in-process checks (CCPs/OPRPs), lab analyses, and finished product dispatches meet regulatory and customer specifications.${extraLine}
+What I bring to ${cleanOrg} as a ${cleanTarget}:
 1. Strong command of Food Safety Management Systems (HACCP, ISO 22000, GMP/GHP, and traceability).
 2. Accurate analytical and laboratory documentation, root-cause analysis (CAPA), and sensory/physicochemical testing.
-3. Dedication to continuous improvement, audit readiness, and cross-functional teamwork with Production and R&D.
+3. Dedication to continuous improvement, audit readiness, and cross-functional teamwork with Production and R&D.`
+}
 
-Please find my detailed CV attached with this application. I am available for an interview at your earliest convenience and can be reached directly at ${applicantPhone} or ${applicantEmail}.
+Please find my detailed CV and academic credentials attached with this application. I am available for an interview at your earliest convenience and can be reached directly at ${applicantPhone} or ${applicantEmail}.
 
 Thank you for considering my application.
 
@@ -9801,6 +10471,7 @@ ${applicantQualification}`;
 
     return { subject, emailBody, coverLetter };
   }, [
+    applicationPurpose,
     jobTitle,
     companyName,
     customHighlight,
@@ -9814,20 +10485,113 @@ ${applicantQualification}`;
     applicantExperienceSummary
   ]);
 
+  // Direct inline-editable text states (editable in the middle/body by any user!)
+  const [editedSubject, setEditedSubject] = useState<string>(generatedDocs.subject);
+  const [editedEmailBody, setEditedEmailBody] = useState<string>(generatedDocs.emailBody);
+  const [editedCoverLetter, setEditedCoverLetter] = useState<string>(generatedDocs.coverLetter);
+
+  useEffect(() => {
+    setEditedSubject(generatedDocs.subject);
+    setEditedEmailBody(generatedDocs.emailBody);
+    setEditedCoverLetter(generatedDocs.coverLetter);
+  }, [generatedDocs]);
+
+  const handleResetToTemplate = () => {
+    setEditedSubject(generatedDocs.subject);
+    setEditedEmailBody(generatedDocs.emailBody);
+    setEditedCoverLetter(generatedDocs.coverLetter);
+  };
+
   const handleCopy = (key: string, text: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedField(key);
     setTimeout(() => setCopiedField(null), 2500);
   };
 
+  const handleDownloadCoverLetterPdf = () => {
+    if (!canUsePremium) {
+      onOpenPremiumModal?.();
+      return;
+    }
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 16;
+
+    // Header Banner
+    pdf.setFillColor(26, 33, 56);
+    pdf.rect(0, 0, pageW, 34, 'F');
+    pdf.setFillColor(22, 115, 184);
+    pdf.rect(0, 32, pageW, 2.5, 'F');
+
+    drawPdfBrandLogo(pdf, 14, 5, 22, {
+      borderColor: [255, 255, 255],
+      bgFill: [255, 255, 255],
+      roundedRadius: 3
+    });
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13.5);
+    pdf.text(applicantName.slice(0, 52), 42, 14);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.2);
+    pdf.setTextColor(220, 233, 246);
+    pdf.text(
+      `${applicantQualification.slice(0, 55)}  |  ${applicantPhone}`,
+      42,
+      21
+    );
+    if (applicantEmail) {
+      pdf.text(`Email: ${applicantEmail}`, 42, 27);
+    }
+
+    let y = 46;
+    pdf.setFont('times', 'normal');
+    pdf.setFontSize(11);
+    pdf.setTextColor(26, 33, 56);
+
+    const paragraphs = editedCoverLetter.split(/\r?\n/);
+    paragraphs.forEach((rawLine) => {
+      if (!rawLine.trim()) {
+        y += 4.2;
+        return;
+      }
+      const wrapped = pdf.splitTextToSize(rawLine, pageW - margin * 2);
+      wrapped.forEach((wLine: string) => {
+        if (y > pageH - 18) {
+          pdf.addPage();
+          y = 20;
+        }
+        if (
+          rawLine.startsWith('Subject:') ||
+          rawLine.startsWith('Dear ') ||
+          rawLine.startsWith('Sincerely,')
+        ) {
+          pdf.setFont('times', 'bold');
+        } else {
+          pdf.setFont('times', 'normal');
+        }
+        pdf.text(wLine, margin, y);
+        y += 5.4;
+      });
+    });
+
+    const fileBase = (jobTitle.trim() || applicationPurpose)
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .slice(0, 40);
+    pdf.save(`Cover_Letter_${fileBase}_${Date.now()}.pdf`);
+  };
+
   const mailtoHref = `mailto:${encodeURIComponent(hrEmail.trim())}?subject=${encodeURIComponent(
-    generatedDocs.subject
-  )}&body=${encodeURIComponent(generatedDocs.emailBody)}`;
+    editedSubject
+  )}&body=${encodeURIComponent(editedEmailBody)}`;
 
   const gmailWebHref = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
     hrEmail.trim()
-  )}&su=${encodeURIComponent(generatedDocs.subject)}&body=${encodeURIComponent(
-    generatedDocs.emailBody
+  )}&su=${encodeURIComponent(editedSubject)}&body=${encodeURIComponent(
+    editedEmailBody
   )}`;
 
   return (
@@ -9839,47 +10603,89 @@ ${applicantQualification}`;
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
-              Job Application Email &amp; Cover Letter Generator
+              Job &amp; Scholarship Application Email &amp; Cover Letter Generator
             </h2>
             <p className="text-xs text-[#4A5568] font-medium">
-              Auto-personalized from your Profile ({applicantName}) — Enter Your Desired Job Title &amp; Send in 1 Click
+              Auto-personalized from your Profile ({applicantName}) — Directly Edit Any Section Before Copying, Sending or Exporting PDF
             </p>
           </div>
         </div>
       </div>
 
-      {/* USER INPUTS (NO PRESET DESIGNATIONS & NO TONE SELECTOR) */}
+      {/* APPLICATION PURPOSE + USER INPUTS */}
       <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2 bg-[#F8FAFC] p-2.5 rounded-xl border border-[#D2DEEA]">
+          <span className="text-xs font-extrabold text-[#1A2138] px-1">
+            Application Purpose:
+          </span>
+          <button
+            type="button"
+            onClick={() => setApplicationPurpose('job')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
+              applicationPurpose === 'job'
+                ? 'bg-[#1673B8] text-white'
+                : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
+            }`}
+          >
+            Job Application (QA/QC, Food Tech, Nutrition)
+          </button>
+          <button
+            type="button"
+            onClick={() => setApplicationPurpose('scholarship')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-extrabold cursor-pointer ${
+              applicationPurpose === 'scholarship'
+                ? 'bg-[#1673B8] text-white'
+                : 'bg-white text-[#1A2138] border border-[#D2DEEA]'
+            }`}
+          >
+            Scholarship / Fellowship Application (MSc / PhD)
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-              Enter Job Title You Are Applying For *
+              {applicationPurpose === 'scholarship'
+                ? 'Scholarship / Degree Program Title *'
+                : 'Enter Job Title You Are Applying For *'}
             </label>
             <input
               type="text"
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
-              placeholder="Write your desired job title here..."
+              placeholder={
+                applicationPurpose === 'scholarship'
+                  ? 'e.g., Erasmus Mundus MSc Food Science'
+                  : 'Write your desired job title here...'
+              }
               className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border-2 border-[#1673B8] text-xs font-bold text-[#1A2138]"
             />
           </div>
 
           <div>
             <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-              Company / Organization Name
+              {applicationPurpose === 'scholarship'
+                ? 'University / Funding Body Name'
+                : 'Company / Organization Name'}
             </label>
             <input
               type="text"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Enter company or organization name..."
+              placeholder={
+                applicationPurpose === 'scholarship'
+                  ? 'Enter university or funding agency...'
+                  : 'Enter company or organization name...'
+              }
               className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
             />
           </div>
 
           <div>
             <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-              HR / Recruiter Email (For 1-Click Send)
+              {applicationPurpose === 'scholarship'
+                ? 'Admissions / Supervisor Email'
+                : 'HR / Recruiter Email (For 1-Click Send)'}
             </label>
             <input
               type="email"
@@ -9893,50 +10699,61 @@ ${applicantQualification}`;
 
         <div>
           <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-            Optional Extra Note / Achievement to Include
+            Optional Extra Note / Achievement / Research Interest to Include
           </label>
           <input
             type="text"
             value={customHighlight}
             onChange={(e) => setCustomHighlight(e.target.value)}
-            placeholder="Optional: Add any specific certification, notice period, or achievement..."
+            placeholder="Optional: Add any specific certification, GPA, thesis topic, notice period, or achievement..."
             className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
           />
         </div>
       </div>
 
-      {/* 1-CLICK SEND BUTTONS */}
-      <div className="flex flex-wrap items-center gap-2.5 p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#1673B8]/40">
-        <a
-          href={mailtoHref}
-          className="px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-xs transition-colors"
-        >
-          <Send className="w-3.5 h-3.5" />
-          <span>1-Click Open in Default Email App</span>
-        </a>
+      {/* 1-CLICK SEND & RESET ACTIONS */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-[#EBF4FC] border border-[#1673B8]/40">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <a
+            href={mailtoHref}
+            className="px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-xs transition-colors"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>1-Click Open in Default Email App</span>
+          </a>
 
-        <a
-          href={gmailWebHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-4 py-2.5 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-xs transition-colors"
+          <a
+            href={gmailWebHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2.5 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-2 shadow-xs transition-colors"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span>Open Directly in Gmail Compose ↗</span>
+          </a>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleResetToTemplate}
+          className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-[#BBD6EE] text-[#105E9A] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
         >
-          <Mail className="w-3.5 h-3.5" />
-          <span>Open Directly in Gmail Compose ↗</span>
-        </a>
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Reset to Auto Template</span>
+        </button>
       </div>
 
-      {/* GENERATED SUBJECT + EMAIL BODY + COVER LETTER */}
+      {/* EDITABLE SUBJECT + EMAIL BODY + COVER LETTER */}
       <div className="space-y-4">
-        {/* Subject */}
+        {/* Editable Subject */}
         <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-1.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-extrabold text-[#1673B8]">
-              1. Generated Email Subject Line
+              1. Email Subject Line (Editable)
             </span>
             <button
               type="button"
-              onClick={() => handleCopy('subject', generatedDocs.subject)}
+              onClick={() => handleCopy('subject', editedSubject)}
               className="px-3 py-1 rounded-lg bg-white hover:bg-[#EBF4FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] inline-flex items-center gap-1 cursor-pointer"
             >
               {copiedField === 'subject' ? (
@@ -9952,21 +10769,24 @@ ${applicantQualification}`;
               )}
             </button>
           </div>
-          <div className="p-2.5 rounded-xl bg-white border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138]">
-            {generatedDocs.subject}
-          </div>
+          <input
+            type="text"
+            value={editedSubject}
+            onChange={(e) => setEditedSubject(e.target.value)}
+            className="w-full p-2.5 rounded-xl bg-white border border-[#D2DEEA] focus:border-[#1673B8] focus:outline-none text-xs font-extrabold text-[#1A2138]"
+          />
         </div>
 
-        {/* Email Body & Cover Letter Side by Side */}
+        {/* Editable Email Body & Cover Letter Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2">
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2 flex flex-col">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-extrabold text-[#1673B8]">
-                2. Ready-to-Send Email Body
+                2. Ready-to-Send Email Body (Editable)
               </span>
               <button
                 type="button"
-                onClick={() => handleCopy('body', generatedDocs.emailBody)}
+                onClick={() => handleCopy('body', editedEmailBody)}
                 className="px-3 py-1 rounded-lg bg-white hover:bg-[#EBF4FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] inline-flex items-center gap-1 cursor-pointer"
               >
                 {copiedField === 'body' ? (
@@ -9982,37 +10802,77 @@ ${applicantQualification}`;
                 )}
               </button>
             </div>
-            <pre className="p-3 rounded-xl bg-white border border-[#D2DEEA] text-xs font-sans text-[#1A2138] whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
-              {generatedDocs.emailBody}
-            </pre>
+            <textarea
+              rows={15}
+              value={editedEmailBody}
+              onChange={(e) => setEditedEmailBody(e.target.value)}
+              className="w-full p-3 rounded-xl bg-white border border-[#D2DEEA] focus:border-[#1673B8] focus:outline-none text-xs font-sans text-[#1A2138] leading-relaxed resize-y"
+            />
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2">
-            <div className="flex items-center justify-between gap-2">
+          <div className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-2 flex flex-col">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-extrabold text-[#1A2138]">
-                3. Complete Formal Cover Letter
+                3. Complete Formal Cover Letter (Click Inside to Edit)
               </span>
-              <button
-                type="button"
-                onClick={() => handleCopy('cover', generatedDocs.coverLetter)}
-                className="px-3 py-1 rounded-lg bg-white hover:bg-[#EBF4FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] inline-flex items-center gap-1 cursor-pointer"
-              >
-                {copiedField === 'cover' ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Cover Letter</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleCopy('cover', editedCoverLetter)}
+                  className="px-2.5 py-1 rounded-lg bg-white hover:bg-[#EBF4FC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138] inline-flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedField === 'cover' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadCoverLetterPdf}
+                  className="px-3 py-1 rounded-lg bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer shadow-2xs"
+                  title={
+                    canUsePremium
+                      ? 'Download Formatted Cover Letter PDF'
+                      : 'Paid Members Only — Upgrade to Download Cover Letter PDF'
+                  }
+                >
+                  {canUsePremium ? (
+                    <Download className="w-3.5 h-3.5" />
+                  ) : (
+                    <Lock className="w-3.5 h-3.5 text-amber-200" />
+                  )}
+                  <span>Download Cover Letter PDF</span>
+                </button>
+              </div>
             </div>
-            <pre className="p-3 rounded-xl bg-white border border-[#D2DEEA] text-xs font-sans text-[#1A2138] whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
-              {generatedDocs.coverLetter}
-            </pre>
+            <textarea
+              rows={15}
+              value={editedCoverLetter}
+              onChange={(e) => setEditedCoverLetter(e.target.value)}
+              placeholder="Write or edit any details directly inside your cover letter..."
+              className="w-full p-3 rounded-xl bg-white border border-[#D2DEEA] focus:border-[#1673B8] focus:outline-none text-xs font-sans text-[#1A2138] leading-relaxed resize-y"
+            />
+            {!canUsePremium && (
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-[11px] font-bold text-amber-950">
+                <span>
+                  Editing &amp; Copy are free for all users. Cover Letter PDF Download is reserved for Paid Members.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onOpenPremiumModal?.()}
+                  className="px-2.5 py-1 rounded-lg bg-[#1673B8] text-white font-extrabold cursor-pointer shrink-0"
+                >
+                  Unlock PDF →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -28,8 +28,15 @@ import {
   UserToolsData
 } from '../types/hub';
 import { jsPDF } from 'jspdf';
+import * as pdfjsLib from 'pdfjs-dist';
+// @ts-ignore - Vite asset URL import for bundled PDF.js worker
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
+
+if (typeof window !== 'undefined' && pdfjsLib?.GlobalWorkerOptions) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+}
 
 export type CitationStyleId =
   | 'pjas'
@@ -799,9 +806,459 @@ function formatReferenceEntry(
   }
 }
 
+function normalizeTableCellText(raw: string): string {
+  return raw
+    .replace(/\r?\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\|/g, '/')
+    .trim();
+}
+
+export function splitMarkdownPipeRow(line: string): string[] {
+  const trimmed = line.trim();
+  const withoutOuter = trimmed.replace(/^\|/, '').replace(/\|$/, '');
+  return withoutOuter.split('|').map((c) => c.trim());
+}
+
+export function isMarkdownSeparatorRow(line: string): boolean {
+  const trimmed = line.trim();
+  return /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/.test(trimmed);
+}
+
+export function rowsToMarkdownPipeTable(rawRows: string[][]): string {
+  const cleanedRows = rawRows
+    .map((r) => r.map((c) => normalizeTableCellText(c)))
+    .filter((r) => r.some((c) => c.length > 0));
+  if (cleanedRows.length === 0) return '';
+
+  const colCount = Math.max(2, ...cleanedRows.map((r) => r.length));
+  const padded = cleanedRows.map((r) => {
+    const next = [...r];
+    while (next.length < colCount) next.push('');
+    return next;
+  });
+
+  const header = `| ${padded[0].join(' | ')} |`;
+  const sep = `| ${Array(colCount).fill('---').join(' | ')} |`;
+  const body = padded.slice(1).map((r) => `| ${r.join(' | ')} |`);
+  return [header, sep, ...body].join('\n');
+}
+
+export function extractReferencesBlockAndCitations(rawText: string): {
+  referencesText: string;
+  referenceCount: number;
+  inTextMatches: string[];
+} {
+  const cleaned = rawText.replace(/\r\n/g, '\n').replace(/\u0000/g, '').trim();
+  if (!cleaned) {
+    return { referencesText: '', referenceCount: 0, inTextMatches: [] };
+  }
+
+  const parsedSections = parseResearchDocumentSections(cleaned);
+  let bodyForInText = cleaned;
+  let refRawSection = parsedSections.referencesList?.trim() || '';
+
+  if (refRawSection) {
+    const refIdx = cleaned.search(
+      /(?:^|\n)\s*(?:\d+\.?\s*)?(?:REFERENCES|BIBLIOGRAPHY|LITERATURE\s+CITED|WORKS\s+CITED)\b/i
+    );
+    if (refIdx > 0) {
+      bodyForInText = cleaned.slice(0, refIdx);
+    }
+  }
+
+  // Detect unique in-text citations in paper body
+  const inTextSet = new Set<string>();
+  const parenCitationMatches =
+    bodyForInText.match(
+      /\(([A-Z][A-Za-z'\-]+(?:\s+(?:et\s+al\.?|(?:and|&)\s+[A-Z][A-Za-z'\-]+))?(?:,?\s*(?:19|20)\d{2}[a-z]?)(?:\s*;\s*[^)]{3,80})*)\)/g
+    ) || [];
+  parenCitationMatches.forEach((m) => inTextSet.add(m.trim()));
+  const bracketMatches =
+    bodyForInText.match(/\[\s*\d+(?:\s*[-–,]\s*\d+)*\s*\]/g) || [];
+  bracketMatches.forEach((m) => inTextSet.add(m.trim()));
+
+  // Rebuild references into clean one-reference-per-line entries even if wrapped across PDF lines
+  const sourceLines = (refRawSection || cleaned)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !/^(?:page\s*\d+|\d+)$/i.test(l) && !l.startsWith('|'));
+
+  const combinedEntries: string[] = [];
+  let currentEntry = '';
+
+  const startsNewReference = (line: string): boolean => {
+    if (/^(?:\[\d+\]|\d{1,3}[.)]\s+)/.test(line)) return true;
+    if (/^[A-Z][A-Za-z'\-]{1,28},\s+[A-Z]/.test(line)) return true;
+    if (/^[A-Z][A-Za-z'\-]{1,28}\s+(?:and|&)\s+[A-Z]/.test(line) && /(19|20)\d{2}/.test(line)) {
+      return true;
+    }
+    return false;
+  };
+
+  if (refRawSection) {
+    for (const line of sourceLines) {
+      if (
+        currentEntry &&
+        startsNewReference(line) &&
+        (/(19|20)\d{2}/.test(currentEntry) || currentEntry.length > 45)
+      ) {
+        combinedEntries.push(currentEntry.trim());
+        currentEntry = line;
+      } else if (!currentEntry) {
+        currentEntry = line;
+      } else {
+        currentEntry = currentEntry.endsWith('-')
+          ? `${currentEntry.slice(0, -1)}${line}`
+          : `${currentEntry} ${line}`;
+      }
+    }
+    if (currentEntry.trim()) {
+      combinedEntries.push(currentEntry.trim());
+    }
+  } else {
+    // Fallback if no References heading existed: pick lines that look like formal references
+    for (const line of sourceLines) {
+      if (
+        line.length > 30 &&
+        /(19|20)\d{2}/.test(line) &&
+        (/^[A-Z][A-Za-z'\-]+,/.test(line) || /^(?:\[\d+\]|\d+[.)]\s+)/.test(line) || /doi\.org/i.test(line))
+      ) {
+        combinedEntries.push(line);
+      }
+    }
+  }
+
+  const finalEntries = combinedEntries
+    .map((e) => e.replace(/\s+/g, ' ').trim())
+    .filter((e) => e.length >= 18);
+
+  return {
+    referencesText: finalEntries.join('\n'),
+    referenceCount: finalEntries.length,
+    inTextMatches: Array.from(inTextSet).slice(0, 40)
+  };
+}
+
+async function extractTextFromPdfBuffer(uint8: Uint8Array): Promise<string> {
+  const loadingTask = pdfjsLib.getDocument({ data: uint8 });
+  const pdf = await loadingTask.promise;
+  const pageBlocks: string[] = [];
+
+  interface PdfItemBox {
+    str: string;
+    x: number;
+    y: number;
+    width: number;
+  }
+
+  interface RowSegment {
+    cells: { text: string; x: number }[];
+    y: number;
+  }
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const rawItems: PdfItemBox[] = [];
+
+    for (const item of content.items as Array<{
+      str?: string;
+      transform?: number[];
+      width?: number;
+    }>) {
+      const str = (item.str || '').replace(/\s+/g, ' ').trim();
+      if (!str || !Array.isArray(item.transform) || item.transform.length < 6) {
+        continue;
+      }
+      rawItems.push({
+        str,
+        x: item.transform[4] || 0,
+        y: item.transform[5] || 0,
+        width: typeof item.width === 'number' && item.width > 0 ? item.width : str.length * 4.5
+      });
+    }
+
+    if (rawItems.length === 0) continue;
+
+    // Sort top-to-bottom (descending PDF y), then left-to-right (ascending x)
+    rawItems.sort((a, b) => {
+      if (Math.abs(b.y - a.y) > 3.2) return b.y - a.y;
+      return a.x - b.x;
+    });
+
+    // Group into horizontal visual lines
+    const lineGroups: PdfItemBox[][] = [];
+    for (const item of rawItems) {
+      const lastGroup = lineGroups[lineGroups.length - 1];
+      if (!lastGroup || Math.abs(lastGroup[0].y - item.y) > 3.2) {
+        lineGroups.push([item]);
+      } else {
+        lastGroup.push(item);
+      }
+    }
+
+    // Split each visual line into cells based on horizontal column gaps (>= 14pt)
+    const rowSegments: RowSegment[] = lineGroups.map((group) => {
+      group.sort((a, b) => a.x - b.x);
+      const cells: { text: string; x: number }[] = [];
+      let currentText = group[0].str;
+      let cellStartX = group[0].x;
+      let prevEndX = group[0].x + group[0].width;
+
+      for (let i = 1; i < group.length; i++) {
+        const it = group[i];
+        const gap = it.x - prevEndX;
+        if (gap >= 14) {
+          cells.push({ text: currentText.trim(), x: cellStartX });
+          currentText = it.str;
+          cellStartX = it.x;
+        } else {
+          currentText = `${currentText} ${it.str}`;
+        }
+        prevEndX = Math.max(prevEndX, it.x + it.width);
+      }
+      if (currentText.trim()) {
+        cells.push({ text: currentText.trim(), x: cellStartX });
+      }
+      return { cells, y: group[0].y };
+    });
+
+    // Identify consecutive multi-column blocks as structured tables and align columns by X-positions
+    const pageOut: string[] = [];
+    let idx = 0;
+    while (idx < rowSegments.length) {
+      if (rowSegments[idx].cells.length >= 2) {
+        let endIdx = idx;
+        while (
+          endIdx + 1 < rowSegments.length &&
+          rowSegments[endIdx + 1].cells.length >= 2
+        ) {
+          endIdx += 1;
+        }
+        const runLength = endIdx - idx + 1;
+        if (runLength >= 2) {
+          const tableRun = rowSegments.slice(idx, endIdx + 1);
+          // Cluster X anchors across all rows in this table run (within 22pt tolerance)
+          const anchors: number[] = [];
+          tableRun.forEach((row) => {
+            row.cells.forEach((c) => {
+              const found = anchors.find((ax) => Math.abs(ax - c.x) <= 22);
+              if (found === undefined) anchors.push(c.x);
+            });
+          });
+          anchors.sort((a, b) => a - b);
+
+          if (anchors.length >= 2 && anchors.length <= 12) {
+            const matrix: string[][] = tableRun.map((row) => {
+              const outRow = Array(anchors.length).fill('');
+              row.cells.forEach((c) => {
+                let bestCol = 0;
+                let bestDist = Infinity;
+                anchors.forEach((ax, colIdx) => {
+                  const d = Math.abs(ax - c.x);
+                  if (d < bestDist) {
+                    bestDist = d;
+                    bestCol = colIdx;
+                  }
+                });
+                outRow[bestCol] = outRow[bestCol]
+                  ? `${outRow[bestCol]} ${c.text}`
+                  : c.text;
+              });
+              return outRow;
+            });
+            const mdTable = rowsToMarkdownPipeTable(matrix);
+            if (mdTable) {
+              pageOut.push(mdTable);
+              idx = endIdx + 1;
+              continue;
+            }
+          }
+        }
+      }
+
+      const plainLine = rowSegments[idx].cells.map((c) => c.text).join('  ').trim();
+      if (plainLine) {
+        pageOut.push(plainLine);
+      }
+      idx += 1;
+    }
+
+    pageBlocks.push(pageOut.join('\n'));
+  }
+
+  return pageBlocks.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function extractTextAndTablesFromDocxXml(xmlText: string): string {
+  try {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
+    const bodyEl =
+      xmlDoc.getElementsByTagNameNS('*', 'body')[0] ||
+      xmlDoc.getElementsByTagName('w:body')[0];
+
+    if (!bodyEl) {
+      return xmlText
+        .replace(/<\/w:p>/g, '\n\n')
+        .replace(/<w:tab\/>/g, '\t')
+        .replace(/<w:br[^/>]*\/>/g, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    }
+
+    const extractParagraphText = (pEl: Element): string => {
+      let buf = '';
+      const walk = (node: Node) => {
+        if (node.nodeType === 1) {
+          const el = node as Element;
+          const local = el.localName || el.nodeName;
+          if (local === 't' || local === 'delText') {
+            buf += el.textContent || '';
+            return;
+          }
+          if (local === 'tab') {
+            buf += '\t';
+            return;
+          }
+          if (local === 'br' || local === 'cr') {
+            buf += '\n';
+            return;
+          }
+        }
+        node.childNodes.forEach((child) => walk(child));
+      };
+      walk(pEl);
+      return buf.replace(/[ \t]+/g, ' ').trim();
+    };
+
+    const outputBlocks: string[] = [];
+    bodyEl.childNodes.forEach((child) => {
+      if (child.nodeType !== 1) return;
+      const el = child as Element;
+      const local = el.localName || el.nodeName;
+      if (local === 'p') {
+        const text = extractParagraphText(el);
+        if (text) outputBlocks.push(text);
+      } else if (local === 'tbl') {
+        const rows: string[][] = [];
+        Array.from(el.childNodes).forEach((trNode) => {
+          if (trNode.nodeType !== 1) return;
+          const trEl = trNode as Element;
+          if ((trEl.localName || trEl.nodeName) !== 'tr') return;
+          const rowCells: string[] = [];
+          Array.from(trEl.childNodes).forEach((tcNode) => {
+            if (tcNode.nodeType !== 1) return;
+            const tcEl = tcNode as Element;
+            if ((tcEl.localName || tcEl.nodeName) !== 'tc') return;
+            const cellParts: string[] = [];
+            const pList = tcEl.getElementsByTagNameNS('*', 'p');
+            if (pList.length > 0) {
+              for (let i = 0; i < pList.length; i++) {
+                const pt = extractParagraphText(pList[i]);
+                if (pt) cellParts.push(pt);
+              }
+            } else {
+              const rawCell = (tcEl.textContent || '').trim();
+              if (rawCell) cellParts.push(rawCell);
+            }
+            rowCells.push(cellParts.join(' '));
+          });
+          if (rowCells.length > 0) rows.push(rowCells);
+        });
+        const mdTable = rowsToMarkdownPipeTable(rows);
+        if (mdTable) {
+          outputBlocks.push(mdTable);
+        }
+      }
+    });
+
+    if (outputBlocks.length > 0) {
+      return outputBlocks.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
+  } catch {
+    // Fall back to tag stripping below
+  }
+
+  return xmlText
+    .replace(/<\/w:p>/g, '\n\n')
+    .replace(/<w:tab\/>/g, '\t')
+    .replace(/<w:br[^/>]*\/>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function extractTextAndTablesFromHtml(htmlString: string): string {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+    const blocks: string[] = [];
+
+    const walk = (node: Element) => {
+      const tag = node.tagName.toLowerCase();
+      if (tag === 'style' || tag === 'script' || tag === 'head') return;
+      if (tag === 'table') {
+        const rows: string[][] = [];
+        node.querySelectorAll('tr').forEach((tr) => {
+          const cells: string[] = [];
+          tr.querySelectorAll('th, td').forEach((cell) => {
+            cells.push((cell.textContent || '').replace(/\s+/g, ' ').trim());
+          });
+          if (cells.length > 0) rows.push(cells);
+        });
+        const mdTable = rowsToMarkdownPipeTable(rows);
+        if (mdTable) blocks.push(mdTable);
+        return;
+      }
+      if (['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'].includes(tag)) {
+        const txt = (node.textContent || '').replace(/\s+/g, ' ').trim();
+        if (txt) blocks.push(txt);
+        return;
+      }
+      Array.from(node.children).forEach((c) => walk(c));
+    };
+
+    if (doc.body) {
+      walk(doc.body);
+      if (blocks.length > 0) return blocks.join('\n\n').trim();
+    }
+  } catch {
+    // Ignore HTML DOM failure
+  }
+  return htmlString
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+}
+
 export async function extractTextFromUploadedDocument(file: File): Promise<string> {
   const arrayBuf = await file.arrayBuffer();
   const uint8 = new Uint8Array(arrayBuf);
+  const lowerName = file.name.toLowerCase();
+
+  // Check for PDF header (%PDF-) or .pdf extension
+  const isPdfMagic =
+    uint8.length > 4 &&
+    uint8[0] === 0x25 &&
+    uint8[1] === 0x50 &&
+    uint8[2] === 0x44 &&
+    uint8[3] === 0x46;
+
+  if (lowerName.endsWith('.pdf') || file.type === 'application/pdf' || isPdfMagic) {
+    try {
+      const pdfExtracted = await extractTextFromPdfBuffer(uint8);
+      if (pdfExtracted && pdfExtracted.trim().length > 0) {
+        return pdfExtracted;
+      }
+    } catch {
+      // Fall through if PDF parsing encounters an encrypted or malformed stream
+    }
+  }
 
   // Check if file is a ZIP / .docx archive (starts with PK\x03\x04)
   if (
@@ -855,13 +1312,7 @@ export async function extractTextFromUploadedDocument(file: File): Promise<strin
             xmlText = decoder.decode(new Uint8Array(decompressedBuf));
           }
           if (xmlText) {
-            return xmlText
-              .replace(/<\/w:p>/g, '\n\n')
-              .replace(/<w:tab\/>/g, '\t')
-              .replace(/<w:br[^/>]*\/>/g, '\n')
-              .replace(/<[^>]+>/g, '')
-              .replace(/\n{3,}/g, '\n\n')
-              .trim();
+            return extractTextAndTablesFromDocxXml(xmlText);
           }
         }
         if (compressedSize === 0) break;
@@ -873,22 +1324,20 @@ export async function extractTextFromUploadedDocument(file: File): Promise<strin
   }
 
   const rawDecoded = new TextDecoder('utf-8', { fatal: false }).decode(uint8);
+  if (rawDecoded.includes('<w:t') || rawDecoded.includes('<w:tbl')) {
+    return extractTextAndTablesFromDocxXml(rawDecoded);
+  }
   if (
-    file.name.endsWith('.html') ||
-    file.name.endsWith('.htm') ||
-    file.name.endsWith('.xml') ||
-    rawDecoded.includes('<w:t')
+    lowerName.endsWith('.html') ||
+    lowerName.endsWith('.htm') ||
+    lowerName.endsWith('.xml') ||
+    rawDecoded.includes('<table') ||
+    rawDecoded.includes('<html')
   ) {
-    return rawDecoded
-      .replace(/<\/w:p>/g, '\n\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/[ \t]+/g, ' ')
-      .trim();
+    return extractTextAndTablesFromHtml(rawDecoded);
   }
 
-  if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+  if (lowerName.endsWith('.txt') || lowerName.endsWith('.md') || lowerName.endsWith('.csv')) {
     return rawDecoded.trim();
   }
 
@@ -967,11 +1416,27 @@ export function parseResearchDocumentSections(
 
     let nearestEnd = afterStart.length;
     for (const endPat of endPatterns) {
-      const em = endPat.exec(afterStart);
-      if (em && typeof em.index === 'number' && em.index > 15) {
-        if (em.index < nearestEnd) {
-          nearestEnd = em.index;
+      const globalPat = new RegExp(
+        endPat.source,
+        endPat.flags.includes('g') ? endPat.flags : `${endPat.flags}g`
+      );
+      let em: RegExpExecArray | null;
+      while ((em = globalPat.exec(afterStart)) !== null) {
+        if (em.index > 15) {
+          // Ensure we do not match a heading word inside a Markdown pipe-table row
+          const lineStart = afterStart.lastIndexOf('\n', em.index) + 1;
+          const lineEndIdx = afterStart.indexOf('\n', em.index);
+          const matchedLine = afterStart
+            .slice(lineStart, lineEndIdx === -1 ? afterStart.length : lineEndIdx)
+            .trim();
+          if (!matchedLine.startsWith('|')) {
+            if (em.index < nearestEnd) {
+              nearestEnd = em.index;
+            }
+            break;
+          }
         }
+        if (em[0].length === 0) globalPat.lastIndex += 1;
       }
     }
 
@@ -1143,31 +1608,40 @@ function adjustInTextCitationsInBody(
   formattedRefs: { firstSurname: string; year: string }[]
 ): string {
   if (!bodyText) return '';
-  if (targetInTextFormat === '[1]' || targetInTextFormat === '(1)') {
-    let updated = bodyText;
-    formattedRefs.forEach((ref, idx) => {
-      const numTag = targetInTextFormat === '[1]' ? `[${idx + 1}]` : `(${idx + 1})`;
-      const escapedSurname = ref.firstSurname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regexParen = new RegExp(
-        `\\(${escapedSurname}(?:\\s+et\\s+al\\.?|\\s*(?:&|and)\\s*[A-Za-z.]+)?,\\s*${ref.year}\\)`,
-        'gi'
+  const adjustLine = (line: string): string => {
+    const trimmed = line.trim();
+    // Preserve structured table rows and separators completely intact
+    if (trimmed.startsWith('|') || /^[-=]{4,}$/.test(trimmed)) {
+      return line;
+    }
+    if (targetInTextFormat === '[1]' || targetInTextFormat === '(1)') {
+      let updated = line;
+      formattedRefs.forEach((ref, idx) => {
+        const numTag = targetInTextFormat === '[1]' ? `[${idx + 1}]` : `(${idx + 1})`;
+        const escapedSurname = ref.firstSurname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regexParen = new RegExp(
+          `\\(${escapedSurname}(?:\\s+et\\s+al\\.?|\\s*(?:&|and)\\s*[A-Za-z.]+)?,\\s*${ref.year}\\)`,
+          'gi'
+        );
+        updated = updated.replace(regexParen, numTag);
+        const regexNarrative = new RegExp(
+          `\\b(${escapedSurname}(?:\\s+et\\s+al\\.?|\\s+(?:and|&)\\s+[A-Za-z.]+)?)\\s*\\(${ref.year}\\)`,
+          'gi'
+        );
+        updated = updated.replace(regexNarrative, `$1 ${numTag}`);
+      });
+      return updated;
+    }
+    if (targetInTextFormat === '(Author, Year)') {
+      return line.replace(
+        /\(([A-Z][a-zA-Z\-]+)\s+et\s+al\.,?\s*(19\d{2}|20\d{2}[a-z]?)\)/g,
+        '($1, $2)'
       );
-      updated = updated.replace(regexParen, numTag);
-      const regexNarrative = new RegExp(
-        `\\b(${escapedSurname}(?:\\s+et\\s+al\\.?|\\s+(?:and|&)\\s+[A-Za-z.]+)?)\\s*\\(${ref.year}\\)`,
-        'gi'
-      );
-      updated = updated.replace(regexNarrative, `$1 ${numTag}`);
-    });
-    return updated;
-  }
-  if (targetInTextFormat === '(Author, Year)') {
-    return bodyText.replace(
-      /\(([A-Z][a-zA-Z\-]+)\s+et\s+al\.,?\s*(19\d{2}|20\d{2}[a-z]?)\)/g,
-      '($1, $2)'
-    );
-  }
-  return bodyText;
+    }
+    return line;
+  };
+
+  return bodyText.split('\n').map(adjustLine).join('\n');
 }
 
 function formatStructuredAbstractIfNeeded(
@@ -1228,6 +1702,126 @@ Khan, M.A., S. Ahmad and T. Mahmood (2024). Effect of potassium sorbate and citr
 Codex, A. & FAO (2023). General standard for food additives CXS 192-1995. Food Control, 148(1), 210-218.
 Hussain, S., M. I. Anjum and A. Rehman. 2023. Physicochemical and microbiological quality of fruit pulps in Punjab. Journal of Animal and Plant Sciences. 35(1): 55-62.
 Akram, K. and M. A. Randhawa (2022). Hurdle technology in tropical fruit processing. Journal of Food Science, 87(4), 412-420.`;
+
+const FormattedSectionWithTables: React.FC<{ text: string }> = ({
+  text
+}) => {
+  const blocks = useMemo(() => {
+    const lines = (text || '').split('\n');
+    const result: Array<
+      | { kind: 'text'; lines: string[] }
+      | { kind: 'table'; header: string[]; rows: string[][] }
+    > = [];
+    let idx = 0;
+
+    while (idx < lines.length) {
+      const lineTrim = lines[idx].trim();
+      const isTableRow =
+        lineTrim.startsWith('|') &&
+        lineTrim.endsWith('|') &&
+        lineTrim.split('|').length >= 4;
+
+      if (isTableRow) {
+        const tableRawLines: string[] = [];
+        while (idx < lines.length) {
+          const lt = lines[idx].trim();
+          if (lt.startsWith('|') && lt.endsWith('|') && lt.split('|').length >= 4) {
+            tableRawLines.push(lt);
+            idx += 1;
+          } else {
+            break;
+          }
+        }
+        if (tableRawLines.length >= 2) {
+          const dataLines = tableRawLines.filter((l) => !isMarkdownSeparatorRow(l));
+          if (dataLines.length >= 1) {
+            const parsed = dataLines.map(splitMarkdownPipeRow);
+            const colCount = Math.max(2, ...parsed.map((r) => r.length));
+            const norm = parsed.map((r) => {
+              const row = [...r];
+              while (row.length < colCount) row.push('');
+              return row;
+            });
+            result.push({
+              kind: 'table',
+              header: norm[0],
+              rows: norm.slice(1)
+            });
+            continue;
+          }
+        }
+        result.push({ kind: 'text', lines: tableRawLines });
+        continue;
+      }
+
+      const textLines: string[] = [];
+      while (idx < lines.length) {
+        const lt = lines[idx].trim();
+        if (lt.startsWith('|') && lt.endsWith('|') && lt.split('|').length >= 4) {
+          break;
+        }
+        textLines.push(lines[idx]);
+        idx += 1;
+      }
+      result.push({ kind: 'text', lines: textLines });
+    }
+    return result;
+  }, [text]);
+
+  return (
+    <div className="space-y-2 text-xs text-[#1A2138] leading-relaxed">
+      {blocks.map((blk, bIdx) => {
+        if (blk.kind === 'table') {
+          return (
+            <div
+              key={`tbl-${bIdx}`}
+              className="overflow-x-auto rounded-lg border border-[#94B8D7] bg-white my-1.5"
+            >
+              <table className="w-full text-left border-collapse text-[11px]">
+                <thead>
+                  <tr className="bg-[#1A2138] text-white">
+                    {blk.header.map((cell, cIdx) => (
+                      <th
+                        key={cIdx}
+                        className="px-2.5 py-1.5 font-extrabold border-r border-white/15 last:border-r-0 whitespace-nowrap"
+                      >
+                        {cell || '—'}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#D2DEEA]">
+                  {blk.rows.map((row, rIdx) => (
+                    <tr
+                      key={rIdx}
+                      className={rIdx % 2 === 1 ? 'bg-[#F8FBFF]' : 'bg-white'}
+                    >
+                      {row.map((cell, cIdx) => (
+                        <td
+                          key={cIdx}
+                          className="px-2.5 py-1.5 font-medium text-[#1A2138] border-r border-[#E2ECF5] last:border-r-0 align-top"
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+        const chunk = blk.lines.join('\n').trimEnd();
+        if (!chunk) return null;
+        return (
+          <div key={`txt-${bIdx}`} className="whitespace-pre-wrap">
+            {chunk}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 export interface CitationReferenceGeneratorToolProps {
   user?: HubUser | null;
@@ -1519,6 +2113,10 @@ export const CitationReferenceGeneratorTool: React.FC<
     }
   }, [extractedSections]);
 
+  const [tab4UploadedDocInfo, setTab4UploadedDocInfo] = useState<string | null>(
+    null
+  );
+
   const handlePaperFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -1528,18 +2126,54 @@ export const CitationReferenceGeneratorTool: React.FC<
 
     try {
       const readable = await extractTextFromUploadedDocument(file);
-      if (readable && readable.trim().length > 15) {
+      if (readable && readable.trim().length > 10) {
         setRawPaperInput(readable.trim());
         const parsed = parseResearchDocumentSections(readable.trim());
-        if (parsed.referencesList && parsed.referencesList.trim().length > 15) {
+        const refAnalysis = extractReferencesBlockAndCitations(readable.trim());
+        if (refAnalysis.referencesText) {
+          setBulkRawText(refAnalysis.referencesText);
+        } else if (parsed.referencesList && parsed.referencesList.trim().length > 15) {
           setBulkRawText(parsed.referencesList.trim());
         }
         showBanner(
-          `Uploaded "${file.name}" — Thesis / Paper sections & references automatically extracted and adjusted!`
+          `Uploaded "${file.name}" — Paper sections, tables & ${refAnalysis.referenceCount || 0} references automatically extracted!`
         );
       }
     } catch {
       // Fallback
+    }
+  };
+
+  const handleTab4ReferenceFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const readable = await extractTextFromUploadedDocument(file);
+      if (!readable || readable.trim().length < 15) {
+        showBanner('Could not extract readable references from that file.');
+        return;
+      }
+
+      const refAnalysis = extractReferencesBlockAndCitations(readable);
+      if (refAnalysis.referencesText) {
+        setBulkRawText(refAnalysis.referencesText);
+        setReferenceSaveTitle(
+          file.name.replace(/\.[^.]+$/, '') + ' References'
+        );
+        const info = `Loaded "${file.name}" — Extracted ${refAnalysis.referenceCount} bibliographic references and detected ${refAnalysis.inTextMatches.length} unique in-text citations.`;
+        setTab4UploadedDocInfo(info);
+        showBanner(info);
+      } else {
+        setTab4UploadedDocInfo(
+          `Loaded "${file.name}", but no standard References section was detected. Please check or paste your references below.`
+        );
+        showBanner(`Loaded "${file.name}" — No separate References heading found.`);
+      }
+    } catch {
+      showBanner('Unable to read uploaded document.');
     }
   };
 
@@ -2165,19 +2799,16 @@ export const CitationReferenceGeneratorTool: React.FC<
     const statTableBlock = `Table 1. Effect of ${statFactorName} on ${statParameterName} (${
       anovaDesignType === 'rcbd_two_way' ? 'Two-Way RCBD ANOVA' : 'One-Way CRD ANOVA'
     })
------------------------------------------------------------------------------------
-Treatment / Level                          ${summaryColLabel.padEnd(30, ' ')} Min – Max
------------------------------------------------------------------------------------
+| Treatment / Level | ${summaryColLabel} | Min – Max |
+| --- | --- | --- |
 ${statisticalAnalysis.treatments
   .map(
     (t) =>
-      `${t.treatmentName.padEnd(42, ' ')} ${t.displaySummary.padEnd(
-        30,
-        ' '
-      )} ${t.min.toFixed(anovaDecimals)} – ${t.max.toFixed(anovaDecimals)}`
+      `| ${t.treatmentName.replace(/\|/g, '/')} | ${t.displaySummary} | ${t.min.toFixed(
+        anovaDecimals
+      )} – ${t.max.toFixed(anovaDecimals)} |`
   )
   .join('\n')}
------------------------------------------------------------------------------------
 Grand Mean = ${statisticalAnalysis.grandMean} | F-Value = ${
       statisticalAnalysis.fCalculated
     } (${statisticalAnalysis.significanceBadge})
@@ -2808,12 +3439,8 @@ Means sharing the same letter within a column do not differ significantly at p <
     );
 
     let y = 48;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.2);
-    doc.setTextColor(26, 33, 56);
-    const lines = doc.splitTextToSize(textBody, pageW - margin * 2);
-    lines.forEach((line: string) => {
-      if (y > pageH - 16) {
+    const ensurePdfPageSpace = (neededMm: number) => {
+      if (y + neededMm > pageH - 16) {
         doc.addPage();
         doc.setFillColor(26, 33, 56);
         doc.rect(0, 0, pageW, 16, 'F');
@@ -2834,10 +3461,102 @@ Means sharing the same letter within a column do not differ significantly at p <
         doc.setFontSize(9.2);
         doc.setTextColor(26, 33, 56);
         y = 24;
+        return true;
       }
-      doc.text(line, margin, y);
-      y += 4.5;
-    });
+      return false;
+    };
+
+    const drawPdfTableBlock = (rawTableLines: string[]) => {
+      const dataLines = rawTableLines.filter((l) => !isMarkdownSeparatorRow(l));
+      if (dataLines.length === 0) return;
+      const parsed = dataLines.map(splitMarkdownPipeRow);
+      const colCount = Math.max(2, ...parsed.map((r) => r.length));
+      const usableW = pageW - margin * 2;
+      const colW = usableW / colCount;
+
+      const drawSingleRow = (cells: string[], isHeaderRow: boolean) => {
+        doc.setFont('helvetica', isHeaderRow ? 'bold' : 'normal');
+        doc.setFontSize(8.2);
+        const wrappedCells = Array.from({ length: colCount }, (_, cIdx) =>
+          doc.splitTextToSize(cells[cIdx] || '', Math.max(12, colW - 3))
+        );
+        const maxLines = Math.max(1, ...wrappedCells.map((wc) => wc.length));
+        const rowH = Math.max(6.2, maxLines * 3.8 + 2.6);
+
+        const addedPage = ensurePdfPageSpace(rowH + 2);
+        if (addedPage && !isHeaderRow && parsed.length > 0) {
+          drawSingleRow(parsed[0], true);
+        }
+
+        doc.setFont('helvetica', isHeaderRow ? 'bold' : 'normal');
+        doc.setFontSize(8.2);
+        for (let cIdx = 0; cIdx < colCount; cIdx++) {
+          const cx = margin + cIdx * colW;
+          if (isHeaderRow) {
+            doc.setFillColor(26, 33, 56);
+            doc.rect(cx, y, colW, rowH, 'FD');
+            doc.setTextColor(255, 255, 255);
+          } else {
+            doc.setFillColor(248, 251, 255);
+            doc.rect(cx, y, colW, rowH, 'S');
+            doc.setTextColor(26, 33, 56);
+          }
+          const cellLines = wrappedCells[cIdx];
+          cellLines.forEach((ln: string, li: number) => {
+            doc.text(ln, cx + 1.5, y + 4.0 + li * 3.8);
+          });
+        }
+        y += rowH;
+      };
+
+      y += 2;
+      parsed.forEach((row, rIdx) => drawSingleRow(row, rIdx === 0));
+      y += 3;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.2);
+      doc.setTextColor(26, 33, 56);
+    };
+
+    const rawLines = textBody.split('\n');
+    let lineIdx = 0;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.2);
+    doc.setTextColor(26, 33, 56);
+
+    while (lineIdx < rawLines.length) {
+      const trimmed = rawLines[lineIdx].trim();
+      if (
+        trimmed.startsWith('|') &&
+        trimmed.endsWith('|') &&
+        trimmed.split('|').length >= 4
+      ) {
+        const tblLines: string[] = [];
+        while (lineIdx < rawLines.length) {
+          const lt = rawLines[lineIdx].trim();
+          if (lt.startsWith('|') && lt.endsWith('|') && lt.split('|').length >= 4) {
+            tblLines.push(lt);
+            lineIdx += 1;
+          } else {
+            break;
+          }
+        }
+        drawPdfTableBlock(tblLines);
+        continue;
+      }
+
+      const wrapped = doc.splitTextToSize(rawLines[lineIdx], pageW - margin * 2);
+      if (wrapped.length === 0) {
+        ensurePdfPageSpace(3.5);
+        y += 3.5;
+      } else {
+        wrapped.forEach((wl: string) => {
+          ensurePdfPageSpace(4.6);
+          doc.text(wl, margin, y);
+          y += 4.5;
+        });
+      }
+      lineIdx += 1;
+    }
 
     doc.save(
       `Food_Science_Portal_${targetShort.replace(
@@ -2857,6 +3576,70 @@ Means sharing the same letter within a column do not differ significantly at p <
     }
     const targetShort = customJournalShort || reqJournalShortName;
     const textBody = customText || compiledJournalManuscript;
+
+    const escapeHtml = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const lines = textBody.split('\n');
+    const htmlParts: string[] = [];
+    let idx = 0;
+    while (idx < lines.length) {
+      const lt = lines[idx].trim();
+      if (lt.startsWith('|') && lt.endsWith('|') && lt.split('|').length >= 4) {
+        const tblLines: string[] = [];
+        while (idx < lines.length) {
+          const cur = lines[idx].trim();
+          if (cur.startsWith('|') && cur.endsWith('|') && cur.split('|').length >= 4) {
+            tblLines.push(cur);
+            idx += 1;
+          } else {
+            break;
+          }
+        }
+        const dataLines = tblLines.filter((l) => !isMarkdownSeparatorRow(l));
+        if (dataLines.length > 0) {
+          const rows = dataLines.map(splitMarkdownPipeRow);
+          const colCount = Math.max(2, ...rows.map((r) => r.length));
+          const headerCells = rows[0];
+          const bodyRows = rows.slice(1);
+          htmlParts.push(
+            `<table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%;margin:10px 0;font-size:10.5pt;border-color:#94B8D7;">
+              <thead><tr style="background:#1A2138;color:#FFFFFF;font-weight:bold;">${Array.from(
+                { length: colCount },
+                (_, cIdx) => `<th style="text-align:left;padding:6px;">${escapeHtml(headerCells[cIdx] || '')}</th>`
+              ).join('')}</tr></thead>
+              <tbody>${bodyRows
+                .map(
+                  (r, rIdx) =>
+                    `<tr style="background:${rIdx % 2 === 1 ? '#F8FBFF' : '#FFFFFF'};">${Array.from(
+                      { length: colCount },
+                      (_, cIdx) => `<td style="padding:6px;">${escapeHtml(r[cIdx] || '')}</td>`
+                    ).join('')}</tr>`
+                )
+                .join('')}</tbody>
+            </table>`
+          );
+          continue;
+        }
+      }
+      if (!lt) {
+        htmlParts.push('<br/>');
+      } else if (
+        /^(?:[I|V|X]+\.\s+|\d+\.\s+)?(?:TITLE:|AUTHORS & AFFILIATION:|HIGHLIGHTS|PRACTICAL APPLICATION|ABSTRACT|INTRODUCTION|REVIEW OF LITERATURE|MATERIALS AND METHODS|RESULTS AND DISCUSSION|RESULTS|DISCUSSION|CONCLUSION|REFERENCES|Table \d+\.)/i.test(
+          lt
+        )
+      ) {
+        htmlParts.push(
+          `<p style="font-weight:bold;color:#1A2138;margin:10px 0 4px 0;font-size:11.5pt;">${escapeHtml(lt)}</p>`
+        );
+      } else {
+        htmlParts.push(
+          `<p style="margin:3px 0;font-size:11pt;line-height:1.5;">${escapeHtml(lines[idx])}</p>`
+        );
+      }
+      idx += 1;
+    }
+
     const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Food Science Portal Manuscript</title></head><body style="font-family: Calibri, Arial, sans-serif; padding: 24px; color: #1A2138;">
       <div style="display:flex; align-items:center; justify-content:space-between; background:#1A2138; color:#FFFFFF; padding:14px 18px; border-radius:10px; margin-bottom:20px;">
         <div style="display:flex; align-items:center; gap:12px;">
@@ -2868,7 +3651,7 @@ Means sharing the same letter within a column do not differ significantly at p <
         </div>
         ${user?.profilePicUrl ? `<img src="${user.profilePicUrl}" width="52" height="52" style="border-radius:8px; border:2px solid #7DD3FC; object-fit:cover;" alt="Author Photo" />` : ''}
       </div>
-      <pre style="font-family: Calibri, Arial, sans-serif; white-space: pre-wrap; font-size: 11pt; line-height: 1.5;">${textBody.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+      ${htmlParts.join('\n')}
     </body></html>`;
     handleDownloadFile(
       `Food_Science_Portal_${targetShort.replace(
@@ -3305,20 +4088,20 @@ Means sharing the same letter within a column do not differ significantly at p <
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138]">
-                  Upload Research Paper / Thesis File (.docx / .doc / .txt) or Paste Full Text Below
+                  Upload Research Paper / Thesis File (.pdf / .docx / .doc / .txt) or Paste Full Text Below
                 </h3>
                 <p className="text-[11px] text-[#4A5568]">
-                  Automatically separates Abstract, Introduction, Review of Literature, Materials &amp; Methods, Results &amp; Discussion, Conclusion, and References
+                  Automatically separates Abstract, Introduction, Review of Literature, Materials &amp; Methods, Results &amp; Discussion, Conclusion, and References — while preserving Word &amp; PDF tables cleanly
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <label className="px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Upload Research Paper / Thesis (.docx/.doc/.txt)</span>
+                  <span>Upload Research Paper / Thesis (.pdf / .docx / .doc / .txt)</span>
                   <input
                     type="file"
-                    accept=".txt,.md,.doc,.docx,.html,.htm,.rtf,.csv"
+                    accept=".pdf,.txt,.md,.doc,.docx,.html,.htm,.rtf,.csv"
                     onChange={handlePaperFileUpload}
                     className="hidden"
                   />
@@ -3489,8 +4272,8 @@ Means sharing the same letter within a column do not differ significantly at p <
                     </button>
                   </div>
                 </div>
-                <div className="text-xs text-[#1A2138] whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto bg-white p-3 rounded-xl border border-[#D2DEEA]">
-                  {sec.content}
+                <div className="max-h-64 overflow-y-auto bg-white p-3 rounded-xl border border-[#D2DEEA]">
+                  <FormattedSectionWithTables text={sec.content} />
                 </div>
               </div>
             ))}
@@ -3575,10 +4358,10 @@ Means sharing the same letter within a column do not differ significantly at p <
               <div className="lg:col-span-3">
                 <label className="px-3.5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer">
                   <Upload className="w-4 h-4" />
-                  <span>Upload Thesis (.docx/.doc/.txt)</span>
+                  <span>Upload Thesis (.pdf/.docx/.doc)</span>
                   <input
                     type="file"
-                    accept=".txt,.md,.doc,.docx,.html,.htm,.rtf"
+                    accept=".pdf,.txt,.md,.doc,.docx,.html,.htm,.rtf"
                     onChange={handlePaperFileUpload}
                     className="hidden"
                   />
@@ -4202,9 +4985,9 @@ Means sharing the same letter within a column do not differ significantly at p <
                   </button>
                 </div>
 
-                <pre className="p-3.5 rounded-xl bg-white border border-[#D2DEEA] text-xs font-sans text-[#1A2138] whitespace-pre-wrap leading-relaxed max-h-[540px] overflow-y-auto">
-                  {compiledJournalManuscript}
-                </pre>
+                <div className="p-3.5 rounded-xl bg-white border border-[#D2DEEA] max-h-[540px] overflow-y-auto">
+                  <FormattedSectionWithTables text={compiledJournalManuscript} />
+                </div>
               </div>
             </div>
           </div>
@@ -5162,12 +5945,62 @@ Means sharing the same letter within a column do not differ significantly at p <
             )}
           </div>
 
+          {/* UPLOAD RESEARCH PAPER / THESIS FOR AUTOMATIC REFERENCE & IN-TEXT EXTRACTION */}
+          <div className="p-4 rounded-2xl bg-white border border-[#94B8D7] space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-xs font-extrabold text-[#1A2138]">
+                  Upload Full Research Paper / Thesis (.pdf / .docx / .doc / .txt) — Auto-Extract &amp; Fix All References &amp; In-Text Citations
+                </div>
+                <p className="text-[11px] text-[#4A5568]">
+                  Automatically reads the References / Bibliography section and in-text citations from your PDF or Word manuscript and formats them into your selected journal style below.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload Paper / Thesis (.pdf / .docx / .doc / .txt)</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.txt,.md,.doc,.docx,.html,.htm,.rtf"
+                    onChange={handleTab4ReferenceFileUpload}
+                    className="hidden"
+                  />
+                </label>
+                {rawPaperInput.trim().length > 30 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const refAnalysis = extractReferencesBlockAndCitations(rawPaperInput);
+                      if (refAnalysis.referencesText) {
+                        setBulkRawText(refAnalysis.referencesText);
+                        const msg = `Synced ${refAnalysis.referenceCount} references and ${refAnalysis.inTextMatches.length} in-text citations from Tab 1 Paper!`;
+                        setTab4UploadedDocInfo(msg);
+                        showBanner(msg);
+                      } else {
+                        showBanner('No separate References heading found in current Tab 1 text.');
+                      }
+                    }}
+                    className="px-3 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] border border-[#94B8D7] text-[#105E9A] text-xs font-extrabold cursor-pointer"
+                  >
+                    Sync from Tab 1 Paper
+                  </button>
+                )}
+              </div>
+            </div>
+            {tab4UploadedDocInfo && (
+              <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
+                {tab4UploadedDocInfo}
+              </div>
+            )}
+          </div>
+
           {/* STEP 2: BULK PASTE BOX + CONVERTED OUTPUT */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-extrabold text-[#1A2138]">
-                  2. Paste All References Here (One Reference per Line):
+                  2. Extracted / Raw References (One Reference per Line):
                 </label>
                 <button
                   type="button"
