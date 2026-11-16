@@ -22,7 +22,8 @@ import {
   BookOpen,
   User,
   Smartphone,
-  Download
+  Download,
+  ShieldCheck
 } from 'lucide-react';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { LegalTabType } from './LegalComplianceModal';
@@ -35,6 +36,7 @@ export type WebsiteNavSection =
   | 'tools'
   | 'communities'
   | 'trainings'
+  | 'verify-certificate'
   | 'profile';
 
 interface HeaderProps {
@@ -128,6 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'tools', label: 'Tools', icon: Wrench },
     { id: 'communities', label: 'Communities', icon: Users },
     { id: 'trainings', label: 'Trainings', icon: BookOpen },
+    { id: 'verify-certificate', label: 'Verify Certificate', icon: ShieldCheck },
     { id: 'profile', label: 'Profile', icon: User }
   ];
 
@@ -189,7 +192,7 @@ export const Header: React.FC<HeaderProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => onNavigateWebsiteSection(item.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-2.5 2xl:px-3 py-1.5 rounded-xl text-[11.5px] 2xl:text-xs font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                     isActive
                       ? 'bg-[#1673B8] text-white shadow-2xs'
                       : 'text-[#1A2138] hover:bg-[#EBF4FC] hover:text-[#1673B8]'
@@ -588,19 +591,37 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
 
-      {/* Mobile Compact Search Bar Row (Visible on mobile < 768px when hideSearchBar is false) */}
-      {!hideSearchBar && (
-        <div className="md:hidden px-3.5 sm:px-4 py-2 bg-[#F8FAFC] border-t border-[#E6EEF6]">
-          <button
-            type="button"
-            onClick={onSearchClick}
-            className="w-full h-9 sm:h-10 px-3.5 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] shadow-2xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
-          >
-            <Search className="w-4 h-4 text-[#1673B8] stroke-[2.2] shrink-0" />
-            <span className="text-[12.5px] sm:text-[13px] font-medium text-slate-500 truncate">
-              Search jobs, scholarships, trainings &amp; specialists...
-            </span>
-          </button>
+      {/* Mobile Compact Search & Verify Certificate Row (Visible on mobile < 768px for Guests, Free & Paid Users) */}
+      {(!hideSearchBar || onNavigateWebsiteSection) && (
+        <div className="md:hidden px-3.5 sm:px-4 py-2 bg-[#F8FAFC] border-t border-[#E6EEF6] flex items-center gap-2">
+          {!hideSearchBar && (
+            <button
+              type="button"
+              onClick={onSearchClick}
+              className="flex-1 min-w-0 h-9 sm:h-10 px-3 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] shadow-2xs flex items-center gap-2 text-left transition-colors cursor-pointer"
+            >
+              <Search className="w-4 h-4 text-[#1673B8] stroke-[2.2] shrink-0" />
+              <span className="text-[12px] sm:text-[12.5px] font-medium text-slate-500 truncate">
+                Search jobs, tools, trainings...
+              </span>
+            </button>
+          )}
+          {onNavigateWebsiteSection && (
+            <button
+              type="button"
+              onClick={() => onNavigateWebsiteSection('verify-certificate')}
+              className={`h-9 sm:h-10 px-2.5 sm:px-3 rounded-xl border text-[11px] sm:text-xs font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
+                hideSearchBar ? 'w-full' : ''
+              } ${
+                activeWebsiteNav === 'verify-certificate'
+                  ? 'bg-[#1673B8] border-[#1673B8] text-white shadow-2xs'
+                  : 'bg-white hover:bg-[#EBF4FC] border-[#1673B8]/40 text-[#1673B8]'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              <span>Verify Certificate</span>
+            </button>
+          )}
         </div>
       )}
     </header>

@@ -12,6 +12,11 @@ import {
   Power
 } from 'lucide-react';
 
+import {
+  useGeoCurrency,
+  getLocalizedMembershipPricing
+} from '../lib/geoCurrency';
+
 export type LegalTabType = 'privacy' | 'ads' | 'terms' | 'deletion' | 'closure';
 
 interface LegalComplianceModalProps {
@@ -22,6 +27,8 @@ interface LegalComplianceModalProps {
   onSignOutApp?: () => void;
   monthlyFeeRs?: number;
   yearlyFeeRs?: number;
+  monthlyFeeUsd?: number;
+  yearlyFeeUsd?: number;
   yearlyDiscountPct?: number;
 }
 
@@ -33,9 +40,16 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
   onSignOutApp,
   monthlyFeeRs = 100,
   yearlyFeeRs = 900,
+  monthlyFeeUsd = 1,
+  yearlyFeeUsd = 9,
   yearlyDiscountPct = 25
 }) => {
   const [activeTab, setActiveTab] = useState<LegalTabType>(initialTab);
+  const geo = useGeoCurrency();
+  const localizedPlan = getLocalizedMembershipPricing(
+    { monthlyFeeRs, yearlyFeeRs, monthlyFeeUsd, yearlyFeeUsd },
+    geo
+  );
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -270,7 +284,7 @@ export const LegalComplianceModal: React.FC<LegalComplianceModalProps> = ({
                   3. Membership &amp; Certificate Verification Rules
                 </h3>
                 <p>
-                  Browsing Jobs, Scholarships, studying Training Modules, taking 40-MCQ Exams, and using Specialist Tools are available to members. Upgrading to <strong>Paid Premium Membership</strong> (Rs. {monthlyFeeRs.toLocaleString()} / Month or Rs. {yearlyFeeRs.toLocaleString()} / Year with {yearlyDiscountPct}% discount) unlocks full Community Directory access and active Online Certificate Verification visibility.
+                  Browsing Jobs, Scholarships, studying Training Modules, taking 40-MCQ Exams, and using Specialist Tools are available to members. Upgrading to <strong>Paid Premium Membership</strong> ({localizedPlan.monthlyFormatted} / Month or {localizedPlan.yearlyFormatted} / Year with {geo.isPakistan ? yearlyDiscountPct : localizedPlan.discountPct}% discount) unlocks full Community Directory access and active Online Certificate Verification visibility.
                 </p>
               </section>
             </div>

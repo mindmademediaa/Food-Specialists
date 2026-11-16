@@ -49,6 +49,10 @@ import {
   downloadNutritionReportPdf,
   downloadExamReportPdf
 } from '../lib/toolsPdfGenerator';
+import {
+  useGeoCurrency,
+  getLocalizedMembershipPricing
+} from '../lib/geoCurrency';
 
 export const DEFAULT_VISIBILITY_MAP: ProfileVisibilityMap = {
   name: 'public',
@@ -208,6 +212,8 @@ interface EditProfileViewProps {
   ) => void;
   monthlyFeeRs?: number;
   yearlyFeeRs?: number;
+  monthlyFeeUsd?: number;
+  yearlyFeeUsd?: number;
   yearlyDiscountPct?: number;
 }
 
@@ -233,10 +239,17 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
   onOpenToolsSection,
   monthlyFeeRs = 100,
   yearlyFeeRs = 900,
+  monthlyFeeUsd = 1,
+  yearlyFeeUsd = 9,
   yearlyDiscountPct
 }) => {
-  const effectiveDiscountPct =
-    typeof yearlyDiscountPct === 'number'
+  const geo = useGeoCurrency();
+  const localizedPlan = getLocalizedMembershipPricing(
+    { monthlyFeeRs, yearlyFeeRs, monthlyFeeUsd, yearlyFeeUsd },
+    geo
+  );
+  const effectiveDiscountPct = geo.isPakistan
+    ? typeof yearlyDiscountPct === 'number'
       ? yearlyDiscountPct
       : monthlyFeeRs * 12 > 0
       ? Math.max(
@@ -245,7 +258,8 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             ((monthlyFeeRs * 12 - yearlyFeeRs) / (monthlyFeeRs * 12)) * 100
           )
         )
-      : 25;
+      : 25
+    : localizedPlan.discountPct;
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const cvInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -521,8 +535,9 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             <p className="text-xs font-semibold text-[#92400E] leading-relaxed">
               Your paid subscription will expire on{' '}
               <strong>{expiryCountdown.formattedEndDate}</strong>. Renew for 1
-              Month (Rs. 200) or Full Year (Rs. 1,800 — 25% OFF) to keep your
-              profile visible in the Community.
+              Month ({localizedPlan.monthlyFormatted}) or Full Year (
+              {localizedPlan.yearlyFormatted} — {effectiveDiscountPct}% OFF) to
+              keep your profile visible in the Community.
             </p>
           </div>
         )}
@@ -1908,8 +1923,8 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             {/* Pricing Summary Strip inside Notification */}
             <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#EBF4FC] border border-[#9AC2E6] text-xs">
               <div className="font-bold text-[#1A2138]">
-                Plans: <strong>Rs. {monthlyFeeRs.toLocaleString()} / 1 Month</strong> or{' '}
-                <strong>Rs. {yearlyFeeRs.toLocaleString()} / Full Year</strong>
+                Plans: <strong>{localizedPlan.monthlyFormatted} / 1 Month</strong> or{' '}
+                <strong>{localizedPlan.yearlyFormatted} / Full Year</strong>
               </div>
               <span className="px-2.5 py-0.5 rounded-full bg-[#1673B8] text-white text-[10.5px] font-extrabold">
                 Save {effectiveDiscountPct}% on Yearly Plan
@@ -1923,7 +1938,7 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
             >
               <Crown className="w-5 h-5 text-amber-300 shrink-0" />
               <span>
-                Purchase / Buy Premium Membership (Rs. {monthlyFeeRs.toLocaleString()}/Mo • Rs. {yearlyFeeRs.toLocaleString()}/Yr)
+                Purchase / Buy Premium Membership ({localizedPlan.monthlyFormatted}/Mo • {localizedPlan.yearlyFormatted}/Yr)
               </span>
             </button>
           </div>

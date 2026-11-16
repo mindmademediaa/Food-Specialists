@@ -813,6 +813,9 @@ export interface PaymentGatewayConfig {
   bankWhatsapp: string;
   monthlyFeeRs: number;
   yearlyFeeRs: number;
+  monthlyFeeUsd?: number;
+  yearlyFeeUsd?: number;
+  certificateFeeUsd?: number;
   customPriceUpdated?: boolean;
 }
 

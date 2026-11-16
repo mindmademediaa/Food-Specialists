@@ -16,6 +16,12 @@ import {
   InternationalTrainingCourse
 } from '../data/internationalTrainingsData';
 import { PaymentGatewayConfig } from '../types/hub';
+import {
+  useGeoCurrency,
+  getLocalizedMembershipPricing,
+  getLocalizedBundlePricing,
+  getLocalizedCertificateFee
+} from '../lib/geoCurrency';
 
 export interface CertificateBundleOption {
   id: 'single-1' | 'bundle-3' | 'bundle-5' | 'bundle-13';
@@ -107,6 +113,11 @@ export const FreeVsPremiumComparisonCard: React.FC<
   onNavigateTrainings,
   onClose
 }) => {
+  const geo = useGeoCurrency();
+  const localizedPlan = getLocalizedMembershipPricing(
+    { monthlyFeeRs, yearlyFeeRs },
+    geo
+  );
   const comparisonRows: Array<{
     feature: string;
     category: string;
@@ -211,7 +222,7 @@ export const FreeVsPremiumComparisonCard: React.FC<
                 onClick={() => onSelectPlanUpgrade('1-month')}
                 className="px-4 py-2.5 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#1673B8]/40 text-[#1673B8] text-xs font-extrabold cursor-pointer transition-colors"
               >
-                Monthly Plan: Rs. {monthlyFeeRs} / mo
+                Monthly Plan: {localizedPlan.monthlyFormatted} / mo
               </button>
               <button
                 type="button"
@@ -219,7 +230,7 @@ export const FreeVsPremiumComparisonCard: React.FC<
                 className="px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold shadow-xs cursor-pointer transition-colors flex items-center gap-1.5"
               >
                 <Crown className="w-3.5 h-3.5 text-amber-300" />
-                <span>Yearly Plan: Rs. {yearlyFeeRs} / yr (Save 25%)</span>
+                <span>Yearly Plan: {localizedPlan.yearlyFormatted} / yr (Save {localizedPlan.discountPct}%)</span>
               </button>
             </>
           )}
@@ -245,10 +256,10 @@ export const FreeVsPremiumComparisonCard: React.FC<
                 Portal Feature / Industrial Tool
               </th>
               <th className="py-3 px-3.5 font-extrabold text-slate-700 w-[28%]">
-                Free User (Rs. 0 — Always Free)
+                Free User (Always Free)
               </th>
               <th className="py-3 px-3.5 font-extrabold text-[#1673B8] bg-[#EBF4FC]/60 w-[34%]">
-                Paid Premium Member (Rs. {monthlyFeeRs}/mo or Rs. {yearlyFeeRs}/yr)
+                Paid Premium Member ({localizedPlan.monthlyFormatted}/mo or {localizedPlan.yearlyFormatted}/yr)
               </th>
             </tr>
           </thead>
@@ -329,6 +340,8 @@ interface CertificateBundleOffersCardProps {
     transactionId: string;
     receiptImageUrl: string;
     notes: string;
+    localizedAmountLabel?: string;
+    localizedUsdAmount?: number;
   }) => Promise<void>;
   onOpenCourseCatalog?: () => void;
   isGuest?: boolean;
@@ -345,6 +358,7 @@ export const CertificateBundleOffersCard: React.FC<
   isGuest = false,
   onRequireSignIn
 }) => {
+  const geo = useGeoCurrency();
   const catalogCourses =
     courses && courses.length > 0 ? courses : INTERNATIONAL_TRAINING_COURSES;
 
@@ -408,7 +422,7 @@ export const CertificateBundleOffersCard: React.FC<
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
-  // Calculate live bundle pricing based on the selected courses and their Admin-configured certificateFeeRs
+  // Calculate live bundle pricing based on the selected courses and visitor's country/currency
   const computeBundlePricing = (
     bundle: CertificateBundleOption,
     chosenIds: string[]
@@ -418,30 +432,20 @@ export const CertificateBundleOffersCard: React.FC<
         ? catalogCourses.filter((c) => chosenIds.includes(c.id))
         : catalogCourses.slice(0, bundle.count);
 
-    const actualTotalRs = validCourses.reduce(
-      (sum, c) => sum + (Number(c.certificateFeeRs) || 1000),
-      0
+    const loc = getLocalizedBundlePricing(
+      validCourses,
+      bundle.count,
+      paymentGatewayConfig,
+      geo
     );
 
-    if (bundle.count === 1) {
-      return {
-        selectedCourses: validCourses,
-        actualTotalRs,
-        discountedPriceRs: actualTotalRs,
-        savingsRs: 0,
-        discountPct: 0
-      };
-    }
-
-    // Apply 25% OFF on the actual total fee of the selected certificates
-    const discountedPriceRs = Math.round(actualTotalRs * 0.75);
-    const savingsRs = Math.max(0, actualTotalRs - discountedPriceRs);
     return {
       selectedCourses: validCourses,
-      actualTotalRs,
-      discountedPriceRs,
-      savingsRs,
-      discountPct: 25
+      actualTotalRs: loc.actualTotalRs,
+      discountedPriceRs: loc.discountedPriceRs,
+      savingsRs: loc.savingsRs,
+      discountPct: loc.discountPct,
+      localized: loc
     };
   };
 
@@ -496,7 +500,8 @@ export const CertificateBundleOffersCard: React.FC<
         actualTotalRs: 1000,
         discountedPriceRs: 1000,
         savingsRs: 0,
-        discountPct: 0
+        discountPct: 0,
+        localized: getLocalizedBundlePricing([], 1, paymentGatewayConfig, geo)
       };
 
   const effectiveBundlePriceRs = modalPricing.discountedPriceRs;
@@ -581,10 +586,14 @@ export const CertificateBundleOffersCard: React.FC<
         paymentMethod: payMethod,
         transactionId: txId.trim(),
         receiptImageUrl: receiptDataUrl,
-        notes: notes.trim()
+        notes: notes.trim(),
+        localizedAmountLabel: modalPricing.localized.submissionAmount,
+        localizedUsdAmount: modalPricing.localized.isPakistan
+          ? undefined
+          : modalPricing.localized.discountedUsd
       });
       setFeedbackMsg(
-        `Your ${activeBundleModal.title} (Rs. ${effectiveBundlePriceRs.toLocaleString()}) request for ${chosenCourses.length} course(s) has been sent to the Admin Control Panel! Once verified, your official Portrait PDF Certificates will be unlocked.`
+        `Your ${activeBundleModal.title} (${modalPricing.localized.discountedWithUsdHint}) request for ${chosenCourses.length} course(s) has been sent to the Admin Control Panel! Once verified, your official Portrait PDF Certificates will be unlocked.`
       );
       setTxId('');
       setReceiptDataUrl('');
@@ -654,9 +663,9 @@ export const CertificateBundleOffersCard: React.FC<
                       ? '1 Certificate'
                       : `${livePricing.selectedCourses.length} Certificates (${livePricing.discountPct}% OFF)`}
                   </span>
-                  {livePricing.savingsRs > 0 && (
+                  {livePricing.discountPct > 0 && (
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">
-                      Save Rs. {livePricing.savingsRs.toLocaleString()}
+                      Save {livePricing.localized.savingsFormatted}
                     </span>
                   )}
                 </div>
@@ -668,11 +677,11 @@ export const CertificateBundleOffersCard: React.FC<
                 {/* Live Price with Crossed-Out Actual Fee & 25% Discount */}
                 <div className="flex items-baseline gap-2 pt-0.5 flex-wrap">
                   <span className="text-xl font-black text-[#1673B8]">
-                    Rs. {livePricing.discountedPriceRs.toLocaleString()}
+                    {livePricing.localized.discountedFormatted}
                   </span>
-                  {livePricing.savingsRs > 0 && (
+                  {livePricing.discountPct > 0 && (
                     <span className="text-xs font-bold text-slate-400 line-through">
-                      Rs. {livePricing.actualTotalRs.toLocaleString()}
+                      {livePricing.localized.actualFormatted}
                     </span>
                   )}
                   {livePricing.discountPct > 0 && (
@@ -710,31 +719,43 @@ export const CertificateBundleOffersCard: React.FC<
 
                   {/* Currently Selected Courses with their Individual Live Fees */}
                   <ul className="space-y-1 text-[11px] text-slate-700 font-semibold max-h-28 overflow-y-auto pr-1">
-                    {livePricing.selectedCourses.map((c) => (
-                      <li
-                        key={c.id}
-                        className="flex items-start justify-between gap-1.5 bg-white/80 px-2 py-1 rounded-lg border border-slate-200/70"
-                      >
-                        <div className="flex items-start gap-1 min-w-0">
-                          <Check className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5" />
-                          <span className="truncate">{c.title}</span>
-                        </div>
-                        <span className="text-[10px] font-extrabold text-[#105E9A] shrink-0">
-                          Rs. {(c.certificateFeeRs || 1000).toLocaleString()}
-                        </span>
-                      </li>
-                    ))}
+                    {livePricing.selectedCourses.map((c) => {
+                      const courseLocFee = getLocalizedCertificateFee(
+                        Number(c.certificateFeeRs) || 1000,
+                        paymentGatewayConfig,
+                        geo
+                      );
+                      return (
+                        <li
+                          key={c.id}
+                          className="flex items-start justify-between gap-1.5 bg-white/80 px-2 py-1 rounded-lg border border-slate-200/70"
+                        >
+                          <div className="flex items-start gap-1 min-w-0">
+                            <Check className="w-3.5 h-3.5 text-[#1673B8] shrink-0 mt-0.5" />
+                            <span className="truncate">{c.title}</span>
+                          </div>
+                          <span className="text-[10px] font-extrabold text-[#105E9A] shrink-0">
+                            {courseLocFee.formatted}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
 
                   {/* Expandable Interactive Course Checklist on the Bundle Card */}
                   {isSelectorOpen && (
                     <div className="p-2 rounded-xl bg-slate-50 border border-[#94B8D7] space-y-1 max-h-48 overflow-y-auto">
                       <p className="text-[10px] font-extrabold text-[#105E9A] px-1">
-                        Click any course below (fees set from Control Panel apply with 25% bundle discount):
+                        Click any course below (fees apply with 25% bundle discount):
                       </p>
                       {catalogCourses.map((course) => {
                         const isSelected = currentIds.includes(course.id);
                         const cFee = Number(course.certificateFeeRs) || 1000;
+                        const cLocFee = getLocalizedCertificateFee(
+                          cFee,
+                          paymentGatewayConfig,
+                          geo
+                        );
                         return (
                           <button
                             key={course.id}
@@ -751,12 +772,12 @@ export const CertificateBundleOffersCard: React.FC<
                               className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded ${
                                 isSelected
                                   ? 'bg-white/20 text-white'
-                                  : cFee > 1000
+                                  : geo.isPakistan && cFee > 1000
                                   ? 'bg-amber-100 text-amber-900'
                                   : 'bg-slate-100 text-slate-700'
                               }`}
                             >
-                              Rs. {cFee.toLocaleString()}
+                              {cLocFee.formatted}
                             </span>
                           </button>
                         );
@@ -778,8 +799,8 @@ export const CertificateBundleOffersCard: React.FC<
                 <Layers className="w-3.5 h-3.5" />
                 <span>
                   {bundle.count === 1
-                    ? `Unlock Certificate (Rs. ${livePricing.discountedPriceRs.toLocaleString()})`
-                    : `Claim Bundle — Rs. ${livePricing.discountedPriceRs.toLocaleString()}`}
+                    ? `Unlock Certificate (${livePricing.localized.discountedFormatted})`
+                    : `Claim Bundle — ${livePricing.localized.discountedFormatted}`}
                 </span>
               </button>
             </div>
@@ -795,18 +816,18 @@ export const CertificateBundleOffersCard: React.FC<
               <div>
                 <p className="text-[11px] font-bold text-[#1673B8]">
                   Official Certificate Bundle Unlock
-                  {modalPricing.savingsRs > 0
-                    ? ` · 25% OFF (Save Rs. ${modalPricing.savingsRs.toLocaleString()})`
+                  {modalPricing.discountPct > 0
+                    ? ` · 25% OFF (Save ${modalPricing.localized.savingsFormatted})`
                     : ''}
                 </p>
                 <h3 className="text-base sm:text-lg font-black text-[#0C182D] mt-0.5 flex items-baseline gap-2 flex-wrap">
                   <span>
-                    {activeBundleModal.title} — Rs.{' '}
-                    {effectiveBundlePriceRs.toLocaleString()}
+                    {activeBundleModal.title} —{' '}
+                    {modalPricing.localized.discountedWithUsdHint}
                   </span>
-                  {modalPricing.savingsRs > 0 && (
+                  {modalPricing.discountPct > 0 && (
                     <span className="text-xs font-bold text-slate-400 line-through">
-                      Rs. {modalPricing.actualTotalRs.toLocaleString()}
+                      {modalPricing.localized.actualFormatted}
                     </span>
                   )}
                 </h3>
@@ -871,14 +892,19 @@ export const CertificateBundleOffersCard: React.FC<
                     </label>
                     <span className="text-[11px] font-bold text-[#1673B8]">
                       {activeBundleModal.count > 1
-                        ? `Actual: Rs. ${modalPricing.actualTotalRs.toLocaleString()} → 25% OFF: Rs. ${effectiveBundlePriceRs.toLocaleString()}`
-                        : `Course Fee: Rs. ${effectiveBundlePriceRs.toLocaleString()}`}
+                        ? `Actual: ${modalPricing.localized.actualFormatted} → 25% OFF: ${modalPricing.localized.discountedFormatted}`
+                        : `Course Fee: ${modalPricing.localized.discountedFormatted}`}
                     </span>
                   </div>
                   <div className="max-h-48 overflow-y-auto rounded-xl border border-[#D2DEEA] bg-[#F8FAFC] p-2 grid grid-cols-1 gap-1.5">
                     {catalogCourses.map((course) => {
                       const isChecked = selectedCourseIds.includes(course.id);
                       const courseFee = Number(course.certificateFeeRs) || 1000;
+                      const courseLocFee = getLocalizedCertificateFee(
+                        courseFee,
+                        paymentGatewayConfig,
+                        geo
+                      );
                       return (
                         <button
                           key={course.id}
@@ -896,8 +922,8 @@ export const CertificateBundleOffersCard: React.FC<
                           }`}
                         >
                           <span className="truncate">
-                            {course.title} ({course.code}) — Rs.{' '}
-                            {courseFee.toLocaleString()}
+                            {course.title} ({course.code}) —{' '}
+                            {courseLocFee.formatted}
                           </span>
                           {isChecked && <Check className="w-3.5 h-3.5 shrink-0" />}
                         </button>
@@ -909,9 +935,9 @@ export const CertificateBundleOffersCard: React.FC<
                 {/* Step 2: Payment Account Details */}
                 <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-3.5 space-y-2">
                   <p className="font-extrabold text-[#1673B8]">
-                    2. Transfer Rs. {effectiveBundlePriceRs.toLocaleString()}{' '}
-                    {modalPricing.savingsRs > 0
-                      ? `(After 25% OFF on Rs. ${modalPricing.actualTotalRs.toLocaleString()}) `
+                    2. Transfer {modalPricing.localized.discountedWithUsdHint}{' '}
+                    {modalPricing.discountPct > 0
+                      ? `(After 25% OFF on ${modalPricing.localized.actualFormatted}) `
                       : ''}
                     to Official Account:
                   </p>
@@ -1032,7 +1058,7 @@ export const CertificateBundleOffersCard: React.FC<
                     <span>
                       {isSubmitting
                         ? 'Submitting...'
-                        : `Submit Bundle Request (Rs. ${effectiveBundlePriceRs.toLocaleString()})`}
+                        : `Submit Bundle Request (${modalPricing.localized.discountedFormatted})`}
                     </span>
                   </button>
                 </div>

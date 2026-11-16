@@ -133,6 +133,11 @@ import { SEOManager, SEODirectoryFooter } from './components/SEOManager';
 import {
   CertificateBundleOffersCard
 } from './components/PricingAndBundlesSection';
+import {
+  useGeoCurrency,
+  getLocalizedMembershipPricing,
+  getLocalizedCertificateFee
+} from './lib/geoCurrency';
 
 // Custom Duotone SVGs & Botanical Watermarks for the Home Screen Cards
 const DuotoneBriefcaseIcon = () => (
@@ -290,7 +295,11 @@ type RouteView =
   | { name: 'search' }
   | { name: 'communities' }
   | { name: 'community-member'; uid: string }
-  | { name: 'trainings' }
+  | {
+      name: 'trainings';
+      initialSubTab?: 'catalog' | 'my-certificates' | 'verify-portal';
+      navKey?: number;
+    }
   | { name: 'trainings-highfield' }
   | { name: 'trainings-lead-auditor-hub' }
   | { name: 'training-detail'; trainingId: string }
@@ -440,18 +449,56 @@ export default function App() {
 
   const [showGuestAuthModal, setShowGuestAuthModal] = useState<boolean>(false);
 
+  const [activeTrainingsSubTab, setActiveTrainingsSubTab] = useState<
+    'catalog' | 'my-certificates' | 'verify-portal'
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = (params.get('tab') || '').toLowerCase();
+      const pageParam = (params.get('page') || '').toLowerCase();
+      if (
+        params.get('verify') ||
+        params.get('cert') ||
+        tabParam === 'verify' ||
+        tabParam === 'verify-portal' ||
+        pageParam === 'verify-certificate'
+      ) {
+        return 'verify-portal';
+      }
+      if (tabParam === 'my-certificates') {
+        return 'my-certificates';
+      }
+    }
+    return 'catalog';
+  });
+  const [trainingsNavKey, setTrainingsNavKey] = useState<number>(0);
+
   // Navigation & Route Stack (supports SEO query parameters: ?section=tools&tool=..., ?section=trainings&course=..., ?verify=...)
   const [route, setRoute] = useState<RouteView>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
+      const tabParam = (params.get('tab') || '').toLowerCase();
+      const pageParam = (params.get('page') || '').toLowerCase();
       if (
         params.get('verify') ||
         params.get('cert') ||
-        params.get('tab') === 'verify-portal' ||
+        tabParam === 'verify' ||
+        tabParam === 'verify-portal' ||
+        pageParam === 'verify-certificate' ||
         params.get('course') ||
         params.get('section') === 'trainings'
       ) {
-        return { name: 'trainings' };
+        const initialSubTab =
+          params.get('verify') ||
+          params.get('cert') ||
+          tabParam === 'verify' ||
+          tabParam === 'verify-portal' ||
+          pageParam === 'verify-certificate'
+            ? 'verify-portal'
+            : tabParam === 'my-certificates'
+            ? 'my-certificates'
+            : 'catalog';
+        return { name: 'trainings', initialSubTab };
       }
       const section = (params.get('section') || '').toLowerCase();
       const toolParam = params.get('tool') as ActiveToolSection | null;
@@ -609,7 +656,15 @@ export default function App() {
   const [adminPreviewUserMode, setAdminPreviewUserMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('verify') || params.get('cert')) {
+      const tabParam = (params.get('tab') || '').toLowerCase();
+      const pageParam = (params.get('page') || '').toLowerCase();
+      if (
+        params.get('verify') ||
+        params.get('cert') ||
+        tabParam === 'verify' ||
+        tabParam === 'verify-portal' ||
+        pageParam === 'verify-certificate'
+      ) {
         return true;
       }
     }
@@ -1068,7 +1123,11 @@ export default function App() {
         }));
         setCertificates(list);
       },
-      () => {}
+      (err) => {
+        try {
+          handleFirestoreError(err, OperationType.LIST, 'certificates');
+        } catch {}
+      }
     );
 
     const unsubStorageCfg = onSnapshot(
@@ -1345,6 +1404,9 @@ export default function App() {
       case 'community-member':
         return 'communities';
       case 'trainings':
+        return activeTrainingsSubTab === 'verify-portal'
+          ? 'verify-certificate'
+          : 'trainings';
       case 'trainings-highfield':
       case 'trainings-lead-auditor-hub':
       case 'training-detail':
@@ -1353,7 +1415,7 @@ export default function App() {
       case 'admin':
         return 'profile';
     }
-  }, [route.name]);
+  }, [route.name, activeTrainingsSubTab]);
 
   const handleNavigateWebsiteSection = (section: WebsiteNavSection) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1366,7 +1428,24 @@ export default function App() {
       setRoute({ name: 'tools', initialSection: 'hub' });
     }
     if (section === 'communities') setRoute({ name: 'communities' });
-    if (section === 'trainings') setRoute({ name: 'trainings' });
+    if (section === 'trainings') {
+      setActiveTrainingsSubTab('catalog');
+      setTrainingsNavKey((k) => k + 1);
+      setRoute({
+        name: 'trainings',
+        initialSubTab: 'catalog',
+        navKey: trainingsNavKey + 1
+      });
+    }
+    if (section === 'verify-certificate') {
+      setActiveTrainingsSubTab('verify-portal');
+      setTrainingsNavKey((k) => k + 1);
+      setRoute({
+        name: 'trainings',
+        initialSubTab: 'verify-portal',
+        navKey: trainingsNavKey + 1
+      });
+    }
     if (section === 'profile') setRoute({ name: 'profile' });
   };
 
@@ -1379,7 +1458,15 @@ export default function App() {
       setRoute({ name: 'tools', initialSection: 'hub' });
     }
     if (tab === 'communities') setRoute({ name: 'communities' });
-    if (tab === 'trainings') setRoute({ name: 'trainings' });
+    if (tab === 'trainings') {
+      setActiveTrainingsSubTab('catalog');
+      setTrainingsNavKey((k) => k + 1);
+      setRoute({
+        name: 'trainings',
+        initialSubTab: 'catalog',
+        navKey: trainingsNavKey + 1
+      });
+    }
     if (tab === 'profile') setRoute({ name: 'profile' });
   };
 
@@ -2021,6 +2108,7 @@ export default function App() {
     receiptImageUrl: string;
     notes: string;
     amountRs?: number;
+    localizedAmountLabel?: string;
   }) => {
     if (!authUser) {
       setShowGuestAuthModal(true);
@@ -2036,6 +2124,13 @@ export default function App() {
       params.courseTitle.toLowerCase().includes('dietary')
         ? 8000
         : 1000);
+    const locCertFee = getLocalizedCertificateFee(feeRs, liveGateway, geo);
+    const submissionAmount = (
+      params.localizedAmountLabel || locCertFee.submissionAmount
+    ).slice(0, 78);
+    const countrySuffix = geo.isInternational
+      ? ` [Country: ${geo.countryName} (${geo.currencyCode})]`
+      : '';
 
     const payload: HubPaymentRequest = {
       id: reqId,
@@ -2047,10 +2142,11 @@ export default function App() {
       currentRole: myProfile.title || myProfile.currentRole || '',
       paymentMethod: params.paymentMethod,
       transactionId: params.transactionId.trim() || `CERT-FEE-${feeRs}`,
-      amount: `Rs. ${feeRs.toLocaleString()} (Certificate Fee)`,
+      amount: submissionAmount,
       notes:
-        params.notes.trim() ||
-        `Certificate Unlock: ${params.courseTitle} (${params.certificateNumber}) — Score: ${params.scorePercentage}%`,
+        (params.notes.trim() ||
+          `Certificate Unlock: ${params.courseTitle} (${params.certificateNumber}) — Score: ${params.scorePercentage}%`) +
+        countrySuffix,
       receiptImageUrl: params.receiptImageUrl || '',
       status: 'pending',
       submittedAt: nowIso,
@@ -2282,12 +2378,22 @@ export default function App() {
     [adminAllPaymentRequests]
   );
 
+  // Visitor automatic country & currency detection
+  const geo = useGeoCurrency();
+
   // Live Payment Gateway Fees & Auto-Calculated Discount % (Editable from Admin Control Panel)
   const liveGateway = useMemo(() => {
     const monthlyFeeRs =
       Number(storageConfig.paymentGateway?.monthlyFeeRs) || 100;
     const yearlyFeeRs =
       Number(storageConfig.paymentGateway?.yearlyFeeRs) || 900;
+    const monthlyFeeUsd =
+      Number(storageConfig.paymentGateway?.monthlyFeeUsd) || 1;
+    const yearlyFeeUsd =
+      Number(storageConfig.paymentGateway?.yearlyFeeUsd) ||
+      Number((monthlyFeeUsd * 12 * 0.75).toFixed(2));
+    const certificateFeeUsd =
+      Number(storageConfig.paymentGateway?.certificateFeeUsd) || 5;
     const fullYearBase = monthlyFeeRs * 12;
     const yearlyDiscountPct =
       fullYearBase > 0
@@ -2315,9 +2421,17 @@ export default function App() {
         storageConfig.paymentGateway?.bankWhatsapp || '+92 324 0906384',
       monthlyFeeRs,
       yearlyFeeRs,
+      monthlyFeeUsd,
+      yearlyFeeUsd,
+      certificateFeeUsd,
       yearlyDiscountPct
     };
   }, [storageConfig.paymentGateway]);
+
+  const localizedPlan = useMemo(
+    () => getLocalizedMembershipPricing(liveGateway, geo),
+    [liveGateway, geo]
+  );
 
   // Last 5 Days Expiry Countdown for Paid Premium Members
   const globalPremiumCountdown = useMemo(() => {
@@ -2346,22 +2460,22 @@ export default function App() {
       return;
     }
     if (isSubmittingPayment) return;
-    const chosenFee =
-      selectedPlanDuration === '1-year'
-        ? liveGateway.yearlyFeeRs
-        : liveGateway.monthlyFeeRs;
     const chosenAmountLabel =
       selectedPlanDuration === '1-year'
-        ? `Rs. ${chosenFee.toLocaleString()} (1 Year - 25% OFF)`
-        : `Rs. ${chosenFee.toLocaleString()} (1 Month)`;
+        ? localizedPlan.yearlySubmissionAmount
+        : localizedPlan.monthlySubmissionAmount;
     const chosenPlanLabel =
       selectedPlanDuration === '1-year'
-        ? `1 Year (Rs. ${chosenFee.toLocaleString()} - 25% OFF)`
-        : `1 Month (Rs. ${chosenFee.toLocaleString()})`;
+        ? localizedPlan.yearlyPlanLabel
+        : localizedPlan.monthlyPlanLabel;
+    const chosenDisplayPrice =
+      selectedPlanDuration === '1-year'
+        ? localizedPlan.yearlyWithUsdHint
+        : localizedPlan.monthlyWithUsdHint;
 
     if (!payTransactionId.trim()) {
       setPaySubmitBanner(
-        `Please enter your Transaction ID / Reference No. (TID) after sending Rs. ${chosenFee.toLocaleString()}.`
+        `Please enter your Transaction ID / Reference No. (TID) after sending ${chosenDisplayPrice}.`
       );
       return;
     }
@@ -2392,12 +2506,16 @@ export default function App() {
       userCurrentRole: myProfile.title || myProfile.currentRole || '',
       paymentMethod: payMethod,
       transactionId: payTransactionId.trim(),
-      amount: chosenAmountLabel,
-      notes: payNotes.trim() || `${chosenPlanLabel} Premium Subscription`,
+      amount: chosenAmountLabel.slice(0, 78),
+      notes:
+        (payNotes.trim() || `${chosenPlanLabel} Premium Subscription`) +
+        (geo.isInternational
+          ? ` [Country: ${geo.countryName} (${geo.currencyCode})]`
+          : ''),
       receiptImageUrl: payReceiptUrl,
       status: 'pending',
       submittedAt: new Date().toISOString().slice(0, 19) + 'Z',
-      subscriptionPlan: chosenPlanLabel
+      subscriptionPlan: chosenPlanLabel.slice(0, 78)
     };
 
     try {
@@ -2704,6 +2822,7 @@ export default function App() {
       const isYearlyPlan =
         (req.subscriptionPlan || '').toLowerCase().includes('year') ||
         (req.amount || '').toLowerCase().includes('year') ||
+        (req.amount || '').toLowerCase().includes('1 yr') ||
         (req.amount || '').includes(String(liveGateway.yearlyFeeRs)) ||
         (req.amount || '').includes('900') ||
         (req.amount || '').includes('1800') ||
@@ -3370,6 +3489,10 @@ export default function App() {
           storageConfig.paymentGateway?.bankWhatsapp || '+92 324 0906384',
         monthlyFeeRs: Number(storageConfig.paymentGateway?.monthlyFeeRs) || 100,
         yearlyFeeRs: Number(storageConfig.paymentGateway?.yearlyFeeRs) || 900,
+        monthlyFeeUsd: Number(storageConfig.paymentGateway?.monthlyFeeUsd) || 1,
+        yearlyFeeUsd: Number(storageConfig.paymentGateway?.yearlyFeeUsd) || 9,
+        certificateFeeUsd:
+          Number(storageConfig.paymentGateway?.certificateFeeUsd) || 5,
         customPriceUpdated: true
       },
       whatsappChannelUrl: normalizedWaLink.slice(0, 490),
@@ -3642,6 +3765,9 @@ export default function App() {
         <SEOManager
           routeName={route.name}
           activeToolSection={activeToolSection}
+          activeTrainingsSubTab={
+            route.name === 'trainings' ? activeTrainingsSubTab : undefined
+          }
         />
 
         {/* CUSTOM RIGHT-TO-LEFT SCROLLING AD BANNER (BELOW TOP MENU & ABOVE HERO / CONTENT) */}
@@ -4489,7 +4615,8 @@ export default function App() {
                   paymentMethod,
                   transactionId,
                   receiptImageUrl,
-                  notes
+                  notes,
+                  localizedAmountLabel
                 }) => {
                   const firstCourse = selectedCourses[0];
                   const courseNames = selectedCourses
@@ -4509,7 +4636,9 @@ export default function App() {
                     paymentMethod,
                     transactionId,
                     receiptImageUrl,
-                    notes: `${bundle.title} (Rs. ${bundle.priceRs.toLocaleString()}) — Courses: ${courseNames}${notes ? ` | Note: ${notes}` : ''}`
+                    amountRs: bundle.priceRs,
+                    localizedAmountLabel,
+                    notes: `${bundle.title} (${localizedAmountLabel || `Rs. ${bundle.priceRs.toLocaleString()}`}) — Courses: ${courseNames}${notes ? ` | Note: ${notes}` : ''}`
                   });
                 }}
               />
@@ -5753,7 +5882,7 @@ export default function App() {
                         Your Profile is Hidden • Paid Members&apos; Contact Info is Locked
                       </h2>
                       <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                        You can view Paid Specialists&apos; profiles below, but their WhatsApp numbers &amp; Emails are hidden for Free users, and Free users&apos; profiles do not appear in the Community. Upgrade to Paid Membership (Rs. {liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month or Rs. {liveGateway.yearlyFeeRs.toLocaleString()} / Year) to publish your profile and unlock direct WhatsApp &amp; Email contact.
+                        You can view Paid Specialists&apos; profiles below, but their WhatsApp numbers &amp; Emails are hidden for Free users, and Free users&apos; profiles do not appear in the Community. Upgrade to Paid Membership ({localizedPlan.monthlyFormatted} / 1 Month or {localizedPlan.yearlyFormatted} / Year) to publish your profile and unlock direct WhatsApp &amp; Email contact.
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 w-full sm:w-auto shrink-0">
@@ -5886,6 +6015,13 @@ export default function App() {
                 setShowPremiumUpgradeModal(true);
               }}
               onRequireSignIn={() => setShowGuestAuthModal(true)}
+              requestedSubTab={
+                route.name === 'trainings' ? route.initialSubTab : undefined
+              }
+              requestedSubTabKey={
+                route.name === 'trainings' ? route.navKey : undefined
+              }
+              onSubTabChange={(subTab) => setActiveTrainingsSubTab(subTab)}
             />
           )}
 
@@ -5897,6 +6033,8 @@ export default function App() {
               hasExpiredPremium={hasExpiredPremium}
               monthlyFeeRs={liveGateway.monthlyFeeRs}
               yearlyFeeRs={liveGateway.yearlyFeeRs}
+              monthlyFeeUsd={liveGateway.monthlyFeeUsd}
+              yearlyFeeUsd={liveGateway.yearlyFeeUsd}
               onSaveToolsData={handleSaveUserToolsData}
               onOpenPremiumModal={() => {
                 setPaySubmitBanner(null);
@@ -5953,6 +6091,8 @@ export default function App() {
               }}
               monthlyFeeRs={liveGateway.monthlyFeeRs}
               yearlyFeeRs={liveGateway.yearlyFeeRs}
+              monthlyFeeUsd={liveGateway.monthlyFeeUsd}
+              yearlyFeeUsd={liveGateway.yearlyFeeUsd}
               yearlyDiscountPct={liveGateway.yearlyDiscountPct}
             />
           )}
@@ -6910,7 +7050,7 @@ export default function App() {
                       type="button"
                       onClick={() => {
                         setSelectedPlanDuration('1-month');
-                        setPayAmount(`Rs. ${liveGateway.monthlyFeeRs}`);
+                        setPayAmount(localizedPlan.monthlyFormatted);
                       }}
                       className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
                         selectedPlanDuration === '1-month'
@@ -6927,7 +7067,7 @@ export default function App() {
                         )}
                       </div>
                       <div className="text-lg sm:text-xl font-black text-[#1A2138] mt-1">
-                        Rs. {liveGateway.monthlyFeeRs.toLocaleString()}
+                        {localizedPlan.monthlyFormatted}
                       </div>
                       <div className="text-[11px] font-semibold text-gray-600">
                         Valid for 30 Days • Instant Renewal Anytime
@@ -6939,7 +7079,7 @@ export default function App() {
                       type="button"
                       onClick={() => {
                         setSelectedPlanDuration('1-year');
-                        setPayAmount(`Rs. ${liveGateway.yearlyFeeRs}`);
+                        setPayAmount(localizedPlan.yearlyFormatted);
                       }}
                       className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-1 ${
                         selectedPlanDuration === '1-year'
@@ -6952,24 +7092,19 @@ export default function App() {
                           Full Year (12 Months)
                         </span>
                         <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold uppercase tracking-wider shrink-0">
-                          {liveGateway.yearlyDiscountPct}% OFF
+                          {localizedPlan.discountPct}% OFF
                         </span>
                       </div>
                       <div className="flex flex-wrap items-baseline gap-2 mt-1">
                         <span className="text-lg sm:text-xl font-black text-[#1A2138]">
-                          Rs. {liveGateway.yearlyFeeRs.toLocaleString()}
+                          {localizedPlan.yearlyFormatted}
                         </span>
                         <span className="text-xs font-bold text-gray-400 line-through">
-                          Rs. {(liveGateway.monthlyFeeRs * 12).toLocaleString()}
+                          {localizedPlan.yearlyBaseFormatted}
                         </span>
                       </div>
                       <div className="text-[11px] font-extrabold text-[#1673B8]">
-                        Save Rs.{' '}
-                        {Math.max(
-                          0,
-                          liveGateway.monthlyFeeRs * 12 - liveGateway.yearlyFeeRs
-                        ).toLocaleString()}{' '}
-                        (365 Days Access)
+                        Save {localizedPlan.yearlySavingsFormatted} (365 Days Access)
                       </div>
                     </button>
                   </div>
@@ -6983,8 +7118,8 @@ export default function App() {
                     </h3>
                     <span className="px-2.5 py-1 rounded-md bg-[#1673B8] text-white text-[11px] font-extrabold">
                       {selectedPlanDuration === '1-year'
-                        ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Year (${liveGateway.yearlyDiscountPct}% OFF)`
-                        : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / Month`}
+                        ? `${localizedPlan.yearlyFormatted} / Year (${localizedPlan.discountPct}% OFF)`
+                        : `${localizedPlan.monthlyFormatted} / Month`}
                     </span>
                   </div>
 
@@ -7039,8 +7174,8 @@ export default function App() {
                   <label className="block text-xs font-extrabold text-[#1A2138]">
                     2. Choose Payment Method (
                     {selectedPlanDuration === '1-year'
-                      ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / Full Year`
-                      : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month`}
+                      ? `${localizedPlan.yearlyWithUsdHint} / Full Year`
+                      : `${localizedPlan.monthlyWithUsdHint} / 1 Month`}
                     )
                   </label>
 
@@ -7113,8 +7248,8 @@ export default function App() {
                           Subscription Fee:{' '}
                           <strong>
                             {selectedPlanDuration === '1-year'
-                              ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - ${liveGateway.yearlyDiscountPct}% Discount)`
-                              : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
+                              ? `${localizedPlan.yearlyWithUsdHint} (Full Year - ${localizedPlan.discountPct}% Discount)`
+                              : `${localizedPlan.monthlyWithUsdHint} (For 1 Month)`}
                           </strong>
                         </div>
                       </div>
@@ -7134,8 +7269,8 @@ export default function App() {
                           Subscription Fee:{' '}
                           <strong>
                             {selectedPlanDuration === '1-year'
-                              ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - ${liveGateway.yearlyDiscountPct}% Discount)`
-                              : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
+                              ? `${localizedPlan.yearlyWithUsdHint} (Full Year - ${localizedPlan.discountPct}% Discount)`
+                              : `${localizedPlan.monthlyWithUsdHint} (For 1 Month)`}
                           </strong>
                         </div>
                       </div>
@@ -7161,8 +7296,8 @@ export default function App() {
                           Subscription Fee:{' '}
                           <strong>
                             {selectedPlanDuration === '1-year'
-                              ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} (Full Year - ${liveGateway.yearlyDiscountPct}% Discount)`
-                              : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} (For 1 Month)`}
+                              ? `${localizedPlan.yearlyWithUsdHint} (Full Year - ${localizedPlan.discountPct}% Discount)`
+                              : `${localizedPlan.monthlyWithUsdHint} (For 1 Month)`}
                           </strong>
                         </div>
                       </div>
@@ -7173,10 +7308,10 @@ export default function App() {
                 {/* Upload Screenshot, Applicant Details & Transaction Details */}
                 <div className="space-y-3">
                   <label className="block text-xs font-extrabold text-[#1A2138] leading-relaxed">
-                    3. Enter Your Details, Transaction / Reference ID &amp; Upload Payment Screenshot (Rs.{' '}
+                    3. Enter Your Details, Transaction / Reference ID &amp; Upload Payment Screenshot (
                     {selectedPlanDuration === '1-year'
-                      ? liveGateway.yearlyFeeRs.toLocaleString()
-                      : liveGateway.monthlyFeeRs.toLocaleString()}
+                      ? localizedPlan.yearlyWithUsdHint
+                      : localizedPlan.monthlyWithUsdHint}
                     )
                   </label>
 
@@ -7236,8 +7371,8 @@ export default function App() {
                       </span>
                       <div className="w-full px-3 py-2.5 rounded-xl bg-[#EBF4FC] border border-[#BBD6EE] text-xs font-extrabold text-[#1A2138]">
                         {selectedPlanDuration === '1-year'
-                          ? `Rs. ${liveGateway.yearlyFeeRs.toLocaleString()} / 1 Year (${liveGateway.yearlyDiscountPct}% OFF)`
-                          : `Rs. ${liveGateway.monthlyFeeRs.toLocaleString()} / 1 Month`}
+                          ? `${localizedPlan.yearlyWithUsdHint} / 1 Year (${localizedPlan.discountPct}% OFF)`
+                          : `${localizedPlan.monthlyWithUsdHint} / 1 Month`}
                       </div>
                     </div>
                     <div>
@@ -7267,10 +7402,10 @@ export default function App() {
                               : 'Upload Payment Screenshot (Required *)'}
                           </span>
                           <span className="text-[10.5px] text-gray-500 block">
-                            Attach screenshot of your Rs.{' '}
+                            Attach screenshot of your{' '}
                             {selectedPlanDuration === '1-year'
-                              ? liveGateway.yearlyFeeRs.toLocaleString()
-                              : liveGateway.monthlyFeeRs.toLocaleString()}{' '}
+                              ? localizedPlan.yearlyWithUsdHint
+                              : localizedPlan.monthlyWithUsdHint}{' '}
                             payment
                           </span>
                         </div>
@@ -7573,7 +7708,7 @@ export default function App() {
                             <span className="font-extrabold text-[#1673B8] block mt-0.5">
                               {myLatestApplication.amount ||
                                 myLatestApplication.subscriptionPlan ||
-                                `Rs. ${liveGateway.monthlyFeeRs} (1 Month)`}
+                                localizedPlan.monthlySubmissionAmount}
                             </span>
                           </div>
                         </div>
@@ -7792,6 +7927,8 @@ export default function App() {
           onSignOutApp={handleSignOut}
           monthlyFeeRs={liveGateway.monthlyFeeRs}
           yearlyFeeRs={liveGateway.yearlyFeeRs}
+          monthlyFeeUsd={liveGateway.monthlyFeeUsd}
+          yearlyFeeUsd={liveGateway.yearlyFeeUsd}
           yearlyDiscountPct={liveGateway.yearlyDiscountPct}
         />
       </div>

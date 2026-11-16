@@ -76,6 +76,10 @@ import {
   JobEmailCoverLetterTool
 } from './SpecialistExtraTools';
 import { CitationReferenceGeneratorTool } from './ResearchSuiteTool';
+import {
+  useGeoCurrency,
+  getLocalizedMembershipPricing
+} from '../lib/geoCurrency';
 
 export type ActiveToolSection =
   | 'hub'
@@ -97,6 +101,8 @@ interface ToolsHubViewProps {
   hasExpiredPremium: boolean;
   monthlyFeeRs: number;
   yearlyFeeRs: number;
+  monthlyFeeUsd?: number;
+  yearlyFeeUsd?: number;
   initialSection?: ActiveToolSection;
   resetTrigger?: number;
   onSaveToolsData: (updatedToolsData: UserToolsData) => Promise<void>;
@@ -112,6 +118,8 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   hasExpiredPremium,
   monthlyFeeRs,
   yearlyFeeRs,
+  monthlyFeeUsd = 1,
+  yearlyFeeUsd = 9,
   initialSection = 'hub',
   resetTrigger = 0,
   onSaveToolsData,
@@ -120,14 +128,20 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   onGoToProfileTools,
   onActiveSectionChange
 }) => {
+  const geo = useGeoCurrency();
+  const localizedPlan = getLocalizedMembershipPricing(
+    { monthlyFeeRs, yearlyFeeRs, monthlyFeeUsd, yearlyFeeUsd },
+    geo
+  );
   const yearlyDiscountPct = useMemo(() => {
+    if (!geo.isPakistan) return localizedPlan.discountPct;
     const fullYear = (monthlyFeeRs || 100) * 12;
     if (fullYear <= 0) return 25;
     return Math.max(
       0,
       Math.round(((fullYear - (yearlyFeeRs || 900)) / fullYear) * 100)
     );
-  }, [monthlyFeeRs, yearlyFeeRs]);
+  }, [geo.isPakistan, localizedPlan.discountPct, monthlyFeeRs, yearlyFeeRs]);
   // Normalize user's saved toolsData with defaults
   const toolsData: UserToolsData = useMemo(() => {
     const saved = user.toolsData;
@@ -828,7 +842,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   1 Month Plan
                 </div>
                 <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
-                  Rs. {monthlyFeeRs}
+                  {localizedPlan.monthlyFormatted}
                 </div>
                 <div className="text-[10px] font-semibold text-[#5A6C84]">
                   30 Days Full Access
@@ -839,7 +853,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   {yearlyDiscountPct}% Discount
                 </span>
                 <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
-                  Rs. {yearlyFeeRs}
+                  {localizedPlan.yearlyFormatted}
                 </div>
                 <div className="text-[10px] font-bold text-[#1673B8]">
                   Full Year (365 Days)

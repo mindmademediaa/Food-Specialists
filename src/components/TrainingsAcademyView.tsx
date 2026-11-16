@@ -46,6 +46,10 @@ import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { preloadUserAvatarForPdf } from '../lib/pdfBranding';
 import { AlisonCourseModuleViewer } from './AlisonCourseModuleViewer';
 import { CertificateBundleOffersCard } from './PricingAndBundlesSection';
+import {
+  useGeoCurrency,
+  getLocalizedCertificateFee
+} from '../lib/geoCurrency';
 
 interface TrainingsAcademyViewProps {
   trainings: HubTraining[];
@@ -72,9 +76,13 @@ interface TrainingsAcademyViewProps {
     receiptImageUrl: string;
     notes: string;
     amountRs?: number;
+    localizedAmountLabel?: string;
   }) => Promise<void>;
   onOpenUpgradeModal: () => void;
   onRequireSignIn?: () => void;
+  requestedSubTab?: 'catalog' | 'my-certificates' | 'verify-portal';
+  requestedSubTabKey?: number;
+  onSubTabChange?: (tab: 'catalog' | 'my-certificates' | 'verify-portal') => void;
 }
 
 function makeDeterministicCertNumber(uid: string, courseCode: string): string {
@@ -95,9 +103,32 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   onSaveCourseProgress,
   onSubmitCertificatePaymentRequest,
   onOpenUpgradeModal,
-  onRequireSignIn
+  onRequireSignIn,
+  requestedSubTab,
+  requestedSubTabKey,
+  onSubTabChange
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'catalog' | 'my-certificates' | 'verify-portal'>('catalog');
+  const geo = useGeoCurrency();
+  const [activeSubTab, setActiveSubTab] = useState<'catalog' | 'my-certificates' | 'verify-portal'>(() => {
+    if (requestedSubTab) return requestedSubTab;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = (params.get('tab') || '').toLowerCase();
+      const pageParam = (params.get('page') || '').toLowerCase();
+      if (
+        (params.get('verify') || params.get('cert') || '').trim() ||
+        tabParam === 'verify' ||
+        tabParam === 'verify-portal' ||
+        pageParam === 'verify-certificate'
+      ) {
+        return 'verify-portal';
+      }
+      if (tabParam === 'my-certificates') {
+        return 'my-certificates';
+      }
+    }
+    return 'catalog';
+  });
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeModuleIdx, setActiveModuleIdx] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'overview' | 'study' | 'exam' | 'exam-result' | 'certificate-preview'>('overview');
@@ -143,10 +174,20 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const certParam = (params.get('verify') || params.get('cert') || '').trim();
+    const tabParam = (params.get('tab') || '').toLowerCase();
+    const pageParam = (params.get('page') || '').toLowerCase();
     if (certParam) {
       setActiveSubTab('verify-portal');
       setVerifyQuery(certParam);
       setHasSearchedVerify(true);
+      return;
+    }
+    if (
+      tabParam === 'verify' ||
+      tabParam === 'verify-portal' ||
+      pageParam === 'verify-certificate'
+    ) {
+      setActiveSubTab('verify-portal');
       return;
     }
     const courseParam = (params.get('course') || '').trim();
@@ -163,6 +204,17 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (!requestedSubTab) return;
+    setActiveSubTab(requestedSubTab);
+    setSelectedCourseId(null);
+    setViewMode('overview');
+  }, [requestedSubTab, requestedSubTabKey]);
+
+  useEffect(() => {
+    onSubTabChange?.(activeSubTab);
+  }, [activeSubTab, onSubTabChange]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -658,6 +710,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         course.title.toLowerCase().includes('dietary')
           ? 8000
           : 1000);
+      const locCertFee = getLocalizedCertificateFee(
+        certFeeRs,
+        paymentGatewayConfig,
+        geo
+      );
       const certNo =
         progress.certificateNumber ||
         makeDeterministicCertNumber(currentUser.uid, course.code);
@@ -672,9 +729,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         transactionId: payTxId.trim(),
         receiptImageUrl: payReceiptDataUrl,
         amountRs: certFeeRs,
+        localizedAmountLabel: locCertFee.submissionAmount,
         notes:
           payNotes.trim() ||
-          `Certificate Unlock Fee Rs. ${certFeeRs.toLocaleString()} for ${course.title} (${certNo}) + 1 Month Free Paid Membership`
+          `Certificate Unlock Fee ${locCertFee.formattedWithUsdHint} for ${course.title} (${certNo}) + 1 Month Free Paid Membership`
       });
 
       const updated: UserCourseProgress = {
@@ -685,7 +743,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       saveProgressHelper(course, updated);
 
       setPayFeedbackMsg(
-        `Your Rs. ${certFeeRs.toLocaleString()} Certificate Request has been submitted to the Admin Control Panel! Upon payment confirmation and approval, your Official Portrait PDF Certificate will unlock, 1 Month of FREE Paid Membership will be activated on your account, and your certificate will be live on the Online Verification Portal.`
+        `Your ${locCertFee.formattedWithUsdHint} Certificate Request has been submitted to the Admin Control Panel! Upon payment confirmation and approval, your Official Portrait PDF Certificate will unlock, 1 Month of FREE Paid Membership will be activated on your account, and your certificate will be live on the Online Verification Portal.`
       );
       setPayTxId('');
       setPayNotes('');
@@ -732,7 +790,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       const isDirectByAdmin = Boolean(
         cert.issuedBy && cert.issuedBy.toLowerCase().includes('direct')
       );
-      const isHolderActive = holderUser
+      const isHolderActive = isDirectByAdmin
+        ? true
+        : holderUser
         ? isUserPremiumActiveFn(holderUser)
         : true;
 
@@ -1425,7 +1485,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              Verify Certificate Portal
+              Verify Certificate
             </button>
           </div>
         </div>
@@ -1598,8 +1658,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                                 recipientName: rec.recipientName,
                                 recipientEmail: rec.recipientEmail,
                                 recipientProfilePicUrl:
-                                  matchedHolderUser?.profilePicUrl ||
-                                  currentUser?.profilePicUrl,
+                                  matchedHolderUser?.profilePicUrl || undefined,
                                 courseTitle: rec.courseTitle,
                                 courseCode: rec.courseCode || matched?.code || 'FS-CERT-INTL',
                                 accreditationStandard: rec.accreditationBody,
@@ -1822,7 +1881,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   onClick={() => setActiveSubTab('verify-portal')}
                   className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors"
                 >
-                  Verify Certificate Online
+                  Verify Certificate
                 </button>
                 <button
                   type="button"
@@ -1847,7 +1906,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   paymentMethod,
                   transactionId,
                   receiptImageUrl,
-                  notes
+                  notes,
+                  localizedAmountLabel
                 }) => {
                   const firstCourse =
                     selectedCourses[0] || mergedCourses[0] || INTERNATIONAL_TRAINING_COURSES[0];
@@ -1868,7 +1928,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     transactionId,
                     receiptImageUrl,
                     amountRs: bundle.priceRs,
-                    notes: `${bundle.title} (Rs. ${bundle.priceRs.toLocaleString()}) — Courses: ${courseNames}${notes ? ` | Note: ${notes}` : ''}`
+                    localizedAmountLabel,
+                    notes: `${bundle.title} (${localizedAmountLabel || `Rs. ${bundle.priceRs.toLocaleString()}`}) — Courses: ${courseNames}${notes ? ` | Note: ${notes}` : ''}`
                   });
                 }}
               />
@@ -1881,6 +1942,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 const pctMods = Math.round((completedCount / totalMods) * 100);
                 const hasStarted = Boolean(prog);
                 const resumeModNum = (prog?.lastModuleIndex ?? 0) + 1;
+                const courseLocFee = getLocalizedCertificateFee(
+                  Number(course.certificateFeeRs) || 1000,
+                  paymentGatewayConfig,
+                  geo
+                );
 
                 return (
                   <div
@@ -1894,8 +1960,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         </span>
                         <div className="flex items-center gap-1.5">
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-extrabold">
-                            Free Study &amp; Exam · Cert: Rs.{' '}
-                            {(course.certificateFeeRs || 1000).toLocaleString()}
+                            Free Study &amp; Exam · Cert: {courseLocFee.formatted}
                           </span>
                           {prog?.examPassed && (
                             <span
@@ -2427,6 +2492,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   certPayModalCourse.course.title.toLowerCase().includes('dietary')
                     ? 8000
                     : 1000);
+                const modalLocCertFee = getLocalizedCertificateFee(
+                  modalCertFeeRs,
+                  paymentGatewayConfig,
+                  geo
+                );
                 return (
                   <div className="space-y-4">
                     <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-4 space-y-2.5 text-xs">
@@ -2435,12 +2505,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           Certificate Issuance Fee
                         </span>
                         <span className="px-2.5 py-1 rounded-lg bg-[#1673B8] text-white font-black text-xs">
-                          Rs. {modalCertFeeRs.toLocaleString()}
+                          {modalLocCertFee.formattedWithUsdHint}
                         </span>
                       </div>
                       <p className="text-[#1A2138] leading-relaxed">
                         A certificate issuance fee of{' '}
-                        <strong>Rs. {modalCertFeeRs.toLocaleString()}</strong> applies to download your official{' '}
+                        <strong>{modalLocCertFee.formattedWithUsdHint}</strong> applies to download your official{' '}
                         <strong>Portrait PDF Certificate</strong> for{' '}
                         <strong>{certPayModalCourse.course.title}</strong> and activate live verification on the{' '}
                         <strong>Online Verification Portal</strong>.
@@ -2450,7 +2520,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       </div>
                       <ul className="space-y-1 text-slate-700 font-medium pt-1">
                         <li>1. Click <strong>Proceed to Payment Option</strong> below.</li>
-                        <li>2. Transfer the Rs. {modalCertFeeRs.toLocaleString()} fee and upload your payment screenshot.</li>
+                        <li>2. Transfer the {modalLocCertFee.formattedWithUsdHint} fee and upload your payment screenshot.</li>
                         <li>3. Once approved in the Admin Control Panel, your PDF Certificate and 1-Month Paid Membership will unlock immediately.</li>
                       </ul>
                     </div>
@@ -2502,7 +2572,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                         <span>
                           {!currentUser?.uid
                             ? 'Register / Sign In to Unlock Certificate →'
-                            : `Proceed to Payment Option (Rs. ${modalCertFeeRs.toLocaleString()}) →`}
+                            : `Proceed to Payment Option (${modalLocCertFee.formatted}) →`}
                         </span>
                       </button>
                     </div>
@@ -2518,12 +2588,17 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   certPayModalCourse.course.title.toLowerCase().includes('dietary')
                     ? 8000
                     : 1000);
+                const modalLocCertFee = getLocalizedCertificateFee(
+                  modalCertFeeRs,
+                  paymentGatewayConfig,
+                  geo
+                );
                 return (
                   <div className="space-y-3.5">
                     <div className="rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] p-3.5 space-y-2 text-xs">
                       <div className="flex items-center justify-between">
                         <p className="font-extrabold text-[#1673B8]">
-                          Transfer Rs. {modalCertFeeRs.toLocaleString()} &amp; Upload Payment Screenshot:
+                          Transfer {modalLocCertFee.formattedWithUsdHint} &amp; Upload Payment Screenshot:
                         </p>
                         <button
                           type="button"
@@ -2564,7 +2639,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     <form onSubmit={handleSubmitCertPayment} className="space-y-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Select Payment Method (Rs. {modalCertFeeRs.toLocaleString()})
+                          Select Payment Method ({modalLocCertFee.formattedWithUsdHint})
                         </label>
                         <select
                           value={payMethod}

@@ -47,7 +47,8 @@ import {
   HubScholarship,
   HubTraining,
   HubUser,
-  ManualRevenueEntry
+  ManualRevenueEntry,
+  PaymentGatewayConfig
 } from '../types/hub';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsData';
@@ -56,6 +57,10 @@ import {
   resolveOfficialVerificationBaseUrl
 } from '../utils/certificatePdfGenerator';
 import { DEFAULT_SCROLLING_AD_BANNERS } from './ScrollingAdBanner';
+import {
+  useGeoCurrency,
+  parseRevenuePkrFromRequestText
+} from '../lib/geoCurrency';
 
 export type AdminSectionTab =
   | 'menu'
@@ -138,7 +143,33 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onPreviewUserApp,
   onSignOut
 }) => {
+  const geo = useGeoCurrency();
   const [activeTab, setActiveTab] = useState<AdminSectionTab>('menu');
+
+  const updatePaymentGateway = (patch: Partial<PaymentGatewayConfig>) => {
+    const prev = storageConfig.paymentGateway;
+    onChangeStorageConfig({
+      ...storageConfig,
+      paymentGateway: {
+        jazzCashTitle: prev?.jazzCashTitle || 'Muneeb Khan',
+        jazzCashNumber: prev?.jazzCashNumber || '0324-0906384',
+        easyPaisaTitle: prev?.easyPaisaTitle || 'Muneeb Khan',
+        easyPaisaNumber: prev?.easyPaisaNumber || '0324-0906384',
+        bankTitle: prev?.bankTitle || 'Muneeb Khan',
+        bankName: prev?.bankName || 'Allied Bank / Bank Transfer',
+        bankAccountOrIban:
+          prev?.bankAccountOrIban || 'Contact on WhatsApp for IBAN',
+        bankWhatsapp: prev?.bankWhatsapp || '+92 324 0906384',
+        monthlyFeeRs: prev?.monthlyFeeRs ?? 100,
+        yearlyFeeRs: prev?.yearlyFeeRs ?? 900,
+        monthlyFeeUsd: prev?.monthlyFeeUsd ?? 1,
+        yearlyFeeUsd: prev?.yearlyFeeUsd ?? 9,
+        certificateFeeUsd: prev?.certificateFeeUsd ?? 5,
+        customPriceUpdated: prev?.customPriceUpdated,
+        ...patch
+      }
+    });
+  };
 
   // Users & Approvals Filter State
   const [userSearch, setUserSearch] = useState('');
@@ -583,15 +614,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     }
   };
 
-  // Helper: Parse numeric PKR amount from payment request string (e.g. "Rs. 8,000 — Certified Dietary Manager" -> 8000)
+  // Helper: Parse numeric PKR amount from payment request string (supports Rs./PKR & converts international $ USD slips to PKR)
   const parseAmountRsFromRequest = (req: HubPaymentRequest): number => {
-    const raw = (req.amount || '').replace(/,/g, '');
-    const rsMatch =
-      raw.match(/(?:rs\.?|pkr)\s*(\d{2,7})/i) || raw.match(/\b(\d{2,7})\b/);
-    if (rsMatch && rsMatch[1]) {
-      const val = Number(rsMatch[1]);
-      if (!Number.isNaN(val) && val > 0) return val;
-    }
+    const intlParsed = parseRevenuePkrFromRequestText(
+      req.amount,
+      req.notes,
+      geo.usdToPkrRate
+    );
+    if (intlParsed.pkrAmount > 0) return intlParsed.pkrAmount;
     if (
       req.certificateCourseId ||
       req.subscriptionPlan === 'certificate_unlock'
@@ -2232,37 +2262,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       const nextYearly = autoApply25PctYearly
                         ? Math.round(nextMonthly * 12 * 0.75)
                         : storageConfig.paymentGateway?.yearlyFeeRs ?? 900;
-                      onChangeStorageConfig({
-                        ...storageConfig,
-                        paymentGateway: {
-                          jazzCashTitle:
-                            storageConfig.paymentGateway?.jazzCashTitle ||
-                            'Muneeb Khan',
-                          jazzCashNumber:
-                            storageConfig.paymentGateway?.jazzCashNumber ||
-                            '0324-0906384',
-                          easyPaisaTitle:
-                            storageConfig.paymentGateway?.easyPaisaTitle ||
-                            'Muneeb Khan',
-                          easyPaisaNumber:
-                            storageConfig.paymentGateway?.easyPaisaNumber ||
-                            '0324-0906384',
-                          bankTitle:
-                            storageConfig.paymentGateway?.bankTitle ||
-                            'Muneeb Khan',
-                          bankName:
-                            storageConfig.paymentGateway?.bankName ||
-                            'Bank Transfer',
-                          bankAccountOrIban:
-                            storageConfig.paymentGateway?.bankAccountOrIban ||
-                            'Contact on WhatsApp for IBAN',
-                          bankWhatsapp:
-                            storageConfig.paymentGateway?.bankWhatsapp ||
-                            '+92 324 0906384',
-                          monthlyFeeRs: nextMonthly,
-                          yearlyFeeRs: nextYearly,
-                          customPriceUpdated: true
-                        }
+                      updatePaymentGateway({
+                        monthlyFeeRs: nextMonthly,
+                        yearlyFeeRs: nextYearly,
+                        customPriceUpdated: true
                       });
                     }}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-extrabold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
@@ -2281,38 +2284,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       setAutoApply25PctYearly(false);
                       const rawVal = Number(e.target.value);
                       const nextYearly = rawVal >= 0 ? rawVal : 900;
-                      onChangeStorageConfig({
-                        ...storageConfig,
-                        paymentGateway: {
-                          jazzCashTitle:
-                            storageConfig.paymentGateway?.jazzCashTitle ||
-                            'Muneeb Khan',
-                          jazzCashNumber:
-                            storageConfig.paymentGateway?.jazzCashNumber ||
-                            '0324-0906384',
-                          easyPaisaTitle:
-                            storageConfig.paymentGateway?.easyPaisaTitle ||
-                            'Muneeb Khan',
-                          easyPaisaNumber:
-                            storageConfig.paymentGateway?.easyPaisaNumber ||
-                            '0324-0906384',
-                          bankTitle:
-                            storageConfig.paymentGateway?.bankTitle ||
-                            'Muneeb Khan',
-                          bankName:
-                            storageConfig.paymentGateway?.bankName ||
-                            'Bank Transfer',
-                          bankAccountOrIban:
-                            storageConfig.paymentGateway?.bankAccountOrIban ||
-                            'Contact on WhatsApp for IBAN',
-                          bankWhatsapp:
-                            storageConfig.paymentGateway?.bankWhatsapp ||
-                            '+92 324 0906384',
-                          monthlyFeeRs:
-                            storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                          yearlyFeeRs: nextYearly,
-                          customPriceUpdated: true
-                        }
+                      updatePaymentGateway({
+                        yearlyFeeRs: nextYearly,
+                        customPriceUpdated: true
                       });
                     }}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-extrabold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
@@ -2347,37 +2321,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         const currentMo =
                           Number(storageConfig.paymentGateway?.monthlyFeeRs) || 100;
                         const autoYr = Math.round(currentMo * 12 * 0.75);
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ||
-                              'Muneeb Khan',
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ||
-                              '0324-0906384',
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ||
-                              'Muneeb Khan',
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ||
-                              '0324-0906384',
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ||
-                              'Muneeb Khan',
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ||
-                              'Bank Transfer',
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ||
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ||
-                              '+92 324 0906384',
-                            monthlyFeeRs: currentMo,
-                            yearlyFeeRs: autoYr,
-                            customPriceUpdated: true
-                          }
+                        updatePaymentGateway({
+                          monthlyFeeRs: currentMo,
+                          yearlyFeeRs: autoYr,
+                          customPriceUpdated: true
                         });
                       }
                     }}
@@ -2385,6 +2332,78 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   />
                   <span>Auto 25% OFF on Yearly</span>
                 </label>
+              </div>
+
+              {/* International Visitors (Outside Pakistan) USD Base Prices */}
+              <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#BBD6EE] space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[11px] font-extrabold text-[#105E9A] uppercase tracking-wider">
+                    International Users &amp; Guests Pricing (Outside Pakistan — Auto-Converted to Local Currency)
+                  </span>
+                  <span className="text-[10.5px] font-bold text-slate-600">
+                    Pakistan PKR prices above remain unchanged
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Monthly Plan ($ USD)
+                    </label>
+                    <input
+                      type="number"
+                      min={0.5}
+                      step={0.5}
+                      value={storageConfig.paymentGateway?.monthlyFeeUsd ?? 1}
+                      onChange={(e) => {
+                        const moUsd = Math.max(0.5, Number(e.target.value) || 1);
+                        updatePaymentGateway({
+                          monthlyFeeUsd: moUsd,
+                          yearlyFeeUsd: Number((moUsd * 12 * 0.75).toFixed(2)),
+                          customPriceUpdated: true
+                        });
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Yearly 12-Mo Plan (25% OFF — $ USD)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      step={0.25}
+                      value={storageConfig.paymentGateway?.yearlyFeeUsd ?? 9}
+                      onChange={(e) => {
+                        const yrUsd = Math.max(1, Number(e.target.value) || 9);
+                        updatePaymentGateway({
+                          yearlyFeeUsd: yrUsd,
+                          customPriceUpdated: true
+                        });
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                      Per Certificate Fee ($ USD, 25% OFF Bundles)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      step={0.5}
+                      value={storageConfig.paymentGateway?.certificateFeeUsd ?? 5}
+                      onChange={(e) => {
+                        const certUsd = Math.max(1, Number(e.target.value) || 5);
+                        updatePaymentGateway({
+                          certificateFeeUsd: certUsd,
+                          customPriceUpdated: true
+                        });
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
+                    />
+                  </div>
+                </div>
               </div>
             </form>
 
@@ -5830,37 +5849,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                             Number(storageConfig.paymentGateway?.monthlyFeeRs) ||
                             100;
                           const autoYr = Math.round(currentMo * 12 * 0.75);
-                          onChangeStorageConfig({
-                            ...storageConfig,
-                            paymentGateway: {
-                              jazzCashTitle:
-                                storageConfig.paymentGateway?.jazzCashTitle ||
-                                'Muneeb Khan',
-                              jazzCashNumber:
-                                storageConfig.paymentGateway?.jazzCashNumber ||
-                                '0324-0906384',
-                              easyPaisaTitle:
-                                storageConfig.paymentGateway?.easyPaisaTitle ||
-                                'Muneeb Khan',
-                              easyPaisaNumber:
-                                storageConfig.paymentGateway?.easyPaisaNumber ||
-                                '0324-0906384',
-                              bankTitle:
-                                storageConfig.paymentGateway?.bankTitle ||
-                                'Muneeb Khan',
-                              bankName:
-                                storageConfig.paymentGateway?.bankName ||
-                                'Bank Transfer',
-                              bankAccountOrIban:
-                                storageConfig.paymentGateway?.bankAccountOrIban ||
-                                'Contact on WhatsApp for IBAN',
-                              bankWhatsapp:
-                                storageConfig.paymentGateway?.bankWhatsapp ||
-                                '+92 324 0906384',
-                              monthlyFeeRs: currentMo,
-                              yearlyFeeRs: autoYr,
-                              customPriceUpdated: true
-                            }
+                          updatePaymentGateway({
+                            monthlyFeeRs: currentMo,
+                            yearlyFeeRs: autoYr,
+                            customPriceUpdated: true
                           });
                         }
                       }}
@@ -5885,37 +5877,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         const nextYearly = autoApply25PctYearly
                           ? Math.round(nextMonthly * 12 * 0.75)
                           : storageConfig.paymentGateway?.yearlyFeeRs ?? 900;
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ||
-                              'Muneeb Khan',
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ||
-                              '0324-0906384',
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ||
-                              'Muneeb Khan',
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ||
-                              '0324-0906384',
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ||
-                              'Muneeb Khan',
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ||
-                              'Bank Transfer',
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ||
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ||
-                              '+92 324 0906384',
-                            monthlyFeeRs: nextMonthly,
-                            yearlyFeeRs: nextYearly,
-                            customPriceUpdated: true
-                          }
+                        updatePaymentGateway({
+                          monthlyFeeRs: nextMonthly,
+                          yearlyFeeRs: nextYearly,
+                          customPriceUpdated: true
                         });
                       }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
@@ -5934,38 +5899,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         setAutoApply25PctYearly(false);
                         const rawVal = Number(e.target.value);
                         const nextYearly = rawVal >= 0 ? rawVal : 900;
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ||
-                              'Muneeb Khan',
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ||
-                              '0324-0906384',
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ||
-                              'Muneeb Khan',
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ||
-                              '0324-0906384',
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ||
-                              'Muneeb Khan',
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ||
-                              'Bank Transfer',
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ||
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ||
-                              '+92 324 0906384',
-                            monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                            yearlyFeeRs: nextYearly,
-                            customPriceUpdated: true
-                          }
+                        updatePaymentGateway({
+                          yearlyFeeRs: nextYearly,
+                          customPriceUpdated: true
                         });
                       }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
@@ -5996,43 +5932,83 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         Number(storageConfig.paymentGateway?.monthlyFeeRs) || 100;
                       const autoYr = Math.round(currentMo * 12 * 0.75);
                       setAutoApply25PctYearly(true);
-                      onChangeStorageConfig({
-                        ...storageConfig,
-                        paymentGateway: {
-                          jazzCashTitle:
-                            storageConfig.paymentGateway?.jazzCashTitle ||
-                            'Muneeb Khan',
-                          jazzCashNumber:
-                            storageConfig.paymentGateway?.jazzCashNumber ||
-                            '0324-0906384',
-                          easyPaisaTitle:
-                            storageConfig.paymentGateway?.easyPaisaTitle ||
-                            'Muneeb Khan',
-                          easyPaisaNumber:
-                            storageConfig.paymentGateway?.easyPaisaNumber ||
-                            '0324-0906384',
-                          bankTitle:
-                            storageConfig.paymentGateway?.bankTitle ||
-                            'Muneeb Khan',
-                          bankName:
-                            storageConfig.paymentGateway?.bankName ||
-                            'Bank Transfer',
-                          bankAccountOrIban:
-                            storageConfig.paymentGateway?.bankAccountOrIban ||
-                            'Contact on WhatsApp for IBAN',
-                          bankWhatsapp:
-                            storageConfig.paymentGateway?.bankWhatsapp ||
-                            '+92 324 0906384',
-                          monthlyFeeRs: currentMo,
-                          yearlyFeeRs: autoYr,
-                          customPriceUpdated: true
-                        }
+                      updatePaymentGateway({
+                        monthlyFeeRs: currentMo,
+                        yearlyFeeRs: autoYr,
+                        customPriceUpdated: true
                       });
                     }}
                     className="px-3 py-1.5 rounded-xl bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#92400E] text-[11px] font-extrabold cursor-pointer transition-colors shrink-0"
                   >
                     Set Exact 25% OFF (Rs. {Math.round(liveMonthlyFee * 12 * 0.75)})
                   </button>
+                </div>
+
+                {/* International Users USD Base Rates */}
+                <div className="p-3.5 rounded-xl bg-white border border-[#94B8D7] space-y-2.5">
+                  <div className="text-xs font-extrabold text-[#105E9A]">
+                    International Visitors Pricing (Outside Pakistan — Auto-Converted to User&apos;s Country Currency)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                        Monthly Membership ($ USD)
+                      </label>
+                      <input
+                        type="number"
+                        min={0.5}
+                        step={0.5}
+                        value={storageConfig.paymentGateway?.monthlyFeeUsd ?? 1}
+                        onChange={(e) => {
+                          const moUsd = Math.max(0.5, Number(e.target.value) || 1);
+                          updatePaymentGateway({
+                            monthlyFeeUsd: moUsd,
+                            yearlyFeeUsd: Number((moUsd * 12 * 0.75).toFixed(2)),
+                            customPriceUpdated: true
+                          });
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                        Yearly Plan (25% OFF — $ USD)
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={0.25}
+                        value={storageConfig.paymentGateway?.yearlyFeeUsd ?? 9}
+                        onChange={(e) => {
+                          const yrUsd = Math.max(1, Number(e.target.value) || 9);
+                          updatePaymentGateway({
+                            yearlyFeeUsd: yrUsd,
+                            customPriceUpdated: true
+                          });
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                        Certificate Fee ($ USD, 25% OFF Bundles)
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={0.5}
+                        value={storageConfig.paymentGateway?.certificateFeeUsd ?? 5}
+                        onChange={(e) => {
+                          const certUsd = Math.max(1, Number(e.target.value) || 5);
+                          updatePaymentGateway({
+                            certificateFeeUsd: certUsd,
+                            customPriceUpdated: true
+                          });
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-extrabold text-[#1A2138]"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -6053,37 +6029,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         'Muneeb Khan'
                       }
                       onChange={(e) =>
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle: e.target.value,
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ??
-                              '0324-0906384',
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ??
-                              'Muneeb Khan',
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ??
-                              '0324-0906384',
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ??
-                              'Muneeb Khan',
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ??
-                              'Bank Transfer',
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ??
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ??
-                              '+92 324 0906384',
-                            monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                            yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
-                          }
-                        })
+                        updatePaymentGateway({ jazzCashTitle: e.target.value })
                       }
                       placeholder="e.g. Muneeb Khan"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
@@ -6100,37 +6046,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         '0324-0906384'
                       }
                       onChange={(e) =>
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ??
-                              'Muneeb Khan',
-                            jazzCashNumber: e.target.value,
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ??
-                              'Muneeb Khan',
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ??
-                              '0324-0906384',
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ??
-                              'Muneeb Khan',
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ??
-                              'Bank Transfer',
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ??
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ??
-                              '+92 324 0906384',
-                            monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                            yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
-                          }
-                        })
+                        updatePaymentGateway({ jazzCashNumber: e.target.value })
                       }
                       placeholder="e.g. 0324-0906384"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
@@ -6156,37 +6072,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         'Muneeb Khan'
                       }
                       onChange={(e) =>
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ??
-                              'Muneeb Khan',
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ??
-                              '0324-0906384',
-                            easyPaisaTitle: e.target.value,
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ??
-                              '0324-0906384',
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ??
-                              'Muneeb Khan',
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ??
-                              'Bank Transfer',
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ??
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ??
-                              '+92 324 0906384',
-                            monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                            yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
-                          }
-                        })
+                        updatePaymentGateway({ easyPaisaTitle: e.target.value })
                       }
                       placeholder="e.g. Muneeb Khan"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
@@ -6203,37 +6089,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         '0324-0906384'
                       }
                       onChange={(e) =>
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ??
-                              'Muneeb Khan',
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ??
-                              '0324-0906384',
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ??
-                              'Muneeb Khan',
-                            easyPaisaNumber: e.target.value,
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ??
-                              'Muneeb Khan',
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ??
-                              'Bank Transfer',
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ??
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ??
-                              '+92 324 0906384',
-                            monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                            yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
-                          }
-                        })
+                        updatePaymentGateway({ easyPaisaNumber: e.target.value })
                       }
                       placeholder="e.g. 0324-0906384"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
@@ -6258,37 +6114,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         storageConfig.paymentGateway?.bankTitle ?? 'Muneeb Khan'
                       }
                       onChange={(e) =>
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ??
-                              'Muneeb Khan',
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ??
-                              '0324-0906384',
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ??
-                              'Muneeb Khan',
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ??
-                              '0324-0906384',
-                            bankTitle: e.target.value,
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ??
-                              'Bank Transfer',
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ??
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ??
-                              '+92 324 0906384',
-                            monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                            yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
-                          }
-                        })
+                        updatePaymentGateway({ bankTitle: e.target.value })
                       }
                       placeholder="e.g. Muneeb Khan"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
@@ -6305,37 +6131,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         'Allied Bank / Bank Transfer'
                       }
                       onChange={(e) =>
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ??
-                              'Muneeb Khan',
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ??
-                              '0324-0906384',
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ??
-                              'Muneeb Khan',
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ??
-                              '0324-0906384',
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ??
-                              'Muneeb Khan',
-                            bankName: e.target.value,
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ??
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ??
-                              '+92 324 0906384',
-                            monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                            yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
-                          }
-                        })
+                        updatePaymentGateway({ bankName: e.target.value })
                       }
                       placeholder="e.g. Meezan Bank / Allied Bank"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
@@ -6352,36 +6148,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         'Contact on WhatsApp for IBAN'
                       }
                       onChange={(e) =>
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ??
-                              'Muneeb Khan',
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ??
-                              '0324-0906384',
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ??
-                              'Muneeb Khan',
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ??
-                              '0324-0906384',
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ??
-                              'Muneeb Khan',
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ??
-                              'Bank Transfer',
-                            bankAccountOrIban: e.target.value,
-                            bankWhatsapp:
-                              storageConfig.paymentGateway?.bankWhatsapp ??
-                              '+92 324 0906384',
-                            monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                            yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
-                          }
+                        updatePaymentGateway({
+                          bankAccountOrIban: e.target.value
                         })
                       }
                       placeholder="e.g. PK36 MEZN 0000 ..."
@@ -6399,37 +6167,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         '+92 324 0906384'
                       }
                       onChange={(e) =>
-                        onChangeStorageConfig({
-                          ...storageConfig,
-                          paymentGateway: {
-                            jazzCashTitle:
-                              storageConfig.paymentGateway?.jazzCashTitle ??
-                              'Muneeb Khan',
-                            jazzCashNumber:
-                              storageConfig.paymentGateway?.jazzCashNumber ??
-                              '0324-0906384',
-                            easyPaisaTitle:
-                              storageConfig.paymentGateway?.easyPaisaTitle ??
-                              'Muneeb Khan',
-                            easyPaisaNumber:
-                              storageConfig.paymentGateway?.easyPaisaNumber ??
-                              '0324-0906384',
-                            bankTitle:
-                              storageConfig.paymentGateway?.bankTitle ??
-                              'Muneeb Khan',
-                            bankName:
-                              storageConfig.paymentGateway?.bankName ??
-                              'Bank Transfer',
-                            bankAccountOrIban:
-                              storageConfig.paymentGateway?.bankAccountOrIban ??
-                              'Contact on WhatsApp for IBAN',
-                            bankWhatsapp: e.target.value,
-                            monthlyFeeRs:
-                              storageConfig.paymentGateway?.monthlyFeeRs ?? 100,
-                            yearlyFeeRs:
-                              storageConfig.paymentGateway?.yearlyFeeRs ?? 900
-                          }
-                        })
+                        updatePaymentGateway({ bankWhatsapp: e.target.value })
                       }
                       placeholder="e.g. +92 324 0906384"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"

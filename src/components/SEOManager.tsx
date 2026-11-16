@@ -6,6 +6,7 @@ import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsDa
 export interface SEOManagerProps {
   routeName: string;
   activeToolSection?: string;
+  activeTrainingsSubTab?: 'catalog' | 'my-certificates' | 'verify-portal';
 }
 
 const TOOL_SEO_METADATA: Record<
@@ -165,19 +166,34 @@ function upsertCanonicalLink(url: string) {
 
 export const SEOManager: React.FC<SEOManagerProps> = ({
   routeName,
-  activeToolSection = 'hub'
+  activeToolSection = 'hub',
+  activeTrainingsSubTab
 }) => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const params = new URLSearchParams(window.location.search);
     const verifyParam = params.get('verify') || params.get('cert');
+    const tabParam = (params.get('tab') || '').toLowerCase();
+    const pageParam = (params.get('page') || '').toLowerCase();
     const courseParam = params.get('course');
+    const isVerifyActive =
+      Boolean(verifyParam) ||
+      activeTrainingsSubTab === 'verify-portal' ||
+      tabParam === 'verify' ||
+      tabParam === 'verify-portal' ||
+      pageParam === 'verify-certificate';
 
     let seo = ROUTE_SEO_METADATA[routeName] || ROUTE_SEO_METADATA.home;
 
     if (routeName === 'tools') {
       seo = TOOL_SEO_METADATA[activeToolSection] || TOOL_SEO_METADATA.hub;
+    } else if (routeName === 'trainings' && isVerifyActive) {
+      seo = {
+        title: 'Verify Certificate — Official QR & ID Certificate Verification | Food Science Portal',
+        description:
+          'Verify official Food Safety, HACCP, ISO 22000, FSSC 22000 & Dietary Manager certificates live by Certificate Number, Name, or QR code without sign-in.'
+      };
     } else if (routeName === 'trainings' && courseParam) {
       const matchedCourse = INTERNATIONAL_TRAINING_COURSES.find(
         (c) =>
@@ -209,7 +225,11 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
         }
       } else if (routeName === 'trainings') {
         nextParams.set('section', 'trainings');
-        if (courseParam) {
+        if (isVerifyActive) {
+          nextParams.set('tab', 'verify');
+        } else if (activeTrainingsSubTab === 'my-certificates') {
+          nextParams.set('tab', 'my-certificates');
+        } else if (courseParam) {
           nextParams.set('course', courseParam);
         }
       } else if (ROUTE_SEO_METADATA[routeName]?.sectionParam) {
@@ -229,7 +249,7 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
         // Ignore history errors in restricted iframes
       }
     }
-  }, [routeName, activeToolSection]);
+  }, [routeName, activeToolSection, activeTrainingsSubTab]);
 
   return null;
 };
