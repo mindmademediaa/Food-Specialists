@@ -4,6 +4,7 @@ import {
   BookOpen,
   Check,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Download,
@@ -12,12 +13,14 @@ import {
   Lock,
   PlayCircle,
   RefreshCw,
+  RotateCcw,
   Search,
   Share2,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
   Upload,
+  X,
   XCircle
 } from 'lucide-react';
 import {
@@ -211,13 +214,19 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   // 40-Question Exam state
   const [examQuestions, setExamQuestions] = useState<CourseExamMCQ[]>([]);
   const [examAnswers, setExamAnswers] = useState<Record<number, number>>({});
+  const [examStartedAtMs, setExamStartedAtMs] = useState<number>(() => Date.now());
+  const [copiedExamSummary, setCopiedExamSummary] = useState(false);
   const [lastExamResult, setLastExamResult] = useState<{
     correctCount: number;
+    wrongCount: number;
+    skippedCount: number;
     totalQuestions: number;
     percentage: number;
     passed: boolean;
     distinction: boolean;
     certificateNumber: string;
+    dateFormatted: string;
+    timeTakenFormatted: string;
   } | null>(null);
 
   // Rs. 1,000 Certificate Unlock Instruction & Payment Modal (2-Step Small Window)
@@ -733,16 +742,28 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     setSelectedCourseId(course.id);
     setExamQuestions(customQuestions);
     setExamAnswers({});
+    setExamStartedAtMs(Date.now());
+    setCopiedExamSummary(false);
     setLastExamResult(null);
     setViewMode('exam');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleSubmit40McqExam = () => {
     if (!selectedCourse || !selectedProgress) return;
     let correct = 0;
+    let wrong = 0;
+    let skipped = 0;
     examQuestions.forEach((q, idx) => {
-      if (examAnswers[idx] === q.correctIndex) {
+      const selected = examAnswers[idx];
+      if (selected === undefined) {
+        skipped += 1;
+      } else if (selected === q.correctIndex) {
         correct += 1;
+      } else {
+        wrong += 1;
       }
     });
     const total = examQuestions.length || 40;
@@ -753,13 +774,30 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       selectedProgress.certificateNumber ||
       makeDeterministicCertNumber(currentUser?.uid || 'GUEST', selectedCourse.code);
 
+    const elapsedSec = Math.max(
+      1,
+      Math.round((Date.now() - examStartedAtMs) / 1000)
+    );
+    const mins = Math.floor(elapsedSec / 60);
+    const secs = elapsedSec % 60;
+    const timeTakenFormatted = `${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
+    const dateFormatted = new Date().toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+
     setLastExamResult({
       correctCount: correct,
+      wrongCount: wrong,
+      skippedCount: skipped,
       totalQuestions: total,
       percentage,
       passed,
       distinction,
-      certificateNumber: certNo
+      certificateNumber: certNo,
+      dateFormatted,
+      timeTakenFormatted
     });
 
     // Save best exam score & pass/distinction status
@@ -778,7 +816,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       certificateNumber: certNo
     };
     saveProgressHelper(selectedCourse, updated);
+    setCopiedExamSummary(false);
     setViewMode('exam-result');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3008,56 +3050,288 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
             </div>
           )}
 
-          {/* MODE C: EXAM RESULT, CERTIFICATE PATTERN & DETAILED ANSWER EXPLANATIONS */}
+          {/* MODE C: EXAM RESULT SCORE CARD (MATCHING EXAM PREPARATION SCORE CARD), CERTIFICATE PATTERN & DETAILED EXPLANATIONS */}
           {viewMode === 'exam-result' && lastExamResult && (
-            <div className="space-y-5">
-              <div
-                className={`rounded-2xl border-2 p-5 sm:p-6 shadow-sm space-y-3 ${
-                  lastExamResult.passed
-                    ? 'border-[#1673B8] bg-[#F0F6FC]'
-                    : 'border-rose-300 bg-rose-50/70'
-                }`}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-extrabold uppercase ${
-                        lastExamResult.distinction
-                          ? 'bg-amber-400 text-slate-950'
-                          : lastExamResult.passed
-                          ? 'bg-[#1673B8] text-white'
-                          : 'bg-rose-600 text-white'
-                      }`}
+            <div className="space-y-6">
+              {/* Official Exam Score Card Container */}
+              <div className="bg-[#F0F6FC] rounded-[28px] sm:rounded-[32px] overflow-hidden border border-[#D2DEEA] shadow-md">
+                {/* Score Card Top Bar */}
+                <div className="bg-white px-4 sm:px-6 py-4 border-b border-[#D2DEEA] flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('study')}
+                      className="w-9 h-9 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] flex items-center justify-center text-[#1A2138] cursor-pointer shrink-0 transition-colors"
+                      title="Back to Course Study Modules"
                     >
-                      {lastExamResult.distinction
-                        ? 'PASSED WITH DISTINCTION (>= 75%)'
-                        : lastExamResult.passed
-                        ? 'EXAM PASSED (>= 60%)'
-                        : 'NOT PASSED (< 60% REQUIRED)'}
-                    </span>
-                    <h3 className="text-xl font-black text-[#1A2138]">
-                      Your Score: {lastExamResult.percentage}% ({lastExamResult.correctCount} /{' '}
-                      {lastExamResult.totalQuestions} Correct)
-                    </h3>
-                    <p className="text-xs text-slate-700">
-                      {lastExamResult.distinction
-                        ? 'Congratulations! You scored 75% or higher and qualified for an Official Certificate with Distinction.'
-                        : lastExamResult.passed
-                        ? 'Congratulations! You have passed the Final Exam and qualified for your International Certification.'
-                        : 'A minimum score of 60% is required to qualify for a certificate. Review the detailed explanations below and retake the exam anytime for free.'}
-                    </p>
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-extrabold text-[#1673B8] truncate">
+                        {selectedCourse.code} · Final Certification Assessment
+                      </div>
+                      <h3 className="text-sm sm:text-lg font-extrabold text-[#1A2138] truncate">
+                        {selectedCourse.title} — Official Score Card
+                      </h3>
+                    </div>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => handleStart40McqExam(selectedCourse)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs cursor-pointer"
+                    onClick={async () => {
+                      const summaryText = `${selectedCourse.title} (${selectedCourse.code}) — Exam Score: ${lastExamResult.percentage}% (${lastExamResult.correctCount}/${lastExamResult.totalQuestions} Correct, ${lastExamResult.wrongCount} Wrong, ${lastExamResult.skippedCount} Skipped) · Status: ${lastExamResult.distinction ? 'PASSED WITH DISTINCTION' : lastExamResult.passed ? 'PASSED' : 'NOT PASSED (< 60%)'}`;
+                      try {
+                        await navigator.clipboard.writeText(summaryText);
+                      } catch {
+                        // ignore clipboard failure
+                      }
+                      setCopiedExamSummary(true);
+                      setTimeout(() => setCopiedExamSummary(false), 2500);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] flex items-center gap-1.5 text-xs font-extrabold text-[#1A2138] cursor-pointer whitespace-nowrap shrink-0 transition-colors"
+                    title="Share Score Summary"
                   >
-                    <RefreshCw className="w-4 h-4" />
-                    Retake Exam
+                    {copiedExamSummary ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-600" />
+                        <span>Summary Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4 text-[#1673B8]" />
+                        <span className="hidden sm:inline">Share Summary</span>
+                      </>
+                    )}
                   </button>
                 </div>
+
+                {/* Score Card Split Body: Hero Banner + Attempt Breakdown Donut */}
+                <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                    {/* LEFT 6 COLS: BIG HERO PASS/FAIL BANNER */}
+                    <div
+                      className={`lg:col-span-6 rounded-[26px] p-6 sm:p-8 text-white text-center shadow-md flex flex-col items-center justify-center space-y-3 ${
+                        lastExamResult.passed
+                          ? 'bg-gradient-to-br from-[#1A2138] via-[#105E9A] to-[#1673B8]'
+                          : 'bg-gradient-to-br from-red-600 via-red-700 to-red-800'
+                      }`}
+                    >
+                      <div className="w-16 h-16 rounded-full bg-white/15 border-4 border-white flex items-center justify-center mx-auto shadow-sm">
+                        {lastExamResult.passed ? (
+                          <Check className="w-8 h-8 text-white stroke-[3.5]" />
+                        ) : (
+                          <X className="w-8 h-8 text-white stroke-[3.5]" />
+                        )}
+                      </div>
+
+                      <div className="text-xs font-black uppercase tracking-widest text-white/95">
+                        Test Status:{' '}
+                        {lastExamResult.distinction
+                          ? 'PASS WITH DISTINCTION (>= 75%)'
+                          : lastExamResult.passed
+                          ? 'PASS (Passed >= 60%)'
+                          : 'NOT PASSED (< 60% Required)'}
+                      </div>
+
+                      <h4 className="text-2xl sm:text-4xl font-extrabold tracking-tight tabular-nums">
+                        {lastExamResult.percentage}% Marks ({lastExamResult.correctCount} /{' '}
+                        {lastExamResult.totalQuestions})
+                      </h4>
+
+                      <p className="text-xs sm:text-sm font-semibold text-white/90">
+                        Course: {selectedCourse.code} · Completed on {lastExamResult.dateFormatted} · Time: {lastExamResult.timeTakenFormatted}
+                      </p>
+
+                      <div className="pt-1 text-[11px] font-bold text-amber-200 max-w-md leading-relaxed">
+                        {lastExamResult.distinction
+                          ? 'Distinction Achieved — Qualified for Official Portrait Certificate (Pay fee & Admin verification required).'
+                          : lastExamResult.passed
+                          ? 'Certificate Eligibility Unlocked — Proceed below to preview and unlock your verified Portrait Certificate.'
+                          : `Score >= 60% (${Math.ceil(lastExamResult.totalQuestions * 0.6)}/${lastExamResult.totalQuestions} correct) required to qualify for certificate. Review explanations below and retake anytime.`}
+                      </div>
+                    </div>
+
+                    {/* RIGHT 6 COLS: ATTEMPT SUMMARY REPORT & DONUT CHART */}
+                    <div className="lg:col-span-6 bg-white rounded-[26px] p-5 sm:p-6 border border-[#D2DEEA] shadow-xs flex flex-col justify-between space-y-4">
+                      <div>
+                        <div className="text-xs font-extrabold text-[#1673B8]">
+                          Attempt Summary Report
+                        </div>
+                        <h4 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                          Score Breakdown (Correct, Wrong &amp; Skipped)
+                        </h4>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <div className="flex items-center gap-4">
+                          <svg
+                            viewBox="0 0 42 42"
+                            className="w-28 h-28 shrink-0 -rotate-90"
+                          >
+                            <circle cx="21" cy="21" r="15.915" fill="#F0F6FC" />
+                            <circle
+                              cx="21"
+                              cy="21"
+                              r="15.915"
+                              fill="transparent"
+                              stroke="#94A3B8"
+                              strokeWidth="10"
+                            />
+                            <circle
+                              cx="21"
+                              cy="21"
+                              r="15.915"
+                              fill="transparent"
+                              stroke="#D97706"
+                              strokeWidth="10"
+                              strokeDasharray={`${Math.round(
+                                ((lastExamResult.correctCount + lastExamResult.wrongCount) /
+                                  Math.max(1, lastExamResult.totalQuestions)) *
+                                  100
+                              )} 100`}
+                            />
+                            <circle
+                              cx="21"
+                              cy="21"
+                              r="15.915"
+                              fill="transparent"
+                              stroke="#1673B8"
+                              strokeWidth="10"
+                              strokeDasharray={`${lastExamResult.percentage} 100`}
+                            />
+                          </svg>
+
+                          <div className="space-y-1.5 text-xs font-extrabold tabular-nums">
+                            <div className="text-[#1673B8]">
+                              ✓ {lastExamResult.correctCount}{' '}
+                              <span className="text-[#1A2138] font-bold">Correct</span>
+                            </div>
+                            <div className="text-[#D97706]">
+                              ✗ {lastExamResult.wrongCount}{' '}
+                              <span className="text-[#D97706] font-bold">Wrong</span>
+                            </div>
+                            <div className="text-[#5A6C84]">
+                              − {lastExamResult.skippedCount}{' '}
+                              <span className="text-[#1A2138] font-bold">Skipped</span>
+                            </div>
+                            <div className="text-[11px] text-[#1673B8] font-bold">
+                              Percentage: {lastExamResult.percentage}%
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5 text-center">
+                          <div className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                            <div className="text-base font-extrabold text-[#1673B8] tabular-nums">
+                              {lastExamResult.correctCount}/{lastExamResult.totalQuestions}
+                            </div>
+                            <div className="text-[10.5px] font-bold text-[#5A6C84]">
+                              Correct Answers
+                            </div>
+                          </div>
+                          <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200">
+                            <div className="text-base font-extrabold text-amber-700 tabular-nums">
+                              {lastExamResult.wrongCount}/{lastExamResult.totalQuestions}
+                            </div>
+                            <div className="text-[10.5px] font-bold text-amber-900">
+                              Wrong Answers
+                            </div>
+                          </div>
+                          <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA]">
+                            <div className="text-base font-extrabold text-[#1A2138] tabular-nums">
+                              {lastExamResult.skippedCount}/{lastExamResult.totalQuestions}
+                            </div>
+                            <div className="text-[10.5px] font-bold text-[#5A6C84]">
+                              Skipped MCQs
+                            </div>
+                          </div>
+                          <div className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
+                            <div
+                              className={`text-base font-extrabold ${
+                                lastExamResult.passed
+                                  ? 'text-emerald-700'
+                                  : 'text-red-600'
+                              }`}
+                            >
+                              {lastExamResult.passed ? 'PASS' : 'FAIL'}
+                            </div>
+                            <div className="text-[10.5px] font-bold text-[#5A6C84]">
+                              Final Result
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Score Card Action Buttons */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                        {lastExamResult.passed ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setViewMode('certificate-preview')}
+                              className="py-3 px-3.5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap transition-colors"
+                            >
+                              <Award className="w-4 h-4 shrink-0" />
+                              <span>Certificate Preview</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleStart40McqExam(selectedCourse)}
+                              className="py-3 px-3.5 rounded-2xl bg-[#1A2138] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap transition-colors"
+                            >
+                              <RotateCcw className="w-4 h-4 text-[#60A5FA] shrink-0" />
+                              <span>Retake Exam ({lastExamResult.totalQuestions} MCQs)</span>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleStart40McqExam(selectedCourse)}
+                              className="py-3 px-3.5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap transition-colors"
+                            >
+                              <RotateCcw className="w-4 h-4 shrink-0" />
+                              <span>Retake Exam ({lastExamResult.totalQuestions} MCQs)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setViewMode('study')}
+                              className="py-3 px-3.5 rounded-2xl bg-[#1A2138] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap transition-colors"
+                            >
+                              <BookOpen className="w-4 h-4 text-[#60A5FA] shrink-0" />
+                              <span>Review Study Modules</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {!lastExamResult.passed && (
+                <div className="rounded-2xl border-2 border-amber-300 bg-white p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="text-xs font-extrabold uppercase tracking-wider text-amber-800">
+                      Certificate Qualification Pending (Minimum 60% Required)
+                    </div>
+                    <h4 className="text-base font-black text-[#1A2138]">
+                      Score {lastExamResult.percentage}% — Retake Exam to Qualify for Certificate
+                    </h4>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      You need at least <strong>60%</strong> ({Math.ceil(lastExamResult.totalQuestions * 0.6)} out of {lastExamResult.totalQuestions} correct answers) to qualify for your Official Portrait PDF Certificate. Review the graded answers below and retake the exam anytime for free.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleStart40McqExam(selectedCourse)}
+                    className="px-5 py-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs inline-flex items-center justify-center gap-2 shadow-sm cursor-pointer whitespace-nowrap shrink-0 transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Retake Exam Now</span>
+                  </button>
+                </div>
+              )}
 
               {lastExamResult.passed &&
                 renderCertificatePatternCard(selectedCourse, selectedProgress)}
