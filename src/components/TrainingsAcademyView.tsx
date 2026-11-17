@@ -39,7 +39,10 @@ import {
   InternationalTrainingCourse,
   get40CourseExamQuestions
 } from '../data/internationalTrainingsData';
-import { hasLegacyMcqFormat } from '../data/coursesHaccp3And4';
+import {
+  hasLegacyMcqFormat,
+  isLegacyHaccpVisualDoc
+} from '../data/coursesHaccp3And4';
 import {
   buildDirectCertificateVerifyUrl,
   downloadOfficialCourseCertificatePdf,
@@ -392,8 +395,15 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         defaultFeeForCourse
       );
 
+      const isStaleVisual = Boolean(
+        baseMatch &&
+          isLegacyHaccpVisualDoc(customTr, baseMatch.modules.length)
+      );
+
       const mappedCustomModules: CourseStudyModule[] =
-        customTr.customModules && customTr.customModules.length > 0
+        !isStaleVisual &&
+        customTr.customModules &&
+        customTr.customModules.length > 0
           ? customTr.customModules.map((m, idx) => {
               const richBaseMod = baseMatch?.modules.find(
                 (bm, bIdx) => bm.id === m.id || bIdx === idx
@@ -457,20 +467,25 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         ...fallbackTemplate,
         id: customTr.id,
         code:
-          customTr.standardCode ||
+          (!isStaleVisual ? customTr.standardCode : undefined) ||
           (isDietaryCourse ? 'CDM-CERT' : baseMatch?.code || 'FSC-INT'),
-        title: normalizedCourseTitle,
+        title: isStaleVisual && baseMatch ? baseMatch.title : normalizedCourseTitle,
         accreditationStandard:
-          customTr.accreditationStandard ||
+          (!isStaleVisual ? customTr.accreditationStandard : undefined) ||
           baseMatch?.accreditationStandard ||
           fallbackTemplate.accreditationStandard,
         certificateFeeRs: liveCourseFeeRs,
         levelBadge:
-          customTr.subType || baseMatch?.levelBadge || 'International Certification',
-        description: customTr.description || baseMatch?.description || '',
+          (!isStaleVisual ? customTr.subType : undefined) ||
+          baseMatch?.levelBadge ||
+          'International Certification',
+        description:
+          (!isStaleVisual ? customTr.description : undefined) ||
+          baseMatch?.description ||
+          '',
         modules: mappedCustomModules,
         duration:
-          customTr.duration ||
+          (!isStaleVisual ? customTr.duration : undefined) ||
           baseMatch?.duration ||
           `Self-Paced · ${mappedCustomModules.length} Modules`
       });
@@ -1271,11 +1286,16 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       Completed Course Modules:
                     </p>
                     <ol className="space-y-1 text-[11px] text-slate-700 font-medium leading-snug">
-                      {sequentialModules.map((modLine, mIdx) => (
+                      {sequentialModules.slice(0, 5).map((modLine, mIdx) => (
                         <li key={mIdx} className="break-words">
                           {modLine}
                         </li>
                       ))}
+                      {sequentialModules.length > 5 && (
+                        <li className="text-[10.5px] font-bold italic text-[#1673B8] pt-0.5 break-words">
+                          + {sequentialModules.length - 5} additional specialized modules completed ({sequentialModules.length} Modules Total)
+                        </li>
+                      )}
                     </ol>
                   </div>
                 </div>

@@ -27,7 +27,7 @@ export const HACCP_LEVEL_03_VISUAL_COURSE: InternationalTrainingCourse = {
       title: 'Module 1: Introduction to Supervising HACCP & Role of Supervisors',
       estimatedMinutes: 25,
       overview:
-        'Meet your course facilitator, understand the Codex Alimentarius definition of HACCP, explore why preventive process control replaces end-product sampling, and clarify supervisory floor accountability.',
+        'Understand the Codex Alimentarius definition of HACCP, explore why preventive process control replaces end-product sampling, and clarify supervisory floor accountability.',
       internationalClauses: ['Codex Alimentarius CXC 1-1969 (2022 Rev.)', 'ISO 22000 Overview'],
       keyPrinciples: [
         'HACCP is a proactive, preventive science-based system that controls food safety hazards before defects reach consumers.',

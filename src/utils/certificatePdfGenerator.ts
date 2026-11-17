@@ -401,6 +401,18 @@ export function downloadOfficialCourseCertificatePdf(
     doc.text(modLines, leftX + 1.5, cursorY);
     cursorY += modLines.length * 3.6 + 0.8;
   }
+  if (sequentialModules.length > maxModulesToShow) {
+    const remainingCount = sequentialModules.length - maxModulesToShow;
+    doc.setFont('helvetica', 'bolditalic');
+    doc.setFontSize(7.4);
+    doc.setTextColor(22, 115, 184);
+    doc.text(
+      `+ ${remainingCount} additional specialized modules completed (${sequentialModules.length} Modules Total)`,
+      leftX + 1.5,
+      Math.min(cursorY + 0.4, 168.5)
+    );
+    cursorY += 4.2;
+  }
 
   // Horizontal divider line below sequential modules list
   const courseRuleY = Math.min(Math.max(cursorY + 1.5, 160), 170);

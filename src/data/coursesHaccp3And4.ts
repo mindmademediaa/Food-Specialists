@@ -379,6 +379,38 @@ export function hasLegacyMcqFormat(mcq: {
   return mcq.options.some((opt) => courseCodePattern.test(opt));
 }
 
+// Detects whether a persisted HubTraining record (e.g., from Firestore) holds stale pre-upgrade
+// 5-module metadata/syllabus for visual interactive HACCP courses (cert-2026-haccp-level-03 / cert-2026-intro-haccp).
+export function isLegacyHaccpVisualDoc(
+  tr: {
+    id?: string;
+    title?: string | null;
+    subType?: string | null;
+    duration?: string | null;
+    customModules?: Array<{ id?: string; subject?: string }>;
+  },
+  expectedModuleCount: number
+): boolean {
+  const id = tr.id || '';
+  if (id !== 'cert-2026-haccp-level-03' && id !== 'cert-2026-intro-haccp') {
+    return false;
+  }
+  const mods = tr.customModules || [];
+  if (mods.length === 0 || mods.length < expectedModuleCount) return true;
+  if (mods.some((m) => (m.id || '').startsWith('haccp3-mod-'))) return true;
+  const sub = (tr.subType || '').toLowerCase();
+  const dur = (tr.duration || '').toLowerCase();
+  if (
+    sub.includes('simple presentation course') ||
+    sub.includes('05 modules') ||
+    dur.includes('05 presentation modules') ||
+    (tr.title || '').toLowerCase().includes('demo')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function build40McqsForCourse(
   course: InternationalTrainingCourse
 ): CourseExamMCQ[] {

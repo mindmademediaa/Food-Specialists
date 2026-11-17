@@ -108,7 +108,10 @@ import {
   makeAvatarSvg
 } from './data/mockHubData';
 import { INTERNATIONAL_TRAINING_COURSES } from './data/internationalTrainingsData';
-import { hasLegacyMcqFormat } from './data/coursesHaccp3And4';
+import {
+  hasLegacyMcqFormat,
+  isLegacyHaccpVisualDoc
+} from './data/coursesHaccp3And4';
 import { DEFAULT_USER_TOOLS_DATA } from './data/examPrepData';
 import {
   uploadMediaFile,
@@ -1157,6 +1160,7 @@ export default function App() {
               !t.id.startsWith('tr-intl-') &&
               !t.id.startsWith('tr-haccp-level-4') &&
               !t.id.startsWith('course-') &&
+              t.id !== 'haccp-level-demo' &&
               t.category !== 'Highfield' &&
               t.category !== 'Lead Auditor'
           );
@@ -1166,13 +1170,29 @@ export default function App() {
           fsTr.forEach((t) => {
             const initMatch = INITIAL_TRAININGS.find((it) => it.id === t.id);
             if (initMatch) {
+              const isStaleVisual = isLegacyHaccpVisualDoc(
+                t,
+                initMatch.customModules?.length || 0
+              );
               const hasLegacyMcqs =
+                isStaleVisual ||
                 !t.customMcqs ||
                 t.customMcqs.length === 0 ||
                 t.customMcqs.some((q) => hasLegacyMcqFormat(q));
               map.set(t.id, {
                 ...initMatch,
                 ...t,
+                ...(isStaleVisual
+                  ? {
+                      title: initMatch.title,
+                      standardCode: initMatch.standardCode,
+                      accreditationStandard: initMatch.accreditationStandard,
+                      subType: initMatch.subType,
+                      duration: initMatch.duration,
+                      description: initMatch.description,
+                      customModules: initMatch.customModules
+                    }
+                  : {}),
                 customMcqs: hasLegacyMcqs ? initMatch.customMcqs : t.customMcqs
               });
             } else {
