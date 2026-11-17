@@ -140,7 +140,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const currentDomain =
     typeof window !== 'undefined' && window.location.hostname
       ? window.location.hostname
-      : 'mindmademediaa.github.io';
+      : 'foodscienceportal.com';
 
   useEffect(() => {
     let active = true;

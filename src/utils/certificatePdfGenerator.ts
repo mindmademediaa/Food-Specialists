@@ -9,7 +9,7 @@ import {
 } from './certificateSignatures';
 
 export const OFFICIAL_APP_PORTAL_URL =
-  'https://mindmademediaa.github.io/food-specialists';
+  'https://foodscienceportal.com';
 
 export interface OfficialCertificatePdfParams {
   certificateNumber: string;
