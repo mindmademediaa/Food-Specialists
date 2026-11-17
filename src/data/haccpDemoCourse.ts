@@ -58,26 +58,17 @@ export const HACCP_LEVEL_03_VISUAL_COURSE: InternationalTrainingCourse = {
       presentationSlides: [
         {
           slideNumber: 1,
-          title: 'Course Facilitator & Supervisory Learning Path',
-          subtitle: 'Interactive Supervisory HACCP Architecture — Food Science Portal',
-          visualIllustration: 'instructor-profile',
-          trainerCard: {
-            name: 'Muneeb Khan, M.Sc (Hons.) Food Science & Technology',
-            credential: 'Lead Auditor (FSSC 22000 · ISO 22000 · ISO 9001 · PSQCA Halal) & Industry Trainer',
-            experience: '10+ Years QA/QC & Manufacturing',
-            specialties: [
-              'Codex HACCP Design',
-              'Thermal & Dairy Validation',
-              'Catering & Factory Audits',
-              'Regulatory Compliance (PFA/PSQCA/SFDA)'
-            ],
-            introNote:
-              'Welcome to HACCP Level 03 — engineered with step-by-step Prerequisite Programme SOPs, sample controlled documents for all 12 Codex steps, interactive safety drills, and applied supervision checklists.'
+          title: 'Course Architecture & Supervisory Learning Path',
+          subtitle: 'Interactive Supervisory HACCP Level 03 Curriculum — Food Science Portal',
+          calloutBanner: {
+            label: 'Course Scope & Mastery Blueprint',
+            text: 'Designed for QA/QC Supervisors, Line Leaders, Head Chefs, Shift Managers, and Food Technology professionals — combining Prerequisite Programme (PRP) floor SOPs, all 12 Codex controlled documents, interactive safety drills, and applied supervision checklists.',
+            tone: 'blue'
           },
           bulletPoints: [
             'Combines food microbiology science with real shop-floor supervisory duties across kitchens, bakeries, dairy lines, and packaging facilities.',
             'Structured across 15 progressive modules covering Hazards, interactive PRP Procedures, all 12 Codex Document Templates, and Exam Mastery.',
-            'Built for QA/QC Supervisors, Line Leaders, Head Chefs, Shift Managers, and Food Technology graduates.'
+            'Assessment Goal: Complete all 15 modules and achieve ≥ 60% (≥ 75% Distinction) on the 40-MCQ Final Examination.'
           ],
           keyTakeaway:
             'Supervisory HACCP turns international Codex standards into clear, verifiable daily shop-floor actions.'
