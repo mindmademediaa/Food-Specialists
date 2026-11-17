@@ -2,7 +2,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-const APP_BUILD_VERSION = 'fsp-2026-11-12-v4';
+const APP_BUILD_VERSION = 'fsp-2026-11-17-v5';
 
 if (typeof window !== 'undefined') {
   try {

@@ -88,6 +88,30 @@ const TOOL_SEO_METADATA: Record<
       'Food Technologist & QA/QC Job Application Email & Cover Letter Generator | Food Science Portal',
     description:
       'Generate tailored job application emails and cover letters for QA/QC Officer, Food Technologist, R&D, and HSE roles.'
+  },
+  'nutrition-label': {
+    title:
+      'Nutrition Facts Label Generator (FDA / GCC-SFDA / PSQCA) | Food Science Portal',
+    description:
+      'Generate FDA 2020, GCC/SFDA GSO 2233 traffic-light, and PSQCA Nutrition Facts packaging panels with % Daily Value and per-100g conversion.'
+  },
+  'thermal-aw': {
+    title:
+      'Thermal Processing (F0 / Pasteurization) & Water Activity (aw) Calculator | Food Science Portal',
+    description:
+      'Calculate retort F0 lethality, Pasteurization Units (PU), 12D log reduction, and water activity (aw) microbial growth hurdles.'
+  },
+  'templates-vault': {
+    title:
+      'QA/QC & Audit Document Templates Vault (HACCP, SSOP, FSSC v7, PFA) | Food Science Portal',
+    description:
+      'Download audit-ready HACCP Master Plans, SSOP Pre-Op Logs, Allergen Matrices, and FSSC 22000 v7 Audit Checklists.'
+  },
+  'authority-limits': {
+    title:
+      'Food Authority Limits Quick Lookup (PFA / PSQCA / SFDA / Codex) | Food Science Portal',
+    description:
+      'Instant statutory critical limit lookup for Dairy Fat/SNF, Aflatoxin M1, Bottled Water TDS, Edible Oils, Spices, and Microbiology across PFA, PSQCA, SFDA, and Codex.'
   }
 };
 
@@ -315,6 +339,22 @@ export const SEODirectoryFooter: React.FC<SEODirectoryFooterProps> = ({
     {
       id: 'job-cover-letter',
       label: 'Food Industry Job Email & Cover Letter Generator'
+    },
+    {
+      id: 'nutrition-label',
+      label: 'Nutrition Facts Label Generator (FDA / GCC-SFDA / PSQCA)'
+    },
+    {
+      id: 'thermal-aw',
+      label: 'Thermal Processing (F0 / Pasteurization) & Water Activity Calculator'
+    },
+    {
+      id: 'templates-vault',
+      label: 'Ready-to-Use QA/QC & Audit Document Templates Vault'
+    },
+    {
+      id: 'authority-limits',
+      label: 'Food Authority Limits Quick Lookup (PFA / PSQCA / SFDA / Codex)'
     }
   ];
 

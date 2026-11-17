@@ -2,15 +2,18 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   Award,
   BookOpen,
+  Check,
   CheckCircle2,
   ChevronRight,
   Clock,
   Download,
+  ExternalLink,
   FileCheck2,
   Lock,
   PlayCircle,
   RefreshCw,
   Search,
+  Share2,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
@@ -54,6 +57,7 @@ import {
   useGeoCurrency,
   getLocalizedCertificateFee
 } from '../lib/geoCurrency';
+import { buildLinkedInAddCertificateUrl } from '../lib/pwaNotifications';
 
 interface TrainingsAcademyViewProps {
   trainings: HubTraining[];
@@ -174,7 +178,30 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   const [customRegErrorMsg, setCustomRegErrorMsg] = useState<string | null>(
     null
   );
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    const courseParam = (params.get('course') || '').trim();
+    if (!courseParam) return null;
+    const matched = INTERNATIONAL_TRAINING_COURSES.find(
+      (c) =>
+        c.id.toLowerCase() === courseParam.toLowerCase() ||
+        c.code.toLowerCase() === courseParam.toLowerCase()
+    );
+    return matched ? matched.id : null;
+  });
+  const [copiedCourseShareId, setCopiedCourseShareId] = useState<string | null>(null);
+  const handleCopyCourseShareLink = async (courseId: string) => {
+    if (typeof window === 'undefined') return;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?section=trainings&course=${encodeURIComponent(courseId)}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      // Clipboard fallback ignored
+    }
+    setCopiedCourseShareId(courseId);
+    setTimeout(() => setCopiedCourseShareId(null), 2500);
+  };
   const [activeModuleIdx, setActiveModuleIdx] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'overview' | 'study' | 'exam' | 'exam-result' | 'certificate-preview'>('overview');
 
@@ -257,8 +284,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
       return;
     }
     setActiveSubTab(requestedSubTab);
-    setSelectedCourseId(null);
-    setViewMode('overview');
+    if (requestedSubTab !== 'catalog' || (requestedSubTabKey ?? 0) > 0) {
+      setSelectedCourseId(null);
+      setViewMode('overview');
+    }
   }, [requestedSubTab, requestedSubTabKey, isLoggedInUser]);
 
   useEffect(() => {
@@ -1446,32 +1475,48 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   Certificate ID <span className="font-mono font-bold">{certNo}</span> is active on the Online Verification Portal.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  downloadOfficialCourseCertificatePdf({
-                    certificateNumber: certNo,
-                    recipientName: holderName,
-                    recipientEmail: currentUser?.email || '',
-                    recipientProfilePicUrl: currentUser?.profilePicUrl,
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadOfficialCourseCertificatePdf({
+                      certificateNumber: certNo,
+                      recipientName: holderName,
+                      recipientEmail: currentUser?.email || '',
+                      recipientProfilePicUrl: currentUser?.profilePicUrl,
+                      courseTitle: course.title,
+                      courseCode: course.code,
+                      accreditationStandard: course.accreditationStandard,
+                      scorePercentage: scorePct,
+                      correctCount: correctOutOf40,
+                      totalQuestions: 40,
+                      distinction: isDistinction,
+                      issueDate: issueDateStr,
+                      verificationPortalUrl: officialPortalBase,
+                      syllabusModules: course.modules.map((m) => m.title),
+                      issuedByMode: 'exam'
+                    })
+                  }
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-sm transition cursor-pointer shrink-0"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Certificate (PDF)
+                </button>
+                <a
+                  href={buildLinkedInAddCertificateUrl({
                     courseTitle: course.title,
-                    courseCode: course.code,
-                    accreditationStandard: course.accreditationStandard,
-                    scorePercentage: scorePct,
-                    correctCount: correctOutOf40,
-                    totalQuestions: 40,
-                    distinction: isDistinction,
-                    issueDate: issueDateStr,
-                    verificationPortalUrl: officialPortalBase,
-                    syllabusModules: course.modules.map((m) => m.title),
-                    issuedByMode: 'exam'
-                  })
-                }
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-sm transition cursor-pointer shrink-0"
-              >
-                <Download className="w-4 h-4" />
-                Download Certificate (PDF)
-              </button>
+                    certificateNumber: certNo,
+                    issueDate: progress.certificateUnlockedAt || progress.examCompletedAt,
+                    verifyUrl: directVerifyUrl
+                  })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-xs shadow-sm transition shrink-0"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Add to LinkedIn Profile</span>
+                </a>
+              </div>
             </div>
           ) : isFeePaidButMembershipExpired ? (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50 border border-amber-300 rounded-xl p-4">
@@ -2170,7 +2215,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                             Issued: {rec.issueDate} · Verified Live
                           </p>
                         </div>
-                        <div className="flex sm:justify-end">
+                        <div className="flex flex-wrap sm:justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -2210,6 +2255,28 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                             <Download className="w-3.5 h-3.5" />
                             Download Portrait PDF
                           </button>
+                          <a
+                            href={buildLinkedInAddCertificateUrl({
+                              courseTitle: rec.courseTitle,
+                              certificateNumber: rec.certificateNumber,
+                              issueDate: rec.issueDate,
+                              verifyUrl: buildDirectCertificateVerifyUrl({
+                                certificateNumber: rec.certificateNumber,
+                                recipientName: rec.recipientName || currentUser?.name,
+                                courseTitle: rec.courseTitle,
+                                courseCode: rec.courseCode || 'FS-CERT-INTL',
+                                accreditationStandard: rec.accreditationBody,
+                                scorePercentage: rec.scorePercentage,
+                                issueDate: rec.issueDate
+                              })
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-xs shadow-xs"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Add to LinkedIn
+                          </a>
                         </div>
                       </div>
                     </div>
@@ -2285,35 +2352,61 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                               'Codex Alimentarius & GFSI Standard'}
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            downloadOfficialCourseCertificatePdf({
-                              certificateNumber: cert.certificateNumber,
-                              recipientName: cert.recipientName,
-                              recipientEmail: cert.recipientEmail || currentUser.email,
-                              recipientProfilePicUrl: currentUser.profilePicUrl,
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              downloadOfficialCourseCertificatePdf({
+                                certificateNumber: cert.certificateNumber,
+                                recipientName: cert.recipientName,
+                                recipientEmail: cert.recipientEmail || currentUser.email,
+                                recipientProfilePicUrl: currentUser.profilePicUrl,
+                                courseTitle: cert.trainingTitle,
+                                courseCode: matched?.code || 'FS-CERT-INTL',
+                                accreditationStandard:
+                                  cert.accreditationBody ||
+                                  matched?.accreditationStandard ||
+                                  'Codex Alimentarius & GFSI International Standard',
+                                scorePercentage: scorePct,
+                                correctCount: Math.round((scorePct / 100) * 40),
+                                totalQuestions: 40,
+                                distinction: isDist,
+                                issueDate: cert.issueDate,
+                                verificationPortalUrl: resolveOfficialVerificationBaseUrl(),
+                                syllabusModules: matched?.modules.map((m) => m.title),
+                                issuedByMode: 'admin_direct'
+                              })
+                            }
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-sm cursor-pointer shrink-0"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download Portrait PDF
+                          </button>
+                          <a
+                            href={buildLinkedInAddCertificateUrl({
                               courseTitle: cert.trainingTitle,
-                              courseCode: matched?.code || 'FS-CERT-INTL',
-                              accreditationStandard:
-                                cert.accreditationBody ||
-                                matched?.accreditationStandard ||
-                                'Codex Alimentarius & GFSI International Standard',
-                              scorePercentage: scorePct,
-                              correctCount: Math.round((scorePct / 100) * 40),
-                              totalQuestions: 40,
-                              distinction: isDist,
+                              certificateNumber: cert.certificateNumber,
                               issueDate: cert.issueDate,
-                              verificationPortalUrl: resolveOfficialVerificationBaseUrl(),
-                              syllabusModules: matched?.modules.map((m) => m.title),
-                              issuedByMode: 'admin_direct'
-                            })
-                          }
-                          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs shadow-sm cursor-pointer shrink-0"
-                        >
-                          <Download className="w-4 h-4" />
-                          Download Portrait PDF Certificate
-                        </button>
+                              verifyUrl: buildDirectCertificateVerifyUrl({
+                                certificateNumber: cert.certificateNumber,
+                                recipientName: cert.recipientName,
+                                courseTitle: cert.trainingTitle,
+                                courseCode: matched?.code || 'FS-CERT-INTL',
+                                accreditationStandard:
+                                  cert.accreditationBody ||
+                                  matched?.accreditationStandard,
+                                scorePercentage: scorePct,
+                                issueDate: cert.issueDate
+                              })
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-xs shadow-sm shrink-0"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Add to LinkedIn Profile
+                          </a>
+                        </div>
                       </div>
                     );
                   })}
@@ -2587,6 +2680,25 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                             Certificate
                           </button>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCourseShareLink(course.id)}
+                          title="Copy direct shareable link for this course"
+                          className="px-3 py-2.5 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] border border-[#D2DEEA] text-[#1673B8] font-extrabold text-xs inline-flex items-center gap-1 transition cursor-pointer"
+                        >
+                          {copiedCourseShareId === course.id ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Share2 className="w-3.5 h-3.5" />
+                              <span>Share</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2662,6 +2774,23 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   Certificate Preview
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => handleCopyCourseShareLink(selectedCourse.id)}
+                className="px-3.5 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] border border-[#D2DEEA] text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                {copiedCourseShareId === selectedCourse.id ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Course Link Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>Share Course Link</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 

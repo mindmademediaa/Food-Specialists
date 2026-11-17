@@ -98,7 +98,8 @@ import {
   SpecializationTag,
   NavTab,
   UserToolsData,
-  UserCourseProgress
+  UserCourseProgress,
+  UserPortalNotification
 } from './types/hub';
 import {
   INITIAL_JOBS,
@@ -125,7 +126,10 @@ import {
   normalizeExperienceArray
 } from './components/EditProfileView';
 import { PublicProfileView } from './components/PublicProfileView';
-import { AdminControlPanel } from './components/AdminControlPanel';
+import {
+  AdminControlPanel,
+  AdminDispatchConfirmationPayload
+} from './components/AdminControlPanel';
 import {
   LegalComplianceModal,
   LegalTabType
@@ -137,6 +141,14 @@ import { SEOManager, SEODirectoryFooter } from './components/SEOManager';
 import {
   CertificateBundleOffersCard
 } from './components/PricingAndBundlesSection';
+import { QuestionOfTheDayCard } from './components/QuestionOfTheDayCard';
+import {
+  OfflineIndicator,
+  buildConfirmationAlertLinks,
+  getPushAlertsEnabled,
+  showPortalPushNotification
+} from './lib/pwaNotifications';
+import { buildDirectCertificateVerifyUrl } from './utils/certificatePdfGenerator';
 import {
   useGeoCurrency,
   getLocalizedMembershipPricing,
@@ -667,6 +679,10 @@ export default function App() {
   const [adminStatusBanner, setAdminStatusBanner] = useState<string | null>(
     null
   );
+  const [lastDispatchConfirmation, setLastDispatchConfirmation] =
+    useState<AdminDispatchConfirmationPayload | null>(null);
+  const knownJobIdsRef = useRef<Set<string> | null>(null);
+  const knownScholarshipIdsRef = useRef<Set<string> | null>(null);
   // When Admin logs in, land directly in the dedicated Admin Control Panel unless opening a ?verify= QR certificate link
   const [adminPreviewUserMode, setAdminPreviewUserMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -1038,6 +1054,22 @@ export default function App() {
           ...(d.data() as HubJob),
           id: d.id
         }));
+        if (knownJobIdsRef.current === null) {
+          knownJobIdsRef.current = new Set(fsJobs.map((j) => j.id));
+        } else {
+          const newPostedJobs = fsJobs.filter(
+            (j) => j.isActive && !knownJobIdsRef.current!.has(j.id)
+          );
+          fsJobs.forEach((j) => knownJobIdsRef.current!.add(j.id));
+          if (newPostedJobs.length > 0 && getPushAlertsEnabled()) {
+            const newest = newPostedJobs[0];
+            void showPortalPushNotification(
+              `New Job: ${newest.title}`,
+              `${newest.company} · ${newest.location}`,
+              '/?section=jobs'
+            );
+          }
+        }
         setJobs(() => {
           const map = new Map<string, HubJob>();
           fsJobs
@@ -1068,6 +1100,22 @@ export default function App() {
           ...(d.data() as HubScholarship),
           id: d.id
         }));
+        if (knownScholarshipIdsRef.current === null) {
+          knownScholarshipIdsRef.current = new Set(fsSch.map((s) => s.id));
+        } else {
+          const newPostedSch = fsSch.filter(
+            (s) => s.isActive && !knownScholarshipIdsRef.current!.has(s.id)
+          );
+          fsSch.forEach((s) => knownScholarshipIdsRef.current!.add(s.id));
+          if (newPostedSch.length > 0 && getPushAlertsEnabled()) {
+            const newest = newPostedSch[0];
+            void showPortalPushNotification(
+              `New Scholarship: ${newest.title}`,
+              `${newest.organization} · ${newest.country}`,
+              '/?section=scholarships'
+            );
+          }
+        }
         setScholarships(() => {
           const map = new Map<string, HubScholarship>();
           fsSch
@@ -2122,6 +2170,18 @@ export default function App() {
     await persistUserProfileToFirestore(updatedUser);
   };
 
+  const handleMarkPortalNotificationRead = async (notifId: string) => {
+    const currentTools = myProfile.toolsData || DEFAULT_USER_TOOLS_DATA;
+    const currentNotifs = currentTools.portalNotifications || [];
+    if (!currentNotifs.some((n) => n.id === notifId && !n.read)) return;
+    await handleSaveUserToolsData({
+      ...currentTools,
+      portalNotifications: currentNotifs.map((n) =>
+        n.id === notifId ? { ...n, read: true } : n
+      )
+    });
+  };
+
   // Save User's Training Course Progress (Module Tracking + 40-MCQ Exam Score + Resume Point)
   const handleSaveCourseProgress = async (
     courseId: string,
@@ -2743,6 +2803,43 @@ export default function App() {
           }
         }
 
+        const verifyUrl = buildDirectCertificateVerifyUrl({
+          certificateNumber: certNumber,
+          recipientName: baseUser.name || req.userName || 'Food Specialist',
+          courseTitle:
+            req.certificateCourseTitle ||
+            matchedCourse?.title ||
+            'International Certification',
+          courseCode: matchedCourse?.code,
+          accreditationStandard: matchedCourse?.accreditationStandard,
+          scorePercentage: updatedCourseProg.bestExamPercentage,
+          issueDate: nowIso.slice(0, 10)
+        });
+        const certNotif: UserPortalNotification = {
+          id: `notif-${Date.now()}`,
+          type: decision === 'verified' ? 'certificate' : 'rejection',
+          title:
+            decision === 'verified'
+              ? isAllCertBundle
+                ? 'All 13 Certificates Approved!'
+                : 'Certificate Approved & Unlocked'
+              : 'Certificate Payment Update',
+          message:
+            decision === 'verified'
+              ? `Your credential (${certNumber}) for ${
+                  req.certificateCourseTitle ||
+                  matchedCourse?.title ||
+                  'International Certification'
+                } is live! Download your Portrait A4 PDF or add it to LinkedIn.`
+              : `Your certificate payment submission for ${
+                  req.certificateCourseTitle || 'Certificate'
+                } needs review. Please verify your receipt details and resubmit.`,
+          createdAt: nowIso,
+          read: false,
+          verifyUrl,
+          certificateNumber: certNumber
+        };
+
         const updatedUser: HubUser = {
           ...baseUser,
           uid: req.uid,
@@ -2762,7 +2859,11 @@ export default function App() {
             : {}),
           toolsData: {
             ...baseTools,
-            courseProgress: nextCourseProgressMap
+            courseProgress: nextCourseProgressMap,
+            portalNotifications: [
+              certNotif,
+              ...(baseTools.portalNotifications || [])
+            ].slice(0, 15)
           }
         };
 
@@ -2860,6 +2961,40 @@ export default function App() {
           }
         }
 
+        const recipientNameClean =
+          updatedUser.name || req.userName || 'Food Specialist';
+        const recipientEmailClean = updatedUser.email || req.userEmail || '';
+        const recipientPhoneClean =
+          updatedUser.whatsappNumber || updatedUser.phone || req.userPhone || '';
+        const itemTitleClean =
+          req.certificateCourseTitle ||
+          matchedCourse?.title ||
+          'Official Certificate';
+        const dispatchLinks = buildConfirmationAlertLinks({
+          recipientName: recipientNameClean,
+          recipientEmail: recipientEmailClean,
+          recipientPhone: recipientPhoneClean,
+          decision,
+          itemTitle: itemTitleClean,
+          transactionId: req.transactionId,
+          certificateNumber: decision === 'verified' ? certNumber : undefined,
+          verifyUrl: decision === 'verified' ? verifyUrl : undefined,
+          expiryDateLabel:
+            decision === 'verified'
+              ? new Date(bonusExpiresIso).toLocaleDateString()
+              : undefined
+        });
+        setLastDispatchConfirmation({
+          recipientName: recipientNameClean,
+          recipientEmail: recipientEmailClean,
+          recipientPhone: recipientPhoneClean,
+          title: itemTitleClean,
+          decision,
+          whatsappUrl: dispatchLinks.whatsappUrl,
+          mailtoUrl: dispatchLinks.mailtoUrl,
+          messageText: dispatchLinks.messageText
+        });
+
         setAdminStatusBanner(
           decision === 'verified'
             ? `Approved Certificate & Activated ${isAllCertBundle ? '1-Year' : '1-Month'} Free Paid Membership for ${req.userName}! PDF Download & Online Website Verification are now LIVE.`
@@ -2919,6 +3054,25 @@ export default function App() {
             phone: req.userPhone || ''
           } as HubUser);
 
+      const baseToolsForMem: UserToolsData =
+        baseUser.toolsData || DEFAULT_USER_TOOLS_DATA;
+      const memberNotif: UserPortalNotification = {
+        id: `notif-${Date.now()}`,
+        type: decision === 'verified' ? 'membership' : 'rejection',
+        title:
+          decision === 'verified'
+            ? 'Paid Membership Activated!'
+            : 'Membership Payment Update',
+        message:
+          decision === 'verified'
+            ? `Your ${
+                req.subscriptionPlan || planLabel
+              } membership is verified & active until ${expiresDate.toLocaleDateString()}. All Paid Tools & Templates Vault are unlocked!`
+            : `Your payment request (${req.transactionId || 'Ref'}) could not be verified. Please double-check details and resubmit.`,
+        createdAt: nowIso,
+        read: false
+      };
+
       const updatedUser: HubUser = {
         ...baseUser,
         uid: req.uid,
@@ -2933,12 +3087,22 @@ export default function App() {
             ? nowIso
             : baseUser.premiumActivatedAt || '',
         premiumExpiresAt:
-          decision === 'verified' ? expiresIso : baseUser.premiumExpiresAt || ''
+          decision === 'verified' ? expiresIso : baseUser.premiumExpiresAt || '',
+        toolsData: {
+          ...baseToolsForMem,
+          portalNotifications: [
+            memberNotif,
+            ...(baseToolsForMem.portalNotifications || [])
+          ].slice(0, 15)
+        }
       };
 
       setUsers((prev) =>
         prev.map((u) => (u.uid === req.uid ? updatedUser : u))
       );
+      if (myProfile.uid === req.uid) {
+        setMyProfile(updatedUser);
+      }
 
       const cleanUpdatedUser = stripUndefinedDeep(updatedUser);
       const sanitizedUpdatedUser = stripUndefinedDeep(
@@ -2953,6 +3117,32 @@ export default function App() {
           merge: true
         })
       ]);
+
+      const memRecipientName =
+        updatedUser.name || req.userName || 'Food Specialist';
+      const memRecipientEmail = updatedUser.email || req.userEmail || '';
+      const memRecipientPhone =
+        updatedUser.whatsappNumber || updatedUser.phone || req.userPhone || '';
+      const memDispatch = buildConfirmationAlertLinks({
+        recipientName: memRecipientName,
+        recipientEmail: memRecipientEmail,
+        recipientPhone: memRecipientPhone,
+        decision,
+        itemTitle: req.subscriptionPlan || planLabel,
+        transactionId: req.transactionId,
+        expiryDateLabel:
+          decision === 'verified' ? expiresDate.toLocaleDateString() : undefined
+      });
+      setLastDispatchConfirmation({
+        recipientName: memRecipientName,
+        recipientEmail: memRecipientEmail,
+        recipientPhone: memRecipientPhone,
+        title: req.subscriptionPlan || planLabel,
+        decision,
+        whatsappUrl: memDispatch.whatsappUrl,
+        mailtoUrl: memDispatch.mailtoUrl,
+        messageText: memDispatch.messageText
+      });
 
       setAdminStatusBanner(
         decision === 'verified'
@@ -3469,6 +3659,58 @@ export default function App() {
             payload.certificateNumber.toUpperCase()
       )
     ]);
+
+    // Queue in-app notification for the matched recipient user if present
+    const targetUid =
+      payload.recipientUid ||
+      users.find(
+        (u) =>
+          payload.recipientEmail &&
+          u.email?.trim().toLowerCase() ===
+            payload.recipientEmail.trim().toLowerCase()
+      )?.uid;
+    if (targetUid) {
+      try {
+        const uSnap = await getDoc(doc(db, 'users', targetUid));
+        if (uSnap.exists()) {
+          const uData = uSnap.data() as HubUser;
+          const uTools = uData.toolsData || DEFAULT_USER_TOOLS_DATA;
+          const directNotif: UserPortalNotification = {
+            id: `notif-${Date.now()}`,
+            type: 'certificate',
+            title: 'Official Certificate Issued!',
+            message: `Administration issued your verified certificate (${payload.certificateNumber}) for ${payload.trainingTitle}. Open My Certificates to download PDF or add to LinkedIn.`,
+            createdAt: new Date().toISOString(),
+            read: false,
+            certificateNumber: payload.certificateNumber
+          };
+          const nextUserObj: HubUser = {
+            ...uData,
+            toolsData: {
+              ...uTools,
+              portalNotifications: [
+                directNotif,
+                ...(uTools.portalNotifications || [])
+              ].slice(0, 15)
+            }
+          };
+          await Promise.all([
+            setDoc(
+              doc(db, 'users', targetUid),
+              stripUndefinedDeep(buildSanitizedPublicUser(nextUserObj)),
+              { merge: true }
+            ),
+            setDoc(
+              doc(db, 'users', targetUid, 'private', 'profile'),
+              stripUndefinedDeep(nextUserObj),
+              { merge: true }
+            )
+          ]);
+        }
+      } catch {
+        // Best-effort notification delivery
+      }
+    }
   };
 
   const handleDeleteDirectCertificate = async (certId: string) => {
@@ -3791,6 +4033,9 @@ export default function App() {
         onExportBackup={handleExportFullBackupJson}
         onPreviewUserApp={() => setAdminPreviewUserMode(true)}
         onSignOut={handleSignOut}
+        lastDispatchConfirmation={lastDispatchConfirmation}
+        onClearDispatchConfirmation={() => setLastDispatchConfirmation(null)}
+        onSetDispatchConfirmation={setLastDispatchConfirmation}
       />
     );
   }
@@ -3879,6 +4124,18 @@ export default function App() {
           onInstallAppClick={() => setShowInstallAppModal(true)}
           isGuest={!authUser}
           onSignInClick={() => setShowGuestAuthModal(true)}
+          userNotifications={
+            authUser ? myProfile.toolsData?.portalNotifications || [] : []
+          }
+          onMarkUserNotificationRead={handleMarkPortalNotificationRead}
+          onOpenMyCertificates={() => {
+            setRoute({
+              name: 'trainings',
+              initialSubTab: 'my-certificates',
+              navKey: Date.now()
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
         />
         <SEOManager
           routeName={route.name}
@@ -3979,6 +4236,57 @@ export default function App() {
               </button>
             </div>
           )}
+
+          {/* UNREAD ACCOUNT / CERTIFICATE APPROVAL CONFIRMATION BANNER */}
+          {authUser &&
+            (myProfile.toolsData?.portalNotifications || [])
+              .filter((n) => !n.read)
+              .slice(0, 1)
+              .map((notif) => (
+                <div
+                  key={notif.id}
+                  className="rounded-2xl bg-emerald-50 border-2 border-emerald-300 p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3"
+                >
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-[#1A2138]">
+                        {notif.title}
+                      </p>
+                      <p className="text-[11px] font-semibold text-slate-700 leading-snug mt-0.5">
+                        {notif.message}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {notif.type === 'certificate' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleMarkPortalNotificationRead(notif.id);
+                          setRoute({
+                            name: 'trainings',
+                            initialSubTab: 'my-certificates',
+                            navKey: Date.now()
+                          });
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold cursor-pointer transition-colors"
+                      >
+                        Open My Certificates
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void handleMarkPortalNotificationRead(notif.id)}
+                      className="px-2.5 py-1.5 rounded-xl bg-white border border-emerald-200 hover:bg-emerald-100 text-[11px] font-bold text-slate-700 cursor-pointer"
+                    >
+                      Mark Read
+                    </button>
+                  </div>
+                </div>
+              ))}
 
           {/* ==================== 1. HOME SCREEN (/) — FULL-FLEDGED WEBSITE + MOBILE APP DASHBOARD ==================== */}
           {route.name === 'home' && (
@@ -4612,6 +4920,18 @@ export default function App() {
                   </div>
                 </button>
               </div>
+
+              {/* QUESTION OF THE DAY & STREAK WIDGET */}
+              <QuestionOfTheDayCard
+                toolsData={myProfile.toolsData || DEFAULT_USER_TOOLS_DATA}
+                isLoggedIn={Boolean(authUser)}
+                onSaveToolsData={handleSaveUserToolsData}
+                onOpenExamSuite={() => {
+                  setActiveToolSection('exam');
+                  setRoute({ name: 'tools', initialSection: 'exam' });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
 
               {/* SECTION E: OFFICIAL WHATSAPP CHANNEL + INSTALL MOBILE APP ROW */}
               <div
@@ -8055,6 +8375,9 @@ export default function App() {
           yearlyFeeUsd={liveGateway.yearlyFeeUsd}
           yearlyDiscountPct={liveGateway.yearlyDiscountPct}
         />
+
+        {/* FACTORY FLOOR OFFLINE MODE TOAST / INDICATOR */}
+        <OfflineIndicator />
       </div>
     </div>
   );

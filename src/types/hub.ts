@@ -129,6 +129,28 @@ export interface HubUser {
   premiumActivatedAt?: string;
   premiumExpiresAt?: string;
   toolsData?: UserToolsData;
+  examLeaderboardSummary?: ExamLeaderboardSummary;
+  portalNotifications?: UserPortalNotification[];
+}
+
+export interface ExamLeaderboardSummary {
+  bestScorePct: number;
+  avgScorePct: number;
+  totalAttempts: number;
+  track: string;
+  optIn: boolean;
+  updatedAt: string;
+}
+
+export interface UserPortalNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'certificate' | 'membership' | 'rejection' | 'job' | 'scholarship' | 'system';
+  createdAt: string;
+  read?: boolean;
+  verifyUrl?: string;
+  certificateNumber?: string;
 }
 
 export interface MealLogItem {
@@ -740,6 +762,16 @@ export interface UserToolsData {
   researchSuiteData?: ResearchSuiteUserData;
   lastActiveCourseId?: string;
   lastActiveTool?: 'nutrition' | 'exam' | 'interview';
+  qotdHistory?: Record<
+    string,
+    { questionId: string; selected: 'A' | 'B' | 'C' | 'D'; isCorrect: boolean }
+  >;
+  qotdStreak?: number;
+  lastQotdDate?: string;
+  leaderboardOptIn?: boolean;
+  pushAlertsEnabled?: boolean;
+  offlinePackSavedAt?: string;
+  portalNotifications?: UserPortalNotification[];
   updatedAt: string;
 }
 

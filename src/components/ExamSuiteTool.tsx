@@ -33,7 +33,6 @@ import {
   ExamAnswerRecord,
   ExamTrackId,
   getExamTrackPoolCounts,
-  LEADERBOARD_TOP_10_WEEKLY,
   OptionLetter,
   SuiteExamQuestion,
   SuiteExamResult
@@ -192,6 +191,19 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
   const [paywallModalFeature, setPaywallModalFeature] = useState<string | null>(
     null
   );
+  const [liveLeaderboardEntries, setLiveLeaderboardEntries] = useState<
+    Array<{
+      uid: string;
+      name: string;
+      role: string;
+      bestScorePct: number;
+      avgScorePct: number;
+      totalAttempts: number;
+      track: string;
+    }>
+  >([]);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState<boolean>(true);
+  const leaderboardOptIn = toolsData.leaderboardOptIn !== false;
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -263,6 +275,74 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
       isMounted = false;
     };
   }, [user?.uid]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchRealUsersLeaderboard() {
+      try {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const entries: Array<{
+          uid: string;
+          name: string;
+          role: string;
+          bestScorePct: number;
+          avgScorePct: number;
+          totalAttempts: number;
+          track: string;
+        }> = [];
+        usersSnap.forEach((docSnap) => {
+          const data = docSnap.data() as HubUser;
+          if (!data || !data.name) return;
+          const summary = data.examLeaderboardSummary;
+          const legacyAttempts = data.toolsData?.examAttempts || [];
+          if (summary && summary.optIn !== false && summary.totalAttempts > 0) {
+            entries.push({
+              uid: docSnap.id,
+              name: data.name,
+              role: data.currentRole || data.title || summary.track || 'Food Specialist',
+              bestScorePct: Math.min(100, Math.round(summary.bestScorePct || 0)),
+              avgScorePct: Math.min(100, Math.round(summary.avgScorePct || 0)),
+              totalAttempts: summary.totalAttempts || 1,
+              track: summary.track || 'All Tracks'
+            });
+          } else if (
+            !summary &&
+            data.toolsData?.leaderboardOptIn !== false &&
+            legacyAttempts.length > 0
+          ) {
+            const best = Math.max(...legacyAttempts.map((a) => Number(a.percentage) || 0));
+            const avg = Math.round(
+              legacyAttempts.reduce((sum, a) => sum + (Number(a.percentage) || 0), 0) /
+                legacyAttempts.length
+            );
+            entries.push({
+              uid: docSnap.id,
+              name: data.name,
+              role: data.currentRole || data.title || 'Food Specialist',
+              bestScorePct: Math.min(100, Math.round(best)),
+              avgScorePct: Math.min(100, Math.round(avg)),
+              totalAttempts: legacyAttempts.length,
+              track: legacyAttempts[0]?.setTitle || 'Food Science'
+            });
+          }
+        });
+        entries.sort(
+          (a, b) =>
+            b.bestScorePct - a.bestScorePct ||
+            b.avgScorePct - a.avgScorePct ||
+            b.totalAttempts - a.totalAttempts
+        );
+        if (mounted) {
+          setLiveLeaderboardEntries(entries.slice(0, 10));
+        }
+      } catch {
+        // Ignore offline/network leaderboard fetch error
+      } finally {
+        if (mounted) setIsLoadingLeaderboard(false);
+      }
+    }
+    fetchRealUsersLeaderboard();
+  }, [savedResults.length, leaderboardOptIn]);
 
   // Countdown Timer during active 30-minute exam
   useEffect(() => {
@@ -551,7 +631,32 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
     await onSaveToolsData(updatedTools);
 
     if (user?.uid) {
+      const nextAttemptsForStats = [legacyAttempt, ...(toolsData.examAttempts || [])];
+      const bestScorePct = Math.max(
+        scorePercent,
+        ...nextAttemptsForStats.map((a) => Number(a.percentage) || 0)
+      );
+      const avgScorePct = Math.round(
+        nextAttemptsForStats.reduce((s, a) => s + (Number(a.percentage) || 0), 0) /
+          Math.max(1, nextAttemptsForStats.length)
+      );
+      const summaryPayload = {
+        bestScorePct,
+        avgScorePct,
+        totalAttempts: nextAttemptsForStats.length,
+        track:
+          activeExamTrack === 'All'
+            ? 'Food Science & Safety'
+            : activeExamTrack,
+        optIn: updatedTools.leaderboardOptIn !== false,
+        updatedAt: now.toISOString()
+      };
       try {
+        await setDoc(
+          doc(db, 'users', user.uid),
+          { examLeaderboardSummary: summaryPayload },
+          { merge: true }
+        );
         await setDoc(
           doc(db, 'users', user.uid, 'examResults', examId),
           resultObj
@@ -612,12 +717,105 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
   }, [totalStudySeconds]);
 
   const overallAccuracyPct = useMemo(() => {
-    if (savedResults.length === 0) return 80;
+    if (savedResults.length === 0) return 0;
     const avg =
       savedResults.reduce((acc, r) => acc + r.scorePercent, 0) /
       savedResults.length;
-    return Math.min(100, Math.max(10, Math.round(avg)));
+    return Math.min(100, Math.max(0, Math.round(avg)));
   }, [savedResults]);
+
+  // Weak-Area Analytics aggregated across saved exam attempts & per-question categories
+  const weakAreaStats = useMemo(() => {
+    const bucket = new Map<string, { correct: number; total: number }>();
+    savedResults.forEach((res) => {
+      if (Array.isArray(res.answers) && res.answers.length > 0) {
+        res.answers.forEach((ans) => {
+          const domain = (ans.category || res.category || 'Food Science').trim();
+          const cur = bucket.get(domain) || { correct: 0, total: 0 };
+          cur.total += 1;
+          if (ans.isCorrect) cur.correct += 1;
+          bucket.set(domain, cur);
+        });
+      } else {
+        const domain = (res.category || 'Food Science & Safety').trim();
+        const cur = bucket.get(domain) || { correct: 0, total: 0 };
+        cur.total += res.totalQuestions || 30;
+        cur.correct += res.correct || 0;
+        bucket.set(domain, cur);
+      }
+    });
+
+    const resolveTrackId = (domain: string): ExamTrackId => {
+      const lower = domain.toLowerCase();
+      if (lower.includes('9001')) return 'ISO 9001 Lead Auditor';
+      if (lower.includes('22000') || lower.includes('fssc')) return 'FSSC 22000 Lead Auditor';
+      if (lower.includes('haccp')) return 'HACCP';
+      if (lower.includes('authority') || lower.includes('pfa') || lower.includes('psqca')) {
+        return 'Food Authority';
+      }
+      if (lower.includes('safety') || lower.includes('hygiene') || lower.includes('micro')) {
+        return 'Food Safety';
+      }
+      if (lower.includes('science') || lower.includes('dairy') || lower.includes('cereal')) {
+        return 'Food Science';
+      }
+      return 'All';
+    };
+
+    return Array.from(bucket.entries())
+      .map(([domain, stats]) => {
+        const accuracyPct =
+          stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+        return {
+          domain,
+          correct: stats.correct,
+          total: stats.total,
+          accuracyPct,
+          trackId: resolveTrackId(domain)
+        };
+      })
+      .sort((a, b) => a.accuracyPct - b.accuracyPct);
+  }, [savedResults]);
+
+  const handleToggleLeaderboardOptIn = async () => {
+    const nextOptIn = !leaderboardOptIn;
+    const updatedTools: UserToolsData = {
+      ...toolsData,
+      leaderboardOptIn: nextOptIn,
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    };
+    await onSaveToolsData(updatedTools);
+    if (user?.uid) {
+      const bestScorePct =
+        savedResults.length > 0
+          ? Math.max(...savedResults.map((r) => r.scorePercent))
+          : 0;
+      const avgScorePct = overallAccuracyPct;
+      try {
+        await setDoc(
+          doc(db, 'users', user.uid),
+          {
+            examLeaderboardSummary: {
+              bestScorePct,
+              avgScorePct,
+              totalAttempts: savedResults.length,
+              track: savedResults[0]?.category || 'Food Science',
+              optIn: nextOptIn,
+              updatedAt: new Date().toISOString()
+            }
+          },
+          { merge: true }
+        );
+      } catch {
+        // Ignore network failure
+      }
+    }
+    showToast(
+      nextOptIn
+        ? 'Opted in to Live Exam Leaderboard!'
+        : 'Hidden your profile from Public Leaderboard.'
+    );
+  };
 
   const currentQuestion: SuiteExamQuestion | undefined =
     activeQuestions[currentIndex];
@@ -686,7 +884,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 }}
                 className="w-full py-2.5 px-4 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] border border-[#1673B8] text-[#1673B8] text-xs font-extrabold cursor-pointer"
               >
-                Register / Sign In Free Account (Unlock 05 Attempts) →
+                Register / Sign In Free Account (Save Exam History) →
               </button>
             )}
             <div className="flex items-center gap-2.5 pt-1">
@@ -1041,6 +1239,98 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* STEP 3: WEAK-AREA PERFORMANCE ANALYTICS */}
+              <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-[#D2DEEA] shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E4EDF7] pb-3.5">
+                  <div>
+                    <div className="text-xs font-extrabold text-[#1673B8]">
+                      03. Weak-Area Performance Analytics
+                    </div>
+                    <h3 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                      Subject Mastery &amp; Targeted Practice Recommendations
+                    </h3>
+                  </div>
+                  <span className="text-xs font-semibold text-[#5A6C84]">
+                    Sorted weakest-first to boost pass rate
+                  </span>
+                </div>
+
+                {weakAreaStats.length === 0 ? (
+                  <div className="rounded-2xl bg-[#F8FAFC] p-5 border border-[#D2DEEA] text-center space-y-1">
+                    <div className="text-sm font-extrabold text-[#1A2138]">
+                      Complete 1 Exam to Unlock Weak-Area Analytics
+                    </div>
+                    <p className="text-xs text-[#5A6C84] max-w-md mx-auto">
+                      Your accuracy across HACCP, ISO 9001, FSSC 22000, Microbiology, and Food Authority modules will automatically break down here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {weakAreaStats.map((area) => {
+                      const isWeak = area.accuracyPct < 60;
+                      const isStrong = area.accuracyPct >= 75;
+                      return (
+                        <div
+                          key={area.domain}
+                          className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA] space-y-2"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <div className="text-xs sm:text-sm font-extrabold text-[#1A2138]">
+                                {area.domain}
+                              </div>
+                              <div className="text-[11px] font-semibold text-[#5A6C84] tabular-nums">
+                                {area.correct} / {area.total} MCQs Correct ·{' '}
+                                <span
+                                  className={
+                                    isWeak
+                                      ? 'text-rose-700 font-extrabold'
+                                      : isStrong
+                                        ? 'text-emerald-700 font-extrabold'
+                                        : 'text-amber-700 font-extrabold'
+                                  }
+                                >
+                                  {isWeak
+                                    ? 'Needs Revision (< 60%)'
+                                    : isStrong
+                                      ? 'Strong Mastery'
+                                      : 'Improving'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-sm font-black text-[#1673B8] font-mono tabular-nums">
+                                {area.accuracyPct}%
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleStartNew30McqExam(area.trackId)}
+                                className="px-3 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-[11px] font-extrabold cursor-pointer"
+                              >
+                                Practice Now
+                              </button>
+                            </div>
+                          </div>
+                          <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                isWeak
+                                  ? 'bg-rose-500'
+                                  : isStrong
+                                    ? 'bg-emerald-600'
+                                    : 'bg-amber-500'
+                              }`}
+                              style={{ width: `${Math.max(4, area.accuracyPct)}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* RIGHT SIDEBAR COLUMN ON DESKTOP WEBSITE (4 Cols on Desktop) */}
@@ -1093,20 +1383,20 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-[#5A6C84]">
                     <span>Guest User Attempts</span>
-                    <span className="font-extrabold text-[#1A2138]">
-                      03 Attempts (Summary Only)
+                    <span className="font-extrabold text-[#1673B8]">
+                      ✓ Unlimited Attempts (Summary Only)
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[#5A6C84]">
                     <span>Registered Free User</span>
-                    <span className="font-extrabold text-[#1A2138]">
-                      05 Attempts (Summary Only)
+                    <span className="font-extrabold text-[#1673B8]">
+                      ✓ Unlimited Attempts (Summary Only)
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[#5A6C84]">
                     <span>Paid Member Attempts</span>
                     <span className="font-extrabold text-[#1673B8]">
-                      ✓ Unlimited Attempts
+                      ✓ Unlimited (Full Report &amp; PDF)
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[#5A6C84]">
@@ -1182,45 +1472,78 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 )}
               </div>
 
-              {/* Weekly Top 10 Exam Scorers Leaderboard */}
+              {/* Live Exam Leaderboard (Real Opted-In Users from Firestore) */}
               <div className="bg-white rounded-[24px] p-5 border border-[#D2DEEA] shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <h3 className="text-sm font-extrabold text-[#1A2138] flex items-center gap-1.5">
                     <Trophy className="w-4 h-4 text-amber-500" />
-                    <span>Weekly Top 10 Exam Scorers</span>
+                    <span>Live Top 10 Exam Scorers</span>
                   </h3>
-                </div>
-                <div className="space-y-2">
-                  {LEADERBOARD_TOP_10_WEEKLY.map((scorer) => (
-                    <div
-                      key={scorer.rank}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-xs"
+                  {user?.uid && (
+                    <button
+                      type="button"
+                      onClick={handleToggleLeaderboardOptIn}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-extrabold border cursor-pointer ${
+                        leaderboardOptIn
+                          ? 'bg-[#F0F6FC] border-[#1673B8]/40 text-[#1673B8]'
+                          : 'bg-slate-100 border-slate-300 text-slate-600'
+                      }`}
+                      title="Control whether your best score appears publicly on the Live Leaderboard"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span
-                          className={`w-6 h-6 rounded-full flex items-center justify-center font-extrabold text-[11px] shrink-0 ${
-                            scorer.rank <= 3
-                              ? 'bg-[#1673B8] text-white'
-                              : 'bg-gray-200 text-gray-700'
+                      {leaderboardOptIn ? 'Visible' : 'Hidden'}
+                    </button>
+                  )}
+                </div>
+
+                {isLoadingLeaderboard ? (
+                  <div className="p-4 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-xs font-semibold text-[#5A6C84] text-center">
+                    Loading live leaderboard scores...
+                  </div>
+                ) : liveLeaderboardEntries.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-xs font-semibold text-[#5A6C84] text-center">
+                    No opted-in exam scores recorded yet. Complete any 30-MCQ exam to claim Rank #1!
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {liveLeaderboardEntries.map((scorer, idx) => {
+                      const rank = idx + 1;
+                      const isMe = Boolean(user?.uid && scorer.uid === user.uid);
+                      return (
+                        <div
+                          key={scorer.uid}
+                          className={`flex items-center justify-between p-2.5 rounded-xl border text-xs ${
+                            isMe
+                              ? 'bg-[#EBF4FC] border-[#1673B8]'
+                              : 'bg-[#F4F8FD] border-[#D2DEEA]'
                           }`}
                         >
-                          {scorer.rank}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="font-extrabold text-[#1A2138] truncate">
-                            {scorer.name}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span
+                              className={`w-6 h-6 rounded-full flex items-center justify-center font-extrabold text-[11px] shrink-0 ${
+                                rank <= 3
+                                  ? 'bg-[#1673B8] text-white'
+                                  : 'bg-gray-200 text-gray-700'
+                              }`}
+                            >
+                              {rank}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="font-extrabold text-[#1A2138] truncate">
+                                {scorer.name} {isMe ? '(You)' : ''}
+                              </div>
+                              <div className="text-[10.5px] text-[#5A6C84] truncate">
+                                {scorer.role} · {scorer.totalAttempts} {scorer.totalAttempts === 1 ? 'attempt' : 'attempts'}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-[10.5px] text-[#5A6C84] truncate">
-                            {scorer.role}
-                          </div>
+                          <span className="font-extrabold text-[#1673B8] tabular-nums shrink-0">
+                            {scorer.bestScorePct}%
+                          </span>
                         </div>
-                      </div>
-                      <span className="font-extrabold text-[#1673B8] tabular-nums shrink-0">
-                        {scorer.scorePct}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -88,6 +88,26 @@
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
+  <url>
+    <loc>https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app/?section=tools&amp;tool=nutrition-label</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app/?section=tools&amp;tool=thermal-aw</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app/?section=tools&amp;tool=templates-vault</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.88</priority>
+  </url>
+  <url>
+    <loc>https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app/?section=tools&amp;tool=authority-limits</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.92</priority>
+  </url>
 
   <!-- 13 Accredited Food Safety, ISO & Professional Certification Courses -->
   <url>

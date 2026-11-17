@@ -24,14 +24,17 @@ import {
   RotateCcw,
   Scale,
   Search,
+  Share2,
   ShieldCheck,
   Sparkles,
   Target,
+  Thermometer,
   Trash2,
   TrendingDown,
   TrendingUp,
   Trophy,
   Utensils,
+  Wifi,
   X
 } from 'lucide-react';
 import {
@@ -77,6 +80,17 @@ import {
 } from './SpecialistExtraTools';
 import { CitationReferenceGeneratorTool } from './ResearchSuiteTool';
 import {
+  NutritionLabelGeneratorTool,
+  ThermalAndWaterActivityTool,
+  QaQcTemplatesVaultTool,
+  FoodAuthorityLimitsLookupTool
+} from './IndustryFoodTools';
+import {
+  getSavedOfflinePackMeta,
+  saveFactoryFloorOfflinePack,
+  useOnlineStatus
+} from '../lib/pwaNotifications';
+import {
   useGeoCurrency,
   getLocalizedMembershipPricing
 } from '../lib/geoCurrency';
@@ -93,7 +107,11 @@ export type ActiveToolSection =
   | 'production-floor'
   | 'e-numbers'
   | 'job-cover-letter'
-  | 'citation-generator';
+  | 'citation-generator'
+  | 'nutrition-label'
+  | 'thermal-aw'
+  | 'templates-vault'
+  | 'authority-limits';
 
 interface ToolsHubViewProps {
   user: HubUser;
@@ -208,6 +226,49 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     'Premium Specialist Tool'
   );
   const [saveBanner, setSaveBanner] = useState<string | null>(null);
+  const [copiedToolLink, setCopiedToolLink] = useState<boolean>(false);
+  const isOnline = useOnlineStatus();
+  const [offlinePackMeta, setOfflinePackMeta] = useState(() =>
+    getSavedOfflinePackMeta()
+  );
+  const [isSavingOfflinePack, setIsSavingOfflinePack] = useState(false);
+
+  const handleCopyToolDeepLink = async () => {
+    if (typeof window === 'undefined') return;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?section=tools&tool=${activeSection}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      // Fallback handled by showing link in banner
+    }
+    setCopiedToolLink(true);
+    setSaveBanner(`Shareable deep link copied: ${shareUrl}`);
+    setTimeout(() => {
+      setCopiedToolLink(false);
+      setSaveBanner(null);
+    }, 3000);
+  };
+
+  const handleEnableFactoryOfflinePack = async () => {
+    setIsSavingOfflinePack(true);
+    try {
+      const meta = await saveFactoryFloorOfflinePack();
+      setOfflinePackMeta(meta);
+      if (user?.uid) {
+        await onSaveToolsData({
+          ...toolsData,
+          offlinePackSavedAt: meta.savedAt,
+          updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+        });
+      }
+      setSaveBanner(
+        `Factory Floor Offline Pack saved (${meta.coursesCount} Courses · ${meta.authorityLimitsCount} Authority Limits · ${meta.sizeKb} KB). Works without plant internet.`
+      );
+      setTimeout(() => setSaveBanner(null), 4000);
+    } finally {
+      setIsSavingOfflinePack(false);
+    }
+  };
 
   // Sync activeSection when initialSection changes
   useEffect(() => {
@@ -885,9 +946,9 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
         </div>
       )}
 
-      {/* BACK BUTTON ONLY WHEN INSIDE A SPECIFIC TOOL (STICKY WHILE SCROLLING) */}
+      {/* BACK BUTTON + SHAREABLE DEEP LINK WHEN INSIDE A SPECIFIC TOOL (STICKY WHILE SCROLLING) */}
       {activeSection !== 'hub' && (
-        <div className="sticky top-16 z-30 flex items-center justify-between py-1">
+        <div className="sticky top-16 z-30 flex flex-wrap items-center justify-between gap-2 py-1">
           <button
             type="button"
             onClick={() => {
@@ -897,6 +958,24 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             className="px-4 py-2 rounded-xl bg-white/95 backdrop-blur-md hover:bg-[#EBF4FC] border border-[#1673B8]/40 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-md cursor-pointer transition-colors"
           >
             <span>← Back to All Tools</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCopyToolDeepLink}
+            className="px-3.5 py-2 rounded-xl bg-white/95 backdrop-blur-md hover:bg-[#EBF4FC] border border-[#1673B8]/40 text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-md cursor-pointer transition-colors"
+          >
+            {copiedToolLink ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Link Copied!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Copy Shareable Tool Link</span>
+              </>
+            )}
           </button>
         </div>
       )}
@@ -913,19 +992,37 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </h1>
               <p className="text-[11.5px] text-[#5A6C84] font-medium mt-0.5">
                 <strong>Free Tier (No Login Required):</strong> Live on-screen calculation &amp; preview across all tools •{' '}
-                <strong className="text-[#1673B8]">Paid Premium (Login + Membership Required):</strong> Save to Cloud Directory, Custom Profiles &amp; Official PDF Reports
+                <strong className="text-[#1673B8]">Paid Premium (Login + Membership Required):</strong> Save to Cloud Directory, Templates Vault &amp; Official PDF Reports
               </p>
             </div>
-            {!isUserPaid && (
+            <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-auto">
               <button
                 type="button"
-                onClick={onOpenPremiumModal}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0 self-start sm:self-auto"
+                onClick={handleEnableFactoryOfflinePack}
+                disabled={isSavingOfflinePack}
+                className="px-3 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] border border-[#1673B8]/40 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                title="Save calculators, Food Authority limits & 13 course modules for offline Factory Floor use"
               >
-                <Crown className="w-3.5 h-3.5 text-amber-300" />
-                <span>Unlock Paid Cloud &amp; PDF Features</span>
+                <Wifi className={`w-3.5 h-3.5 ${isOnline ? 'text-emerald-600' : 'text-amber-600'}`} />
+                <span>
+                  {offlinePackMeta
+                    ? 'Factory Offline Pack Ready'
+                    : isSavingOfflinePack
+                      ? 'Saving Pack...'
+                      : 'Enable Factory Offline Mode'}
+                </span>
               </button>
-            )}
+              {!isUserPaid && (
+                <button
+                  type="button"
+                  onClick={onOpenPremiumModal}
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <Crown className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Unlock Paid Cloud &amp; PDF Features</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
@@ -1137,6 +1234,82 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 Interview Q&amp;A Prep (2,000+ Bank)
               </span>
             </button>
+
+            {/* TOOL 12: NUTRITION FACTS LABEL GENERATOR (FDA / GCC / PSQCA) */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'nutrition-label',
+                  'Nutrition Facts Label Generator (FDA / GCC / PSQCA)'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Scale className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Nutrition Label (FDA / GCC / PSQCA)
+              </span>
+            </button>
+
+            {/* TOOL 13: THERMAL PROCESSING (F0 / PASTEURIZATION) & WATER ACTIVITY */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'thermal-aw',
+                  'Thermal Processing (F0 / PU) & Water Activity Calculator'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <Thermometer className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Thermal (F₀ / PU) &amp; Water Activity
+              </span>
+            </button>
+
+            {/* TOOL 14: QA/QC & AUDIT TEMPLATES VAULT (PAID EXCLUSIVE) */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'templates-vault',
+                  'QA/QC & Audit Document Templates Vault'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <FileText className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                QA/QC &amp; Audit Templates Vault
+              </span>
+            </button>
+
+            {/* TOOL 15: FOOD AUTHORITY LIMITS QUICK LOOKUP (PFA / PSQCA / SFDA / CODEX) */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'authority-limits',
+                  'Food Authority Limits Lookup (PFA / PSQCA / SFDA / Codex)'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Food Authority Limits Lookup
+              </span>
+            </button>
           </div>
         </div>
       )}
@@ -1270,6 +1443,47 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           onOpenPremiumModal={onOpenPremiumModal}
         />
       )}
+
+      {/* =====================================================================
+          VIEW 10B: NUTRITION FACTS LABEL GENERATOR (FDA / GCC / PSQCA)
+         ===================================================================== */}
+      {activeSection === 'nutrition-label' && (
+        <NutritionLabelGeneratorTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
+      )}
+
+      {/* =====================================================================
+          VIEW 10C: THERMAL PROCESSING (F0 / PU) & WATER ACTIVITY (aw)
+         ===================================================================== */}
+      {activeSection === 'thermal-aw' && (
+        <ThermalAndWaterActivityTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
+      )}
+
+      {/* =====================================================================
+          VIEW 10D: QA/QC & AUDIT TEMPLATES VAULT (PAID EXCLUSIVE)
+         ===================================================================== */}
+      {activeSection === 'templates-vault' && (
+        <QaQcTemplatesVaultTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          onOpenPremiumModal={onOpenPremiumModal}
+        />
+      )}
+
+      {/* =====================================================================
+          VIEW 10E: FOOD AUTHORITY LIMITS QUICK LOOKUP (PFA / PSQCA / SFDA / CODEX)
+         ===================================================================== */}
+      {activeSection === 'authority-limits' && <FoodAuthorityLimitsLookupTool />}
 
       {/* =====================================================================
           VIEW 11: FOOD INDUSTRY JOB INTERVIEW Q&A PREPARATION (2,000+ BANK)

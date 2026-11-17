@@ -6,6 +6,7 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Copy,
   CreditCard,
   Crown,
   Database,
@@ -24,6 +25,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Send,
   Share2,
   Shield,
   ShieldCheck,
@@ -56,6 +58,7 @@ import {
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsData';
 import {
+  buildDirectCertificateVerifyUrl,
   downloadOfficialCourseCertificatePdf,
   resolveOfficialVerificationBaseUrl
 } from '../utils/certificatePdfGenerator';
@@ -64,6 +67,18 @@ import {
   useGeoCurrency,
   parseRevenuePkrFromRequestText
 } from '../lib/geoCurrency';
+import { buildConfirmationAlertLinks } from '../lib/pwaNotifications';
+
+export interface AdminDispatchConfirmationPayload {
+  recipientName: string;
+  recipientEmail?: string;
+  recipientPhone?: string;
+  title: string;
+  decision: 'verified' | 'rejected' | 'direct_cert';
+  whatsappUrl: string;
+  mailtoUrl: string;
+  messageText: string;
+}
 
 export type AdminSectionTab =
   | 'menu'
@@ -122,6 +137,9 @@ interface AdminControlPanelProps {
   onExportBackup: () => void;
   onPreviewUserApp: () => void;
   onSignOut: () => void;
+  lastDispatchConfirmation?: AdminDispatchConfirmationPayload | null;
+  onClearDispatchConfirmation?: () => void;
+  onSetDispatchConfirmation?: (payload: AdminDispatchConfirmationPayload | null) => void;
 }
 
 export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
@@ -155,10 +173,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onDeleteCustomTrainingRegistration,
   onExportBackup,
   onPreviewUserApp,
-  onSignOut
+  onSignOut,
+  lastDispatchConfirmation = null,
+  onClearDispatchConfirmation,
+  onSetDispatchConfirmation
 }) => {
   const geo = useGeoCurrency();
   const [activeTab, setActiveTab] = useState<AdminSectionTab>('menu');
+  const [copiedDispatchMsg, setCopiedDispatchMsg] = useState(false);
 
   // Custom Trainings Admin Form & Inline Editor State
   const [ctTitle, setCtTitle] = useState('');
@@ -668,6 +690,37 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         verificationPortalUrl: resolveOfficialVerificationBaseUrl(),
         syllabusModules: syllabusList,
         issuedByMode: 'admin_direct'
+      });
+
+      const verifyUrl = buildDirectCertificateVerifyUrl({
+        certificateNumber: generatedCertNo,
+        recipientName: cleanName,
+        courseTitle: finalCourseTitle,
+        courseCode: finalCourseCode,
+        accreditationStandard: finalAccreditation,
+        scorePercentage: clampedScore,
+        issueDate: certRecord.issueDate
+      });
+      const matchedPhone =
+        matchedRecipientUser?.whatsappNumber || matchedRecipientUser?.phone || '';
+      const alertLinks = buildConfirmationAlertLinks({
+        recipientName: cleanName,
+        recipientEmail: directRecipientEmail.trim(),
+        recipientPhone: matchedPhone,
+        decision: 'direct_cert',
+        itemTitle: finalCourseTitle,
+        certificateNumber: generatedCertNo,
+        verifyUrl
+      });
+      onSetDispatchConfirmation?.({
+        recipientName: cleanName,
+        recipientEmail: directRecipientEmail.trim(),
+        recipientPhone: matchedPhone,
+        title: `${finalCourseTitle} (${generatedCertNo})`,
+        decision: 'direct_cert',
+        whatsappUrl: alertLinks.whatsappUrl,
+        mailtoUrl: alertLinks.mailtoUrl,
+        messageText: alertLinks.messageText
       });
 
       onSetBanner(
@@ -1654,6 +1707,75 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               >
                 Dismiss
               </button>
+            </div>
+          )}
+
+          {/* 1-CLICK WHATSAPP & EMAIL CONFIRMATION DISPATCH ALERT */}
+          {lastDispatchConfirmation && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 shadow-sm space-y-2.5">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <Send className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 block">
+                      Instant User Confirmation Dispatch
+                    </span>
+                    <h4 className="text-xs sm:text-sm font-black text-[#1A2138]">
+                      Notify {lastDispatchConfirmation.recipientName} — {lastDispatchConfirmation.title}
+                    </h4>
+                    <p className="text-[11px] font-medium text-slate-600 mt-0.5">
+                      In-app portal alert has been queued automatically. Send external WhatsApp or Email confirmation with 1 click:
+                    </p>
+                  </div>
+                </div>
+                {onClearDispatchConfirmation && (
+                  <button
+                    type="button"
+                    onClick={onClearDispatchConfirmation}
+                    className="px-2.5 py-1 rounded-lg bg-white border border-emerald-200 hover:bg-emerald-100 text-[11px] font-bold text-slate-700 cursor-pointer shrink-0"
+                  >
+                    Dismiss
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                <a
+                  href={lastDispatchConfirmation.whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Send WhatsApp Confirmation</span>
+                </a>
+                <a
+                  href={lastDispatchConfirmation.mailtoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Send Email Confirmation</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard
+                      ?.writeText(lastDispatchConfirmation.messageText)
+                      .then(() => {
+                        setCopiedDispatchMsg(true);
+                        setTimeout(() => setCopiedDispatchMsg(false), 2000);
+                      })
+                      .catch(() => {});
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 border border-[#D2DEEA] text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5 text-[#1673B8]" />
+                  <span>{copiedDispatchMsg ? 'Message Copied!' : 'Copy Alert Text'}</span>
+                </button>
+              </div>
             </div>
           )}
 
