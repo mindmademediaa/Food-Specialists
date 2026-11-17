@@ -16,6 +16,7 @@ import {
   CourseStudyModule,
   InternationalTrainingCourse
 } from '../data/internationalTrainingsData';
+import { HaccpDemoSlideVisuals } from './HaccpDemoVisuals';
 
 interface AlisonCourseModuleViewerProps {
   course: InternationalTrainingCourse;
@@ -145,35 +146,41 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
   const isLastSlide = currentSlideIdx === totalSlides - 1;
   const slideProgressPct = Math.round(((currentSlideIdx + 1) / totalSlides) * 100);
 
-  // Simple 1-question self-check at the end of each module
+  // Authentic module-level self-check question (uses module.quickCheck first; falls back to keyPrinciples cleanly)
   const ccp0 = module.criticalControlParameters[0];
   const quickCheckQuiz = useMemo(() => {
-    if (ccp0) {
-      return {
-        question: `Quick Check (Module ${module.moduleNumber}): What is the required standard rule for "${ccp0.parameter}"?`,
-        options: [
-          ccp0.standardLimit,
-          'No check is required during busy hours',
-          'Ignore the rule unless an inspector visits',
-          'Check only once a year'
-        ] as [string, string, string, string],
-        correctIndex: 0,
-        explanation: `Correct! ${ccp0.parameter} must follow: ${ccp0.standardLimit}. Action: ${ccp0.correctiveProtocol}`
-      };
+    if (module.quickCheck) {
+      return module.quickCheck;
     }
-    const lastSlide = slides[slides.length - 1];
+
+    const validCorrect =
+      module.keyPrinciples[0] ||
+      (ccp0 ? `${ccp0.parameter}: ${ccp0.standardLimit}` : '') ||
+      slides[0]?.keyTakeaway ||
+      'Follow documented hazard controls and signed daily monitoring records.';
+
+    const distractors = [
+      'Rely exclusively on annual financial audits rather than daily operational controls and logs.',
+      'Permit verbal shift handovers without updating documented food safety limits or batch records.',
+      'Defer root-cause corrective verification until third-party customer complaints are escalated.'
+    ];
+
+    const targetIdx = (module.moduleNumber - 1) % 4;
+    const options: [string, string, string, string] = ['', '', '', ''];
+    let dPtr = 0;
+    for (let pos = 0; pos < 4; pos++) {
+      options[pos] = pos === targetIdx ? validCorrect : distractors[dPtr++];
+    }
+
     return {
-      question: `Quick Check (Module ${module.moduleNumber}): Which statement is correct regarding "${module.title}"?`,
-      options: [
-        lastSlide?.keyTakeaway || module.keyPrinciples[0] || 'Follow daily food safety and dietary checks.',
-        'Skip daily temperature and hygiene checks',
-        'Deliver patient trays without checking the diet ticket',
-        'Store raw chicken above cooked food'
-      ] as [string, string, string, string],
-      correctIndex: 0,
-      explanation: lastSlide?.keyTakeaway || 'Always follow the standard operating procedures covered in this module.'
+      question: `Quick Check (Module ${module.moduleNumber}): Which operational practice accurately reflects "${module.title}"?`,
+      options,
+      correctIndex: targetIdx,
+      explanation: ccp0
+        ? `Key Principle: ${validCorrect} (Standard: ${ccp0.standardLimit}).`
+        : `Key Principle: ${validCorrect}`
     };
-  }, [ccp0, module.moduleNumber, module.title, module.keyPrinciples, slides]);
+  }, [module.quickCheck, module.moduleNumber, module.title, module.keyPrinciples, ccp0, slides]);
 
   return (
     <div className="space-y-4">
@@ -263,7 +270,7 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                     type="button"
                     onClick={() => setCurrentSlideIdx(sIdx)}
                     title={`Slide ${sl.slideNumber}: ${sl.title}`}
-                    className={`w-7 h-7 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center ${
+                    className={`min-w-[2rem] h-7 px-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center ${
                       isActive
                         ? 'bg-amber-400 text-slate-950 shadow-xs scale-105'
                         : isSeen
@@ -334,8 +341,10 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
             </div>
           </div>
 
-          {/* Slide Body — Clear, Simple Presentation Bullet Points */}
+          {/* Slide Body — Clear, Simple Presentation Bullet Points & Rich Visuals */}
           <div className="p-5 sm:p-7 space-y-5">
+            <HaccpDemoSlideVisuals slide={activeSlide} />
+
             <ul className="space-y-2.5">
               {activeSlide.bulletPoints.map((point, idx) => {
                 const cleanText = point.replace(/^\s*(?:[0-9]+[.)]\s*|•\s*)/, '');
@@ -471,6 +480,8 @@ export const AlisonCourseModuleViewer: React.FC<AlisonCourseModuleViewerProps> =
                   </p>
                 </div>
               </div>
+
+              <HaccpDemoSlideVisuals slide={sl} />
 
               <ul className="space-y-2">
                 {sl.bulletPoints.map((pt, idx) => {

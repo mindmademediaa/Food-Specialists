@@ -2801,7 +2801,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
               <div className="lg:col-span-4 rounded-2xl border border-[#D2DEEA] bg-white p-4 shadow-sm space-y-2.5 h-fit">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-                    Course Curriculum (5 Modules)
+                    Course Curriculum ({selectedCourse.modules.length} Modules)
                   </span>
                   <span className="text-xs font-bold text-[#1673B8]">
                     {Math.round(
@@ -2830,9 +2830,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       >
                         <div className="mt-0.5 shrink-0">
                           {isCompleted ? (
-                            <CheckCircle2 className="w-4 h-4 text-[#1673B8]" />
+                            <CheckCircle2 className="w-5 h-5 text-[#1673B8]" />
                           ) : (
-                            <span className="w-4 h-4 rounded-full border border-slate-400 text-[10px] font-bold flex items-center justify-center text-slate-600">
+                            <span className="w-6 h-6 rounded-full border border-slate-400 text-[11px] font-bold flex items-center justify-center text-slate-600 tabular-nums">
                               {mod.moduleNumber}
                             </span>
                           )}

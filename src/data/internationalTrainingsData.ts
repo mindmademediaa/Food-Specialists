@@ -24,6 +24,103 @@ import {
   OFFICE_AND_ENGLISH_COURSES,
   OFFICE_AND_ENGLISH_HUB_TRAININGS
 } from './coursesOfficeAndEnglish';
+import {
+  HACCP_LEVEL_03_VISUAL_COURSE,
+  HACCP_LEVEL_03_VISUAL_HUB_TRAINING
+} from './haccpDemoCourse';
+
+export type SlideVisualIllustration =
+  | 'instructor-profile'
+  | 'course-roadmap'
+  | 'four-hazards'
+  | 'microbe-spore'
+  | 'high-low-risk'
+  | 'prp-foundation'
+  | 'approved-supplier'
+  | 'codex-12-steps'
+  | 'team-matrix'
+  | 'product-table'
+  | 'flow-diagram'
+  | 'risk-matrix'
+  | 'control-measures'
+  | 'ccp-tree-simple'
+  | 'ccp-tree-codex'
+  | 'critical-limits'
+  | 'thermometer-calibration'
+  | 'corrective-action'
+  | 'verification-audit'
+  | 'documentation-records'
+  | 'failure-causes'
+  | 'exam-technique';
+
+export interface SlideTableBlock {
+  caption?: string;
+  headers: string[];
+  rows: string[][];
+}
+
+export interface SlideTwoColumnBlock {
+  leftTitle: string;
+  leftTone?: 'blue' | 'emerald' | 'amber' | 'rose' | 'slate';
+  leftItems: string[];
+  rightTitle: string;
+  rightTone?: 'blue' | 'emerald' | 'amber' | 'rose' | 'slate';
+  rightItems: string[];
+}
+
+export interface SlideClassifierItem {
+  item: string;
+  category: 'Microbiological' | 'Physical' | 'Chemical' | 'Allergenic';
+  reason: string;
+}
+
+export interface SlideHighLowItem {
+  food: string;
+  risk: 'High-Risk' | 'Low-Risk';
+  reason: string;
+}
+
+export interface SlideDefinitionMatch {
+  term: string;
+  definition: string;
+}
+
+export interface SlideTrainerCard {
+  name: string;
+  credential: string;
+  experience: string;
+  specialties: string[];
+  introNote: string;
+}
+
+export interface SlideDocumentTemplateBlock {
+  docCode: string;
+  version: string;
+  codexStepLabel: string;
+  docTitle: string;
+  purpose: string;
+  fields: Array<{ label: string; value: string }>;
+  tablePreview?: {
+    headers: string[];
+    rows: string[][];
+  };
+  signOffLine: string;
+}
+
+export interface SlidePrpProcedureItem {
+  prpCode: string;
+  prpName: string;
+  objective: string;
+  steps: string[];
+  verificationRecord: string;
+}
+
+export interface ModuleQuickCheck {
+  question: string;
+  options: [string, string, string, string];
+  correctIndex: number;
+  explanation: string;
+}
 
 export interface CoursePresentationSlide {
   slideNumber: number;
@@ -32,6 +129,28 @@ export interface CoursePresentationSlide {
   bulletPoints: string[];
   keyTakeaway: string;
   practicalExample?: string;
+  visualIllustration?: SlideVisualIllustration;
+  calloutBanner?: {
+    label: string;
+    text: string;
+    tone?: 'blue' | 'amber' | 'emerald' | 'rose';
+  };
+  twoColumns?: SlideTwoColumnBlock;
+  tableBlock?: SlideTableBlock;
+  documentTemplateBlock?: SlideDocumentTemplateBlock;
+  prpProceduresBlock?: SlidePrpProcedureItem[];
+  germometerInteractive?: boolean;
+  riskMatrixHighlight?: boolean;
+  flowDiagramData?: {
+    title: string;
+    isMultiStream?: boolean;
+    mainSteps: Array<{ step: string; note?: string; isCcp?: boolean }>;
+    secondarySteps?: Array<{ step: string; note?: string; joinAtIndex: number }>;
+  };
+  classifierDrill?: SlideClassifierItem[];
+  highLowRiskDrill?: SlideHighLowItem[];
+  definitionMatchDrill?: SlideDefinitionMatch[];
+  trainerCard?: SlideTrainerCard;
 }
 
 export interface CourseStudyModule {
@@ -49,6 +168,7 @@ export interface CourseStudyModule {
   }>;
   practicalChecklist: string[];
   presentationSlides?: CoursePresentationSlide[];
+  quickCheck?: ModuleQuickCheck;
 }
 
 export interface CourseExamMCQ {
@@ -139,6 +259,7 @@ export const DEFAULT_COURSE_TEMPLATE: InternationalTrainingCourse = {
 };
 
 export const INTERNATIONAL_TRAINING_COURSES: InternationalTrainingCourse[] = [
+  HACCP_LEVEL_03_VISUAL_COURSE,
   MANAGER_FOOD_DIETARY_COURSE,
   ...HACCP_3_AND_4_COURSES,
   ...FOOD_SAFETY_3_AND_4_COURSES,
@@ -157,6 +278,7 @@ export function get40CourseExamQuestions(courseId: string): CourseExamMCQ[] {
 const cdmMcqs40 = build40McqsForCourse(MANAGER_FOOD_DIETARY_COURSE);
 
 export const INITIAL_INTERNATIONAL_TRAININGS: HubTraining[] = [
+  HACCP_LEVEL_03_VISUAL_HUB_TRAINING,
   {
     ...MANAGER_FOOD_DIETARY_HUB_TRAINING,
     customMcqs: cdmMcqs40.map((q) => ({

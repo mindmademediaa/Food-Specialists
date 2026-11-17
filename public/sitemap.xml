@@ -121,6 +121,11 @@
     <priority>0.90</priority>
   </url>
   <url>
+    <loc>https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app/?section=trainings&amp;course=cert-2026-intro-haccp</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
     <loc>https://ais-pre-5bkil6kufarm7w3fanh7wl-601551548198.asia-east1.run.app/?section=trainings&amp;course=cert-2026-haccp-level-04</loc>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
