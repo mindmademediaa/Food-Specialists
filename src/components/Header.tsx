@@ -178,40 +178,6 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Center: Desktop Horizontal Website Navigation (Visible inline on xl+ screens; md–lg uses full-width row below so logo & title never overlap) */}
-        {onNavigateWebsiteSection && (
-          <nav
-            aria-label="Website Main Navigation"
-            className="hidden xl:flex items-center gap-1 bg-[#F4F8FD] border border-[#D2DEEA] rounded-2xl p-1 shrink-0"
-          >
-            {desktopNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeWebsiteNav === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onNavigateWebsiteSection(item.id)}
-                  className={`px-2.5 2xl:px-3 py-1.5 rounded-xl text-[11.5px] 2xl:text-xs font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                    isActive
-                      ? 'bg-[#1673B8] text-white shadow-2xs'
-                      : 'text-[#1A2138] hover:bg-[#EBF4FC] hover:text-[#1673B8]'
-                  }`}
-                >
-                  <Icon
-                    className={`w-3.5 h-3.5 shrink-0 ${
-                      isActive
-                        ? 'text-white stroke-[2.3]'
-                        : 'text-[#1673B8] stroke-[2]'
-                    }`}
-                  />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        )}
-
         {/* Right Actions: Desktop Quick Search Pill, Install App Button, Admin, Bell, User Avatar, 3-Dots Menu */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Desktop Inline Quick Search Button */}
@@ -560,35 +526,40 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Medium Tablet & Laptop Navigation Bar (Visible on md–lg screens where xl top bar is compact) */}
+      {/* Dedicated Second-Row Website Navigation Bar (Below Logo & Website Name on all tablet & desktop screens — zero overlap) */}
       {onNavigateWebsiteSection && (
-        <div className="hidden md:flex xl:hidden items-center justify-center gap-1.5 px-6 py-2 bg-[#F4F8FD] border-t border-[#D2DEEA] overflow-x-auto">
-          {desktopNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeWebsiteNav === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onNavigateWebsiteSection(item.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#1673B8] text-white shadow-2xs'
-                    : 'text-[#1A2138] hover:bg-[#EBF4FC] hover:text-[#1673B8]'
-                }`}
-              >
-                <Icon
-                  className={`w-3.5 h-3.5 shrink-0 ${
+        <nav
+          aria-label="Website Main Navigation"
+          className="hidden md:flex bg-[#F4F8FD] border-t border-[#D2DEEA]"
+        >
+          <div className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-2 flex flex-wrap items-center justify-center gap-1.5 xl:gap-2">
+            {desktopNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeWebsiteNav === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onNavigateWebsiteSection(item.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                     isActive
-                      ? 'text-white stroke-[2.3]'
-                      : 'text-[#1673B8] stroke-[2]'
+                      ? 'bg-[#1673B8] text-white shadow-2xs'
+                      : 'text-[#1A2138] hover:bg-[#EBF4FC] hover:text-[#1673B8]'
                   }`}
-                />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
+                >
+                  <Icon
+                    className={`w-3.5 h-3.5 shrink-0 ${
+                      isActive
+                        ? 'text-white stroke-[2.3]'
+                        : 'text-[#1673B8] stroke-[2]'
+                    }`}
+                  />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       )}
 
       {/* Mobile Compact Search & Verify Certificate Row (Visible on mobile < 768px for Guests, Free & Paid Users) */}

@@ -107,7 +107,7 @@ import {
   makeAvatarSvg
 } from './data/mockHubData';
 import { INTERNATIONAL_TRAINING_COURSES } from './data/internationalTrainingsData';
-import { hasLegacyTrivialOptions } from './data/coursesHaccp3And4';
+import { hasLegacyMcqFormat } from './data/coursesHaccp3And4';
 import { DEFAULT_USER_TOOLS_DATA } from './data/examPrepData';
 import {
   uploadMediaFile,
@@ -1121,7 +1121,7 @@ export default function App() {
               const hasLegacyMcqs =
                 !t.customMcqs ||
                 t.customMcqs.length === 0 ||
-                t.customMcqs.some((q) => hasLegacyTrivialOptions(q.options));
+                t.customMcqs.some((q) => hasLegacyMcqFormat(q));
               map.set(t.id, {
                 ...initMatch,
                 ...t,
@@ -7263,7 +7263,7 @@ export default function App() {
                     <li className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#D2DEEA]">
                       <CheckCircle2 className="w-4 h-4 text-[#1673B8] shrink-0 mt-0.5" />
                       <span className="min-w-0">
-                        <strong className="text-[#1A2138]">Exam Detailed Answer Keys &amp; PDFs:</strong> Unlock all 30-MCQ correct answers with explanations, 5-Page Exam Report PDFs &amp; Exam Certificates.
+                        <strong className="text-[#1A2138]">Exam Detailed Answer Keys &amp; PDFs:</strong> Unlock all 30-MCQ correct answers with explanations and 5-Page Exam Report PDFs.
                       </span>
                     </li>
                     <li className="flex items-start gap-2 bg-white p-2.5 rounded-xl border border-[#D2DEEA]">

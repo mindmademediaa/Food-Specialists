@@ -36,7 +36,7 @@ import {
   InternationalTrainingCourse,
   get40CourseExamQuestions
 } from '../data/internationalTrainingsData';
-import { hasLegacyTrivialOptions } from '../data/coursesHaccp3And4';
+import { hasLegacyMcqFormat } from '../data/coursesHaccp3And4';
 import {
   buildDirectCertificateVerifyUrl,
   downloadOfficialCourseCertificatePdf,
@@ -671,7 +671,7 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     const hasValidManualMcqs =
       matchedTr?.customMcqs &&
       matchedTr.customMcqs.length > 0 &&
-      !matchedTr.customMcqs.some((q) => hasLegacyTrivialOptions(q.options));
+      !matchedTr.customMcqs.some((q) => hasLegacyMcqFormat(q));
 
     const customQuestions: CourseExamMCQ[] = hasValidManualMcqs
       ? matchedTr!.customMcqs!.map((q, idx) => ({

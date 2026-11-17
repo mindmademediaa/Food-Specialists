@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   AlertTriangle,
-  Award,
   BookOpen,
   Bookmark,
   Check,
@@ -39,10 +38,7 @@ import {
   SuiteExamQuestion,
   SuiteExamResult
 } from '../data/examSuiteData';
-import {
-  download5PageExamReportPdf,
-  downloadExamAchievementCertificatePdf
-} from '../lib/exam5PagePdfGenerator';
+import { download5PageExamReportPdf } from '../lib/exam5PagePdfGenerator';
 
 interface ExamSuiteToolProps {
   user: HubUser;
@@ -672,14 +668,14 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               Unlock {paywallModalFeature}
             </h3>
             <p className="text-xs text-[#5A6C84] leading-relaxed">
-              <strong>Guest Users</strong> get <strong>03 Exam Attempts</strong> and{' '}
-              <strong>Registered Free Users</strong> get <strong>05 Exam Attempts</strong>{' '}
-              with summary results (Pass/Fail, Score %, Correct/Wrong/Skipped),
-              while detailed answers and certificate downloads remain locked.
-              Upgrade to <strong>Paid Premium</strong> for{' '}
-              <strong>Unlimited Exam Attempts</strong>, full{' '}
-              <strong>30-MCQ Detailed Report with Correct Answers &amp; Explanations</strong>,
-              and <strong>Downloadable Exam Certificates &amp; Full PDF Reports</strong>!
+              <strong>Unlimited Practice Attempts</strong> are included free with
+              summary results (Pass/Fail, Score %, Correct/Wrong/Skipped), while
+              detailed answers and full report downloads remain locked. Upgrade
+              to <strong>Paid Premium</strong> for full{' '}
+              <strong>
+                30-MCQ Detailed Report with Correct Answers &amp; Explanations
+              </strong>{' '}
+              and <strong>Downloadable 5-Page Exam PDF Reports</strong>!
             </p>
             {isGuestUser && onRequireSignIn && (
               <button
@@ -919,7 +915,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                           Unlimited Exam Attempts Included:{' '}
                         </span>
                         <span>
-                          Practice as many 30-MCQ exams as you like and view your instant Score Result &amp; Pass/Fail breakdown. Detailed Result PDF Reports (with Correct Answers &amp; Explanations) and Official Certificate PDFs are exclusively available for Paid Members.
+                          Practice as many 30-MCQ exams as you like and view your instant Score Result &amp; Pass/Fail breakdown. Detailed Result PDF Reports (with Correct Answers &amp; Explanations) are exclusively available for Paid Members.
                         </span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -1124,7 +1120,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[#5A6C84]">
-                    <span>Certificate &amp; Full PDF Download</span>
+                    <span>5-Page Exam Report PDF</span>
                     <span
                       className={`font-extrabold ${
                         canUsePremium ? 'text-[#1673B8]' : 'text-amber-700'
@@ -1909,66 +1905,36 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 </div>
 
                 {/* Action Buttons inside Summary Card */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
                   {canUsePremium ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          download5PageExamReportPdf(
-                            user,
-                            activeResult,
-                            savedResults
-                          );
-                          showToast('Official Exam PDF Report downloaded!');
-                        }}
-                        className="py-3 px-3.5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                      >
-                        <Download className="w-4 h-4 shrink-0" />
-                        <span>Download Full Report PDF</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          downloadExamAchievementCertificatePdf(
-                            user,
-                            activeResult
-                          );
-                          showToast('Official Certificate PDF downloaded!');
-                        }}
-                        className="py-3 px-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                      >
-                        <Award className="w-4 h-4 shrink-0" />
-                        <span>Download Certificate PDF</span>
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        download5PageExamReportPdf(
+                          user,
+                          activeResult,
+                          savedResults
+                        );
+                        showToast('Official Exam PDF Report downloaded!');
+                      }}
+                      className="py-3 px-3.5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 shrink-0" />
+                      <span>Download Full Report PDF</span>
+                    </button>
                   ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPaywallModalFeature(
-                            'Exam Certificate Download (Locked for Guest & Free Users — Paid Members Only)'
-                          )
-                        }
-                        className="py-3 px-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                      >
-                        <Lock className="w-4 h-4 shrink-0" />
-                        <span>Certificate (Paid Only)</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPaywallModalFeature(
-                            'Full Detailed Exam Report with Correct Answers & PDF Download (Paid Members Only)'
-                          )
-                        }
-                        className="py-3 px-3.5 rounded-2xl bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#1673B8] border border-[#1673B8]/40 text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
-                      >
-                        <Lock className="w-4 h-4 shrink-0" />
-                        <span>Full Report PDF (Paid)</span>
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPaywallModalFeature(
+                          'Full Detailed Exam Report with Correct Answers & PDF Download (Paid Members Only)'
+                        )
+                      }
+                      className="py-3 px-3.5 rounded-2xl bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#1673B8] border border-[#1673B8]/40 text-xs font-extrabold inline-flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                    >
+                      <Lock className="w-4 h-4 shrink-0" />
+                      <span>Full Report PDF (Paid Only)</span>
+                    </button>
                   )}
 
                   <button
@@ -2133,7 +2099,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                 )}
 
                 {/* Bottom Action Strip for Paid Members */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-[#E4EDF7]">
+                <div className="pt-3 border-t border-[#E4EDF7]">
                   <button
                     type="button"
                     onClick={() => {
@@ -2144,35 +2110,17 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                       );
                       showToast('Official Exam PDF Report downloaded!');
                     }}
-                    className="py-4 px-5 rounded-[18px] bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-sm shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-4 px-5 rounded-[18px] bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-sm shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Download className="w-5 h-5" />
                     <span>
                       Download Full Exam PDF Report (With All 30 Answers)
                     </span>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      downloadExamAchievementCertificatePdf(
-                        user,
-                        activeResult
-                      );
-                      showToast('Official Certificate PDF downloaded!');
-                    }}
-                    className="py-4 px-5 rounded-[18px] bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Award className="w-5 h-5" />
-                    <span>
-                      Download Exam Certificate PDF ({activeResult.scorePercent}
-                      %)
-                    </span>
-                  </button>
                 </div>
               </div>
             ) : (
-              /* GUEST & REGISTERED FREE USER LOCKED ANSWER KEY & CERTIFICATE CARD */
+              /* GUEST & REGISTERED FREE USER LOCKED ANSWER KEY & FULL REPORT CARD */
               <div className="bg-white rounded-[26px] p-6 sm:p-8 border-2 border-amber-300 shadow-sm text-center space-y-4">
                 <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
                   <Lock className="w-7 h-7 stroke-[2.2]" />
@@ -2182,12 +2130,12 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                     Paid Member Exclusive Feature
                   </div>
                   <h4 className="text-lg sm:text-xl font-extrabold text-[#1A2138]">
-                    Detailed Result with Correct Answers, Full Report &amp;
-                    Certificate Download Locked
+                    Detailed Result with Correct Answers &amp; Full Report PDF
+                    Locked
                   </h4>
                   <p className="text-xs sm:text-sm text-[#5A6C84] leading-relaxed">
                     You have <strong>Unlimited Free Exam Attempts</strong> and can always view your instant summary result above (Pass/Fail status,{' '}
-                    <strong>{activeResult.scorePercent}%</strong> score, Correct/Wrong/Skipped counts). Full Detailed Results with Correct Answers, Technical Explanations, 5-Page Exam Report PDFs, and Official Certificate PDFs are exclusively unlocked for{' '}
+                    <strong>{activeResult.scorePercent}%</strong> score, Correct/Wrong/Skipped counts). Full Detailed Results with Correct Answers, Technical Explanations, and 5-Page Exam Report PDFs are exclusively unlocked for{' '}
                     <strong>Paid Members</strong>!
                   </p>
                 </div>
@@ -2209,7 +2157,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   >
                     <Crown className="w-4 h-4" />
                     <span>
-                      Upgrade to Paid Member (Detailed Report PDF &amp; Certificate) →
+                      Upgrade to Paid Member (Detailed Report PDF) →
                     </span>
                   </button>
                   <button

@@ -50,22 +50,48 @@ export interface RawSlideCourseInput {
 // 4. Deterministic shuffling across A (0), B (1), C (2), and D (3)
 // ============================================================================
 
-const QUESTION_STEM_TEMPLATES: Array<(courseTitle: string, code: string, modTitle: string, topic: string) => string> = [
-  (_c, code, mod, topic) => `During an internal compliance audit of ${mod}, which technical criterion governs "${topic}" under ${code}?`,
-  (c, _code, _mod, topic) => `When evaluating operational compliance for "${topic}" in ${c}, which control measure must be verified first?`,
-  (_c, code, mod, topic) => `A quality supervisor reviewing "${topic}" (${mod}) identifies a process deviation. Which ${code} protocol applies?`,
-  (c, _code, mod, topic) => `Which technical specification defines the mandatory standard for "${topic}" within ${mod} (${c})?`,
-  (_c, code, _mod, topic) => `In an accredited ${code} assessment of "${topic}", which objective evidence demonstrates effective implementation?`,
-  (c, _code, mod, topic) => `What is the primary operational requirement when executing "${topic}" in ${mod} (${c})?`,
-  (_c, code, mod, topic) => `When validating "${topic}" under ${code} (${mod}), which technical procedure is mandatory?`,
-  (c, _code, _mod, topic) => `How must the technical team manage "${topic}" to maintain compliance with ${c} standards?`,
-  (_c, code, mod, topic) => `During a management review of ${mod}, how is conformance to "${topic}" verified under ${code}?`,
-  (c, _code, mod, topic) => `Which operational control directly satisfies the ${c} requirement for "${topic}" in ${mod}?`
+function sanitizeMcqLabel(text: string): string {
+  return (text || '')
+    .replace(
+      /What Makes HACCP Level 0?4 Different from Level 0?3\??/gi,
+      'Key Managerial Responsibilities in HACCP System Design'
+    )
+    .replace(/\bHACCP\s+Level\s+0?[1-4]\b/gi, 'HACCP')
+    .replace(/\bFood\s+Safety\s+Level\s+0?[1-4]\b/gi, 'Food Safety')
+    .replace(/\ba\s+Level\s+0?[1-4]\s+Food\s+Safety\s+Supervisor\b/gi, 'a Food Safety Supervisor')
+    .replace(/\bfor\s+Level\s+0?[1-4]\s+Managers\b/gi, 'for Food Safety Managers')
+    .replace(/\bLevel\s+0?[1-4]\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\(\s*\)/g, '')
+    .trim();
+}
+
+const QUESTION_STEM_TEMPLATES: Array<(modTitle: string, topic: string) => string> = [
+  (mod, topic) =>
+    `During an internal compliance audit of ${mod}, which technical criterion governs "${topic}"?`,
+  (mod, topic) =>
+    `When evaluating operational compliance for "${topic}" in ${mod}, which control measure must be verified first?`,
+  (_mod, topic) =>
+    `A quality supervisor reviewing "${topic}" identifies a process deviation. Which standard protocol applies?`,
+  (mod, topic) =>
+    `Which technical specification defines the mandatory requirement for "${topic}" within ${mod}?`,
+  (_mod, topic) =>
+    `In an operational assessment of "${topic}", which objective evidence demonstrates effective implementation?`,
+  (mod, topic) =>
+    `What is the primary operational requirement when executing "${topic}" in ${mod}?`,
+  (mod, topic) =>
+    `When validating "${topic}" during ${mod}, which technical procedure is mandatory?`,
+  (_mod, topic) =>
+    `How must the technical team manage "${topic}" to maintain strict compliance and process control?`,
+  (mod, topic) =>
+    `During a management review of ${mod}, how is conformance for "${topic}" verified?`,
+  (mod, topic) =>
+    `Which operational control directly satisfies the technical requirement for "${topic}" in ${mod}?`
 ];
 
 // Mutates numbers, temperatures, durations, percentages, or technical qualifiers in a statement
 // to create a close, realistic, challenging technical distractor of equal length and style.
-function buildCloseParameterDistractor(baseText: string, topic: string, code: string, seed: number): string {
+function buildCloseParameterDistractor(baseText: string, topic: string, seed: number): string {
   let mutated = baseText;
   let changed = false;
 
@@ -87,12 +113,15 @@ function buildCloseParameterDistractor(baseText: string, topic: string, code: st
   });
 
   // 3. Mutate durations (seconds / minutes / hours / days / months / years)
-  mutated = mutated.replace(/(\d+)\s*(seconds|second|minutes|minute|hours|hour|days|day|months|month|years|year)/gi, (_match, numStr, unit) => {
-    changed = true;
-    const n = parseInt(numStr, 10);
-    const nextVal = n <= 2 ? n + 4 : n <= 15 ? n * 2 : Math.max(1, Math.round(n * 0.5));
-    return `${nextVal} ${unit}`;
-  });
+  mutated = mutated.replace(
+    /(\d+)\s*(seconds|second|minutes|minute|hours|hour|days|day|months|month|years|year)/gi,
+    (_match, numStr, unit) => {
+      changed = true;
+      const n = parseInt(numStr, 10);
+      const nextVal = n <= 2 ? n + 4 : n <= 15 ? n * 2 : Math.max(1, Math.round(n * 0.5));
+      return `${nextVal} ${unit}`;
+    }
+  );
 
   // 4. Mutate key technical authority / verification terms if no numeric values were present
   if (!changed) {
@@ -114,7 +143,7 @@ function buildCloseParameterDistractor(baseText: string, topic: string, code: st
 
   // Fallback high-precision technical parameter distractor tailored to the exact topic
   const parameterFallbacks = [
-    `Record "${topic}" parameters at the end of each monthly cycle and archive for internal reference under ${code} Clause 4.2.`,
+    `Record "${topic}" parameters at the end of each monthly cycle and archive them solely for retrospective reference.`,
     `Delegate "${topic}" verification solely to external third-party contractors during biennial surveillance reviews.`,
     `Classify "${topic}" as an advisory prerequisite observation that does not require formal root-cause corrective action.`,
     `Approve "${topic}" compliance using retrospective batch release sampling in place of real-time process monitoring.`
@@ -123,50 +152,50 @@ function buildCloseParameterDistractor(baseText: string, topic: string, code: st
 }
 
 // 40 distinct, realistic, audit-grade technical distractors (indexed 0..39 so every question gets a unique one)
-function buildAuditDistractorForIndex(topic: string, modTitle: string, code: string, qIdx: number): string {
-  const templates: Array<(t: string, m: string, c: string) => string> = [
-    (t, _m, c) => `Rely on end-product lot sampling instead of continuous in-line process monitoring for "${t}" under ${c}.`,
-    (t, m, _c) => `Authorize shift operators in ${m} to close non-conformances on "${t}" without independent QA verification.`,
-    (t, _m, c) => `Release affected production lots under conditional concession prior to completing the "${t}" evaluation in ${c}.`,
-    (t, m, _c) => `Treat "${t}" in ${m} as a voluntary guidance note rather than an auditable compliance requirement.`,
-    (t, _m, c) => `Adjust the established specification limits for "${t}" during peak production runs without formal ${c} re-validation.`,
-    (t, m, _c) => `Consolidate "${t}" monitoring logs at the conclusion of each quarter in ${m} instead of real-time recording.`,
-    (t, _m, c) => `Apply a generic facility checklist to "${t}" in place of the hazard-specific risk assessment required by ${c}.`,
-    (t, m, _c) => `Defer quarantine of non-conforming items from "${t}" until the scheduled annual ${m} management review.`,
-    (t, _m, c) => `Substitute uncalibrated visual estimation for verified instrument measurement when executing "${t}" under ${c}.`,
-    (t, m, _c) => `Accept supplier self-declarations for "${t}" in ${m} without empirical Certificate of Analysis (COA) verification.`,
-    (t, _m, c) => `Restrict "${t}" documentation to external certification audits while omitting internal ${c} verification checks.`,
-    (t, m, _c) => `Allow temporary bypass of "${t}" controls in ${m} up to 4 hours per shift provided line output targets are met.`,
-    (t, _m, c) => `Validate "${t}" once during initial commissioning without periodic re-verification or change-triggered ${c} review.`,
-    (t, m, _c) => `Transfer primary accountability for "${t}" in ${m} exclusively to warehouse dispatch personnel after packaging.`,
-    (t, _m, c) => `Classify deviations in "${t}" as minor observations that only require verbal notification under ${c}.`,
-    (t, m, _c) => `Perform corrective adjustments on "${t}" in ${m} retroactively after product dispatch to distribution centers.`,
-    (t, _m, c) => `Evaluate "${t}" using historical industry averages rather than site-specific empirical validation data for ${c}.`,
-    (t, m, _c) => `Maintain "${t}" operational records in ${m} for a maximum of 14 days regardless of product shelf-life duration.`,
-    (t, _m, c) => `Combine "${t}" verification with routine housekeeping inspections to eliminate dedicated ${c} control logs.`,
-    (t, m, _c) => `Approve process modifications affecting "${t}" in ${m} verbally before updating the controlled hazard analysis.`,
-    (t, _m, c) => `Limit "${t}" competency assessments to newly hired staff while exempting senior supervisors under ${c}.`,
-    (t, m, _c) => `Conduct "${t}" calibration checks in ${m} only after a customer complaint or regulatory rejection occurs.`,
-    (t, _m, c) => `Downgrade "${t}" from a critical operational control to a routine maintenance task during ${c} system updates.`,
-    (t, m, _c) => `Record "${t}" compliance in ${m} using pre-printed shift averages rather than actual time-stamped measurements.`,
-    (t, _m, c) => `Permit re-processing of quarantined stock from "${t}" without QA Manager sign-off or ${c} traceability logging.`,
-    (t, m, _c) => `Exclude sub-contracted processes and night-shift operations from the "${t}" scope within ${m}.`,
-    (t, _m, c) => `Verify "${t}" effectiveness solely through annual financial performance metrics rather than ${c} audit evidence.`,
-    (t, m, _c) => `Use unverified third-party templates for "${t}" in ${m} without on-site flow diagram confirmation.`,
-    (t, _m, c) => `Close "${t}" corrective action requests immediately upon containment before investigating root causes under ${c}.`,
-    (t, m, _c) => `Store "${t}" reference standards and controlled documents in ${m} without version control or change history.`,
-    (t, _m, c) => `Sample only the first batch of the week for "${t}" to represent full continuous compliance with ${c}.`,
-    (t, m, _c) => `Waive "${t}" verification requirements in ${m} whenever raw materials originate from domestic suppliers.`,
-    (t, _m, c) => `Assign the same operator who performs "${t}" monitoring to conduct the independent ${c} internal audit of that step.`,
-    (t, m, _c) => `Replace documented "${t}" standard operating procedures in ${m} with informal peer-to-peer shift briefings.`,
-    (t, _m, c) => `Calculate "${t}" compliance scores by excluding peak-season deviations from the official ${c} trend analysis.`,
-    (t, m, _c) => `Implement "${t}" controls in ${m} only for export batches while exempting domestic production runs.`,
-    (t, _m, c) => `Archive "${t}" non-conformance reports separately from the ${c} management review input package.`,
-    (t, m, _c) => `Extend the allowable tolerance range for "${t}" in ${m} by 25% when ambient facility humidity increases.`,
-    (t, _m, c) => `Complete "${t}" sign-off logs at the start of the shift based on projected ${c} operating parameters.`,
-    (t, m, _c) => `Verify "${t}" trace recall readiness in ${m} through tabletop discussion without timed physical stock reconciliation.`
+function buildAuditDistractorForIndex(topic: string, modTitle: string, qIdx: number): string {
+  const templates: Array<(t: string, m: string) => string> = [
+    (t, _m) => `Rely on end-product lot sampling instead of continuous in-line process monitoring for "${t}" during routine production.`,
+    (t, m) => `Authorize shift operators in ${m} to close non-conformances on "${t}" without independent QA verification.`,
+    (t, _m) => `Release affected production lots under conditional concession prior to completing the "${t}" evaluation.`,
+    (t, m) => `Treat "${t}" in ${m} as a voluntary guidance note rather than an auditable compliance requirement.`,
+    (t, _m) => `Adjust the established specification limits for "${t}" during peak production runs without formal technical re-validation.`,
+    (t, m) => `Consolidate "${t}" monitoring logs at the conclusion of each quarter in ${m} instead of real-time recording.`,
+    (t, _m) => `Apply a generic facility checklist to "${t}" in place of a hazard-specific technical risk assessment.`,
+    (t, m) => `Defer quarantine of non-conforming items from "${t}" until the scheduled annual ${m} management review.`,
+    (t, _m) => `Substitute uncalibrated visual estimation for verified instrument measurement when executing "${t}" on the floor.`,
+    (t, m) => `Accept supplier self-declarations for "${t}" in ${m} without empirical Certificate of Analysis (COA) verification.`,
+    (t, _m) => `Restrict "${t}" documentation to external certification audits while omitting routine internal verification checks.`,
+    (t, m) => `Allow temporary bypass of "${t}" controls in ${m} up to 4 hours per shift provided line output targets are met.`,
+    (t, _m) => `Validate "${t}" once during initial commissioning without periodic re-verification or change-triggered technical review.`,
+    (t, m) => `Transfer primary accountability for "${t}" in ${m} exclusively to warehouse dispatch personnel after packaging.`,
+    (t, _m) => `Classify deviations in "${t}" as minor observations that only require informal verbal notification.`,
+    (t, m) => `Perform corrective adjustments on "${t}" in ${m} retroactively after product dispatch to distribution centers.`,
+    (t, _m) => `Evaluate "${t}" using historical industry averages rather than site-specific empirical validation data.`,
+    (t, m) => `Maintain "${t}" operational records in ${m} for a maximum of 14 days regardless of product shelf-life duration.`,
+    (t, _m) => `Combine "${t}" verification with routine housekeeping inspections to eliminate dedicated operational control logs.`,
+    (t, m) => `Approve process modifications affecting "${t}" in ${m} verbally before updating the controlled hazard analysis.`,
+    (t, _m) => `Limit "${t}" competency assessments to newly hired staff while exempting experienced senior supervisors.`,
+    (t, m) => `Conduct "${t}" calibration checks in ${m} only after a customer complaint or regulatory rejection occurs.`,
+    (t, _m) => `Downgrade "${t}" from a critical operational control to a routine maintenance task during system updates.`,
+    (t, m) => `Record "${t}" compliance in ${m} using pre-printed shift averages rather than actual time-stamped measurements.`,
+    (t, _m) => `Permit re-processing of quarantined stock from "${t}" without QA Manager sign-off or batch traceability logging.`,
+    (t, m) => `Exclude sub-contracted processes and night-shift operations from the "${t}" scope within ${m}.`,
+    (t, _m) => `Verify "${t}" effectiveness solely through annual financial performance metrics rather than objective audit evidence.`,
+    (t, m) => `Use unverified third-party templates for "${t}" in ${m} without on-site flow diagram confirmation.`,
+    (t, _m) => `Close "${t}" corrective action requests immediately upon containment before investigating the underlying root cause.`,
+    (t, m) => `Store "${t}" reference standards and controlled documents in ${m} without version control or change history.`,
+    (t, _m) => `Sample only the first batch of the week for "${t}" to represent full continuous process compliance.`,
+    (t, m) => `Waive "${t}" verification requirements in ${m} whenever raw materials originate from domestic suppliers.`,
+    (t, _m) => `Assign the same operator who performs "${t}" monitoring to conduct the independent internal audit of that step.`,
+    (t, m) => `Replace documented "${t}" standard operating procedures in ${m} with informal peer-to-peer shift briefings.`,
+    (t, _m) => `Calculate "${t}" compliance scores by excluding peak-season deviations from the official compliance trend analysis.`,
+    (t, m) => `Implement "${t}" controls in ${m} only for export batches while exempting domestic production runs.`,
+    (t, _m) => `Archive "${t}" non-conformance reports separately from the formal management review input package.`,
+    (t, m) => `Extend the allowable tolerance range for "${t}" in ${m} by 25% when ambient facility humidity increases.`,
+    (t, _m) => `Complete "${t}" sign-off logs at the start of the shift based on projected operating parameters.`,
+    (t, m) => `Verify "${t}" trace recall readiness in ${m} through tabletop discussion without timed physical stock reconciliation.`
   ];
-  return templates[qIdx % templates.length](topic, modTitle, code);
+  return templates[qIdx % templates.length](topic, modTitle);
 }
 
 function cleanSlideStatement(text: string | undefined, fallback: string): string {
@@ -224,6 +253,8 @@ export function normalizeRawSlideCourse(
   const coreExamPool: InternationalTrainingCourse['coreExamPool'] = [];
 
   allSlidesFlat.forEach((sl, idx) => {
+    const cleanMod = sanitizeMcqLabel(sl.modTitle);
+    const cleanTopic = sanitizeMcqLabel(sl.title);
     const useBullet = idx % 2 === 1 && sl.bullets.length > 0;
     const correctStatement = useBullet ? sl.bullets[0] : sl.keyPoint;
     const altSourceForMutation =
@@ -234,16 +265,14 @@ export function normalizeRawSlideCourse(
     // Distractor 1: Close parameter / threshold / frequency mutation of a real statement from this slide
     const distractor1 = buildCloseParameterDistractor(
       altSourceForMutation,
-      sl.title,
-      raw.code,
+      cleanTopic,
       idx + 3
     );
 
     // Distractor 2: Unique audit/operational misconception tailored to this slide's topic
     const distractor2 = buildAuditDistractorForIndex(
-      sl.title,
-      sl.modTitle,
-      raw.code,
+      cleanTopic,
+      cleanMod,
       idx
     );
 
@@ -252,8 +281,7 @@ export function normalizeRawSlideCourse(
     const peerBase = peerSlide.bullets[0] || peerSlide.keyPoint;
     const distractor3 = buildCloseParameterDistractor(
       peerBase,
-      sl.title,
-      raw.code,
+      cleanTopic,
       idx + 11
     );
 
@@ -272,7 +300,7 @@ export function normalizeRawSlideCourse(
 
     const stemFn = QUESTION_STEM_TEMPLATES[idx % QUESTION_STEM_TEMPLATES.length];
     coreExamPool.push({
-      q: stemFn(raw.title, raw.code, sl.modTitle, sl.title),
+      q: stemFn(cleanMod, cleanTopic),
       options,
       correctIndex: targetCorrectIdx,
       explanation: `${correctStatement}${sl.example ? ` (${sl.example})` : ''}`
@@ -331,6 +359,25 @@ export function hasLegacyTrivialOptions(options: string[]): boolean {
   return maxLen > 70 && minLen < 24;
 }
 
+// Detects both trivial options and old MCQs stamped with repeated course codes/titles (e.g., "under HACCP-L3?", "(HACCP Level 03)")
+export function hasLegacyMcqFormat(mcq: {
+  question?: string;
+  options: string[];
+}): boolean {
+  if (hasLegacyTrivialOptions(mcq.options)) return true;
+  const courseCodePattern =
+    /\b(HACCP-L[34]|FS-L[34]|ISO-9001-AW|ISO-22000-AW|FSSC-22000-AW|ISO-14001-AW|ISO-45001-AW|BRCGS-9-AW|MS-OFFICE|ENG-PROF|CDM-2026)\b/;
+  const taggedStemPattern =
+    /(which technical criterion governs .* under |protocol applies\?|accredited .* assessment of|within .* \((HACCP Level|Food Safety Level|ISO |FSSC |BRCGS|Microsoft Office|Workplace English|Certified Dietary)|to maintain compliance with .* standards\?|Different from Level 03)/i;
+  if (
+    mcq.question &&
+    (courseCodePattern.test(mcq.question) || taggedStemPattern.test(mcq.question))
+  ) {
+    return true;
+  }
+  return mcq.options.some((opt) => courseCodePattern.test(opt));
+}
+
 export function build40McqsForCourse(
   course: InternationalTrainingCourse
 ): CourseExamMCQ[] {
@@ -345,8 +392,10 @@ export function build40McqsForCourse(
   }> = [];
 
   for (const mod of course.modules) {
+    const cleanMod = sanitizeMcqLabel(mod.title);
     if (mod.presentationSlides && mod.presentationSlides.length > 0) {
       for (const sl of mod.presentationSlides) {
+        const cleanTopic = sanitizeMcqLabel(sl.title);
         const validBullets = (sl.bulletPoints || []).filter(
           (b) => b && !/congratulations|proceed to the 40-mcq/i.test(b)
         );
@@ -361,8 +410,8 @@ export function build40McqsForCourse(
           primary;
         slideEntries.push({
           modNumber: mod.moduleNumber,
-          modTitle: mod.title,
-          topic: sl.title,
+          modTitle: cleanMod,
+          topic: cleanTopic,
           correctStatement:
             slideEntries.length % 2 === 1 && validBullets[0]
               ? validBullets[0]
@@ -375,8 +424,8 @@ export function build40McqsForCourse(
       for (const ccp of mod.criticalControlParameters) {
         slideEntries.push({
           modNumber: mod.moduleNumber,
-          modTitle: mod.title,
-          topic: ccp.parameter,
+          modTitle: cleanMod,
+          topic: sanitizeMcqLabel(ccp.parameter),
           correctStatement: `${ccp.standardLimit} — ${ccp.correctiveProtocol}`,
           secondaryStatement: ccp.correctiveProtocol,
           explanation: `${ccp.parameter}: ${ccp.standardLimit}. Corrective Action: ${ccp.correctiveProtocol}`
@@ -395,19 +444,16 @@ export function build40McqsForCourse(
     const distractor1 = buildCloseParameterDistractor(
       entry.secondaryStatement,
       entry.topic,
-      course.code,
       idx + 5
     );
     const distractor2 = buildAuditDistractorForIndex(
       entry.topic,
       entry.modTitle,
-      course.code,
       idx
     );
     const distractor3 = buildCloseParameterDistractor(
       peerEntry.correctStatement,
       entry.topic,
-      course.code,
       idx + 13
     );
 
@@ -427,7 +473,7 @@ export function build40McqsForCourse(
     finalQuestions.push({
       id: `${course.id}-q-${idx + 1}`,
       questionNumber: idx + 1,
-      question: stemFn(course.title, course.code, entry.modTitle, entry.topic),
+      question: stemFn(entry.modTitle, entry.topic),
       options,
       correctIndex: targetCorrectIdx,
       explanation: entry.explanation
