@@ -55,7 +55,10 @@ import {
   Wrench,
   Activity,
   Smartphone,
-  Users
+  Users,
+  MoreVertical,
+  PlusSquare,
+  Share
 } from 'lucide-react';
 import {
   collection,
@@ -1414,11 +1417,14 @@ export default function App() {
     };
   }, [authUser]);
 
-  // PWA Mobile App Install State & Standalone Detection
-  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  // PWA Mobile App Install State & Standalone Detection (Android / iOS / Desktop)
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(() =>
+    typeof window !== 'undefined' ? window.__fspDeferredInstallPrompt || null : null
+  );
   const [isStandaloneApp, setIsStandaloneApp] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return (
+      Boolean(window.__fspAppInstalled) ||
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true
     );
@@ -1428,46 +1434,89 @@ export default function App() {
     null
   );
 
+  const devicePlatform = useMemo(() => {
+    if (typeof navigator === 'undefined') {
+      return { isIOS: false, isAndroid: false, isInAppBrowser: false, isIOSSafari: false };
+    }
+    const ua = navigator.userAgent || '';
+    const isIOS =
+      /iPad|iPhone|iPod/i.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(ua);
+    const isInAppBrowser = /FBAN|FBAV|Instagram|WhatsApp|Line|Snapchat|MicroMessenger|wv\b/i.test(
+      ua
+    );
+    const isIOSSafari =
+      isIOS &&
+      /Safari/i.test(ua) &&
+      !/CriOS|FxiOS|OPiOS|EdgiOS|FBAN|FBAV|Instagram|WhatsApp/i.test(ua);
+    return { isIOS, isAndroid, isInAppBrowser, isIOSSafari };
+  }, []);
+
   useEffect(() => {
+    const syncPromptFromWindow = () => {
+      if (window.__fspDeferredInstallPrompt) {
+        setDeferredInstallPrompt(window.__fspDeferredInstallPrompt);
+      }
+    };
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      window.__fspDeferredInstallPrompt = e;
       setDeferredInstallPrompt(e);
     };
     const handleAppInstalled = () => {
       setIsStandaloneApp(true);
+      window.__fspDeferredInstallPrompt = null;
       setDeferredInstallPrompt(null);
       setInstallStatusMessage(
-        'Food Science Portal App installed! You can now launch it anytime from your phone home screen.'
+        'Food Science Portal App installed! Launch it anytime from your phone home screen.'
       );
+      setShowInstallAppModal(false);
     };
+    syncPromptFromWindow();
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('fsp-install-prompt-ready', syncPromptFromWindow);
     window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('fsp-app-installed', handleAppInstalled);
     return () => {
       window.removeEventListener(
         'beforeinstallprompt',
         handleBeforeInstallPrompt
       );
+      window.removeEventListener(
+        'fsp-install-prompt-ready',
+        syncPromptFromWindow
+      );
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('fsp-app-installed', handleAppInstalled);
     };
   }, []);
 
   const handleTriggerNativeAppInstall = async () => {
-    if (deferredInstallPrompt) {
+    const promptEvent =
+      deferredInstallPrompt ||
+      (typeof window !== 'undefined' ? window.__fspDeferredInstallPrompt : null);
+
+    if (promptEvent && typeof promptEvent.prompt === 'function') {
       try {
-        deferredInstallPrompt.prompt();
-        const choiceResult = await deferredInstallPrompt.userChoice;
+        await promptEvent.prompt();
+        const choiceResult = await promptEvent.userChoice;
         if (choiceResult?.outcome === 'accepted') {
           setInstallStatusMessage(
-            'Installing Food Science Portal on your device...'
+            'Downloading & installing Food Science Portal App on your device...'
           );
+          window.__fspDeferredInstallPrompt = null;
           setDeferredInstallPrompt(null);
+          setShowInstallAppModal(false);
         }
+        return;
       } catch {
-        // Fallback to instructions inside modal
+        // Fallback to guided install drawer below
       }
-    } else {
-      setShowInstallAppModal(true);
     }
+
+    setInstallStatusMessage(null);
+    setShowInstallAppModal(true);
   };
 
   // Dynamic Time-of-Day Greeting (Morning / Afternoon / Evening)
@@ -4141,7 +4190,7 @@ export default function App() {
           activeWebsiteNav={activeWebsiteNav}
           onNavigateWebsiteSection={handleNavigateWebsiteSection}
           isStandaloneApp={isStandaloneApp}
-          onInstallAppClick={() => setShowInstallAppModal(true)}
+          onInstallAppClick={handleTriggerNativeAppInstall}
           isGuest={!authUser}
           onSignInClick={() => setShowGuestAuthModal(true)}
           userNotifications={
@@ -4402,7 +4451,7 @@ export default function App() {
                       {!isStandaloneApp && (
                         <button
                           type="button"
-                          onClick={() => setShowInstallAppModal(true)}
+                          onClick={handleTriggerNativeAppInstall}
                           className="px-3 py-1.5 rounded-xl bg-amber-300 hover:bg-amber-200 text-[#0C182D] text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                         >
                           <Smartphone className="w-3.5 h-3.5 text-[#0C182D]" />
@@ -5048,7 +5097,7 @@ export default function App() {
 
                     <button
                       type="button"
-                      onClick={() => setShowInstallAppModal(true)}
+                      onClick={handleTriggerNativeAppInstall}
                       className="w-full py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-extrabold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                     >
                       <Download className="w-4 h-4 stroke-[2.3] shrink-0" />
@@ -7312,7 +7361,7 @@ export default function App() {
                     <div className="pt-2">
                       <button
                         type="button"
-                        onClick={() => setShowInstallAppModal(true)}
+                        onClick={handleTriggerNativeAppInstall}
                         className="w-full py-2.5 px-3.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <Smartphone className="w-4 h-4 text-sky-200" />
@@ -8262,7 +8311,7 @@ export default function App() {
           </div>
         )}
 
-        {/* INSTALL MOBILE APP MODAL (1-Click PWA Install + Android/iOS Instructions + Sync Info) */}
+        {/* INSTALL MOBILE APP MODAL (Direct 1-Click Android/Desktop Install + Guided Android & iPhone Flows) */}
         {showInstallAppModal && (
           <div className="fixed inset-0 z-50 bg-[#0C182D]/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
             <div className="w-full max-w-md bg-white border border-[#D2DEEA] rounded-[28px] p-5 sm:p-6 shadow-2xl space-y-4 my-auto">
@@ -8276,17 +8325,18 @@ export default function App() {
                     />
                   </div>
                   <div>
-                    <span className="inline-block px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10px] font-extrabold uppercase tracking-wider">
+                    <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#1673B8]">
                       Official Mobile App
-                    </span>
+                    </div>
                     <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138] leading-snug mt-0.5">
-                      Install Food Science Portal
+                      Download Food Science Portal
                     </h2>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowInstallAppModal(false)}
+                  aria-label="Close Install Dialog"
                   className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer shrink-0"
                 >
                   <X className="w-4 h-4" />
@@ -8294,7 +8344,7 @@ export default function App() {
               </div>
 
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Install <strong>Food Science Portal</strong> directly onto your mobile phone home screen. Your account, jobs, scholarships, tools, certificates, and notifications stay <strong>100% synchronized</strong> between the Website and Mobile App.
+                Install <strong>Food Science Portal</strong> directly on your phone home screen for offline tools, instant job notifications, and synchronized access across Android, iPhone, and Desktop.
               </p>
 
               {installStatusMessage && (
@@ -8304,7 +8354,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* Direct 1-Click Install Button (When Browser Supports Native Prompt) */}
+              {/* Direct 1-Click Install Button (When Native Prompt Is Ready) */}
               {deferredInstallPrompt && (
                 <button
                   type="button"
@@ -8312,60 +8362,147 @@ export default function App() {
                   className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] hover:from-[#105E9A] hover:to-[#1673B8] text-white text-xs sm:text-sm font-extrabold shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all"
                 >
                   <Download className="w-4 h-4 text-sky-200 shrink-0" />
-                  <span>Install App Now (1-Click)</span>
+                  <span>Download &amp; Install App Now</span>
                 </button>
               )}
 
-              {/* Step-by-Step Guide for Android & iPhone */}
-              <div className="space-y-2.5 bg-[#F4F8FD] border border-[#D2DEEA] rounded-2xl p-3.5 text-xs">
-                <div className="space-y-1">
-                  <p className="font-extrabold text-[#1A2138] flex items-center gap-1.5">
-                    <Smartphone className="w-3.5 h-3.5 text-[#1673B8]" />
-                    <span>On Android (Chrome / Samsung Internet):</span>
-                  </p>
-                  <p className="text-slate-600 text-[11.5px] leading-relaxed pl-5">
-                    Tap the browser menu <strong>(⋮)</strong> at the top-right and select <strong>&ldquo;Install App&rdquo;</strong> or <strong>&ldquo;Add to Home screen&rdquo;</strong>.
-                  </p>
-                </div>
+              {/* Android In-App Browser (WhatsApp / Facebook / Instagram WebView): Launch Directly in Chrome */}
+              {devicePlatform.isAndroid &&
+                devicePlatform.isInAppBrowser &&
+                typeof window !== 'undefined' && (
+                  <a
+                    href={`intent://${window.location.host}${window.location.pathname}${window.location.search}#Intent;scheme=https;package=com.android.chrome;end`}
+                    className="w-full py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-sm font-extrabold shadow-md flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Download className="w-4 h-4 shrink-0" />
+                    <span>Open in Chrome to Install App</span>
+                  </a>
+                )}
 
-                <div className="border-t border-[#D2DEEA] pt-2.5 space-y-1">
-                  <p className="font-extrabold text-[#1A2138] flex items-center gap-1.5">
-                    <Smartphone className="w-3.5 h-3.5 text-[#1673B8]" />
-                    <span>On iPhone / iPad (Safari):</span>
-                  </p>
-                  <p className="text-slate-600 text-[11.5px] leading-relaxed pl-5">
-                    Tap the <strong>Share</strong> button at the bottom of Safari and select <strong>&ldquo;Add to Home Screen&rdquo;</strong>.
-                  </p>
-                </div>
-              </div>
+              {/* iPhone / iPad Native Share Trigger (when available) + Visual Safari Steps */}
+              {devicePlatform.isIOS && (
+                <div className="space-y-3 bg-[#F4F8FD] border border-[#D2DEEA] rounded-2xl p-4 text-xs">
+                  <div className="font-extrabold text-[#1A2138] flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4 text-[#1673B8] shrink-0" />
+                    <span>Install Directly on iPhone / iPad</span>
+                  </div>
 
-              {/* Copy Website/App Link to Open on Phone */}
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCopyText(window.location.href, 'install-app-link')
-                  }
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#1673B8]/40 text-[#1673B8] text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                >
-                  {copiedId === 'install-app-link' ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>Portal Link Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy Link for Mobile</span>
-                    </>
+                  {!devicePlatform.isIOSSafari && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11.5px] font-bold text-amber-900 leading-snug">
+                      On iPhone/iPad, open <strong>foodscienceportal.com</strong> in <strong>Safari</strong> browser to install directly onto your Home Screen.
+                    </div>
                   )}
-                </button>
+
+                  <ol className="space-y-2 text-[11.5px] text-slate-700 font-medium leading-relaxed">
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#1673B8] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
+                        1
+                      </span>
+                      <span className="flex-1">
+                        Tap the{' '}
+                        <strong className="inline-flex items-center gap-1 text-[#1A2138]">
+                          Share <Share className="w-3.5 h-3.5 text-[#1673B8] inline" />
+                        </strong>{' '}
+                        button in Safari&apos;s toolbar.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#1673B8] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
+                        2
+                      </span>
+                      <span className="flex-1">
+                        Scroll down and tap{' '}
+                        <strong className="inline-flex items-center gap-1 text-[#1A2138]">
+                          Add to Home Screen <PlusSquare className="w-3.5 h-3.5 text-[#1673B8] inline" />
+                        </strong>
+                        .
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#1673B8] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
+                        3
+                      </span>
+                      <span className="flex-1">
+                        Tap <strong>Add</strong> at the top-right — Food Science Portal installs right onto your iPhone Home Screen!
+                      </span>
+                    </li>
+                  </ol>
+                </div>
+              )}
+
+              {/* Android Direct Install Guide (Shown on Android or Desktop when native prompt wasn't captured yet) */}
+              {!devicePlatform.isIOS && (
+                <div className="space-y-3 bg-[#F4F8FD] border border-[#D2DEEA] rounded-2xl p-4 text-xs">
+                  <div className="space-y-1.5">
+                    <p className="font-extrabold text-[#1A2138] flex items-center gap-1.5">
+                      <Smartphone className="w-4 h-4 text-[#1673B8] shrink-0" />
+                      <span>On Android (Chrome / Edge / Samsung Internet):</span>
+                    </p>
+                    <ol className="space-y-1.5 text-[11.5px] text-slate-700 font-medium leading-relaxed pl-1">
+                      <li className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#1673B8] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
+                          1
+                        </span>
+                        <span>
+                          Tap browser menu{' '}
+                          <strong className="inline-flex items-center gap-0.5 text-[#1A2138]">
+                            (<MoreVertical className="w-3.5 h-3.5 inline text-[#1673B8]" />)
+                          </strong>{' '}
+                          at top-right of Chrome.
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-full bg-[#1673B8] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
+                          2
+                        </span>
+                        <span>
+                          Tap <strong>&ldquo;Install app&rdquo;</strong> or <strong>&ldquo;Add to Home screen&rdquo;</strong> — it installs immediately as an Android app.
+                        </span>
+                      </li>
+                    </ol>
+                  </div>
+
+                  {!devicePlatform.isAndroid && (
+                    <div className="border-t border-[#D2DEEA] pt-2.5 space-y-1">
+                      <p className="font-extrabold text-[#1A2138] flex items-center gap-1.5">
+                        <Smartphone className="w-3.5 h-3.5 text-[#1673B8]" />
+                        <span>On iPhone / iPad (Safari):</span>
+                      </p>
+                      <p className="text-slate-600 text-[11.5px] leading-relaxed pl-5">
+                        Open in <strong>Safari</strong>, tap <strong>Share</strong>, and select <strong>&ldquo;Add to Home Screen&rdquo;</strong>.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                {devicePlatform.isIOS &&
+                  typeof navigator !== 'undefined' &&
+                  typeof navigator.share === 'function' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator
+                          .share({
+                            title: 'Food Science Portal',
+                            text: 'Install Food Science Portal App',
+                            url: window.location.origin
+                          })
+                          .catch(() => {});
+                      }}
+                      className="flex-1 py-2.5 px-4 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#1673B8]/40 text-[#1673B8] text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+                    >
+                      <Share className="w-3.5 h-3.5 shrink-0" />
+                      <span>Open Share Sheet</span>
+                    </button>
+                  )}
                 <button
                   type="button"
                   onClick={() => setShowInstallAppModal(false)}
-                  className="py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors"
+                  className="py-2.5 px-5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors whitespace-nowrap"
                 >
-                  Done
+                  Close
                 </button>
               </div>
             </div>

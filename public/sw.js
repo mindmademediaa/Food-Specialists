@@ -1,4 +1,4 @@
-const CACHE_NAME = 'food-science-portal-v20261117-v5';
+const CACHE_NAME = 'food-science-portal-v20261117-v6';
 const CORE_SHELL_URLS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (event) => {
