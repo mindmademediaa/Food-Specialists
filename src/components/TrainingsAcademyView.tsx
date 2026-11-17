@@ -64,6 +64,10 @@ import {
   getLocalizedCertificateFee
 } from '../lib/geoCurrency';
 import { buildLinkedInAddCertificateUrl } from '../lib/pwaNotifications';
+import {
+  LinkedInPostShareModal,
+  LinkedInPostShareTarget
+} from './LinkedInPostShareModal';
 
 interface TrainingsAcademyViewProps {
   trainings: HubTraining[];
@@ -241,6 +245,8 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
   const [payReceiptDataUrl, setPayReceiptDataUrl] = useState('');
   const [isSubmittingPay, setIsSubmittingPay] = useState(false);
   const [payFeedbackMsg, setPayFeedbackMsg] = useState<string | null>(null);
+  const [linkedInPostTarget, setLinkedInPostTarget] =
+    useState<LinkedInPostShareTarget | null>(null);
 
   // Verification Portal Search State (auto-populated if user scanned QR code or opened ?verify=FSP-...)
   const [verifyQuery, setVerifyQuery] = useState(() => {
@@ -1564,6 +1570,35 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   <Download className="w-4 h-4" />
                   Download Certificate (PDF)
                 </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLinkedInPostTarget({
+                      certParams: {
+                        certificateNumber: certNo,
+                        recipientName: holderName,
+                        recipientEmail: currentUser?.email || '',
+                        recipientProfilePicUrl: currentUser?.profilePicUrl,
+                        courseTitle: course.title,
+                        courseCode: course.code,
+                        accreditationStandard: course.accreditationStandard,
+                        scorePercentage: scorePct,
+                        correctCount: correctOutOf40,
+                        totalQuestions: 40,
+                        distinction: isDistinction,
+                        issueDate: issueDateStr,
+                        verificationPortalUrl: officialPortalBase,
+                        syllabusModules: course.modules.map((m) => m.title),
+                        issuedByMode: 'exam'
+                      },
+                      verifyUrl: directVerifyUrl
+                    })
+                  }
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-xs shadow-sm transition cursor-pointer shrink-0 whitespace-nowrap"
+                >
+                  <Share2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Share as LinkedIn Post</span>
+                </button>
                 <a
                   href={buildLinkedInAddCertificateUrl({
                     courseTitle: course.title,
@@ -1573,9 +1608,9 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                   })}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-xs shadow-sm transition shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#0A66C2]/30 text-[#0A66C2] font-bold text-xs shadow-xs transition shrink-0 whitespace-nowrap"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                   <span>Add to LinkedIn Profile</span>
                 </a>
               </div>
@@ -2317,6 +2352,69 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                             <Download className="w-3.5 h-3.5" />
                             Download Portrait PDF
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const matched = INTERNATIONAL_TRAINING_COURSES.find(
+                                (c) =>
+                                  c.title.toLowerCase() ===
+                                  rec.courseTitle.trim().toLowerCase()
+                              );
+                              const matchedHolderUser = users.find(
+                                (u) =>
+                                  (rec.recipientEmail &&
+                                    u.email?.trim().toLowerCase() ===
+                                      rec.recipientEmail.trim().toLowerCase()) ||
+                                  u.name?.trim().toLowerCase() ===
+                                    rec.recipientName.trim().toLowerCase()
+                              );
+                              const verifyUrl = buildDirectCertificateVerifyUrl({
+                                certificateNumber: rec.certificateNumber,
+                                recipientName: rec.recipientName || currentUser?.name,
+                                courseTitle: rec.courseTitle,
+                                courseCode: rec.courseCode || 'FS-CERT-INTL',
+                                accreditationStandard: rec.accreditationBody,
+                                scorePercentage: rec.scorePercentage,
+                                issueDate: rec.issueDate
+                              });
+                              setLinkedInPostTarget({
+                                certParams: {
+                                  certificateNumber: rec.certificateNumber,
+                                  recipientName:
+                                    rec.recipientName ||
+                                    currentUser?.name ||
+                                    'Food Specialist',
+                                  recipientEmail: rec.recipientEmail,
+                                  recipientProfilePicUrl:
+                                    matchedHolderUser?.profilePicUrl || undefined,
+                                  courseTitle: rec.courseTitle,
+                                  courseCode:
+                                    rec.courseCode || matched?.code || 'FS-CERT-INTL',
+                                  accreditationStandard: rec.accreditationBody,
+                                  scorePercentage: rec.scorePercentage,
+                                  correctCount: Math.round(
+                                    (rec.scorePercentage / 100) * 40
+                                  ),
+                                  totalQuestions: 40,
+                                  distinction: rec.distinction,
+                                  issueDate: rec.issueDate,
+                                  verificationPortalUrl:
+                                    resolveOfficialVerificationBaseUrl(),
+                                  syllabusModules: matched?.modules.map(
+                                    (m) => m.title
+                                  ),
+                                  issuedByMode: rec.issuedByAdminDirect
+                                    ? 'admin_direct'
+                                    : 'exam'
+                                },
+                                verifyUrl
+                              });
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-xs shadow-xs cursor-pointer whitespace-nowrap"
+                          >
+                            <Share2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>Share as LinkedIn Post</span>
+                          </button>
                           <a
                             href={buildLinkedInAddCertificateUrl({
                               courseTitle: rec.courseTitle,
@@ -2334,10 +2432,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                             })}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-xs shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#0A66C2]/30 text-[#0A66C2] font-bold text-xs shadow-xs whitespace-nowrap"
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            Add to LinkedIn
+                            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                            <span>Add to LinkedIn Profile</span>
                           </a>
                         </div>
                       </div>
@@ -2444,6 +2542,53 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                             <Download className="w-4 h-4" />
                             Download Portrait PDF
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const resolvedStandard =
+                                cert.accreditationBody ||
+                                matched?.accreditationStandard ||
+                                'Codex Alimentarius & GFSI International Standard';
+                              const verifyUrl = buildDirectCertificateVerifyUrl({
+                                certificateNumber: cert.certificateNumber,
+                                recipientName: cert.recipientName,
+                                courseTitle: cert.trainingTitle,
+                                courseCode: matched?.code || 'FS-CERT-INTL',
+                                accreditationStandard: resolvedStandard,
+                                scorePercentage: scorePct,
+                                issueDate: cert.issueDate
+                              });
+                              setLinkedInPostTarget({
+                                certParams: {
+                                  certificateNumber: cert.certificateNumber,
+                                  recipientName: cert.recipientName,
+                                  recipientEmail:
+                                    cert.recipientEmail || currentUser.email,
+                                  recipientProfilePicUrl:
+                                    currentUser.profilePicUrl,
+                                  courseTitle: cert.trainingTitle,
+                                  courseCode: matched?.code || 'FS-CERT-INTL',
+                                  accreditationStandard: resolvedStandard,
+                                  scorePercentage: scorePct,
+                                  correctCount: Math.round((scorePct / 100) * 40),
+                                  totalQuestions: 40,
+                                  distinction: isDist,
+                                  issueDate: cert.issueDate,
+                                  verificationPortalUrl:
+                                    resolveOfficialVerificationBaseUrl(),
+                                  syllabusModules: matched?.modules.map(
+                                    (m) => m.title
+                                  ),
+                                  issuedByMode: 'admin_direct'
+                                },
+                                verifyUrl
+                              });
+                            }}
+                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-xs shadow-sm cursor-pointer shrink-0 whitespace-nowrap"
+                          >
+                            <Share2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>Share as LinkedIn Post</span>
+                          </button>
                           <a
                             href={buildLinkedInAddCertificateUrl({
                               courseTitle: cert.trainingTitle,
@@ -2463,10 +2608,10 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                             })}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0A66C2] hover:bg-[#004182] text-white font-bold text-xs shadow-sm shrink-0"
+                            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#0A66C2]/30 text-[#0A66C2] font-bold text-xs shadow-xs shrink-0 whitespace-nowrap"
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            Add to LinkedIn Profile
+                            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                            <span>Add to LinkedIn Profile</span>
                           </a>
                         </div>
                       </div>
@@ -3687,6 +3832,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
           </div>
         </div>
       )}
+
+      <LinkedInPostShareModal
+        target={linkedInPostTarget}
+        onClose={() => setLinkedInPostTarget(null)}
+      />
     </div>
   );
 };

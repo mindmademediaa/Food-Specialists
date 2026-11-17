@@ -220,6 +220,48 @@ export function buildLinkedInAddCertificateUrl(params: {
   return `https://www.linkedin.com/profile/add?${query.toString()}`;
 }
 
+export function buildLinkedInCertificatePostCaption(params: {
+  courseTitle: string;
+  certificateNumber: string;
+  accreditationStandard?: string;
+  scorePercentage?: number;
+  distinction?: boolean;
+  verifyUrl: string;
+}): string {
+  const cleanTitle = (params.courseTitle || 'Food Safety & Quality Management')
+    .replace(/\bAccredited\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const scoreBadge =
+    typeof params.scorePercentage === 'number'
+      ? ` with ${params.scorePercentage}% (${params.distinction ? 'Distinction' : 'Passed'})`
+      : '';
+
+  const cleanStandard = (params.accreditationStandard || '')
+    .replace(/\bAccredited\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const lines = [
+    `I'm pleased to share that I have earned my certificate in ${cleanTitle}${scoreBadge} from Food Science Portal!`,
+    '',
+    `Credential ID: ${params.certificateNumber}`,
+    ...(cleanStandard ? [`Standard: ${cleanStandard}`] : []),
+    `Verify Certificate Online: ${params.verifyUrl}`,
+    '',
+    '#FoodSafety #FoodScience #QAQC #HACCP #ISO22000 #ProfessionalDevelopment'
+  ];
+
+  return lines.join('\n');
+}
+
+export function buildLinkedInFeedPostUrl(postText: string): string {
+  return `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(
+    postText
+  )}`;
+}
+
 // WhatsApp & Email Confirmation URL Builders for Admin Post-Approval Alerts
 export function formatWhatsAppNumber(rawPhone?: string): string {
   const digits = (rawPhone || '').replace(/[^\d]/g, '');

@@ -1,5 +1,7 @@
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
 import {
   CertificateSignatureId,
@@ -7,6 +9,10 @@ import {
   getSavedCertificateSignatureId,
   getSavedCustomSignatureDataUrl
 } from './certificateSignatures';
+
+if (typeof window !== 'undefined' && pdfjsLib?.GlobalWorkerOptions) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+}
 
 export const OFFICIAL_APP_PORTAL_URL =
   'https://foodscienceportal.com';
@@ -150,18 +156,11 @@ export function getSequentialModuleList(
 }
 
 /**
- * Generates and downloads an official Portrait A4 (210mm x 297mm) PDF Certificate:
- *  1. Displays the large, clear Food Science Portal Logo + "Food Science Portal" at the top
- *  2. Displays the recipient's Name and Profile Picture
- *  3. Properly fits Course Title, Code/Standard, and lists all Modules sequentially one below another inside the certificate bounds
- *  4. 3-Column Metrics Row: Certificate No. | Awarded | Exam Score
- *  5. Validation section links directly to the App/Website Verification Portal
- *  6. Scannable vector QR Code on the bottom-right for instant verification on scan
- *  7. "Endorsed by Food Science Portal" badge with official emblem
+ * Builds the official Portrait A4 (210mm x 297mm) jsPDF Certificate document.
  */
-export function downloadOfficialCourseCertificatePdf(
+export function buildOfficialCourseCertificatePdfDoc(
   params: OfficialCertificatePdfParams
-): void {
+): jsPDF {
   const {
     certificateNumber,
     recipientName,
@@ -630,9 +629,94 @@ export function downloadOfficialCourseCertificatePdf(
     [71, 85, 105]
   );
 
-  const safeSlug = courseCode.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const safeName = cleanRecipient
+  return doc;
+}
+
+function buildSafeCertificateFilename(
+  courseCode: string,
+  recipientName: string,
+  ext: 'pdf' | 'png'
+): string {
+  const safeSlug = (courseCode || 'FSP_CERT').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const safeName = (recipientName || 'Certified_Professional')
+    .trim()
     .replace(/[^a-zA-Z0-9_-]/g, '_')
     .slice(0, 28);
-  doc.save(`FS_Portal_Certificate_${safeSlug}_${safeName}.pdf`);
+  return `FS_Portal_Certificate_${safeSlug}_${safeName}.${ext}`;
+}
+
+/**
+ * Generates and downloads an official Portrait A4 (210mm x 297mm) PDF Certificate.
+ */
+export function downloadOfficialCourseCertificatePdf(
+  params: OfficialCertificatePdfParams
+): void {
+  const doc = buildOfficialCourseCertificatePdfDoc(params);
+  doc.save(
+    buildSafeCertificateFilename(
+      params.courseCode,
+      params.recipientName,
+      'pdf'
+    )
+  );
+}
+
+/**
+ * Renders the exact generated Portrait A4 Certificate to a high-resolution PNG Blob & Data URL
+ * so users can share the visual Certificate image directly in a LinkedIn Post (mobile Share Sheet
+ * or desktop Photo upload).
+ */
+export async function renderOfficialCourseCertificatePng(
+  params: OfficialCertificatePdfParams,
+  scale = 2.0
+): Promise<{ blob: Blob; dataUrl: string; fileName: string }> {
+  const doc = buildOfficialCourseCertificatePdfDoc(params);
+  const arrayBuffer = doc.output('arraybuffer');
+  const uint8 = new Uint8Array(arrayBuffer);
+
+  const loadingTask = pdfjsLib.getDocument({ data: uint8 });
+  const pdf = await loadingTask.promise;
+  const page = await pdf.getPage(1);
+  const viewport = page.getViewport({ scale });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(viewport.width);
+  canvas.height = Math.round(viewport.height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('Canvas 2D context unavailable for certificate image export.');
+  }
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  await page.render({
+    canvas,
+    canvasContext: ctx,
+    viewport
+  }).promise;
+
+  const dataUrl = canvas.toDataURL('image/png', 0.96);
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => {
+        if (b) resolve(b);
+        else reject(new Error('Failed to encode PNG certificate image.'));
+      },
+      'image/png',
+      0.96
+    );
+  });
+
+  await loadingTask.destroy();
+
+  return {
+    blob,
+    dataUrl,
+    fileName: buildSafeCertificateFilename(
+      params.courseCode,
+      params.recipientName,
+      'png'
+    )
+  };
 }
