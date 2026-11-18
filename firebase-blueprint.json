@@ -276,6 +276,46 @@
         "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "orgId", "complaintCode", "companyNameSnapshot", "complainantName", "category", "severity", "subject", "description", "status", "createdAt"]
+    },
+    "QaDocumentWorkspace": {
+      "title": "QaDocumentWorkspace",
+      "description": "Per-user company branding, standards scope, and document control authorities for the ISO 9001, FSSC 22000 & HACCP Document Vault",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "companyName": { "type": "string", "maxLength": 160 },
+        "industryType": { "type": "string", "maxLength": 120 },
+        "facilityAddress": { "type": "string", "maxLength": 300 },
+        "scopeStatement": { "type": "string", "maxLength": 1200 },
+        "standards": { "type": "array" },
+        "docCodePrefix": { "type": "string", "maxLength": 24 },
+        "pfaOrRegNo": { "type": "string", "maxLength": 120 },
+        "contactPhone": { "type": "string", "maxLength": 60 },
+        "contactEmail": { "type": "string", "maxLength": 200 },
+        "logoUrl": { "type": "string", "maxLength": 450000 },
+        "preparedBy": { "type": "string", "maxLength": 120 },
+        "preparedRole": { "type": "string", "maxLength": 120 },
+        "reviewedBy": { "type": "string", "maxLength": 120 },
+        "reviewedRole": { "type": "string", "maxLength": 120 },
+        "approvedBy": { "type": "string", "maxLength": 120 },
+        "approvedRole": { "type": "string", "maxLength": 120 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "ownerUid", "companyName", "createdAt", "updatedAt"]
+    },
+    "QaDocumentModule": {
+      "title": "QaDocumentModule",
+      "description": "Controlled ISO 9001, FSSC 22000 & Codex HACCP module document (SOPs, ASP, Pest, HACCP Team, Product, Flow, Hazards, CCPs, Limits, Checklists, CAR, Verification, Risk Assessment)",
+      "type": "object",
+      "properties": {
+        "moduleId": { "type": "string", "maxLength": 128 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "meta": { "type": "object" },
+        "payload": { "type": "object" }
+      },
+      "required": ["moduleId", "ownerUid", "meta", "payload"]
     }
   },
   "firestore": {
@@ -370,6 +410,14 @@
     "/complaintOrgs/{orgId}/complaints/{complaintId}": {
       "schema": { "$ref": "#/entities/OrganizationComplaint" },
       "description": "Strictly owner-isolated complaint & CAPA records submitted via QR scan or manual log"
+    },
+    "/qaDocumentWorkspaces/{uid}": {
+      "schema": { "$ref": "#/entities/QaDocumentWorkspace" },
+      "description": "Strictly owner-isolated company QMS/FSMS/HACCP profile & document control settings"
+    },
+    "/qaDocumentWorkspaces/{uid}/modules/{moduleId}": {
+      "schema": { "$ref": "#/entities/QaDocumentModule" },
+      "description": "Strictly owner-isolated controlled ISO 9001, FSSC 22000 & HACCP module data"
     }
   }
 }

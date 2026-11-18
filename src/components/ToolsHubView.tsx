@@ -1276,13 +1276,13 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </span>
             </button>
 
-            {/* TOOL 14: QA/QC & AUDIT TEMPLATES VAULT (PAID EXCLUSIVE) */}
+            {/* TOOL 14: QA/QC, ISO 9001, FSSC 22000 & HACCP DOCUMENT VAULT */}
             <button
               type="button"
               onClick={() =>
                 handleSelectToolOrAction(
                   'templates-vault',
-                  'QA/QC & Audit Document Templates Vault'
+                  'QA/QC, ISO 9001, FSSC 22000 & HACCP Document Vault'
                 )
               }
               className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
@@ -1291,7 +1291,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 <FileText className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
               </div>
               <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                QA/QC &amp; Audit Templates Vault
+                QA/QC, ISO 9001 &amp; FSSC Document Vault
               </span>
             </button>
 
@@ -1491,7 +1491,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       )}
 
       {/* =====================================================================
-          VIEW 10D: QA/QC & AUDIT TEMPLATES VAULT (PAID EXCLUSIVE)
+          VIEW 10D: QA/QC, ISO 9001, FSSC 22000 & HACCP DOCUMENT VAULT STUDIO
          ===================================================================== */}
       {activeSection === 'templates-vault' && (
         <QaQcTemplatesVaultTool
@@ -1499,6 +1499,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           isUserPaid={isUserPaid}
           hasExpiredPremium={hasExpiredPremium}
           onOpenPremiumModal={onOpenPremiumModal}
+          onRequireSignIn={onRequireSignIn}
         />
       )}
 

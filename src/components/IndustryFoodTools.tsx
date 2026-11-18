@@ -20,10 +20,9 @@ import {
   FOOD_AUTHORITY_LIMITS,
   FoodAuthorityBody,
   FoodCommodityCategory,
-  NUTRITION_LABEL_PRESETS,
-  QA_QC_TEMPLATES_VAULT,
-  QaQcTemplateDocument
+  NUTRITION_LABEL_PRESETS
 } from '../data/foodSafetyReferenceData';
+import { QaQcDocumentVaultTool } from './QaQcDocumentVaultTool';
 import { HubUser } from '../types/hub';
 
 interface PaidFeatureProps {
@@ -31,6 +30,7 @@ interface PaidFeatureProps {
   isUserPaid: boolean;
   hasExpiredPremium: boolean;
   onOpenPremiumModal: () => void;
+  onRequireSignIn?: () => void;
 }
 
 type LabelStandard = 'FDA' | 'GCC_SFDA' | 'PSQCA';
@@ -1099,332 +1099,23 @@ export const ThermalAndWaterActivityTool: React.FC<PaidFeatureProps> = ({
 };
 
 // ============================================================================
-// TOOL C: READY-TO-USE QA/QC & AUDIT DOCUMENT TEMPLATES VAULT (PAID EXCLUSIVE)
+// TOOL C: COMPLETE ISO 9001, FSSC 22000 & CODEX HACCP DOCUMENT VAULT STUDIO
 // ============================================================================
 export const QaQcTemplatesVaultTool: React.FC<PaidFeatureProps> = ({
   isUserPaid,
   hasExpiredPremium,
   user,
-  onOpenPremiumModal
+  onOpenPremiumModal,
+  onRequireSignIn
 }) => {
-  const isUnlocked = Boolean((isUserPaid && !hasExpiredPremium) || user.isAdmin);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [facilityName, setFacilityName] = useState(user.company || 'Al-Meezan Food Processing Industries');
-  const [qaLeadName, setQaLeadName] = useState(user.name || 'QA/QC Manager');
-  const [selectedDoc, setSelectedDoc] = useState<QaQcTemplateDocument>(QA_QC_TEMPLATES_VAULT[0]);
-  const [toast, setToast] = useState<string | null>(null);
-
-  const filteredDocs = useMemo(() => {
-    if (selectedCategory === 'All') return QA_QC_TEMPLATES_VAULT;
-    return QA_QC_TEMPLATES_VAULT.filter((d) => d.category === selectedCategory);
-  }, [selectedCategory]);
-
-  const handleDownloadPdfTemplate = (docItem: QaQcTemplateDocument) => {
-    if (!isUnlocked) {
-      onOpenPremiumModal();
-      return;
-    }
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    pdf.setFillColor(26, 33, 56);
-    pdf.rect(0, 0, 297, 24, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(13);
-    pdf.text(`${docItem.code} — ${docItem.title.toUpperCase()}`, 12, 10.5);
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(
-      `Facility: ${facilityName}  |  Prepared By: ${qaLeadName}  |  Standard: ${docItem.standardBadge}  |  ${docItem.revision}`,
-      12,
-      18
-    );
-
-    const colWidth = 273 / docItem.columns.length;
-    let y = 33;
-
-    // Table Header
-    pdf.setFillColor(22, 115, 184);
-    pdf.rect(12, y - 5, 273, 10, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(8);
-    docItem.columns.forEach((col, i) => {
-      const wrapped = pdf.splitTextToSize(col, colWidth - 3);
-      pdf.text(wrapped[0] || col, 13.5 + i * colWidth, y + 1);
-    });
-
-    y += 9;
-    pdf.setTextColor(20, 28, 45);
-    pdf.setFont('helvetica', 'normal');
-    docItem.sampleRows.forEach((row) => {
-      const cellLines = row.map((cell) => pdf.splitTextToSize(cell, colWidth - 3));
-      const maxLines = Math.max(...cellLines.map((l) => l.length), 2);
-      const rowHeight = Math.max(12, maxLines * 4.2 + 4);
-      pdf.setDrawColor(210, 222, 234);
-      pdf.rect(12, y - 3, 273, rowHeight);
-      cellLines.forEach((lines, i) => {
-        if (i > 0) pdf.line(12 + i * colWidth, y - 3, 12 + i * colWidth, y - 3 + rowHeight);
-        pdf.text(lines, 13.5 + i * colWidth, y + 1.5);
-      });
-      y += rowHeight;
-    });
-
-    // Blank Write-In Rows for Plant Floor Printing
-    for (let b = 0; b < 3; b += 1) {
-      if (y + 12 > 185) break;
-      pdf.rect(12, y - 3, 273, 11);
-      for (let i = 1; i < docItem.columns.length; i += 1) {
-        pdf.line(12 + i * colWidth, y - 3, 12 + i * colWidth, y + 8);
-      }
-      y += 11;
-    }
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(8.5);
-    pdf.text('Audit Verification Notes & Guidance:', 12, Math.min(190, y + 4));
-    pdf.setFont('helvetica', 'normal');
-    docItem.auditGuidance.slice(0, 2).forEach((g, idx) => {
-      pdf.text(`• ${g}`, 12, Math.min(195 + idx * 4.5, 203));
-    });
-
-    pdf.save(`${docItem.code}-${facilityName.replace(/[^a-zA-Z0-9]+/g, '-').slice(0, 24)}.pdf`);
-    setToast(`Downloaded controlled PDF form: ${docItem.code}`);
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  const handleDownloadCsvTemplate = (docItem: QaQcTemplateDocument) => {
-    if (!isUnlocked) {
-      onOpenPremiumModal();
-      return;
-    }
-    const escapeCsv = (cell: string) => `"${(cell || '').replace(/"/g, '""')}"`;
-    const metaHeader = [
-      `"Document Code","${docItem.code}","Title","${docItem.title}"`,
-      `"Facility","${facilityName}","QA Lead","${qaLeadName}"`,
-      ''
-    ];
-    const tableLines = [
-      docItem.columns.map(escapeCsv).join(','),
-      ...docItem.sampleRows.map((r) => r.map(escapeCsv).join(','))
-    ];
-    const blob = new Blob([[...metaHeader, ...tableLines].join('\n')], {
-      type: 'text/csv;charset=utf-8;'
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${docItem.code}-Spreadsheet-Template.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setToast(`Downloaded editable Excel/CSV template: ${docItem.code}`);
-    setTimeout(() => setToast(null), 3500);
-  };
-
   return (
-    <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#D2DEEA] pb-4">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-amber-700">
-            <Crown className="w-4 h-4 text-amber-500" />
-            <span>Paid Member Exclusive Audit Kit</span>
-          </div>
-          <h2 className="text-lg sm:text-xl font-black text-[#1A2138]">
-            Ready-to-Use QA/QC &amp; Audit Document Templates Vault
-          </h2>
-          <p className="text-xs text-[#5A6C84] max-w-2xl">
-            Download audit-ready HACCP plans, SSOP pre-op logs, Allergen control matrices, FSSC v7 checklists, and PFA/PSQCA inspection forms pre-branded with your facility name.
-          </p>
-        </div>
-
-        {!isUnlocked && (
-          <button
-            type="button"
-            onClick={onOpenPremiumModal}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
-          >
-            <Crown className="w-3.5 h-3.5 text-amber-300" />
-            <span>Unlock All Vault Downloads</span>
-          </button>
-        )}
-      </div>
-
-      {/* Facility Personalization Inputs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#F0F6FC] border border-[#D2DEEA] rounded-2xl p-4">
-        <div>
-          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-            Company / Plant Name (Printed on Document Header)
-          </label>
-          <input
-            type="text"
-            value={facilityName}
-            onChange={(e) => setFacilityName(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-bold text-[#1A2138]"
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-            Prepared By / QA Lead Name
-          </label>
-          <input
-            type="text"
-            value={qaLeadName}
-            onChange={(e) => setQaLeadName(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-bold text-[#1A2138]"
-          />
-        </div>
-      </div>
-
-      {/* Category Filter */}
-      <div className="flex flex-wrap gap-2">
-        {['All', 'HACCP & Food Safety', 'Sanitation & PRP', 'Supplier & Audit', 'Regulatory Inspection'].map(
-          (cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer ${
-                selectedCategory === cat
-                  ? 'bg-[#1673B8] text-white'
-                  : 'bg-[#F8FAFC] border border-[#D2DEEA] text-[#1A2138] hover:bg-[#F0F6FC]'
-              }`}
-            >
-              {cat}
-            </button>
-          )
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Document List */}
-        <div className="lg:col-span-5 space-y-2.5">
-          {filteredDocs.map((docItem) => {
-            const active = selectedDoc.id === docItem.id;
-            return (
-              <button
-                key={docItem.id}
-                type="button"
-                onClick={() => setSelectedDoc(docItem)}
-                className={`w-full text-left p-4 rounded-2xl border transition cursor-pointer space-y-1 ${
-                  active
-                    ? 'bg-[#F0F6FC] border-2 border-[#1673B8]'
-                    : 'bg-white border-[#D2DEEA] hover:bg-[#F8FAFC]'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2 text-[10.5px] font-extrabold text-[#1673B8]">
-                  <span className="font-mono">{docItem.code}</span>
-                  <span>{docItem.revision}</span>
-                </div>
-                <div className="text-sm font-black text-[#1A2138] leading-snug">
-                  {docItem.title}
-                </div>
-                <div className="text-[11px] text-[#5A6C84]">{docItem.standardBadge}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Live Document Preview + Download */}
-        <div className="lg:col-span-7 bg-[#F8FAFC] border border-[#D2DEEA] rounded-2xl p-4 sm:p-5 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#D2DEEA] pb-3">
-            <div>
-              <span className="text-[11px] font-mono font-black text-[#1673B8]">
-                {selectedDoc.code} · {selectedDoc.standardBadge}
-              </span>
-              <h3 className="text-base font-black text-[#1A2138] mt-0.5">
-                {selectedDoc.title}
-              </h3>
-              <p className="text-xs text-[#5A6C84] mt-1">{selectedDoc.summary}</p>
-            </div>
-          </div>
-
-          {/* Preview Table */}
-          <div className="overflow-x-auto rounded-xl border border-[#D2DEEA] bg-white">
-            <table className="w-full text-left border-collapse text-[11px]">
-              <thead>
-                <tr className="bg-[#1A2138] text-white">
-                  {selectedDoc.columns.map((col) => (
-                    <th key={col} className="p-2.5 font-extrabold border-r border-white/15 last:border-0">
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#D2DEEA]">
-                {(isUnlocked ? selectedDoc.sampleRows : selectedDoc.sampleRows.slice(0, 1)).map(
-                  (row, rIdx) => (
-                    <tr key={rIdx} className="hover:bg-[#F0F6FC]">
-                      {row.map((cell, cIdx) => (
-                        <td
-                          key={cIdx}
-                          className="p-2.5 text-[#1A2138] font-medium border-r border-[#D2DEEA] last:border-0 align-top"
-                        >
-                          {cell}
-                        </td>
-                      ))}
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
-            {!isUnlocked && (
-              <div className="p-3 bg-amber-50 border-t border-amber-200 text-xs font-bold text-amber-900 flex items-center justify-between gap-2">
-                <span>Preview limited to Row 1. Upgrade to Paid Membership to view full SOP tables and download printable PDF/Excel files.</span>
-                <button
-                  type="button"
-                  onClick={onOpenPremiumModal}
-                  className="px-3 py-1.5 rounded-lg bg-[#1A2138] text-white text-[11px] font-extrabold shrink-0 cursor-pointer"
-                >
-                  Unlock Now
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1.5 text-xs">
-            <div className="font-extrabold text-[#1A2138]">Auditor Verification Tips:</div>
-            <ul className="space-y-1 text-[#5A6C84]">
-              {selectedDoc.auditGuidance.map((tip) => (
-                <li key={tip}>• {tip}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="flex flex-wrap gap-2.5 pt-2 border-t border-[#D2DEEA]">
-            <button
-              type="button"
-              onClick={() => handleDownloadPdfTemplate(selectedDoc)}
-              className="flex-1 min-w-[180px] py-2.5 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {isUnlocked ? <Download className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-              <span>
-                {isUnlocked ? 'Download Controlled PDF Form' : 'Paid Exclusive — Unlock PDF'}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDownloadCsvTemplate(selectedDoc)}
-              className="flex-1 min-w-[180px] py-2.5 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#1673B8] text-[#1673B8] text-xs font-extrabold inline-flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {isUnlocked ? (
-                <FileSpreadsheet className="w-4 h-4" />
-              ) : (
-                <Lock className="w-4 h-4" />
-              )}
-              <span>
-                {isUnlocked ? 'Download Excel / CSV Sheet' : 'Paid Exclusive — Unlock CSV'}
-              </span>
-            </button>
-          </div>
-          {toast && (
-            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold text-center">
-              {toast}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    <QaQcDocumentVaultTool
+      user={user}
+      isUserPaid={isUserPaid}
+      hasExpiredPremium={hasExpiredPremium}
+      onOpenPremiumModal={onOpenPremiumModal}
+      onRequireSignIn={onRequireSignIn}
+    />
   );
 };
 

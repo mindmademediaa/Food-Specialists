@@ -458,6 +458,69 @@ service cloud.firestore {
         (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
+    function isValidQaWorkspace(data, uid) {
+      return data is map &&
+        data.keys().hasAll(['uid', 'ownerUid', 'companyName', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'uid',
+          'ownerUid',
+          'companyName',
+          'industryType',
+          'facilityAddress',
+          'scopeStatement',
+          'standards',
+          'docCodePrefix',
+          'pfaOrRegNo',
+          'contactPhone',
+          'contactEmail',
+          'logoUrl',
+          'preparedBy',
+          'preparedRole',
+          'reviewedBy',
+          'reviewedRole',
+          'approvedBy',
+          'approvedRole',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.uid == uid &&
+        data.ownerUid == uid &&
+        data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 160 &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64 &&
+        data.updatedAt is string && data.updatedAt.size() >= 1 && data.updatedAt.size() <= 64 &&
+        (!('industryType' in data) || (data.industryType is string && data.industryType.size() <= 120)) &&
+        (!('facilityAddress' in data) || (data.facilityAddress is string && data.facilityAddress.size() <= 300)) &&
+        (!('scopeStatement' in data) || (data.scopeStatement is string && data.scopeStatement.size() <= 1200)) &&
+        (!('standards' in data) || (data.standards is list && data.standards.size() <= 12 && (data.standards.size() == 0 || data.standards[0] is string))) &&
+        (!('docCodePrefix' in data) || (data.docCodePrefix is string && data.docCodePrefix.size() <= 24)) &&
+        (!('pfaOrRegNo' in data) || (data.pfaOrRegNo is string && data.pfaOrRegNo.size() <= 120)) &&
+        (!('contactPhone' in data) || (data.contactPhone is string && data.contactPhone.size() <= 60)) &&
+        (!('contactEmail' in data) || (data.contactEmail is string && data.contactEmail.size() <= 200)) &&
+        (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 450000)) &&
+        (!('preparedBy' in data) || (data.preparedBy is string && data.preparedBy.size() <= 120)) &&
+        (!('preparedRole' in data) || (data.preparedRole is string && data.preparedRole.size() <= 120)) &&
+        (!('reviewedBy' in data) || (data.reviewedBy is string && data.reviewedBy.size() <= 120)) &&
+        (!('reviewedRole' in data) || (data.reviewedRole is string && data.reviewedRole.size() <= 120)) &&
+        (!('approvedBy' in data) || (data.approvedBy is string && data.approvedBy.size() <= 120)) &&
+        (!('approvedRole' in data) || (data.approvedRole is string && data.approvedRole.size() <= 120));
+    }
+
+    function isValidQaModule(data, uid, moduleId) {
+      return data is map &&
+        data.keys().hasAll(['moduleId', 'ownerUid', 'meta', 'payload']) &&
+        data.keys().hasOnly(['moduleId', 'ownerUid', 'meta', 'payload']) &&
+        data.moduleId == moduleId &&
+        data.ownerUid == uid &&
+        data.meta is map &&
+        data.meta.keys().hasAll(['docCode', 'revision', 'status', 'effectiveDate', 'updatedAt']) &&
+        data.meta.docCode is string && data.meta.docCode.size() >= 1 && data.meta.docCode.size() <= 64 &&
+        data.meta.revision is string && data.meta.revision.size() >= 1 && data.meta.revision.size() <= 32 &&
+        data.meta.status in ['draft', 'in_review', 'approved'] &&
+        data.meta.effectiveDate is string && data.meta.effectiveDate.size() >= 1 && data.meta.effectiveDate.size() <= 64 &&
+        data.meta.updatedAt is string && data.meta.updatedAt.size() >= 1 && data.meta.updatedAt.size() <= 64 &&
+        data.payload is map;
+    }
+
     // Strict Per-User Profile & Community Visibility Rules:
     // 1. Only the authenticated owner (request.auth.uid == uid) or Admin can create, update, or delete their profile.
     // 2. Public visitors and signed-in users can read the sanitized /users/{uid} profile document; private PII is isolated in /users/{uid}/private/{docId}.
@@ -685,6 +748,39 @@ service cloud.firestore {
             existingComplaintCount(get(/databases/$(database)/documents/complaintOrgs/$(orgId)).data) <= 10
           );
         allow delete: if (isOwner(orgId) || isAdmin()) && isValidId(orgId) && isValidId(complaintId);
+      }
+    }
+
+    // Per-User ISO 9001, FSSC 22000 & Codex HACCP Document Vault Workspace
+    // Strictly isolated to the workspace owner (uid == request.auth.uid) or Admin.
+    match /qaDocumentWorkspaces/{uid} {
+      allow get: if isValidId(uid) && (isOwner(uid) || isAdmin());
+      allow list: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if (isOwner(uid) || isAdmin()) &&
+        isValidId(uid) &&
+        isValidQaWorkspace(request.resource.data, uid);
+      allow update: if (isOwner(uid) || isAdmin()) &&
+        isValidId(uid) &&
+        isValidQaWorkspace(request.resource.data, uid) &&
+        request.resource.data.ownerUid == resource.data.ownerUid &&
+        request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if (isOwner(uid) || isAdmin()) && isValidId(uid);
+
+      match /modules/{moduleId} {
+        allow get: if isValidId(uid) && isValidId(moduleId) && (isOwner(uid) || isAdmin());
+        allow list: if isOwner(uid) || isAdmin();
+        allow create: if (isOwner(uid) || isAdmin()) &&
+          isValidId(uid) &&
+          isValidId(moduleId) &&
+          exists(/databases/$(database)/documents/qaDocumentWorkspaces/$(uid)) &&
+          isValidQaModule(request.resource.data, uid, moduleId);
+        allow update: if (isOwner(uid) || isAdmin()) &&
+          isValidId(uid) &&
+          isValidId(moduleId) &&
+          exists(/databases/$(database)/documents/qaDocumentWorkspaces/$(uid)) &&
+          isValidQaModule(request.resource.data, uid, moduleId) &&
+          request.resource.data.ownerUid == resource.data.ownerUid;
+        allow delete: if (isOwner(uid) || isAdmin()) && isValidId(uid) && isValidId(moduleId);
       }
     }
   }

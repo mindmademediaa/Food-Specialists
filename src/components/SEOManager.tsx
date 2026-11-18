@@ -103,9 +103,9 @@ const TOOL_SEO_METADATA: Record<
   },
   'templates-vault': {
     title:
-      'QA/QC & Audit Document Templates Vault (HACCP, SSOP, FSSC v7, PFA) | Food Science Portal',
+      'ISO 9001, FSSC 22000 & HACCP QA/QC Document Vault Studio | Food Science Portal',
     description:
-      'Download audit-ready HACCP Master Plans, SSOP Pre-Op Logs, Allergen Matrices, and FSSC 22000 v7 Audit Checklists.'
+      'Build, manage, and export company-branded SOPs, Approved Supplier Program, Pest Management, HACCP Team, Product Description, Process Flow & Verification, Hazard Analysis, CCP Decision Tree, Critical Limits, Monitoring Checklists, CAPA, Verification, and Enterprise Risk Assessment.'
   },
   'authority-limits': {
     title:
