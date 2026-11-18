@@ -4083,7 +4083,9 @@ export default function App() {
         title: (ct.title || 'Custom Training').trim().slice(0, 220),
         code: (ct.code || 'CT-001').trim().slice(0, 60),
         priceRs: Math.max(0, Number(ct.priceRs) || 0),
-        priceUsd: Math.max(0, Number(ct.priceUsd) || 0),
+        priceUsd: Number.isFinite(Number(ct.priceUsd))
+          ? Math.max(0, Number(ct.priceUsd))
+          : 0,
         duration: (ct.duration || '2 Weeks').trim().slice(0, 100),
         mode: (ct.mode || 'Online Live / Hybrid').trim().slice(0, 100),
         accreditationStandard: (
@@ -4102,21 +4104,31 @@ export default function App() {
       })
     );
 
+    const effectiveProvider: CloudStorageConfig['provider'] =
+      storageConfig.provider === 'smart-firestore'
+        ? 'smart-firestore'
+        : 'cloudinary';
+    const nextTimestamp = new Date().toISOString().slice(0, 19) + 'Z';
     const updated: CloudStorageConfig = stripUndefinedDeep({
       ...storageConfig,
-      provider:
-        storageConfig.provider === 'smart-firestore'
-          ? 'smart-firestore'
-          : 'cloudinary',
+      provider: effectiveProvider,
       customTrainings: cleanList,
-      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+      updatedAt: nextTimestamp
     });
+    const prevStorageConfig = storageConfig;
     setStorageConfig(updated);
     try {
-      await setDoc(doc(db, 'settings', 'storageConfig'), updated, {
-        merge: true
-      });
+      await setDoc(
+        doc(db, 'settings', 'storageConfig'),
+        stripUndefinedDeep({
+          provider: effectiveProvider,
+          customTrainings: cleanList,
+          updatedAt: nextTimestamp
+        }),
+        { merge: true }
+      );
     } catch (error) {
+      setStorageConfig(prevStorageConfig);
       setAdminStatusBanner(
         'Could not save Custom Trainings to Cloud Firestore. Please verify admin login.'
       );
@@ -4134,7 +4146,7 @@ export default function App() {
     const feeLabel = (
       reg.trainingFee || `Rs. ${numericFee.toLocaleString()}`
     ).slice(0, 95);
-    const payload: CustomTrainingRegistration = {
+    const payload: CustomTrainingRegistration = stripUndefinedDeep({
       id: regId,
       trainingId: reg.trainingId.slice(0, 115),
       trainingTitle: reg.trainingTitle.slice(0, 230),
@@ -4149,7 +4161,7 @@ export default function App() {
       uid: reg.uid ? reg.uid.slice(0, 120) : '',
       status: 'pending',
       submittedAt: new Date().toISOString()
-    };
+    });
     await setDoc(doc(db, 'customTrainingRegistrations', regId), payload);
   };
 
@@ -4168,7 +4180,11 @@ export default function App() {
       );
       setAdminStatusBanner(`Updated registration status to "${status}".`);
       setTimeout(() => setAdminStatusBanner(null), 3500);
-    } catch {}
+    } catch (error) {
+      console.error('Failed to update custom training registration status:', error);
+      setAdminStatusBanner('Could not update registration status. Please retry.');
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    }
   };
 
   const handleDeleteCustomTrainingRegistration = async (id: string) => {
@@ -4177,7 +4193,11 @@ export default function App() {
       setCustomTrainingRegistrations((prev) => prev.filter((r) => r.id !== id));
       setAdminStatusBanner('Deleted Custom Training registration record.');
       setTimeout(() => setAdminStatusBanner(null), 3500);
-    } catch {}
+    } catch (error) {
+      console.error('Failed to delete custom training registration:', error);
+      setAdminStatusBanner('Could not delete registration record. Please retry.');
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    }
   };
 
   const handleReplySupportTicket = async (

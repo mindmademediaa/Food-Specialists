@@ -32,7 +32,12 @@ import * as pdfjsLib from 'pdfjs-dist';
 // @ts-ignore - Vite asset URL import for bundled PDF.js worker
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
-import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
+import {
+  drawPdfBrandLogo,
+  drawPdfUserPhoto,
+  fitPdfTextToWidth,
+  sanitizePdfText
+} from '../lib/pdfBranding';
 
 if (typeof window !== 'undefined' && pdfjsLib?.GlobalWorkerOptions) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -3416,24 +3421,37 @@ Means sharing the same letter within a column do not differ significantly at p <
     );
 
     const textX = 41;
+    const headerMaxW = pageW - 39 - textX;
     doc.setTextColor(186, 230, 253);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
     doc.text('Food Science Portal', textX, 12);
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(13);
-    doc.text('OFFICIAL JOURNAL MANUSCRIPT & RESEARCH PAPER', textX, 18.5);
+    doc.setFontSize(12.5);
+    doc.text(
+      fitPdfTextToWidth(doc, 'OFFICIAL JOURNAL MANUSCRIPT & RESEARCH PAPER', headerMaxW),
+      textX,
+      18.5
+    );
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.text(
-      `Author: ${authorName.slice(0, 48)}  |  Target Journal: ${targetShort}`,
+      fitPdfTextToWidth(
+        doc,
+        `Author: ${authorName} | Target Journal: ${targetShort}`,
+        headerMaxW
+      ),
       textX,
       25.5
     );
     doc.text(
-      `Format: ${targetImpact}  |  Date: ${new Date().toLocaleDateString('en-PK')}`,
+      fitPdfTextToWidth(
+        doc,
+        `Format: ${targetImpact} | Date: ${new Date().toLocaleDateString('en-PK')}`,
+        headerMaxW
+      ),
       textX,
       32
     );
@@ -3453,7 +3471,7 @@ Means sharing the same letter within a column do not differ significantly at p <
         doc.setFontSize(9.5);
         doc.setTextColor(255, 255, 255);
         doc.text(
-          `Food Science Portal  •  ${targetShort} Manuscript`,
+          fitPdfTextToWidth(doc, `Food Science Portal | ${targetShort} Manuscript`, pageW - margin * 2 - 18),
           margin + 15,
           10
         );
@@ -3478,7 +3496,7 @@ Means sharing the same letter within a column do not differ significantly at p <
         doc.setFont('helvetica', isHeaderRow ? 'bold' : 'normal');
         doc.setFontSize(8.2);
         const wrappedCells = Array.from({ length: colCount }, (_, cIdx) =>
-          doc.splitTextToSize(cells[cIdx] || '', Math.max(12, colW - 3))
+          doc.splitTextToSize(sanitizePdfText(cells[cIdx] || '', true), Math.max(12, colW - 3))
         );
         const maxLines = Math.max(1, ...wrappedCells.map((wc) => wc.length));
         const rowH = Math.max(6.2, maxLines * 3.8 + 2.6);
@@ -3544,7 +3562,7 @@ Means sharing the same letter within a column do not differ significantly at p <
         continue;
       }
 
-      const wrapped = doc.splitTextToSize(rawLines[lineIdx], pageW - margin * 2);
+      const wrapped = doc.splitTextToSize(sanitizePdfText(rawLines[lineIdx], true), pageW - margin * 2);
       if (wrapped.length === 0) {
         ensurePdfPageSpace(3.5);
         y += 3.5;
@@ -3556,6 +3574,20 @@ Means sharing the same letter within a column do not differ significantly at p <
         });
       }
       lineIdx += 1;
+    }
+
+    const totalPages = doc.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p += 1) {
+      doc.setPage(p);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(
+        fitPdfTextToWidth(doc, `Food Science Portal | ${targetShort} Manuscript`, pageW - margin * 2 - 26),
+        margin,
+        pageH - 7
+      );
+      doc.text(`Page ${p} of ${totalPages}`, pageW - margin, pageH - 7, { align: 'right' });
     }
 
     doc.save(
@@ -3693,18 +3725,24 @@ Means sharing the same letter within a column do not differ significantly at p <
       }
     );
 
+    const pageH = doc.internal.pageSize.getHeight();
     const textX = 41;
+    const headerMaxW = pageW - 39 - textX;
     doc.setTextColor(186, 230, 253);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
     doc.text('Food Science Portal', textX, 12);
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(13);
+    doc.setFontSize(12.5);
     doc.text(
-      `${
-        anovaDesignType === 'rcbd_two_way' ? 'TWO-WAY RCBD' : 'ONE-WAY CRD'
-      } ANOVA & ${anovaPostHocTest} STATISTICAL REPORT`,
+      fitPdfTextToWidth(
+        doc,
+        `${
+          anovaDesignType === 'rcbd_two_way' ? 'TWO-WAY RCBD' : 'ONE-WAY CRD'
+        } ANOVA & ${anovaPostHocTest} STATISTICAL REPORT`,
+        headerMaxW
+      ),
       textX,
       18.5
     );
@@ -3712,28 +3750,58 @@ Means sharing the same letter within a column do not differ significantly at p <
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.text(
-      `Researcher: ${researcherName}  |  Parameter: ${statParameterName}`,
+      fitPdfTextToWidth(
+        doc,
+        `Researcher: ${researcherName} | Parameter: ${statParameterName}`,
+        headerMaxW
+      ),
       textX,
       25.5
     );
     doc.text(
-      `Factor: ${statFactorName}  |  Alpha: p < ${anovaAlphaLevel}  |  Date: ${new Date().toLocaleDateString('en-PK')}`,
+      fitPdfTextToWidth(
+        doc,
+        `Factor: ${statFactorName} | Alpha: p < ${anovaAlphaLevel} | Date: ${new Date().toLocaleDateString('en-PK')}`,
+        headerMaxW
+      ),
       textX,
       32
     );
 
     let y = 48;
+    const ensureStatSpace = (neededMm: number) => {
+      if (y + neededMm > pageH - 18) {
+        doc.addPage();
+        doc.setFillColor(26, 33, 56);
+        doc.rect(0, 0, pageW, 14, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.2);
+        doc.text(
+          fitPdfTextToWidth(doc, `Food Science Portal | ANOVA Report - ${statParameterName}`, pageW - 28),
+          14,
+          9.2
+        );
+        y = 22;
+      }
+    };
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10.5);
     doc.setTextColor(26, 33, 56);
     doc.text(
-      `1. Treatment Summary (${anovaPostHocTest} Grouping at α = ${anovaAlphaLevel}) — ${statParameterName}`,
+      fitPdfTextToWidth(
+        doc,
+        `1. Treatment Summary (${anovaPostHocTest} Grouping at alpha = ${anovaAlphaLevel}) - ${statParameterName}`,
+        pageW - 28
+      ),
       14,
       y
     );
     y += 6;
 
     statisticalAnalysis.treatments.forEach((t, idx) => {
+      ensureStatSpace(11);
       doc.setFillColor(
         idx % 2 === 0 ? 240 : 255,
         idx % 2 === 0 ? 246 : 255,
@@ -3742,68 +3810,83 @@ Means sharing the same letter within a column do not differ significantly at p <
       doc.setDrawColor(210, 222, 234);
       doc.rect(14, y, pageW - 28, 9, 'FD');
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
+      doc.setFontSize(8.8);
       doc.setTextColor(26, 33, 56);
-      doc.text(t.treatmentName.slice(0, 38), 17, y + 6);
+      doc.text(fitPdfTextToWidth(doc, t.treatmentName, 75), 17, y + 6);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Result: ${t.displaySummary}`, 96, y + 6);
+      doc.text(fitPdfTextToWidth(doc, `Result: ${t.displaySummary}`, 55), 95, y + 6);
       doc.text(
-        `Range: ${t.min.toFixed(anovaDecimals)} – ${t.max.toFixed(
-          anovaDecimals
-        )}`,
-        154,
+        fitPdfTextToWidth(
+          doc,
+          `Range: ${t.min.toFixed(anovaDecimals)} - ${t.max.toFixed(anovaDecimals)}`,
+          42
+        ),
+        153,
         y + 6
       );
       y += 9;
     });
 
     y += 9;
+    ensureStatSpace(50);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10.5);
     doc.setTextColor(26, 33, 56);
     doc.text('2. Analysis of Variance (ANOVA) Summary & Critical Values', 14, y);
     y += 6;
 
+    const anovaBodyLines = [
+      `Between Treatments: df = ${statisticalAnalysis.dfBetween}, SS = ${statisticalAnalysis.ssBetween}, MS = ${statisticalAnalysis.msBetween}, F-Value = ${statisticalAnalysis.fCalculated}`,
+      ...(anovaDesignType === 'rcbd_two_way'
+        ? [
+            `Between Blocks / Replications: df = ${statisticalAnalysis.dfBlocks}, SS = ${statisticalAnalysis.ssBlocks}, MS = ${statisticalAnalysis.msBlocks}, F-Blocks = ${statisticalAnalysis.fBlocks}`,
+            `Residual Error: df = ${statisticalAnalysis.dfWithin}, SS = ${statisticalAnalysis.ssWithin}, MS = ${statisticalAnalysis.msWithin}`
+          ]
+        : [
+            `Within Treatments (Error): df = ${statisticalAnalysis.dfWithin}, SS = ${statisticalAnalysis.ssWithin}, MS = ${statisticalAnalysis.msWithin}`,
+            `Critical F (0.05) = ${statisticalAnalysis.f05} | Critical F (0.01) = ${statisticalAnalysis.f01} | Verdict: ${statisticalAnalysis.significanceBadge}`
+          ])
+    ];
+    const grandSummaryLine = `Grand Mean = ${statisticalAnalysis.grandMean} | ${anovaPostHocTest} (${anovaAlphaLevel}) = ${statisticalAnalysis.lsd05} | SED = ${statisticalAnalysis.sed} | CV = ${statisticalAnalysis.cvPct}%`;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.8);
+    const wrappedAnova = anovaBodyLines.flatMap((line) =>
+      doc.splitTextToSize(sanitizePdfText(line, true), pageW - 36)
+    );
+    doc.setFont('helvetica', 'bold');
+    const wrappedGrand = doc.splitTextToSize(sanitizePdfText(grandSummaryLine, true), pageW - 36);
+    const summaryBoxH = Math.max(32, (wrappedAnova.length + wrappedGrand.length) * 5.2 + 10);
+
+    ensureStatSpace(summaryBoxH + 4);
     doc.setFillColor(240, 246, 252);
     doc.setDrawColor(187, 214, 238);
-    doc.roundedRect(14, y, pageW - 28, 38, 3, 3, 'FD');
+    doc.roundedRect(14, y, pageW - 28, summaryBoxH, 3, 3, 'FD');
+
+    let sy = y + 7.5;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.text(
-      `Between Treatments: df = ${statisticalAnalysis.dfBetween}, SS = ${statisticalAnalysis.ssBetween}, MS = ${statisticalAnalysis.msBetween}, F-Value = ${statisticalAnalysis.fCalculated}`,
-      18,
-      y + 8
-    );
-    if (anovaDesignType === 'rcbd_two_way') {
-      doc.text(
-        `Between Blocks / Replications: df = ${statisticalAnalysis.dfBlocks}, SS = ${statisticalAnalysis.ssBlocks}, MS = ${statisticalAnalysis.msBlocks}, F-Blocks = ${statisticalAnalysis.fBlocks}`,
-        18,
-        y + 15
-      );
-      doc.text(
-        `Residual Error: df = ${statisticalAnalysis.dfWithin}, SS = ${statisticalAnalysis.ssWithin}, MS = ${statisticalAnalysis.msWithin}`,
-        18,
-        y + 22
-      );
-    } else {
-      doc.text(
-        `Within Treatments (Error): df = ${statisticalAnalysis.dfWithin}, SS = ${statisticalAnalysis.ssWithin}, MS = ${statisticalAnalysis.msWithin}`,
-        18,
-        y + 15
-      );
-      doc.text(
-        `Critical F (0.05) = ${statisticalAnalysis.f05}  |  Critical F (0.01) = ${statisticalAnalysis.f01}  |  Verdict: ${statisticalAnalysis.significanceBadge}`,
-        18,
-        y + 22
-      );
-    }
+    doc.setTextColor(26, 33, 56);
+    wrappedAnova.forEach((ln: string) => {
+      doc.text(ln, 18, sy);
+      sy += 5.2;
+    });
+    sy += 2;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(22, 115, 184);
-    doc.text(
-      `Grand Mean = ${statisticalAnalysis.grandMean}  |  ${anovaPostHocTest} (${anovaAlphaLevel}) = ${statisticalAnalysis.lsd05}  |  SED = ${statisticalAnalysis.sed}  |  CV = ${statisticalAnalysis.cvPct}%`,
-      18,
-      y + 31
-    );
+    wrappedGrand.forEach((ln: string) => {
+      doc.text(ln, 18, sy);
+      sy += 5.2;
+    });
+
+    const totalPages = doc.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p += 1) {
+      doc.setPage(p);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Food Science Portal | Statistical ANOVA & Biometry Report', 14, pageH - 7);
+      doc.text(`Page ${p} of ${totalPages}`, pageW - 14, pageH - 7, { align: 'right' });
+    }
 
     doc.save(
       `Food_Science_Portal_${statParameterName.replace(

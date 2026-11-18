@@ -242,3 +242,102 @@ export function drawPdfUserPhoto(
     });
   }
 }
+
+/**
+ * Sanitizes text for jsPDF built-in fonts (Helvetica / Times / Courier, WinAnsi encoding)
+ * by converting unsupported Unicode glyphs, subscripts, arrows, and symbols into crisp
+ * WinAnsi-safe equivalents and stripping unsupported emojis/characters.
+ */
+export function sanitizePdfText(
+  value: unknown,
+  collapseMultiSpaces = false
+): string {
+  if (value === null || value === undefined) return '';
+  let str = String(value);
+
+  const replacements: Array<[RegExp, string]> = [
+    [/[✓✔✅]/g, '[OK]'],
+    [/[✗✘✕❌]/g, '[X]'],
+    [/≥/g, '>='],
+    [/≤/g, '<='],
+    [/≈/g, '~'],
+    [/≠/g, '!='],
+    [/[→➡➔➝]/g, '->'],
+    [/←/g, '<-'],
+    [/⇒/g, '=>'],
+    [/↑/g, '^'],
+    [/↓/g, 'v'],
+    [/α/g, 'alpha'],
+    [/β/g, 'beta'],
+    [/γ/g, 'gamma'],
+    [/μ/g, 'u'],
+    [/Ω/g, 'Ohm'],
+    [/℃/g, ' C'],
+    [/℉/g, ' F'],
+    [/₹/g, 'Rs. '],
+    [/₀/g, '0'],
+    [/₁/g, '1'],
+    [/₂/g, '2'],
+    [/₃/g, '3'],
+    [/₄/g, '4'],
+    [/₅/g, '5'],
+    [/₆/g, '6'],
+    [/₇/g, '7'],
+    [/₈/g, '8'],
+    [/₉/g, '9'],
+    [/⁰/g, '0'],
+    [/¹/g, '1'],
+    [/⁴/g, '4'],
+    [/⁵/g, '5'],
+    [/⁶/g, '6'],
+    [/⁷/g, '7'],
+    [/⁸/g, '8'],
+    [/⁹/g, '9'],
+    [/[‘’]/g, "'"],
+    [/[“”]/g, '"'],
+    [/…/g, '...'],
+    [/[•●◦▪▫]/g, '-'],
+    [/[★☆✦◆◇▸►]/g, '*'],
+    [/[–—]/g, '-']
+  ];
+
+  for (const [pattern, rep] of replacements) {
+    str = str.replace(pattern, rep);
+  }
+
+  // Strip surrogate pairs (emojis) and any non-Latin1 characters unsupported by jsPDF standard fonts
+  str = str.replace(/[\uD800-\uDFFF]/g, '');
+  str = str.replace(/[^\t\r\n\x20-\xFF]/g, '');
+
+  if (collapseMultiSpaces) {
+    str = str
+      .split('\n')
+      .map((line) => line.replace(/ {2,}/g, ' ').trim())
+      .join('\n');
+  }
+
+  return str;
+}
+
+/**
+ * Truncates a single line of text cleanly with "..." so it never exceeds maxWidthMm
+ * in the currently active jsPDF font/size.
+ */
+export function fitPdfTextToWidth(
+  doc: jsPDF,
+  text: unknown,
+  maxWidthMm: number,
+  collapseMultiSpaces = true
+): string {
+  const clean = sanitizePdfText(text, collapseMultiSpaces).replace(/\s*\n+\s*/g, ' ').trim();
+  if (!clean || maxWidthMm <= 6) return clean;
+  if (doc.getTextWidth(clean) <= maxWidthMm) return clean;
+
+  const ellipsis = '...';
+  let out = clean;
+  while (out.length > 1 && doc.getTextWidth(out + ellipsis) > maxWidthMm) {
+    out = out.slice(0, -1).trimEnd();
+  }
+  return out + ellipsis;
+}
+

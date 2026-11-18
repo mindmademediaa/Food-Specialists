@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { stripUndefinedDeep } from '../lib/firestoreUtils';
 import {
   HubUser,
   PaymentGatewayConfig,
@@ -392,7 +393,7 @@ export const SupportAgentWidget: React.FC<SupportAgentWidgetProps> = ({
     };
 
     try {
-      await setDoc(doc(db, 'supportTickets', ticketId), payload);
+      await setDoc(doc(db, 'supportTickets', ticketId), stripUndefinedDeep(payload));
       setSubject('');
       setFormMessage('');
       setTicketFeedback({

@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { FS_PORTAL_LOGO_DATA_URI } from './brandLogo';
+import { fitPdfTextToWidth, sanitizePdfText } from './pdfBranding';
 import { QA_MODULE_CATALOG } from '../data/qaVaultDefaults';
 import {
   QaControlledDocMeta,
@@ -83,19 +84,26 @@ function drawControlledHeader(
   pdf.setTextColor(26, 33, 56);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(10.5);
-  pdf.text((company.companyName || 'Food Organization').slice(0, 52), centerX, top + 6.5, {
-    align: 'center'
-  });
+  pdf.text(
+    fitPdfTextToWidth(pdf, company.companyName || 'Food Organization', centerW - 6),
+    centerX,
+    top + 6.5,
+    { align: 'center' }
+  );
 
-  pdf.setFontSize(11);
+  pdf.setFontSize(10.5);
   pdf.setTextColor(22, 115, 184);
-  const titleLines = pdf.splitTextToSize(title.toUpperCase(), centerW - 6);
-  pdf.text(titleLines.slice(0, 2), centerX, top + 12.5, { align: 'center' });
+  const titleLines = pdf.splitTextToSize(sanitizePdfText(title, true).toUpperCase(), centerW - 6).slice(0, 2);
+  pdf.text(titleLines, centerX, top + 12.2, { align: 'center' });
 
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(7.4);
   pdf.setTextColor(71, 85, 105);
-  const subLine = `${meta.standardClause} | Reg: ${company.pfaOrRegNo || 'QMS/FSMS'}`.slice(0, 88);
+  const subLine = fitPdfTextToWidth(
+    pdf,
+    `${meta.standardClause || 'QMS/FSMS'} | Reg: ${company.pfaOrRegNo || 'QMS/FSMS'}`,
+    centerW - 6
+  );
   pdf.text(subLine, centerX, top + 23.2, { align: 'center' });
 
   // Right metadata grid (4 rows)
@@ -105,7 +113,7 @@ function drawControlledHeader(
   }
   const metaRows: Array<[string, string]> = [
     ['Doc No:', meta.docCode],
-    ['Revision:', `${meta.revision} (${meta.status.toUpperCase()})`],
+    ['Revision:', `${meta.revision} (${(meta.status || 'approved').toUpperCase()})`],
     ['Eff. Date:', meta.effectiveDate],
     ['Page:', `Page ${pageNumber}`]
   ];
@@ -117,7 +125,7 @@ function drawControlledHeader(
     pdf.text(lbl, rightX + 2, ry);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(15, 23, 42);
-    pdf.text(val.slice(0, 26), rightX + 19, ry);
+    pdf.text(fitPdfTextToWidth(pdf, val, rightCellW - 21), rightX + 19, ry);
   });
 
   return top + hdrH + 6;
@@ -142,17 +150,18 @@ function drawFooterAllPages(
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7.5);
     pdf.setTextColor(71, 85, 105);
+    const rightFooter = `Page ${p} of ${totalPages} | Generated via Food Science Portal`;
+    const rightFooterW = pdf.getTextWidth(rightFooter);
     pdf.text(
-      `Controlled Document: ${meta.docCode} (${meta.revision}) · ${company.companyName} · Review: ${meta.reviewCycle}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Controlled Document: ${meta.docCode} (${meta.revision}) | ${company.companyName} | Review: ${meta.reviewCycle}`,
+        pageW - margin * 2 - rightFooterW - 6
+      ),
       margin,
       pageH - 7.5
     );
-    pdf.text(
-      `Page ${p} of ${totalPages} · Generated via Food Science Portal`,
-      pageW - margin,
-      pageH - 7.5,
-      { align: 'right' }
-    );
+    pdf.text(rightFooter, pageW - margin, pageH - 7.5, { align: 'right' });
   }
 }
 
@@ -199,12 +208,16 @@ function drawApprovalSignOffBlock(
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8.5);
     pdf.setTextColor(15, 23, 42);
-    pdf.text((b.name || '').slice(0, 32), bx + 3, y + 11.5);
+    pdf.text(fitPdfTextToWidth(pdf, b.name || '', boxW - 6), bx + 3, y + 11.5);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7.4);
     pdf.setTextColor(71, 85, 105);
-    pdf.text(`${b.role} · Date: ${meta.effectiveDate}`.slice(0, 38), bx + 3, y + 18);
+    pdf.text(
+      fitPdfTextToWidth(pdf, `${b.role} | Date: ${meta.effectiveDate}`, boxW - 6),
+      bx + 3,
+      y + 18
+    );
   });
 
   return y + 26;
@@ -233,7 +246,7 @@ function drawSectionHeading(
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(9.2);
   pdf.setTextColor(26, 33, 56);
-  pdf.text(heading, margin + 3, y + 5.1);
+  pdf.text(fitPdfTextToWidth(pdf, heading, pageW - margin * 2 - 6), margin + 3, y + 5.1);
 
   return y + 10.5;
 }
@@ -252,10 +265,11 @@ function drawParagraphBlock(
   const margin = 12;
   const maxW = pageW - margin * 2 - 4;
 
-  const lines = pdf.splitTextToSize(body || 'Not specified', maxW);
-  const needed = 6 + lines.length * 4.2 + 3;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8.3);
+  const lines = pdf.splitTextToSize(sanitizePdfText(body || 'Not specified', true), maxW);
 
-  if (y + needed > pageH - 18) {
+  if (y + 14 > pageH - 18) {
     pdf.addPage();
     y = drawControlledHeader(pdf, company, docTitle, meta, pdf.getNumberOfPages());
   }
@@ -263,15 +277,25 @@ function drawParagraphBlock(
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8.4);
   pdf.setTextColor(22, 115, 184);
-  pdf.text(label, margin + 1, y);
+  pdf.text(fitPdfTextToWidth(pdf, label, maxW), margin + 1, y);
   y += 4.2;
 
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8.3);
   pdf.setTextColor(30, 41, 59);
-  pdf.text(lines, margin + 1, y);
+  for (const line of lines) {
+    if (y + 4.5 > pageH - 18) {
+      pdf.addPage();
+      y = drawControlledHeader(pdf, company, docTitle, meta, pdf.getNumberOfPages());
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.3);
+      pdf.setTextColor(30, 41, 59);
+    }
+    pdf.text(line, margin + 1, y);
+    y += 4.2;
+  }
 
-  return y + lines.length * 4.2 + 3.5;
+  return y + 3.5;
 }
 
 function drawDataTable(
@@ -297,11 +321,16 @@ function drawDataTable(
     pdf.rect(margin, y, totalW, 8.5, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(7.6);
+    pdf.setFontSize(7.4);
     let cx = margin;
     columns.forEach((col, i) => {
-      const wrapped = pdf.splitTextToSize(col.header, colWidths[i] - 3);
-      pdf.text(wrapped[0] || col.header, cx + 1.5, y + 5.5);
+      const cleanHdr = sanitizePdfText(col.header, true);
+      const wrapped = pdf.splitTextToSize(cleanHdr, colWidths[i] - 3).slice(0, 2);
+      if (wrapped.length > 1) {
+        pdf.text(wrapped, cx + 1.5, y + 3.4);
+      } else {
+        pdf.text(wrapped[0] || cleanHdr, cx + 1.5, y + 5.5);
+      }
       cx += colWidths[i];
     });
     y += 8.5;
@@ -314,9 +343,12 @@ function drawDataTable(
   drawTableHeader();
 
   rows.forEach((row, rIdx) => {
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.6);
+    const maxBodyLines = Math.max(8, Math.floor((pageH - 72) / 3.9));
     const cellLines = columns.map((_, cIdx) => {
-      const text = (row[cIdx] ?? '').toString() || '—';
-      return pdf.splitTextToSize(text, colWidths[cIdx] - 3);
+      const text = sanitizePdfText((row[cIdx] ?? '').toString(), false) || '-';
+      return pdf.splitTextToSize(text, colWidths[cIdx] - 3).slice(0, maxBodyLines);
     });
     const maxLines = Math.max(...cellLines.map((l) => l.length), 1);
     const rowH = Math.max(8.5, maxLines * 3.9 + 3.5);
@@ -385,8 +417,12 @@ export function downloadQaControlledModulePdf<K extends keyof QaModulePayloadMap
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
   pdf.setTextColor(71, 85, 105);
-  const scopeText = `Facility: ${company.facilityAddress || 'Primary Plant'} · Standards: ${(company.standards || []).join(', ') || 'ISO 9001 & FSSC 22000'}`;
-  pdf.text(scopeText.slice(0, 130), margin, y);
+  const scopeText = fitPdfTextToWidth(
+    pdf,
+    `Facility: ${company.facilityAddress || 'Primary Plant'} | Standards: ${(company.standards || []).join(', ') || 'ISO 9001 & FSSC 22000'}`,
+    pageW - margin * 2
+  );
+  pdf.text(scopeText, margin, y);
   y += 5;
 
   switch (moduleId) {
@@ -399,7 +435,7 @@ export function downloadQaControlledModulePdf<K extends keyof QaModulePayloadMap
           docTitle,
           meta,
           y,
-          `${idx + 1}. ${sop.sopCode} — ${sop.title} (${sop.revision} · ${sop.status.toUpperCase()})`
+          `${idx + 1}. ${sop.sopCode} - ${sop.title} (${sop.revision} | ${sop.status.toUpperCase()})`
         );
         y = drawParagraphBlock(
           pdf,
@@ -606,20 +642,30 @@ export function downloadQaControlledModulePdf<K extends keyof QaModulePayloadMap
         pdf.roundedRect(boxX, y, boxW, 14.5, 2, 2, 'FD');
 
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(8.5);
-        pdf.setTextColor(15, 23, 42);
-        pdf.text(`Step ${step.stepNumber}: ${step.stepName}`, boxX + 3, y + 5.3);
-
-        // Classification badge inside box right
         pdf.setFontSize(7.8);
         pdf.setTextColor(isCcp ? 185 : isOprp ? 180 : 22, isCcp ? 28 : isOprp ? 83 : 115, isCcp ? 28 : isOprp ? 9 : 184);
-        pdf.text(`[${step.controlClassification} · ${step.stepCategory}]`, boxX + boxW - 3, y + 5.3, { align: 'right' });
+        const badgeText = sanitizePdfText(`[${step.controlClassification} | ${step.stepCategory}]`, true);
+        const badgeW = pdf.getTextWidth(badgeText);
+        pdf.text(badgeText, boxX + boxW - 3, y + 5.3, { align: 'right' });
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(
+          fitPdfTextToWidth(pdf, `Step ${step.stepNumber}: ${step.stepName}`, boxW - badgeW - 10),
+          boxX + 3,
+          y + 5.3
+        );
 
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(7.4);
         pdf.setTextColor(71, 85, 105);
         pdf.text(
-          `Params: ${step.equipmentAndParams} | Inputs: ${step.inputsAndIngredients}`.slice(0, 105),
+          fitPdfTextToWidth(
+            pdf,
+            `Params: ${step.equipmentAndParams} | Inputs: ${step.inputsAndIngredients}`,
+            boxW - 6
+          ),
           boxX + 3,
           y + 11.2
         );
@@ -943,7 +989,7 @@ export function downloadQaMasterRegisterPdf(
     status: 'approved',
     effectiveDate: new Date().toISOString().slice(0, 10),
     reviewCycle: 'Annual',
-    standardClause: 'ISO 9001 Cl. 7.5 · FSSC 22000 Cl. 7.5',
+    standardClause: 'ISO 9001 Cl. 7.5 | FSSC 22000 Cl. 7.5',
     updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
   };
 

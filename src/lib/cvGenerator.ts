@@ -10,7 +10,7 @@ import {
   normalizeEducationArray,
   normalizeExperienceArray
 } from '../components/EditProfileView';
-import { drawPdfUserPhoto } from './pdfBranding';
+import { drawPdfUserPhoto, fitPdfTextToWidth, sanitizePdfText } from './pdfBranding';
 
 /**
  * Generates and downloads a razor-sharp, vector-crisp, executive market-ready PDF CV
@@ -39,34 +39,50 @@ export function downloadProfessionalCvPdf(
   const marginX = 16;
   const contentWidth = pageWidth - marginX * 2;
 
-  const fullName =
-    (isVisible(vis?.name) && user.name?.trim()) || 'Food Safety Specialist';
-  const roleTitle =
+  const fullName = sanitizePdfText(
+    (isVisible(vis?.name) && user.name?.trim()) || 'Food Safety Specialist',
+    true
+  );
+  const roleTitle = sanitizePdfText(
     (isVisible(vis?.title) &&
       (user.title?.trim() || user.currentRole?.trim())) ||
-    'Food Safety & Quality Assurance Specialist';
-  const companyName =
-    isVisible(vis?.company) && user.company?.trim() ? user.company.trim() : '';
-  const locationText =
+      'Food Safety & Quality Assurance Specialist',
+    true
+  );
+  const companyName = sanitizePdfText(
+    isVisible(vis?.company) && user.company?.trim() ? user.company.trim() : '',
+    true
+  );
+  const locationText = sanitizePdfText(
     isVisible(vis?.location) && user.location?.trim()
       ? user.location.trim()
-      : '';
-  const emailText =
-    isVisible(vis?.contact) && user.email?.trim() ? user.email.trim() : '';
-  const phoneText =
+      : '',
+    true
+  );
+  const emailText = sanitizePdfText(
+    isVisible(vis?.contact) && user.email?.trim() ? user.email.trim() : '',
+    true
+  );
+  const phoneText = sanitizePdfText(
     isVisible(vis?.contact) &&
-    (user.whatsappNumber?.trim() || user.phone?.trim())
+      (user.whatsappNumber?.trim() || user.phone?.trim())
       ? (user.whatsappNumber?.trim() || user.phone?.trim() || '')
-      : '';
-  const linkedinText =
+      : '',
+    true
+  );
+  const linkedinText = sanitizePdfText(
     isVisible(vis?.linkedin) && user.linkedinUrl?.trim()
       ? user.linkedinUrl
           .trim()
           .replace(/^https?:\/\/(www\.)?/i, '')
           .replace(/\/$/, '')
-      : '';
-  const bioText =
-    isVisible(vis?.bio) && user.bio?.trim() ? user.bio.trim() : '';
+      : '',
+    true
+  );
+  const bioText = sanitizePdfText(
+    isVisible(vis?.bio) && user.bio?.trim() ? user.bio.trim() : '',
+    false
+  );
 
   const rawEdu: HubEducationItem[] = normalizeEducationArray(user);
   const educationList = isVisible(vis?.education)
@@ -89,11 +105,9 @@ export function downloadProfessionalCvPdf(
     : [];
 
   // ==================== HEADER BANNER ====================
-  // Top deep navy executive banner
   doc.setFillColor(26, 33, 56); // #1A2138
   doc.rect(0, 0, pageWidth, 44, 'F');
 
-  // Subtle gold bottom border on header
   doc.setFillColor(217, 119, 6); // #D97706 Gold accent bar
   doc.rect(0, 44, pageWidth, 1.4, 'F');
 
@@ -117,20 +131,21 @@ export function downloadProfessionalCvPdf(
 
   // Full Name
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(fullName.length > 26 ? 16.5 : 19.5);
+  doc.setFontSize(fullName.length > 26 ? 16 : 19);
   doc.setTextColor(255, 255, 255);
-  const nameLine = doc.splitTextToSize(fullName.toUpperCase(), headerTextWidth)[0];
+  const nameLine = fitPdfTextToWidth(doc, fullName.toUpperCase(), headerTextWidth);
   doc.text(nameLine, headerTextX, 16);
 
   // Title & Current Company
   const headlineParts = [roleTitle, companyName].filter(Boolean);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.setTextColor(186, 230, 253); // Soft ice-blue
-  const headlineLine = doc.splitTextToSize(
-    headlineParts.join('  |  '),
+  doc.setFontSize(10.2);
+  doc.setTextColor(186, 230, 253);
+  const headlineLine = fitPdfTextToWidth(
+    doc,
+    headlineParts.join(' | '),
     headerTextWidth
-  )[0];
+  );
   doc.text(headlineLine, headerTextX, 23.5);
 
   // Contact Details Row inside Header
@@ -143,9 +158,9 @@ export function downloadProfessionalCvPdf(
 
   if (contactItems.length > 0) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.8);
+    doc.setFontSize(8.6);
     doc.setTextColor(229, 231, 235);
-    const contactLine = contactItems.join('   •   ');
+    const contactLine = contactItems.join(' | ');
     const wrappedContact = doc.splitTextToSize(contactLine, headerTextWidth);
     doc.text(wrappedContact.slice(0, 2), headerTextX, 31);
   }
@@ -153,16 +168,15 @@ export function downloadProfessionalCvPdf(
   let cursorY = 54;
 
   const ensureSpace = (neededMm: number) => {
-    if (cursorY + neededMm > pageHeight - 16) {
+    if (cursorY + neededMm > pageHeight - 19) {
       doc.addPage();
-      // Top accent bar on continuation page (personal name only, no portal logo/words)
       doc.setFillColor(26, 33, 56);
       doc.rect(0, 0, pageWidth, 14, 'F');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.5);
       doc.setTextColor(255, 255, 255);
       doc.text(
-        `${fullName} — Curriculum Vitae`,
+        fitPdfTextToWidth(doc, `${fullName} - Curriculum Vitae`, contentWidth),
         marginX,
         9.2
       );
@@ -174,15 +188,14 @@ export function downloadProfessionalCvPdf(
     ensureSpace(14);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.setTextColor(26, 33, 56); // #1A2138
+    doc.setTextColor(26, 33, 56);
     doc.text(title.toUpperCase(), marginX, cursorY);
 
-    // Royal blue underline with gold leading segment
-    doc.setDrawColor(22, 115, 184); // #1673B8
+    doc.setDrawColor(22, 115, 184);
     doc.setLineWidth(0.6);
     doc.line(marginX, cursorY + 2, pageWidth - marginX, cursorY + 2);
 
-    doc.setDrawColor(217, 119, 6); // #D97706
+    doc.setDrawColor(217, 119, 6);
     doc.setLineWidth(1.1);
     doc.line(marginX, cursorY + 2, marginX + 26, cursorY + 2);
 
@@ -196,9 +209,13 @@ export function downloadProfessionalCvPdf(
     doc.setFontSize(9.8);
     doc.setTextColor(45, 55, 72);
     const lines = doc.splitTextToSize(bioText, contentWidth);
-    ensureSpace(lines.length * 4.6 + 4);
-    doc.text(lines, marginX, cursorY);
-    cursorY += lines.length * 4.6 + 5;
+    ensureSpace(Math.min(lines.length * 4.6 + 4, 24));
+    lines.forEach((line: string) => {
+      ensureSpace(5);
+      doc.text(line, marginX, cursorY);
+      cursorY += 4.6;
+    });
+    cursorY += 5;
   }
 
   // ==================== 2. PROFESSIONAL EXPERIENCE ====================
@@ -206,55 +223,75 @@ export function downloadProfessionalCvPdf(
     drawSectionHeader('Professional Experience');
 
     experienceList.forEach((exp) => {
-      ensureSpace(18);
-      const jobTitle = exp.jobTitle?.trim() || 'Food Safety & QA Specialist';
-      const company = exp.company?.trim() || '';
-      const loc = exp.location?.trim() || '';
-      const dateStr = exp.startDate
-        ? `${exp.startDate} – ${exp.isPresent ? 'Present' : exp.endDate || 'Present'}`
-        : exp.isPresent
-        ? 'Present'
-        : exp.endDate || '';
+      const jobTitle = sanitizePdfText(
+        exp.jobTitle?.trim() || 'Food Safety & QA Specialist',
+        true
+      );
+      const company = sanitizePdfText(exp.company?.trim() || '', true);
+      const loc = sanitizePdfText(exp.location?.trim() || '', true);
+      const dateStr = sanitizePdfText(
+        exp.startDate
+          ? `${exp.startDate} - ${exp.isPresent ? 'Present' : exp.endDate || 'Present'}`
+          : exp.isPresent
+          ? 'Present'
+          : exp.endDate || '',
+        true
+      );
 
-      // Job Title (Left) & Date (Right)
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.8);
+      doc.setFontSize(9.2);
+      const rightW = dateStr ? Math.min(contentWidth * 0.42, doc.getTextWidth(dateStr) + 6) : 0;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.6);
+      const titleLines = doc.splitTextToSize(jobTitle, contentWidth - rightW);
+
+      ensureSpace(titleLines.length * 4.6 + 10);
+
       doc.setTextColor(17, 24, 39);
-      doc.text(jobTitle, marginX, cursorY);
+      doc.text(titleLines, marginX, cursorY);
 
       if (dateStr) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9.2);
-        doc.setTextColor(22, 115, 184); // #15803D
-        doc.text(dateStr, pageWidth - marginX, cursorY, { align: 'right' });
+        doc.setTextColor(22, 115, 184);
+        doc.text(
+          fitPdfTextToWidth(doc, dateStr, Math.max(20, rightW - 2)),
+          pageWidth - marginX,
+          cursorY,
+          { align: 'right' }
+        );
       }
-      cursorY += 4.6;
+      cursorY += titleLines.length * 4.6 + 0.4;
 
-      // Company & Location
-      const subLine = [company, loc].filter(Boolean).join('  •  ');
+      const subLine = [company, loc].filter(Boolean).join(' | ');
       if (subLine) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
+        doc.setFontSize(9.4);
         doc.setTextColor(75, 85, 99);
-        doc.text(subLine, marginX, cursorY);
-        cursorY += 4.5;
+        const subWrapped = doc.splitTextToSize(subLine, contentWidth);
+        ensureSpace(subWrapped.length * 4.3 + 2);
+        doc.text(subWrapped, marginX, cursorY);
+        cursorY += subWrapped.length * 4.3 + 0.5;
       }
 
-      // Description
       if (exp.description?.trim()) {
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9.5);
+        doc.setFontSize(9.4);
         doc.setTextColor(55, 65, 81);
         const descLines = doc.splitTextToSize(
-          exp.description.trim(),
+          sanitizePdfText(exp.description.trim()),
           contentWidth - 3
         );
-        ensureSpace(descLines.length * 4.4 + 3);
-        doc.text(descLines, marginX + 2, cursorY);
-        cursorY += descLines.length * 4.4 + 2;
+        descLines.forEach((line: string) => {
+          ensureSpace(4.6);
+          doc.text(line, marginX + 2, cursorY);
+          cursorY += 4.4;
+        });
+        cursorY += 2;
       }
 
-      cursorY += 3.5;
+      cursorY += 3.2;
     });
   }
 
@@ -263,46 +300,68 @@ export function downloadProfessionalCvPdf(
     drawSectionHeader('Education & Qualifications');
 
     educationList.forEach((edu) => {
-      ensureSpace(15);
-      const degree = edu.degree?.trim() || 'Degree in Food Science & Technology';
-      const institute = edu.institute?.trim() || '';
-      const years =
+      const degree = sanitizePdfText(
+        edu.degree?.trim() || 'Degree in Food Science & Technology',
+        true
+      );
+      const institute = sanitizePdfText(edu.institute?.trim() || '', true);
+      const years = sanitizePdfText(
         edu.startYear || edu.endYear
-          ? `${edu.startYear || ''}${edu.endYear ? ` – ${edu.endYear}` : ''}`
-          : '';
+          ? `${edu.startYear || ''}${edu.endYear ? ` - ${edu.endYear}` : ''}`
+          : '',
+        true
+      );
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.2);
+      const rightW = years ? Math.min(contentWidth * 0.38, doc.getTextWidth(years) + 6) : 0;
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10.5);
+      const degLines = doc.splitTextToSize(degree, contentWidth - rightW);
+
+      ensureSpace(degLines.length * 4.5 + 10);
+
       doc.setTextColor(17, 24, 39);
-      doc.text(degree, marginX, cursorY);
+      doc.text(degLines, marginX, cursorY);
 
       if (years) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9.2);
         doc.setTextColor(22, 115, 184);
-        doc.text(years, pageWidth - marginX, cursorY, { align: 'right' });
+        doc.text(
+          fitPdfTextToWidth(doc, years, Math.max(20, rightW - 2)),
+          pageWidth - marginX,
+          cursorY,
+          { align: 'right' }
+        );
       }
-      cursorY += 4.5;
+      cursorY += degLines.length * 4.5 + 0.4;
 
       if (institute) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
+        doc.setFontSize(9.4);
         doc.setTextColor(75, 85, 99);
-        doc.text(institute, marginX, cursorY);
-        cursorY += 4.4;
+        const instLines = doc.splitTextToSize(institute, contentWidth);
+        ensureSpace(instLines.length * 4.3 + 2);
+        doc.text(instLines, marginX, cursorY);
+        cursorY += instLines.length * 4.3 + 0.4;
       }
 
       if (edu.description?.trim()) {
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9.3);
+        doc.setFontSize(9.2);
         doc.setTextColor(55, 65, 81);
         const eduDesc = doc.splitTextToSize(
-          edu.description.trim(),
+          sanitizePdfText(edu.description.trim()),
           contentWidth - 3
         );
-        ensureSpace(eduDesc.length * 4.3 + 2);
-        doc.text(eduDesc, marginX + 2, cursorY);
-        cursorY += eduDesc.length * 4.3 + 1.5;
+        eduDesc.forEach((line: string) => {
+          ensureSpace(4.5);
+          doc.text(line, marginX + 2, cursorY);
+          cursorY += 4.3;
+        });
+        cursorY += 1.5;
       }
 
       cursorY += 3;
@@ -314,33 +373,52 @@ export function downloadProfessionalCvPdf(
     drawSectionHeader('Certifications & Accreditations');
 
     certificationsList.forEach((cert) => {
-      ensureSpace(11);
+      const certName = sanitizePdfText(cert.name || 'Certification', true);
+      const issueDate = sanitizePdfText(cert.issueDate || '', true);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      const rightW = issueDate ? Math.min(contentWidth * 0.35, doc.getTextWidth(issueDate) + 6) : 0;
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
-      doc.setTextColor(17, 24, 39);
-      doc.text(`•  ${cert.name}`, marginX, cursorY);
+      const certLines = doc.splitTextToSize(`- ${certName}`, contentWidth - rightW);
 
-      if (cert.issueDate) {
+      ensureSpace(certLines.length * 4.3 + 7);
+      doc.setTextColor(17, 24, 39);
+      doc.text(certLines, marginX, cursorY);
+
+      if (issueDate) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(22, 115, 184);
-        doc.text(cert.issueDate, pageWidth - marginX, cursorY, {
-          align: 'right'
-        });
+        doc.text(
+          fitPdfTextToWidth(doc, issueDate, Math.max(18, rightW - 2)),
+          pageWidth - marginX,
+          cursorY,
+          { align: 'right' }
+        );
       }
-      cursorY += 4.3;
+      cursorY += certLines.length * 4.3 + 0.3;
 
       const metaParts = [
-        cert.issuer ? `Issued by ${cert.issuer}` : '',
-        cert.credentialId ? `Credential ID: ${cert.credentialId}` : ''
+        cert.issuer ? `Issued by ${sanitizePdfText(cert.issuer, true)}` : '',
+        cert.credentialId
+          ? `Credential ID: ${sanitizePdfText(cert.credentialId, true)}`
+          : ''
       ].filter(Boolean);
 
       if (metaParts.length > 0) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
         doc.setTextColor(75, 85, 99);
-        doc.text(metaParts.join('   |   '), marginX + 4, cursorY);
-        cursorY += 4.2;
+        const metaLines = doc.splitTextToSize(
+          metaParts.join(' | '),
+          contentWidth - 4
+        );
+        ensureSpace(metaLines.length * 4.2 + 2);
+        doc.text(metaLines, marginX + 4, cursorY);
+        cursorY += metaLines.length * 4.2;
       }
 
       cursorY += 1.8;
@@ -353,33 +431,50 @@ export function downloadProfessionalCvPdf(
     drawSectionHeader('Key Projects & Achievements');
 
     projectsList.forEach((proj) => {
-      ensureSpace(14);
+      const projTitle = sanitizePdfText(proj.title || 'Project', true);
+      const linkText = sanitizePdfText(proj.link?.trim() || '', true);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      const rightW = linkText
+        ? Math.min(contentWidth * 0.42, doc.getTextWidth(linkText) + 6)
+        : 0;
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10.2);
-      doc.setTextColor(17, 24, 39);
-      doc.text(proj.title, marginX, cursorY);
+      const titleLines = doc.splitTextToSize(projTitle, contentWidth - rightW);
 
-      if (proj.link?.trim()) {
+      ensureSpace(titleLines.length * 4.4 + 8);
+      doc.setTextColor(17, 24, 39);
+      doc.text(titleLines, marginX, cursorY);
+
+      if (linkText) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8.5);
         doc.setTextColor(22, 115, 184);
-        doc.text(proj.link.trim(), pageWidth - marginX, cursorY, {
-          align: 'right'
-        });
+        doc.text(
+          fitPdfTextToWidth(doc, linkText, Math.max(20, rightW - 2)),
+          pageWidth - marginX,
+          cursorY,
+          { align: 'right' }
+        );
       }
-      cursorY += 4.4;
+      cursorY += titleLines.length * 4.4 + 0.3;
 
       if (proj.description?.trim()) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9.4);
         doc.setTextColor(55, 65, 81);
         const projLines = doc.splitTextToSize(
-          proj.description.trim(),
+          sanitizePdfText(proj.description.trim()),
           contentWidth - 3
         );
-        ensureSpace(projLines.length * 4.3 + 2);
-        doc.text(projLines, marginX + 2, cursorY);
-        cursorY += projLines.length * 4.3 + 1.5;
+        projLines.forEach((line: string) => {
+          ensureSpace(4.5);
+          doc.text(line, marginX + 2, cursorY);
+          cursorY += 4.3;
+        });
+        cursorY += 1.5;
       }
 
       cursorY += 2.5;
@@ -398,7 +493,7 @@ export function downloadProfessionalCvPdf(
     doc.setFontSize(8);
     doc.setTextColor(107, 114, 128);
     doc.text(
-      `${fullName} — Curriculum Vitae`,
+      fitPdfTextToWidth(doc, `${fullName} - Curriculum Vitae`, contentWidth - 28),
       marginX,
       pageHeight - 6.8
     );

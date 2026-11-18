@@ -60,7 +60,13 @@ import {
   SuiteOnboardingProfile
 } from '../data/nutritionSuiteData';
 import { jsPDF } from 'jspdf';
-import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
+import {
+  drawPdfBrandLogo,
+  drawPdfUserPhoto,
+  fitPdfTextToWidth,
+  sanitizePdfText
+} from '../lib/pdfBranding';
+import { stripUndefinedDeep } from '../lib/firestoreUtils';
 
 interface NutritionSuiteToolProps {
   user: HubUser;
@@ -958,11 +964,11 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     };
 
     try {
-      await onSaveToolsData(updatedToolsData);
+      await onSaveToolsData(stripUndefinedDeep(updatedToolsData));
       if (user?.uid) {
         await setDoc(
           doc(db, 'users', user.uid, 'nutritionProfile', 'main'),
-          {
+          stripUndefinedDeep({
             ...profile,
             waterGlasses,
             bmi: indexes.bmi,
@@ -970,12 +976,12 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
             dailyCaloriesNeeded: indexes.dailyCaloriesNeeded,
             patientLogs,
             updatedAt: new Date().toISOString()
-          },
+          }),
           { merge: true }
         );
       }
-    } catch {
-      // Local state updates seamlessly
+    } catch (err) {
+      console.error('Nutrition report cloud save error:', err);
     }
 
     setSaveSuccessMsg('Health & Nutrition Report data has been saved!');
@@ -1130,19 +1136,19 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     };
 
     try {
-      await onSaveToolsData(updatedToolsData);
+      await onSaveToolsData(stripUndefinedDeep(updatedToolsData));
       if (user?.uid) {
         await setDoc(
           doc(db, 'users', user.uid, 'nutritionProfile', 'main'),
-          {
+          stripUndefinedDeep({
             patientLogs: updatedPatients,
             updatedAt: nowIso
-          },
+          }),
           { merge: true }
         );
       }
-    } catch {
-      // Local state updates seamlessly
+    } catch (err) {
+      console.error('Patient directory cloud save error:', err);
     }
 
     setSaveSuccessMsg(
@@ -1261,19 +1267,19 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     };
 
     try {
-      await onSaveToolsData(updatedToolsData);
+      await onSaveToolsData(stripUndefinedDeep(updatedToolsData));
       if (user?.uid) {
         await setDoc(
           doc(db, 'users', user.uid, 'nutritionProfile', 'main'),
-          {
+          stripUndefinedDeep({
             patientLogs: updatedPatients,
             updatedAt: new Date().toISOString()
-          },
+          }),
           { merge: true }
         );
       }
-    } catch {
-      // Local state updates seamlessly
+    } catch (err) {
+      console.error('Patient record delete cloud sync error:', err);
     }
   };
 
@@ -1355,6 +1361,7 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
 
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
 
     // Top Header Banner
     pdf.setFillColor(22, 115, 184);
@@ -1383,71 +1390,109 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     );
 
     const textX = 41;
+    const headerMaxW = pageW - 39 - textX;
     pdf.setTextColor(220, 233, 246);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(11);
     pdf.text(
-      `Food Science Portal  •  Patient ID: ${targetCode}`,
+      fitPdfTextToWidth(pdf, `Food Science Portal | Patient ID: ${targetCode}`, headerMaxW),
       textX,
       12
     );
 
     pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(13);
-    pdf.text('CLINICAL BODY COMPOSITION & NUTRITION REPORT', textX, 19);
+    pdf.setFontSize(12.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'CLINICAL BODY COMPOSITION & NUTRITION REPORT', headerMaxW),
+      textX,
+      19
+    );
 
-    pdf.setFontSize(8.8);
+    pdf.setFontSize(8.5);
     pdf.setFont('helvetica', 'normal');
     pdf.text(
-      `Patient: ${targetName}${
-        targetContact ? ` | Mobile: ${targetContact}` : ''
-      } | Consultant: ${user.name || 'Specialist'} | Date: ${new Date().toLocaleDateString()}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Patient: ${targetName}${
+          targetContact ? ` | Mobile: ${targetContact}` : ''
+        } | Consultant: ${user.name || 'Specialist'} | Date: ${new Date().toLocaleDateString()}`,
+        headerMaxW
+      ),
       textX,
       26
     );
     pdf.text(
-      `Age: ${targetAge} yrs | Gender: ${targetGender} | Height: ${targetHeightCm} cm | Weight: ${targetWeightKg} kg | Target: ${targetGoalWeightKg} kg`,
+      fitPdfTextToWidth(
+        pdf,
+        `Age: ${targetAge} yrs | Gender: ${targetGender} | Height: ${targetHeightCm} cm | Weight: ${targetWeightKg} kg | Target: ${targetGoalWeightKg} kg`,
+        headerMaxW
+      ),
       textX,
       32.5
     );
     pdf.text(
-      `Follow-Up Search Key: Use Patient ID "${targetCode}" or Mobile "${
-        targetContact || 'N/A'
-      }" on next visit`,
+      fitPdfTextToWidth(
+        pdf,
+        `Follow-Up Search Key: Use Patient ID "${targetCode}" or Mobile "${
+          targetContact || 'N/A'
+        }" on next visit`,
+        headerMaxW
+      ),
       textX,
       38.5
     );
 
     let y = 48;
+    const ensurePageSpace = (neededMm: number) => {
+      if (y + neededMm > pageH - 18) {
+        pdf.addPage();
+        pdf.setFillColor(22, 115, 184);
+        pdf.rect(0, 0, pageW, 14, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.text(
+          fitPdfTextToWidth(pdf, `Food Science Portal | Clinical Nutrition Report (${targetCode})`, pageW - 28),
+          14,
+          9.2
+        );
+        pdf.setTextColor(26, 33, 56);
+        y = 22;
+      }
+    };
+
+    const boxMaxW = pageW - 36;
+
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(10.5);
     pdf.text('1. BMI, WEIGHT GOAL & DAILY CALORIE SUMMARY', 14, y);
     y += 4.5;
 
+    const sec1RawLines = [
+      `BMI Score: ${calc.baseIndexes.bmi} kg/m2 (${calc.baseIndexes.bmiStatus}) | Healthy Ideal Weight: ${calc.baseIndexes.idealWeightKg} kg | Health Score: ${calc.baseIndexes.healthScore}/100`,
+      `BMR (Resting Burn): ${calc.baseIndexes.bmrKcal} kcal/day | TDEE (Active Burn): ${calc.baseIndexes.tdeeKcal} kcal/day`,
+      `Daily Target: ${calc.baseIndexes.dailyCaloriesNeeded} kcal/day (Protein: ${calc.baseIndexes.targetProteinG}g | Carbs: ${calc.baseIndexes.targetCarbsG}g | Fat: ${calc.baseIndexes.targetFatG}g | Fiber: ${calc.targetFiberG}g)`
+    ];
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8.8);
+    const sec1Wrapped = sec1RawLines.flatMap((line) =>
+      pdf.splitTextToSize(sanitizePdfText(line, true), boxMaxW)
+    );
+    const sec1H = Math.max(20, sec1Wrapped.length * 4.8 + 6);
     pdf.setFillColor(240, 246, 252);
     pdf.setDrawColor(187, 214, 238);
-    pdf.roundedRect(14, y, pageW - 28, 23, 3, 3, 'FD');
-    pdf.setFontSize(9);
-    pdf.text(
-      `BMI Score: ${calc.baseIndexes.bmi} kg/m2 (${calc.baseIndexes.bmiStatus})   |   Healthy Ideal Weight: ${calc.baseIndexes.idealWeightKg} kg   |   Health Score: ${calc.baseIndexes.healthScore}/100`,
-      18,
-      y + 6.5
-    );
-    pdf.text(
-      `BMR (Resting Burn): ${calc.baseIndexes.bmrKcal} kcal/day   |   TDEE (Active Burn): ${calc.baseIndexes.tdeeKcal} kcal/day`,
-      18,
-      y + 13
-    );
-    pdf.text(
-      `Daily Target: ${calc.baseIndexes.dailyCaloriesNeeded} kcal/day (Protein: ${calc.baseIndexes.targetProteinG}g | Carbs: ${calc.baseIndexes.targetCarbsG}g | Fat: ${calc.baseIndexes.targetFatG}g | Fiber: ${calc.targetFiberG}g)`,
-      18,
-      y + 19.5
-    );
+    pdf.roundedRect(14, y, pageW - 28, sec1H, 3, 3, 'FD');
+    pdf.setTextColor(26, 33, 56);
+    sec1Wrapped.forEach((ln: string, idx: number) => {
+      pdf.text(ln, 18, y + 6 + idx * 4.8);
+    });
 
-    y += 29;
+    y += sec1H + 6;
+    ensurePageSpace(52);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(10.5);
+    pdf.setTextColor(26, 33, 56);
     pdf.text(
       '2. COMPLETE BODY COMPOSITION, METABOLIC & MICRONUTRIENT METRICS',
       14,
@@ -1455,50 +1500,44 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
     );
     y += 4.5;
 
+    const sec2RawLines = [
+      `- Body Fat %: ${calc.avgBodyFatPct}% (${calc.bodyFatCategory}) | Lean Muscle Mass (LBM): ${calc.leanBodyMassKg} kg | Fat Mass: ${calc.fatMassKg} kg | FFMI: ${calc.ffmi} kg/m2`,
+      `- Waist-to-Hip Ratio (WHR): ${calc.whr} | Waist-to-Height Ratio (WtHR): ${calc.wthr} (${calc.visceralRiskLabel})`,
+      `- Body Frame: ${calc.frameSize} | Ideal Weight Range (Devine / Robinson / Miller / Hamwi): ${calc.devineIbw} / ${calc.robinsonIbw} / ${calc.millerIbw} / ${calc.hamwiIbw} kg`,
+      `- Metabolic Age: ${calc.metabolicAge} yrs | Total Body Water (TBW): ${calc.tbwLiters} L (${calc.tbwPct}%) | Body Surface Area (BSA): ${calc.bsaM2} m2`,
+      `- Daily Water Target: ${calc.precisionWaterLiters} Liters (${calc.precisionWaterGlasses} glasses) | Max Free Sugar: <${calc.maxFreeSugarG}g/day | Max Sat. Fat: <${calc.maxSaturatedFatG}g/day`,
+      `- Daily Vitamins & Minerals RDA: Iron ${calc.rdaIronMg}mg | Calcium ${calc.rdaCalciumMg}mg | Vit D3 ${calc.rdaVitDIU} IU | Vit B12 ${calc.rdaVitB12Mcg}mcg | Zinc ${calc.rdaZincMg}mg | Folate ${calc.rdaFolateMcg}mcg`
+    ];
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8.4);
+    const sec2Wrapped = sec2RawLines.flatMap((line) =>
+      pdf.splitTextToSize(sanitizePdfText(line, true), boxMaxW)
+    );
+    const sec2H = Math.max(36, sec2Wrapped.length * 4.5 + 6);
+    ensurePageSpace(sec2H + 6);
     pdf.setFillColor(244, 248, 253);
     pdf.setDrawColor(210, 222, 234);
-    pdf.roundedRect(14, y, pageW - 28, 39, 3, 3, 'FD');
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8.6);
-    pdf.text(
-      `• Body Fat %: ${calc.avgBodyFatPct}% (${calc.bodyFatCategory})   |   Lean Muscle Mass (LBM): ${calc.leanBodyMassKg} kg   |   Fat Mass: ${calc.fatMassKg} kg   |   FFMI: ${calc.ffmi} kg/m2`,
-      18,
-      y + 6.5
-    );
-    pdf.text(
-      `• Waist-to-Hip Ratio (WHR): ${calc.whr}   |   Waist-to-Height Ratio (WtHR): ${calc.wthr} (${calc.visceralRiskLabel})`,
-      18,
-      y + 12.8
-    );
-    pdf.text(
-      `• Body Frame: ${calc.frameSize}   |   Ideal Weight Range (Devine / Robinson / Miller / Hamwi): ${calc.devineIbw} / ${calc.robinsonIbw} / ${calc.millerIbw} / ${calc.hamwiIbw} kg`,
-      18,
-      y + 19
-    );
-    pdf.text(
-      `• Metabolic Age: ${calc.metabolicAge} yrs   |   Total Body Water (TBW): ${calc.tbwLiters} L (${calc.tbwPct}%)   |   Body Surface Area (BSA): ${calc.bsaM2} m2`,
-      18,
-      y + 25.2
-    );
-    pdf.text(
-      `• Daily Water Target: ${calc.precisionWaterLiters} Liters (${calc.precisionWaterGlasses} glasses)   |   Max Free Sugar: <${calc.maxFreeSugarG}g/day   |   Max Sat. Fat: <${calc.maxSaturatedFatG}g/day`,
-      18,
-      y + 31.4
-    );
-    pdf.text(
-      `• Daily Vitamins & Minerals RDA: Iron ${calc.rdaIronMg}mg | Calcium ${calc.rdaCalciumMg}mg | Vit D3 ${calc.rdaVitDIU} IU | Vit B12 ${calc.rdaVitB12Mcg}mcg | Zinc ${calc.rdaZincMg}mg | Folate ${calc.rdaFolateMcg}mcg`,
-      18,
-      y + 37.2
-    );
+    pdf.roundedRect(14, y, pageW - 28, sec2H, 3, 3, 'FD');
+    pdf.setTextColor(26, 33, 56);
+    sec2Wrapped.forEach((ln: string, idx: number) => {
+      pdf.text(ln, 18, y + 5.8 + idx * 4.5);
+    });
 
-    y += 45;
+    y += sec2H + 6;
 
     let sectionNumber = 3;
 
     // 3. Nutritionist / Clinical Prescription Section (if provided)
     if (targetPrescription) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.8);
+      const prescLines = pdf.splitTextToSize(sanitizePdfText(targetPrescription, true), boxMaxW);
+      const boxH = Math.max(16, Math.min(8, prescLines.length) * 4.4 + 6);
+      ensurePageSpace(boxH + 12);
+
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10.5);
+      pdf.setTextColor(26, 33, 56);
       pdf.text(
         `${sectionNumber}. NUTRITIONIST PRESCRIPTION & CLINICAL DIET PLAN`,
         14,
@@ -1507,21 +1546,39 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       sectionNumber += 1;
       y += 4.5;
 
-      const prescLines = pdf.splitTextToSize(targetPrescription, pageW - 36);
-      const boxH = Math.min(42, Math.max(16, prescLines.length * 4.3 + 6));
       pdf.setFillColor(235, 244, 252);
       pdf.setDrawColor(22, 115, 184);
       pdf.roundedRect(14, y, pageW - 28, boxH, 3, 3, 'FD');
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(8.8);
+      pdf.setTextColor(26, 33, 56);
       pdf.text(prescLines.slice(0, 8), 18, y + 5.8);
-      y += boxH + 5.5;
+      y += boxH + 6;
     }
 
     // 4. Patient Visit History Summary (if patient has recorded visits)
-    if (targetVisits.length > 0 && y < 245) {
+    if (targetVisits.length > 0) {
+      const recentVisits = targetVisits.slice(-4);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.4);
+      const visitWrapped = recentVisits.map((v) =>
+        pdf.splitTextToSize(
+          sanitizePdfText(
+            `Visit #${v.visitNumber} (${v.visitDate}): Weight ${v.weightKg} kg | BMI ${v.bmi} (${v.bmiStatus}) | Body Fat ${v.bodyFatPct}% | Target ${v.dailyCaloriesNeeded} kcal${
+              v.healthCondition ? ` | Focus: ${v.healthCondition}` : ''
+            }`,
+            true
+          ),
+          boxMaxW
+        )
+      );
+      const totalVisitLines = visitWrapped.reduce((s, arr) => s + arr.length, 0);
+      const histBoxH = Math.max(14, totalVisitLines * 4.5 + 6);
+      ensurePageSpace(histBoxH + 12);
+
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10.5);
+      pdf.setTextColor(26, 33, 56);
       pdf.text(
         `${sectionNumber}. PATIENT VISIT & FOLLOW-UP HISTORY (${targetVisits.length} VISITS)`,
         14,
@@ -1530,75 +1587,96 @@ export const NutritionSuiteTool: React.FC<NutritionSuiteToolProps> = ({
       sectionNumber += 1;
       y += 4.5;
 
-      const recentVisits = targetVisits.slice(-4);
-      const histBoxH = recentVisits.length * 5.2 + 5;
       pdf.setFillColor(248, 250, 252);
       pdf.setDrawColor(210, 222, 234);
       pdf.roundedRect(14, y, pageW - 28, histBoxH, 2.5, 2.5, 'FD');
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(8.4);
+      pdf.setTextColor(26, 33, 56);
 
-      recentVisits.forEach((v, idx) => {
-        pdf.text(
-          `Visit #${v.visitNumber} (${v.visitDate}): Weight ${v.weightKg} kg | BMI ${v.bmi} (${v.bmiStatus}) | Body Fat ${v.bodyFatPct}% | Target ${v.dailyCaloriesNeeded} kcal${
-            v.healthCondition ? ` | Focus: ${v.healthCondition}` : ''
-          }`,
-          18,
-          y + 5 + idx * 5
-        );
+      let vy = y + 5.2;
+      visitWrapped.forEach((lines) => {
+        pdf.text(lines, 18, vy);
+        vy += lines.length * 4.5;
       });
-      y += histBoxH + 5.5;
+      y += histBoxH + 6;
     }
 
     // 5. Condition Food Guide (ONLY included in PDF when user explicitly entered a health condition/issue!)
-    if (targetCondition && y < 255) {
+    if (targetCondition) {
       const condRec = getHealthConditionRecommendations(targetCondition);
+      ensurePageSpace(36);
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10.5);
+      pdf.setTextColor(26, 33, 56);
       pdf.text(
-        `${sectionNumber}. NUTRITION RECOMMENDATION FOR: ${targetCondition.toUpperCase()}`,
+        fitPdfTextToWidth(
+          pdf,
+          `${sectionNumber}. NUTRITION RECOMMENDATION FOR: ${targetCondition.toUpperCase()}`,
+          pageW - 28
+        ),
         14,
         y
       );
-      y += 4.8;
+      y += 5;
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(8.6);
       const summaryLines = pdf.splitTextToSize(
-        condRec.summaryAdvice,
+        sanitizePdfText(condRec.summaryAdvice, true),
         pageW - 32
       );
-      pdf.text(summaryLines, 16, y);
-      y += summaryLines.length * 4 + 2;
+      summaryLines.forEach((ln: string) => {
+        ensurePageSpace(5);
+        pdf.text(ln, 16, y);
+        y += 4.2;
+      });
+      y += 2;
 
+      ensurePageSpace(10);
       pdf.setFont('helvetica', 'bold');
       pdf.text('Recommended Foods:', 16, y);
-      y += 4;
+      y += 4.2;
       pdf.setFont('helvetica', 'normal');
       condRec.recommendedFoods.forEach((f) => {
-        if (y < 274) {
-          pdf.text(`• ${f.name} — ${f.shortNote}`, 18, y);
-          y += 4;
-        }
+        const lines = pdf.splitTextToSize(
+          sanitizePdfText(`- ${f.name} - ${f.shortNote}`, true),
+          pageW - 36
+        );
+        ensurePageSpace(lines.length * 4 + 2);
+        pdf.text(lines, 18, y);
+        y += lines.length * 4 + 0.5;
       });
 
-      y += 1.5;
-      if (y < 276) {
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Foods to Avoid:', 16, y);
-        y += 4;
-        pdf.setFont('helvetica', 'normal');
-        condRec.foodsToAvoid.forEach((f) => {
-          if (y < 282) {
-            pdf.text(`• ${f.name} — ${f.shortNote}`, 18, y);
-            y += 4;
-          }
-        });
-      }
+      y += 2;
+      ensurePageSpace(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Foods to Avoid:', 16, y);
+      y += 4.2;
+      pdf.setFont('helvetica', 'normal');
+      condRec.foodsToAvoid.forEach((f) => {
+        const lines = pdf.splitTextToSize(
+          sanitizePdfText(`- ${f.name} - ${f.shortNote}`, true),
+          pageW - 36
+        );
+        ensurePageSpace(lines.length * 4 + 2);
+        pdf.text(lines, 18, y);
+        y += lines.length * 4 + 0.5;
+      });
     }
 
-    pdf.setFontSize(8);
-    pdf.setTextColor(100, 116, 139);
-    pdf.text(DOCTOR_DISCLAIMER_BANNER, 14, 287);
+    const totalPages = pdf.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p += 1) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.6);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(
+        fitPdfTextToWidth(pdf, sanitizePdfText(DOCTOR_DISCLAIMER_BANNER, true), pageW - 48),
+        14,
+        pageH - 7
+      );
+      pdf.text(`Page ${p} of ${totalPages}`, pageW - 14, pageH - 7, { align: 'right' });
+    }
 
     pdf.save(
       `${targetCode}_${targetName.replace(/\s+/g, '_')}_Nutrition_Report.pdf`

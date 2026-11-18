@@ -249,6 +249,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     >
   >({});
 
+  const [isSavingCustomTraining, setIsSavingCustomTraining] = useState(false);
+
   const liveCustomTrainings: CustomTrainingItem[] = useMemo(() => {
     if (Array.isArray(storageConfig.customTrainings)) {
       return storageConfig.customTrainings;
@@ -256,18 +258,37 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     return DEFAULT_CUSTOM_TRAININGS;
   }, [storageConfig.customTrainings]);
 
-  const persistCustomTrainings = async (nextList: CustomTrainingItem[], msg: string) => {
-    onChangeStorageConfig({
-      ...storageConfig,
-      customTrainings: nextList
-    });
+  const persistCustomTrainings = async (
+    nextList: CustomTrainingItem[],
+    msg: string,
+    clearEditId?: string
+  ): Promise<boolean> => {
+    if (isSavingCustomTraining) return false;
+    setIsSavingCustomTraining(true);
     try {
       if (onSaveCustomTrainingsList) {
         await onSaveCustomTrainingsList(nextList);
+      } else {
+        onChangeStorageConfig({
+          ...storageConfig,
+          customTrainings: nextList
+        });
+      }
+      if (clearEditId) {
+        setCtEdits((prev) => {
+          const copy = { ...prev };
+          delete copy[clearEditId];
+          return copy;
+        });
       }
       onSetBanner(msg);
-    } catch {
-      onSetBanner('Error saving Custom Trainings to Firestore. Please retry.');
+      return true;
+    } catch (err) {
+      console.error('Failed to save Custom Trainings:', err);
+      onSetBanner('Error saving Custom Trainings to Firestore. Please verify admin login & retry.');
+      return false;
+    } finally {
+      setIsSavingCustomTraining(false);
     }
   };
 
@@ -707,7 +728,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       : `${origin}${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`;
     const message = `📢 *${headline}*\n\n${summaryText}\n\n🔗 *Open Direct Link:* ${fullUrl}\n🌐 *Food Science Portal — International Food Science Community*`;
     const waShareUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(waShareUrl, '_blank', 'noopener,noreferrer');
+    const link = document.createElement('a');
+    link.href = waShareUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const copyWhatsAppShareText = async (
@@ -1625,12 +1652,16 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         description: cardModDesc.trim()
       }
     ];
-    await onSaveTraining({
-      ...tr,
-      customModules: nextMods
-    });
-    setCardModSubject('');
-    setCardModDesc('');
+    try {
+      await onSaveTraining({
+        ...tr,
+        customModules: nextMods
+      });
+      setCardModSubject('');
+      setCardModDesc('');
+    } catch (err) {
+      console.error('Failed to add module:', err);
+    }
   };
 
   const handleDeleteModuleFromExistingTraining = async (
@@ -1638,10 +1669,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     modId: string
   ) => {
     const nextMods = (tr.customModules || []).filter((m) => m.id !== modId);
-    await onSaveTraining({
-      ...tr,
-      customModules: nextMods
-    });
+    try {
+      await onSaveTraining({
+        ...tr,
+        customModules: nextMods
+      });
+    } catch (err) {
+      console.error('Failed to delete module:', err);
+    }
   };
 
   const handleAddMcqToExistingTraining = async (tr: HubTraining) => {
@@ -1664,16 +1699,20 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         correctIndex: cardMcqCorrectIdx
       }
     ];
-    await onSaveTraining({
-      ...tr,
-      customMcqs: nextMcqs
-    });
-    setCardMcqQuestion('');
-    setCardMcqOptA('');
-    setCardMcqOptB('');
-    setCardMcqOptC('');
-    setCardMcqOptD('');
-    setCardMcqCorrectIdx(0);
+    try {
+      await onSaveTraining({
+        ...tr,
+        customMcqs: nextMcqs
+      });
+      setCardMcqQuestion('');
+      setCardMcqOptA('');
+      setCardMcqOptB('');
+      setCardMcqOptC('');
+      setCardMcqOptD('');
+      setCardMcqCorrectIdx(0);
+    } catch (err) {
+      console.error('Failed to add MCQ:', err);
+    }
   };
 
   const handleDeleteMcqFromExistingTraining = async (
@@ -1681,10 +1720,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     mcqId: string
   ) => {
     const nextMcqs = (tr.customMcqs || []).filter((q) => q.id !== mcqId);
-    await onSaveTraining({
-      ...tr,
-      customMcqs: nextMcqs
-    });
+    try {
+      await onSaveTraining({
+        ...tr,
+        customMcqs: nextMcqs
+      });
+    } catch (err) {
+      console.error('Failed to delete MCQ:', err);
+    }
   };
 
   const handleUpdateCoursePrice = async (tr: HubTraining) => {
@@ -1745,10 +1788,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       description: nextDesc || tr.description,
       isActive: tr.isActive !== false
     };
-    await onSaveTraining(updated);
-    onSetBanner(
-      `Updated "${nextTitle}" (Cert Fee: Rs. ${(nextCertFeeRs || 1000).toLocaleString()} · ${nextDuration || tr.duration}) — Live on Website & Bundles!`
-    );
+    try {
+      await onSaveTraining(updated);
+      onSetBanner(
+        `Updated "${nextTitle}" (Cert Fee: Rs. ${(nextCertFeeRs || 1000).toLocaleString()} · ${nextDuration || tr.duration}) — Live on Website & Bundles!`
+      );
+    } catch (err) {
+      console.error('Failed to update course price:', err);
+    }
   };
 
   const handleSaveExistingModuleEdit = async (
@@ -1766,16 +1813,20 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
           }
         : m
     );
-    await onSaveTraining({
-      ...tr,
-      customModules: nextMods
-    });
-    setEditingModMap((prev) => {
-      const copy = { ...prev };
-      delete copy[modId];
-      return copy;
-    });
-    onSetBanner(`Updated module in "${tr.title}" (Live on Website)!`);
+    try {
+      await onSaveTraining({
+        ...tr,
+        customModules: nextMods
+      });
+      setEditingModMap((prev) => {
+        const copy = { ...prev };
+        delete copy[modId];
+        return copy;
+      });
+      onSetBanner(`Updated module in "${tr.title}" (Live on Website)!`);
+    } catch (err) {
+      console.error('Failed to save edited module:', err);
+    }
   };
 
   const todayFormatted = new Date().toISOString().slice(0, 10);
@@ -6603,7 +6654,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   <form
                     onSubmit={async (e) => {
                       e.preventDefault();
-                      if (!ctTitle.trim()) return;
+                      if (!ctTitle.trim()) {
+                        onSetBanner('Please enter a Custom Training Title before publishing.');
+                        return;
+                      }
                       const autoCode =
                         ctCode.trim() ||
                         `CT-${ctTitle
@@ -6621,7 +6675,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         title: ctTitle.trim(),
                         code: autoCode,
                         priceRs: Math.max(0, Number(ctPriceRs) || 0),
-                        priceUsd: Math.max(0, Number(ctPriceUsd) || 15),
+                        priceUsd: Number.isFinite(Number(ctPriceUsd))
+                          ? Math.max(0, Number(ctPriceUsd))
+                          : 15,
                         duration: ctDuration.trim() || '2 Weeks',
                         mode: ctMode.trim() || 'Online Live / Hybrid',
                         accreditationStandard:
@@ -6644,14 +6700,16 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         isActive: true
                       };
                       const nextList = [newItem, ...liveCustomTrainings];
-                      await persistCustomTrainings(
+                      const ok = await persistCustomTrainings(
                         nextList,
                         `Custom Training "${newItem.title}" added and published!`
                       );
-                      setCtTitle('');
-                      setCtCode('');
-                      setCtDescription('');
-                      setCtTopicsText('');
+                      if (ok) {
+                        setCtTitle('');
+                        setCtCode('');
+                        setCtDescription('');
+                        setCtTopicsText('');
+                      }
                     }}
                     className="p-4 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3.5"
                   >
@@ -6780,10 +6838,15 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                     <button
                       type="submit"
-                      className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      disabled={isSavingCustomTraining}
+                      className="px-5 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
                       <Plus className="w-4 h-4" />
-                      <span>Add &amp; Publish Custom Training</span>
+                      <span>
+                        {isSavingCustomTraining
+                          ? 'Saving Custom Training...'
+                          : 'Add & Publish Custom Training'}
+                      </span>
                     </button>
                   </form>
 
@@ -6794,7 +6857,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         title: ct.title,
                         code: ct.code,
                         priceRs: ct.priceRs,
-                        priceUsd: ct.priceUsd || 15,
+                        priceUsd: ct.priceUsd ?? 15,
                         duration: ct.duration,
                         mode: ct.mode,
                         description: ct.description,
@@ -6997,6 +7060,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               <div className="sm:col-span-3">
                                 <button
                                   type="button"
+                                  disabled={isSavingCustomTraining}
                                   onClick={async () => {
                                     const updatedTopics = editState.topicsText
                                       .split(/\n|,/)
@@ -7013,10 +7077,9 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                                 0,
                                                 Number(editState.priceRs) || 0
                                               ),
-                                              priceUsd: Math.max(
-                                                0,
-                                                Number(editState.priceUsd) || 15
-                                              ),
+                                              priceUsd: Number.isFinite(Number(editState.priceUsd))
+                                                ? Math.max(0, Number(editState.priceUsd))
+                                                : item.priceUsd ?? 15,
                                               duration:
                                                 editState.duration.trim() ||
                                                 item.duration,
@@ -7034,13 +7097,18 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                     );
                                     await persistCustomTrainings(
                                       nextList,
-                                      `Updated Custom Training "${editState.title}"!`
+                                      `Updated Custom Training "${editState.title}"!`,
+                                      ct.id
                                     );
                                   }}
-                                  className="w-full py-2 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
+                                  className="w-full py-2 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer"
                                 >
                                   <Check className="w-4 h-4" />
-                                  <span>Save Price &amp; Details</span>
+                                  <span>
+                                    {isSavingCustomTraining
+                                      ? 'Saving...'
+                                      : 'Save Price & Details'}
+                                  </span>
                                 </button>
                               </div>
                             </div>

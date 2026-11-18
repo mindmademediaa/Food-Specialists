@@ -5,6 +5,7 @@ import {
 } from '../types/hub';
 import { generateQrCodeMatrix } from '../utils/certificatePdfGenerator';
 import { FS_PORTAL_LOGO_DATA_URI } from './brandLogo';
+import { fitPdfTextToWidth, sanitizePdfText } from './pdfBranding';
 
 export const DEFAULT_COMPLAINT_CATEGORIES = [
   'Food Quality & Taste',
@@ -159,14 +160,22 @@ export async function downloadSingleComplaintCapaPdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
-  const cleanCompany = (org.companyName || 'Food Business Organization').slice(0, 52);
+  const cleanCompany = fitPdfTextToWidth(
+    doc,
+    org.companyName || 'Food Business Organization',
+    contentW - 28
+  );
   doc.text(cleanCompany, margin + 26, 13.5);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.8);
   doc.setTextColor(191, 219, 254);
   doc.text(
-    `${org.organizationType || 'Food Establishment'}${org.branchLocation ? `  |  ${org.branchLocation}` : ''}`,
+    fitPdfTextToWidth(
+      doc,
+      `${org.organizationType || 'Food Establishment'}${org.branchLocation ? ` | ${org.branchLocation}` : ''}`,
+      contentW - 28
+    ),
     margin + 26,
     19.2
   );
@@ -224,56 +233,88 @@ export async function downloadSingleComplaintCapaPdf(
     bodyLines: { label?: string; value: string }[],
     accentRgb: [number, number, number] = [22, 115, 184]
   ) => {
-    // Calculate required height
-    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.8);
     let innerHeight = 10;
     const preparedRows: { label?: string; lines: string[] }[] = [];
     for (const row of bodyLines) {
-      const text = (row.value || 'Not documented yet').trim();
+      const text = sanitizePdfText((row.value || 'Not documented yet').trim());
       const availW = row.label ? contentW - 44 : contentW - 8;
       const wrapped = doc.splitTextToSize(text, availW);
       preparedRows.push({ label: row.label, lines: wrapped });
       innerHeight += Math.max(5.5, wrapped.length * 4.4 + 1.8);
     }
+    const maxBoxH = H - 38;
     const boxHeight = innerHeight + 4;
-    ensureSpace(boxHeight + 4);
 
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(210, 222, 234);
-    doc.setLineWidth(0.35);
-    doc.roundedRect(margin, y, contentW, boxHeight, 2, 2, 'FD');
+    if (boxHeight <= maxBoxH) {
+      ensureSpace(boxHeight + 4);
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(210, 222, 234);
+      doc.setLineWidth(0.35);
+      doc.roundedRect(margin, y, contentW, boxHeight, 2, 2, 'FD');
 
-    // Header strip inside box
-    doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
-    doc.roundedRect(margin, y, contentW, 7.5, 2, 2, 'F');
-    doc.rect(margin, y + 4.5, contentW, 3, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(255, 255, 255);
-    doc.text(title, margin + 4, y + 5.2);
+      doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+      doc.roundedRect(margin, y, contentW, 7.5, 2, 2, 'F');
+      doc.rect(margin, y + 4.5, contentW, 3, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(sanitizePdfText(title, true), margin + 4, y + 5.2);
 
-    let ry = y + 12.5;
-    for (const row of preparedRows) {
-      if (row.label) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8.5);
-        doc.setTextColor(71, 85, 105);
-        doc.text(row.label, margin + 4, ry);
+      let ry = y + 12.5;
+      for (const row of preparedRows) {
+        if (row.label) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(71, 85, 105);
+          doc.text(sanitizePdfText(row.label, true), margin + 4, ry);
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.8);
-        doc.setTextColor(15, 23, 42);
-        doc.text(row.lines, margin + 40, ry);
-      } else {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.8);
-        doc.setTextColor(15, 23, 42);
-        doc.text(row.lines, margin + 4, ry);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.8);
+          doc.setTextColor(15, 23, 42);
+          doc.text(row.lines, margin + 40, ry);
+        } else {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.8);
+          doc.setTextColor(15, 23, 42);
+          doc.text(row.lines, margin + 4, ry);
+        }
+        ry += Math.max(5.5, row.lines.length * 4.4 + 1.8);
       }
-      ry += Math.max(5.5, row.lines.length * 4.4 + 1.8);
-    }
 
-    y += boxHeight + 5;
+      y += boxHeight + 5;
+    } else {
+      ensureSpace(22);
+      doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+      doc.roundedRect(margin, y, contentW, 7.5, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(sanitizePdfText(title, true), margin + 4, y + 5.2);
+      y += 11.5;
+
+      for (const row of preparedRows) {
+        if (row.label) {
+          ensureSpace(6);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(71, 85, 105);
+          doc.text(sanitizePdfText(row.label, true), margin + 4, y);
+        }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.8);
+        doc.setTextColor(15, 23, 42);
+        const rx = row.label ? margin + 40 : margin + 4;
+        row.lines.forEach((ln) => {
+          ensureSpace(5);
+          doc.text(ln, rx, y);
+          y += 4.4;
+        });
+        y += 1.6;
+      }
+      y += 4;
+    }
   };
 
   // Section 1: Complainant & Incident Information
@@ -448,7 +489,11 @@ export async function downloadSingleComplaintCapaPdf(
     doc.setFontSize(7.6);
     doc.setTextColor(15, 37, 71);
     doc.text(
-      `Digitally Signed Document  ·  ${actionRoleLabel}: ${responsibleUserName}  ·  ${signedDateLabel}`,
+      fitPdfTextToWidth(
+        doc,
+        `Digitally Signed Document | ${actionRoleLabel}: ${responsibleUserName} | ${signedDateLabel}`,
+        contentW
+      ),
       margin,
       H - 10
     );
@@ -457,7 +502,11 @@ export async function downloadSingleComplaintCapaPdf(
     doc.setFontSize(7.2);
     doc.setTextColor(100, 116, 139);
     doc.text(
-      `${org.companyName} — Complaint & CAPA Record ${complaint.complaintCode} · Food Science Portal`,
+      fitPdfTextToWidth(
+        doc,
+        `${org.companyName} - Complaint & CAPA Record ${complaint.complaintCode} | Food Science Portal`,
+        contentW - 26
+      ),
       margin,
       H - 5.5
     );
@@ -501,11 +550,12 @@ export async function downloadFullComplaintDirectoryPdf(
       // Ignore
     }
 
+    const headerTextMaxW = contentW - 26;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(255, 255, 255);
     doc.text(
-      (org.companyName || 'Organization').slice(0, 54),
+      fitPdfTextToWidth(doc, org.companyName || 'Organization', headerTextMaxW),
       margin + 24,
       12.5
     );
@@ -513,13 +563,21 @@ export async function downloadFullComplaintDirectoryPdf(
     doc.setFontSize(8.2);
     doc.setTextColor(191, 219, 254);
     doc.text(
-      `COMPLAINT HANDLING & CAPA REGISTER  |  Filter: ${filterLabel}  |  Generated: ${formatReadableDate(new Date().toISOString())}`,
+      fitPdfTextToWidth(
+        doc,
+        `COMPLAINT HANDLING & CAPA REGISTER | Filter: ${filterLabel} | Generated: ${formatReadableDate(new Date().toISOString())}`,
+        headerTextMaxW
+      ),
       margin + 24,
       19
     );
     if (org.branchLocation || org.organizationType) {
       doc.text(
-        `${org.organizationType}${org.branchLocation ? ` — ${org.branchLocation}` : ''}`,
+        fitPdfTextToWidth(
+          doc,
+          `${org.organizationType || ''}${org.branchLocation ? ` - ${org.branchLocation}` : ''}`,
+          headerTextMaxW
+        ),
         margin + 24,
         24.2
       );
@@ -571,14 +629,21 @@ export async function downloadFullComplaintDirectoryPdf(
     doc.text('No complaint records match the selected directory filter.', margin, y + 8);
   } else {
     for (const c of complaints) {
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.2);
-      const subjectLines = doc.splitTextToSize(`Issue: ${c.subject} — ${c.description}`, contentW - 8).slice(0, 3);
+      const subjectLines = doc.splitTextToSize(
+        sanitizePdfText(`Issue: ${c.subject} - ${c.description}`, true),
+        contentW - 8
+      ).slice(0, 3);
       const rcLines = doc.splitTextToSize(
-        `Root Cause: ${c.rootCause || 'Pending RCA'}`,
+        sanitizePdfText(`Root Cause: ${c.rootCause || 'Pending RCA'}`, true),
         contentW - 8
       ).slice(0, 2);
       const corrLines = doc.splitTextToSize(
-        `Correction: ${c.correction || 'Pending'}  |  Corrective Action: ${c.correctiveAction || 'Pending'}`,
+        sanitizePdfText(
+          `Correction: ${c.correction || 'Pending'} | Corrective Action: ${c.correctiveAction || 'Pending'}`,
+          true
+        ),
         contentW - 8
       ).slice(0, 3);
 
@@ -607,7 +672,11 @@ export async function downloadFullComplaintDirectoryPdf(
       doc.setFontSize(8.5);
       doc.setTextColor(26, 33, 56);
       doc.text(
-        `${c.complaintCode}  |  ${c.complainantName} (${c.category})  |  ${formatReadableDate(c.createdAt)}`,
+        fitPdfTextToWidth(
+          doc,
+          `${c.complaintCode} | ${c.complainantName} (${c.category}) | ${formatReadableDate(c.createdAt)}`,
+          contentW - 36
+        ),
         margin + 3.5,
         y + 5.8
       );
@@ -649,7 +718,11 @@ export async function downloadFullComplaintDirectoryPdf(
     doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
     doc.text(
-      `${org.companyName} — Confidential Complaint & CAPA Directory · Food Science Portal`,
+      fitPdfTextToWidth(
+        doc,
+        `${org.companyName} - Confidential Complaint & CAPA Directory | Food Science Portal`,
+        contentW - 26
+      ),
       margin,
       H - 7
     );

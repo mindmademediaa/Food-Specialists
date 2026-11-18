@@ -1,14 +1,18 @@
 import { jsPDF } from 'jspdf';
 import { HubUser } from '../types/hub';
 import { SuiteExamResult } from '../data/examSuiteData';
-import { drawPdfBrandLogo, drawPdfUserPhoto } from './pdfBranding';
+import {
+  drawPdfBrandLogo,
+  drawPdfUserPhoto,
+  fitPdfTextToWidth,
+  sanitizePdfText
+} from './pdfBranding';
 import { drawPermanentMuneebSignatureStrokeOnly } from '../utils/certificateSignatures';
 
 function drawQrCodePlaceholder(pdf: jsPDF, x: number, y: number, size: number) {
   pdf.setDrawColor(19, 66, 43);
   pdf.setLineWidth(0.6);
   pdf.rect(x, y, size, size);
-  // Corner finder squares
   const cSize = size * 0.26;
   pdf.setFillColor(19, 66, 43);
   pdf.rect(x + 1.5, y + 1.5, cSize, cSize, 'F');
@@ -30,7 +34,6 @@ function drawQrCodePlaceholder(pdf: jsPDF, x: number, y: number, size: number) {
     cSize - 2.4,
     'F'
   );
-  // Inner matrix dots
   pdf.setFillColor(19, 66, 43);
   for (let r = 0; r < 5; r++) {
     for (let c = 0; c < 5; c++) {
@@ -53,16 +56,15 @@ export function download5PageExamReportPdf(
   previousResults: SuiteExamResult[] = []
 ) {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const candidateName = (user.name || 'Food Specialist').trim();
+  const candidateName = sanitizePdfText(user.name || 'Food Specialist', true);
   const isPass = result.status === 'PASS';
 
-  // Compute subject breakdown
   const subjMap: Record<
     string,
     { total: number; correct: number; wrong: number; skipped: number }
   > = {};
   result.answers.forEach((ans) => {
-    const cat = ans.category || 'Food Safety';
+    const cat = sanitizePdfText(ans.category || 'Food Safety', true);
     if (!subjMap[cat]) {
       subjMap[cat] = { total: 0, correct: 0, wrong: 0, skipped: 0 };
     }
@@ -93,13 +95,11 @@ export function download5PageExamReportPdf(
   // ==========================================================================
   // PAGE 1: OFFICIAL COVER PAGE & SCORE STAMP
   // ==========================================================================
-  // Dark Emerald Header Banner
   pdf.setFillColor(19, 66, 43);
   pdf.rect(0, 0, 210, 52, 'F');
   pdf.setFillColor(22, 163, 74);
   pdf.rect(0, 48, 210, 4, 'F');
 
-  // Large Food Science Portal Logo Emblem Box (28mm x 28mm)
   drawPdfBrandLogo(pdf, 14, 10, 28, {
     borderColor: [255, 255, 255],
     bgFill: [255, 255, 255],
@@ -109,13 +109,17 @@ export function download5PageExamReportPdf(
   pdf.setTextColor(255, 255, 255);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(15);
-  pdf.text('Food Science Portal — Official Assessment Board', 46, 18);
+  pdf.text('Food Science Portal - Official Assessment Board', 46, 18);
   pdf.setFontSize(19.5);
   pdf.text('EXAM PERFORMANCE REPORT', 46, 28);
   pdf.setFontSize(10);
   pdf.setTextColor(187, 247, 208);
   pdf.text(
-    `Certificate ID: ${result.certificateId}  •  Official Multi-Page Transcript`,
+    fitPdfTextToWidth(
+      pdf,
+      `Certificate ID: ${result.certificateId} | Official Multi-Page Transcript`,
+      150
+    ),
     46,
     36
   );
@@ -126,35 +130,56 @@ export function download5PageExamReportPdf(
   pdf.setLineWidth(0.5);
   pdf.roundedRect(14, 62, 182, 54, 4, 4, 'FD');
 
-  // Candidate Profile Photo (28mm x 28mm)
   drawPdfUserPhoto(pdf, user.profilePicUrl, candidateName, 20, 74, 28, {
     borderColor: [22, 163, 74],
     fallbackBgColor: [22, 163, 74],
     fallbackTextColor: [255, 255, 255]
   });
 
+  const metaMaxW = 136;
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(15, 41, 30);
   pdf.setFontSize(14);
-  pdf.text(candidateName, 54, 76);
+  pdf.text(fitPdfTextToWidth(pdf, candidateName, metaMaxW), 54, 76);
+
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(10);
+  pdf.setFontSize(9.8);
   pdf.setTextColor(75, 99, 86);
+  const roleStr = sanitizePdfText(
+    user.title || user.currentRole || user.qualification || 'Food Safety & Quality Specialist',
+    true
+  );
   pdf.text(
-    `Role / Qualification: ${
-      user.title || user.currentRole || user.qualification || 'Food Safety & Quality Specialist'
-    }`,
+    fitPdfTextToWidth(pdf, `Role / Qualification: ${roleStr}`, metaMaxW),
     54,
     83
   );
-  pdf.text(`Email: ${user.email || 'Verified Specialist Member'}`, 54, 90);
+  pdf.text(
+    fitPdfTextToWidth(
+      pdf,
+      `Email: ${user.email || 'Verified Specialist Member'}`,
+      metaMaxW
+    ),
+    54,
+    90
+  );
+
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(19, 66, 43);
-  pdf.text(`Exam Title: ${result.title} (${result.category})`, 54, 99);
+  const examTitleLines = pdf.splitTextToSize(
+    sanitizePdfText(`Exam Title: ${result.title} (${result.category})`, true),
+    metaMaxW
+  );
+  pdf.text(examTitleLines.slice(0, 2), 54, 97.5);
+  pdf.setFontSize(9.4);
   pdf.text(
-    `Date Completed: ${result.dateFormatted}   •   Duration: ${result.timeTakenFormatted}`,
+    fitPdfTextToWidth(
+      pdf,
+      `Date Completed: ${result.dateFormatted} | Duration: ${result.timeTakenFormatted}`,
+      metaMaxW
+    ),
     54,
-    106
+    examTitleLines.length > 1 ? 109 : 105.5
   );
 
   // Big Score Circle & Official PASS / FAIL Stamp
@@ -163,7 +188,6 @@ export function download5PageExamReportPdf(
   pdf.setLineWidth(1.2);
   pdf.roundedRect(14, 126, 182, 92, 6, 6, 'FD');
 
-  // Score Circle
   pdf.setLineWidth(3.5);
   pdf.setDrawColor(isPass ? 22 : 220, isPass ? 163 : 38, isPass ? 74 : 38);
   pdf.circle(105, 164, 24, 'S');
@@ -181,7 +205,6 @@ export function download5PageExamReportPdf(
     { align: 'center' }
   );
 
-  // Official PASS / FAIL Stamp Pill
   if (isPass) {
     pdf.setFillColor(22, 163, 74);
   } else {
@@ -197,7 +220,6 @@ export function download5PageExamReportPdf(
     { align: 'center' }
   );
 
-  // QR Verification Box on Cover Page
   pdf.setFillColor(248, 250, 252);
   pdf.setDrawColor(203, 227, 214);
   pdf.setLineWidth(0.4);
@@ -211,12 +233,16 @@ export function download5PageExamReportPdf(
   pdf.setFontSize(9.5);
   pdf.setTextColor(75, 99, 86);
   pdf.text(
-    `Certificate ID: ${result.certificateId}  |  Pass Criteria: 50% Minimum  |  Candidate Status: ${result.status}`,
+    fitPdfTextToWidth(
+      pdf,
+      `Certificate ID: ${result.certificateId} | Pass Criteria: 50% Minimum | Status: ${result.status}`,
+      140
+    ),
     52,
     248
   );
   pdf.text(
-    'Verified by Food Science Portal — Food Safety, HACCP, ISO 22000 & FSSC 22000 Division.',
+    'Verified by Food Science Portal - Food Safety, HACCP, ISO 22000 & FSSC 22000 Division.',
     52,
     255
   );
@@ -238,9 +264,8 @@ export function download5PageExamReportPdf(
   pdf.text('Food Science Portal', 34, 9.5);
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(12);
-  pdf.text('PAGE 2 — EXECUTIVE SUMMARY DASHBOARD & VISUAL ANALYTICS', 34, 17);
+  pdf.text('PAGE 2 - EXECUTIVE SUMMARY DASHBOARD & VISUAL ANALYTICS', 34, 17);
 
-  // 1. Summary Table
   pdf.setTextColor(15, 41, 30);
   pdf.setFontSize(12);
   pdf.text('1. Exam Performance Summary Table', 14, 33);
@@ -274,7 +299,6 @@ export function download5PageExamReportPdf(
     tableY += 9;
   });
 
-  // 2. Visual Distribution Chart (Correct / Wrong / Skipped Segmented Bar + Legend Boxes)
   pdf.setTextColor(15, 41, 30);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(12);
@@ -301,7 +325,6 @@ export function download5PageExamReportPdf(
     pdf.rect(barX + cW + wW, barY, sW, 12, 'F');
   }
 
-  // Legend boxes
   pdf.setFillColor(22, 163, 74);
   pdf.rect(14, 108, 4, 4, 'F');
   pdf.setFontSize(9.5);
@@ -316,7 +339,6 @@ export function download5PageExamReportPdf(
   pdf.rect(138, 108, 4, 4, 'F');
   pdf.text(`Skipped: ${result.skipped} (${Math.round((result.skipped / totalQ) * 100)}%)`, 144, 111.5);
 
-  // 3. Subject-wise Performance Horizontal Bar Chart
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(12);
   pdf.setTextColor(15, 41, 30);
@@ -327,13 +349,11 @@ export function download5PageExamReportPdf(
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(9);
     pdf.setTextColor(15, 41, 30);
-    pdf.text(item.subject.slice(0, 26), 14, chartY + 4);
+    pdf.text(fitPdfTextToWidth(pdf, item.subject, 51), 14, chartY + 4);
 
-    // Track
     pdf.setFillColor(229, 231, 235);
     pdf.roundedRect(68, chartY, 100, 5.5, 1.5, 1.5, 'F');
-    // Fill
-    const fillW = Math.max(2, item.pct);
+    const fillW = Math.min(100, Math.max(2, item.pct));
     pdf.setFillColor(item.pct >= 50 ? 22 : 220, item.pct >= 50 ? 163 : 38, item.pct >= 50 ? 74 : 38);
     pdf.roundedRect(68, chartY, fillW, 5.5, 1.5, 1.5, 'F');
 
@@ -341,7 +361,6 @@ export function download5PageExamReportPdf(
     chartY += 10;
   });
 
-  // 4. Line Chart: Previous 5 Exams Progress Trajectory
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(12);
   pdf.setTextColor(15, 41, 30);
@@ -407,9 +426,8 @@ export function download5PageExamReportPdf(
   pdf.text('Food Science Portal', 34, 9.5);
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(12);
-  pdf.text('PAGE 3 — SUBJECT-WISE DETAILED ANALYSIS & RECOMMENDATIONS', 34, 17);
+  pdf.text('PAGE 3 - SUBJECT-WISE DETAILED ANALYSIS & RECOMMENDATIONS', 34, 17);
 
-  // Table Header
   let sY = 32;
   pdf.setFillColor(19, 66, 43);
   pdf.rect(14, sY, 182, 10, 'F');
@@ -425,6 +443,10 @@ export function download5PageExamReportPdf(
   sY += 10;
 
   subjEntries.forEach((item, idx) => {
+    if (sY + 10 > 274) {
+      pdf.addPage();
+      sY = 20;
+    }
     pdf.setFillColor(idx % 2 === 0 ? 244 : 255, idx % 2 === 0 ? 250 : 255, idx % 2 === 0 ? 247 : 255);
     pdf.setDrawColor(203, 227, 214);
     pdf.rect(14, sY, 182, 10, 'FD');
@@ -432,7 +454,7 @@ export function download5PageExamReportPdf(
     pdf.setTextColor(15, 41, 30);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(9);
-    pdf.text(item.subject.slice(0, 28), 17, sY + 6.5);
+    pdf.text(fitPdfTextToWidth(pdf, item.subject, 58), 17, sY + 6.5);
     pdf.setFont('helvetica', 'normal');
     pdf.text(String(item.total), 81, sY + 6.5);
     pdf.text(String(item.correct), 99, sY + 6.5);
@@ -445,8 +467,12 @@ export function download5PageExamReportPdf(
     sY += 10;
   });
 
-  // Detailed Recommendations per Subject
+  // Detailed Recommendations per Subject (paginated safely instead of returning early!)
   sY += 10;
+  if (sY > 258) {
+    pdf.addPage();
+    sY = 20;
+  }
   pdf.setTextColor(15, 41, 30);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(12);
@@ -454,30 +480,43 @@ export function download5PageExamReportPdf(
   sY += 6;
 
   subjEntries.forEach((item) => {
-    if (sY > 255) return;
-    pdf.setFillColor(248, 252, 250);
-    pdf.setDrawColor(187, 247, 208);
-    pdf.roundedRect(14, sY, 182, 16, 2.5, 2.5, 'FD');
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9.5);
-    pdf.setTextColor(19, 66, 43);
-    pdf.text(
-      `${item.subject} (${item.pct}% — Grade ${item.grade}):`,
-      18,
-      sY + 6
-    );
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8.8);
-    pdf.setTextColor(51, 65, 85);
     const recText =
       item.pct >= 80
         ? `Strong command in ${item.subject}. Keep practicing advanced lead auditor case studies.`
         : item.pct >= 50
         ? `Satisfactory foundation in ${item.subject}. Review critical limits, ISO clauses, and verification procedures.`
         : `Priority focus needed in ${item.subject}. Revise core Codex HACCP principles and re-attempt Wrong Questions Bank.`;
-    pdf.text(recText, 18, sY + 12.5);
-    sY += 19;
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8.8);
+    const wrappedRec = pdf.splitTextToSize(sanitizePdfText(recText, true), 174);
+    const recBoxH = Math.max(15, 9 + wrappedRec.length * 4 + 3);
+
+    if (sY + recBoxH > 276) {
+      pdf.addPage();
+      sY = 20;
+    }
+    pdf.setFillColor(248, 252, 250);
+    pdf.setDrawColor(187, 247, 208);
+    pdf.roundedRect(14, sY, 182, recBoxH, 2.5, 2.5, 'FD');
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(19, 66, 43);
+    pdf.text(
+      fitPdfTextToWidth(
+        pdf,
+        `${item.subject} (${item.pct}% - Grade ${item.grade}):`,
+        174
+      ),
+      18,
+      sY + 6
+    );
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8.8);
+    pdf.setTextColor(51, 65, 85);
+    pdf.text(wrappedRec, 18, sY + 11.5);
+    sY += recBoxH + 3;
   });
 
   // ==========================================================================
@@ -497,11 +536,30 @@ export function download5PageExamReportPdf(
   pdf.text('Food Science Portal', 34, 9.5);
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(12);
-  pdf.text('PAGE 4 — COMPLETE 30-MCQ EXAM PAPER & ANSWER KEY REVIEW', 34, 17);
+  pdf.text('PAGE 4 - COMPLETE 30-MCQ EXAM PAPER & ANSWER KEY REVIEW', 34, 17);
 
   let qY = 28;
   result.answers.forEach((ans, idx) => {
-    if (qY > 238) {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8.8);
+    const cleanQText = sanitizePdfText(
+      ans.questionText.replace(/^\[[^\]]+\]\s*/, '').trim(),
+      true
+    );
+    const qLines = pdf.splitTextToSize(
+      `Q${ans.questionNumber}. ${cleanQText}`,
+      144
+    ).slice(0, 2);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.5);
+    const expLine = pdf.splitTextToSize(
+      sanitizePdfText(`Explanation: ${ans.explanation}`, true),
+      174
+    ).slice(0, 2);
+
+    const boxH = 38;
+    if (qY + boxH > 280) {
       pdf.addPage();
       pdf.setFillColor(19, 66, 43);
       pdf.rect(0, 0, 210, 20, 'F');
@@ -517,14 +575,13 @@ export function download5PageExamReportPdf(
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(10.5);
       pdf.text(
-        `30-MCQ EXAM PAPER & ANSWER KEY REVIEW (CONTINUED — Q${idx + 1} TO Q${result.answers.length})`,
+        `30-MCQ EXAM PAPER & ANSWER KEY REVIEW (CONTINUED - Q${idx + 1} TO Q${result.answers.length})`,
         32,
         15
       );
       qY = 25;
     }
 
-    const boxH = 38;
     pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(
       ans.isCorrect ? 22 : ans.userAnswer === null ? 156 : 234,
@@ -534,23 +591,17 @@ export function download5PageExamReportPdf(
     pdf.setLineWidth(0.45);
     pdf.roundedRect(14, qY, 182, boxH, 2.5, 2.5, 'FD');
 
-    // Top row inside MCQ box: Q# + Clean Question Text + Status Badge
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8.8);
     pdf.setTextColor(15, 41, 30);
-    const cleanQText = ans.questionText.replace(/^\[[^\]]+\]\s*/, '').trim();
-    const qLines = pdf.splitTextToSize(
-      `Q${ans.questionNumber}. ${cleanQText}`,
-      148
-    );
-    pdf.text(qLines.slice(0, 2), 17, qY + 5.5);
+    pdf.text(qLines, 17, qY + 5.5);
 
     const statusLabel =
       ans.userAnswer === null
         ? 'SKIPPED'
         : ans.isCorrect
-        ? 'CORRECT ✓'
-        : 'WRONG ✗';
+        ? 'CORRECT [OK]'
+        : 'WRONG [X]';
     pdf.setTextColor(
       ans.isCorrect ? 22 : ans.userAnswer === null ? 100 : 220,
       ans.isCorrect ? 163 : ans.userAnswer === null ? 116 : 38,
@@ -558,20 +609,18 @@ export function download5PageExamReportPdf(
     );
     pdf.text(statusLabel, 193, qY + 5.5, { align: 'right' });
 
-    // Options A, B, C, D in 2x2 grid
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7.8);
     pdf.setTextColor(51, 65, 85);
-    pdf.text(`A) ${ans.optionA.slice(0, 42)}`, 17, qY + 15);
-    pdf.text(`B) ${ans.optionB.slice(0, 42)}`, 105, qY + 15);
-    pdf.text(`C) ${ans.optionC.slice(0, 42)}`, 17, qY + 20);
-    pdf.text(`D) ${ans.optionD.slice(0, 42)}`, 105, qY + 20);
+    pdf.text(fitPdfTextToWidth(pdf, `A) ${ans.optionA}`, 84), 17, qY + 15);
+    pdf.text(fitPdfTextToWidth(pdf, `B) ${ans.optionB}`, 84), 105, qY + 15);
+    pdf.text(fitPdfTextToWidth(pdf, `C) ${ans.optionC}`, 84), 17, qY + 20);
+    pdf.text(fitPdfTextToWidth(pdf, `D) ${ans.optionD}`, 84), 105, qY + 20);
 
-    // Highlighted Your Answer vs Correct Answer
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8);
     pdf.setTextColor(22, 163, 74);
-    pdf.text(`✓ Correct Answer: Option ${ans.correctAnswer}`, 17, qY + 26);
+    pdf.text(`[OK] Correct Answer: Option ${ans.correctAnswer}`, 17, qY + 26);
 
     pdf.setTextColor(
       ans.isCorrect ? 22 : 220,
@@ -586,15 +635,10 @@ export function download5PageExamReportPdf(
       qY + 26
     );
 
-    // 2-line Explanation
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7.5);
     pdf.setTextColor(71, 85, 105);
-    const expLine = pdf.splitTextToSize(
-      `Explanation: ${ans.explanation}`,
-      176
-    );
-    pdf.text(expLine.slice(0, 2), 17, qY + 31.5);
+    pdf.text(expLine, 17, qY + 31.5);
 
     qY += boxH + 3.5;
   });
@@ -616,9 +660,8 @@ export function download5PageExamReportPdf(
   pdf.text('Food Science Portal', 34, 9.5);
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(12);
-  pdf.text('FINAL PAGE — PERSONALIZED IMPROVEMENT PLAN & CERTIFICATION', 34, 17);
+  pdf.text('FINAL PAGE - PERSONALIZED IMPROVEMENT PLAN & CERTIFICATION', 34, 17);
 
-  // Top 5 Weak Topics to Study
   pdf.setTextColor(15, 41, 30);
   pdf.setFontSize(12);
   pdf.text('1. Top 5 Priority Topics to Study & Revise', 14, 34);
@@ -627,41 +670,45 @@ export function download5PageExamReportPdf(
     .sort((a, b) => a.pct - b.pct)
     .slice(0, 5);
   const defaultWeakTopics = [
-    'HACCP Principle 2 & 3 — Validating Critical Control Points & Critical Limits',
-    'FSSC 22000 Version 6 Clause 2.5 — Food Defense (TACCP) & Food Fraud (VACCP)',
-    'ISO 22000:2018 Clause 8.5.4 — OPRP vs. CCP Hazard Control Plan Differentiation',
-    'Food Microbiology — Pathogen Lethality D-Value, Z-Value & Water Activity (Aw) Limits',
-    'ISO 19011 Auditing — Grading Minor, Major & Critical Non-Conformities and CAPA Root Cause'
+    'HACCP Principle 2 & 3 - Validating Critical Control Points & Critical Limits',
+    'FSSC 22000 Version 6 Clause 2.5 - Food Defense (TACCP) & Food Fraud (VACCP)',
+    'ISO 22000:2018 Clause 8.5.4 - OPRP vs. CCP Hazard Control Plan Differentiation',
+    'Food Microbiology - Pathogen Lethality D-Value, Z-Value & Water Activity (Aw) Limits',
+    'ISO 19011 Auditing - Grading Minor, Major & Critical Non-Conformities and CAPA Root Cause'
   ];
 
   let impY = 41;
   for (let i = 0; i < 5; i++) {
-    const topicText = weakSubjects[i]
-      ? `${weakSubjects[i].subject} (Current Accuracy: ${weakSubjects[i].pct}%) — Revise standard clauses & CCP monitoring`
-      : defaultWeakTopics[i];
-    pdf.setFillColor(244, 250, 247);
-    pdf.setDrawColor(187, 247, 208);
-    pdf.roundedRect(14, impY, 182, 10, 2, 2, 'FD');
+    const topicText = sanitizePdfText(
+      weakSubjects[i]
+        ? `${weakSubjects[i].subject} (Current Accuracy: ${weakSubjects[i].pct}%) - Revise standard clauses & CCP monitoring`
+        : defaultWeakTopics[i],
+      true
+    );
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(9);
+    const topicLines = pdf.splitTextToSize(`${i + 1}. ${topicText}`, 174).slice(0, 2);
+    const boxH = Math.max(10, topicLines.length * 4.5 + 4);
+    pdf.setFillColor(244, 250, 247);
+    pdf.setDrawColor(187, 247, 208);
+    pdf.roundedRect(14, impY, 182, boxH, 2, 2, 'FD');
     pdf.setTextColor(19, 66, 43);
-    pdf.text(`${i + 1}. ${topicText}`, 18, impY + 6.5);
-    impY += 12.5;
+    pdf.text(topicLines, 18, impY + 6);
+    impY += boxH + 2.5;
   }
 
-  // Recommended Study Material
-  impY += 4;
+  impY += 3;
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(12);
   pdf.setTextColor(15, 41, 30);
   pdf.text('2. Recommended Food Safety & Science Study Material', 14, impY);
   impY += 7;
   const materials = [
-    '• Codex Alimentarius General Principles of Food Hygiene (CXC 1-1969, Latest Revision)',
-    '• ISO 22000:2018 Food Safety Management Systems & ISO/TS 22002-1 Prerequisite Programmes',
-    '• FSSC 22000 Version 6 Scheme Documents & Additional Requirements',
-    '• ICMSF Microorganisms in Foods & FDA Food Code TCS Temperature Guidelines',
-    '• Next Suggested Mock Exam Date: ' +
+    '- Codex Alimentarius General Principles of Food Hygiene (CXC 1-1969, Latest Revision)',
+    '- ISO 22000:2018 Food Safety Management Systems & ISO/TS 22002-1 Prerequisite Programmes',
+    '- FSSC 22000 Version 6 Scheme Documents & Additional Requirements',
+    '- ICMSF Microorganisms in Foods & FDA Food Code TCS Temperature Guidelines',
+    '- Next Suggested Mock Exam Date: ' +
       new Date(Date.now() + 3 * 86400000).toLocaleDateString('en-GB', {
         day: '2-digit',
         month: 'short',
@@ -669,19 +716,25 @@ export function download5PageExamReportPdf(
       })
   ];
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(9.5);
+  pdf.setFontSize(9.4);
   pdf.setTextColor(51, 65, 85);
   materials.forEach((m) => {
-    pdf.text(m, 16, impY);
-    impY += 7;
+    const matLines = pdf.splitTextToSize(m, 178);
+    pdf.text(matLines, 16, impY);
+    impY += matLines.length * 4.5 + 2;
   });
 
-  // Official Certificate & Signature Block
-  impY += 8;
+  if (impY + 62 > 280) {
+    pdf.addPage();
+    impY = 20;
+  } else {
+    impY += 6;
+  }
+
   pdf.setFillColor(240, 253, 244);
   pdf.setDrawColor(22, 163, 74);
   pdf.setLineWidth(0.8);
-  pdf.roundedRect(14, impY, 182, 54, 4, 4, 'FD');
+  pdf.roundedRect(14, impY, 182, 56, 4, 4, 'FD');
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(13);
@@ -692,31 +745,31 @@ export function download5PageExamReportPdf(
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9.5);
   pdf.setTextColor(15, 41, 30);
+  const endorseLine = pdf.splitTextToSize(
+    sanitizePdfText(
+      `This certifies that ${candidateName} completed ${result.title} (${result.category})`,
+      true
+    ),
+    170
+  ).slice(0, 2);
+  pdf.text(endorseLine, 105, impY + 20, { align: 'center' });
   pdf.text(
-    `This certifies that ${candidateName} completed ${result.title} (${result.category})`,
+    `with a verified score of ${result.correct}/${result.totalQuestions} (${result.scorePercent}%) - Status: ${result.status}.`,
     105,
-    impY + 21,
-    { align: 'center' }
-  );
-  pdf.text(
-    `with a verified score of ${result.correct}/${result.totalQuestions} (${result.scorePercent}%) — Status: ${result.status}.`,
-    105,
-    impY + 28,
+    impY + (endorseLine.length > 1 ? 30 : 27),
     { align: 'center' }
   );
 
-  // Signature line + Permanent MK Monogram Signature
-  drawPermanentMuneebSignatureStrokeOnly(pdf, 128, impY + 41.5);
+  drawPermanentMuneebSignatureStrokeOnly(pdf, 128, impY + 42.5);
   pdf.setDrawColor(19, 66, 43);
-  pdf.line(125, impY + 42, 182, impY + 42);
+  pdf.line(125, impY + 43, 182, impY + 43);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(9);
-  pdf.text('Signed on behalf of Food Science Portal', 153.5, impY + 47, { align: 'center' });
+  pdf.text('Signed on behalf of Food Science Portal', 153.5, impY + 48, { align: 'center' });
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
-  pdf.text(`Certificate ID: ${result.certificateId}`, 22, impY + 46);
+  pdf.text(`Certificate ID: ${result.certificateId}`, 22, impY + 47);
 
-  // Add Footer & Page Numbers across ALL pages
   const totalPages = pdf.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     pdf.setPage(p);
@@ -724,7 +777,7 @@ export function download5PageExamReportPdf(
     pdf.setFontSize(8);
     pdf.setTextColor(100, 116, 139);
     pdf.text(
-      `This report is generated by Food Science Portal  •  Confidential  •  Page ${p} of ${totalPages}`,
+      `This report is generated by Food Science Portal - Confidential - Page ${p} of ${totalPages}`,
       105,
       290,
       { align: 'center' }
@@ -741,9 +794,8 @@ export function downloadExamAchievementCertificatePdf(
   result: SuiteExamResult
 ) {
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const candidateName = (user.name || 'Food Specialist').trim();
+  const candidateName = sanitizePdfText(user.name || 'Food Specialist', true);
 
-  // Decorative Border
   pdf.setFillColor(244, 250, 247);
   pdf.rect(0, 0, 297, 210, 'F');
   pdf.setDrawColor(19, 66, 43);
@@ -753,14 +805,12 @@ export function downloadExamAchievementCertificatePdf(
   pdf.setLineWidth(0.8);
   pdf.rect(14, 14, 269, 182);
 
-  // Top-Left: Large Official Food Science Portal Logo (28mm x 28mm)
   drawPdfBrandLogo(pdf, 22, 20, 28, {
     borderColor: [19, 66, 43],
     bgFill: [255, 255, 255],
     roundedRadius: 4
   });
 
-  // Top-Right: Candidate Profile Picture (28mm x 28mm)
   drawPdfUserPhoto(pdf, user.profilePicUrl, candidateName, 247, 20, 28, {
     borderColor: [22, 163, 74],
     fallbackBgColor: [19, 66, 43],
@@ -781,7 +831,7 @@ export function downloadExamAchievementCertificatePdf(
   });
   pdf.setFontSize(10);
   pdf.setTextColor(22, 163, 74);
-  pdf.text('Official FSP verified Credential', 148.5, 41.5, {
+  pdf.text('Official FSP Verified Credential', 148.5, 41.5, {
     align: 'center'
   });
 
@@ -814,17 +864,19 @@ export function downloadExamAchievementCertificatePdf(
     102,
     { align: 'center' }
   );
-  const examLineText = `in ${result.title} — ${result.category} Exam Preparation Assessment.`;
+  const examLineText = sanitizePdfText(
+    `in ${result.title} - ${result.category} Exam Preparation Assessment.`,
+    true
+  );
   const wrappedExamLine = pdf.splitTextToSize(examLineText, 235).slice(0, 2);
   pdf.text(wrappedExamLine, 148.5, 111, { align: 'center' });
 
-  // Stamp
   pdf.setFillColor(22, 163, 74);
   pdf.roundedRect(118.5, 126, 60, 14, 3, 3, 'F');
   pdf.setTextColor(255, 255, 255);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(12);
-  pdf.text('DISTINCTION • PASS', 148.5, 135, { align: 'center' });
+  pdf.text('DISTINCTION - PASS', 148.5, 135, { align: 'center' });
 
   pdf.setTextColor(19, 66, 43);
   pdf.setFontSize(10);

@@ -26,6 +26,8 @@ import {
   handleFirestoreError
 } from '../lib/firebase';
 import { compressImageFile } from '../lib/storage';
+import { stripUndefinedDeep } from '../lib/firestoreUtils';
+import { fitPdfTextToWidth, sanitizePdfText } from '../lib/pdfBranding';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
 import {
   QA_QC_TEMPLATES_VAULT,
@@ -382,17 +384,20 @@ export const QaQcDocumentVaultTool: React.FC<QaQcDocumentVaultToolProps> = ({
         return;
       }
 
-      const cleanWs = sanitizeWorkspaceForFirestore(updatedCompany);
+      const cleanWs = stripUndefinedDeep(sanitizeWorkspaceForFirestore(updatedCompany));
       const batch = writeBatch(db);
       batch.set(doc(db, 'qaDocumentWorkspaces', user.uid), cleanWs);
       if (rebrandCodes) {
         MODULE_IDS.forEach((mId) => {
-          batch.set(doc(db, 'qaDocumentWorkspaces', user.uid, 'modules', mId), {
-            moduleId: mId,
-            ownerUid: user.uid,
-            meta: updatedMetaMap[mId],
-            payload: payloads[mId]
-          });
+          batch.set(
+            doc(db, 'qaDocumentWorkspaces', user.uid, 'modules', mId),
+            stripUndefinedDeep({
+              moduleId: mId,
+              ownerUid: user.uid,
+              meta: updatedMetaMap[mId],
+              payload: payloads[mId]
+            })
+          );
         });
       }
       await batch.commit();
@@ -443,15 +448,18 @@ export const QaQcDocumentVaultTool: React.FC<QaQcDocumentVaultToolProps> = ({
         return;
       }
 
-      const cleanWs = sanitizeWorkspaceForFirestore(company);
+      const cleanWs = stripUndefinedDeep(sanitizeWorkspaceForFirestore(company));
       const batch = writeBatch(db);
       batch.set(doc(db, 'qaDocumentWorkspaces', user.uid), cleanWs);
-      batch.set(doc(db, 'qaDocumentWorkspaces', user.uid, 'modules', moduleId), {
-        moduleId,
-        ownerUid: user.uid,
-        meta: nextMeta,
-        payload: nextPayload
-      });
+      batch.set(
+        doc(db, 'qaDocumentWorkspaces', user.uid, 'modules', moduleId),
+        stripUndefinedDeep({
+          moduleId,
+          ownerUid: user.uid,
+          meta: nextMeta,
+          payload: nextPayload
+        })
+      );
       await batch.commit();
       notify('success', `Saved controlled document ${nextMeta.docCode} (${nextMeta.revision}) to cloud.`);
     } catch (err) {
@@ -770,41 +778,70 @@ export const QaQcDocumentVaultTool: React.FC<QaQcDocumentVaultToolProps> = ({
       return;
     }
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    pdf.setFillColor(26, 33, 56);
-    pdf.rect(0, 0, 297, 24, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(13);
-    pdf.text(`${docItem.code} — ${docItem.title.toUpperCase()}`, 12, 10.5);
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(
-      `Company: ${company.companyName}  |  Prepared By: ${company.preparedBy}  |  Standard: ${docItem.standardBadge}  |  ${docItem.revision}`,
-      12,
-      18
-    );
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const tableW = pageW - 24;
+    const colWidth = tableW / Math.max(docItem.columns.length, 1);
 
-    const colWidth = 273 / docItem.columns.length;
-    let y = 33;
-    pdf.setFillColor(22, 115, 184);
-    pdf.rect(12, y - 5, 273, 10, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(8);
-    docItem.columns.forEach((col, i) => {
-      const wrapped = pdf.splitTextToSize(col, colWidth - 3);
-      pdf.text(wrapped[0] || col, 13.5 + i * colWidth, y + 1);
-    });
+    const drawClassicHeader = () => {
+      pdf.setFillColor(26, 33, 56);
+      pdf.rect(0, 0, pageW, 24, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12.5);
+      pdf.text(
+        fitPdfTextToWidth(pdf, `${docItem.code} - ${docItem.title.toUpperCase()}`, pageW - 24),
+        12,
+        10.5
+      );
+      pdf.setFontSize(8.8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(
+        fitPdfTextToWidth(
+          pdf,
+          `Company: ${company.companyName} | Prepared By: ${company.preparedBy} | Standard: ${docItem.standardBadge} | ${docItem.revision}`,
+          pageW - 24
+        ),
+        12,
+        18
+      );
+    };
 
-    y += 9;
+    const drawColumnHeader = (startY: number) => {
+      pdf.setFillColor(22, 115, 184);
+      pdf.rect(12, startY - 5, tableW, 10, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7.8);
+      docItem.columns.forEach((col, i) => {
+        const wrapped = pdf.splitTextToSize(sanitizePdfText(col, true), colWidth - 3).slice(0, 2);
+        pdf.text(wrapped, 13.5 + i * colWidth, wrapped.length > 1 ? startY - 1 : startY + 1);
+      });
+      return startY + 9;
+    };
+
+    drawClassicHeader();
+    let y = drawColumnHeader(33);
+
     pdf.setTextColor(20, 28, 45);
     pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
     docItem.sampleRows.forEach((row) => {
-      const cellLines = row.map((cell) => pdf.splitTextToSize(cell, colWidth - 3));
+      const cellLines = row.map((cell) =>
+        pdf.splitTextToSize(sanitizePdfText(cell, true), colWidth - 3)
+      );
       const maxLines = Math.max(...cellLines.map((l) => l.length), 2);
       const rowHeight = Math.max(12, maxLines * 4.2 + 4);
+      if (y - 3 + rowHeight > pageH - 14) {
+        pdf.addPage();
+        drawClassicHeader();
+        y = drawColumnHeader(33);
+        pdf.setTextColor(20, 28, 45);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+      }
       pdf.setDrawColor(210, 222, 234);
-      pdf.rect(12, y - 3, 273, rowHeight);
+      pdf.rect(12, y - 3, tableW, rowHeight);
       cellLines.forEach((lines, i) => {
         if (i > 0) pdf.line(12 + i * colWidth, y - 3, 12 + i * colWidth, y - 3 + rowHeight);
         pdf.text(lines, 13.5 + i * colWidth, y + 1.5);
@@ -813,12 +850,27 @@ export const QaQcDocumentVaultTool: React.FC<QaQcDocumentVaultToolProps> = ({
     });
 
     for (let b = 0; b < 3; b += 1) {
-      if (y + 12 > 185) break;
-      pdf.rect(12, y - 3, 273, 11);
+      if (y + 12 > pageH - 14) break;
+      pdf.setDrawColor(210, 222, 234);
+      pdf.rect(12, y - 3, tableW, 11);
       for (let i = 1; i < docItem.columns.length; i += 1) {
         pdf.line(12 + i * colWidth, y - 3, 12 + i * colWidth, y + 8);
       }
       y += 11;
+    }
+
+    const totalPages = pdf.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p += 1) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(
+        fitPdfTextToWidth(pdf, `${docItem.code} | ${company.companyName} | Food Science Portal`, tableW - 24),
+        12,
+        pageH - 6
+      );
+      pdf.text(`Page ${p} of ${totalPages}`, pageW - 12, pageH - 6, { align: 'right' });
     }
 
     pdf.save(`${docItem.code}-${company.companyName.replace(/[^a-zA-Z0-9]+/g, '-').slice(0, 24)}.pdf`);

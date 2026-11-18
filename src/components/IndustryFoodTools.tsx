@@ -23,6 +23,7 @@ import {
   NUTRITION_LABEL_PRESETS
 } from '../data/foodSafetyReferenceData';
 import { QaQcDocumentVaultTool } from './QaQcDocumentVaultTool';
+import { fitPdfTextToWidth, sanitizePdfText } from '../lib/pdfBranding';
 import { HubUser } from '../types/hub';
 
 interface PaidFeatureProps {
@@ -175,16 +176,25 @@ export const NutritionLabelGeneratorTool: React.FC<PaidFeatureProps> = ({
       return;
     }
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
     pdf.setFillColor(22, 115, 184);
-    pdf.rect(0, 0, 210, 26, 'F');
+    pdf.rect(0, 0, pageW, 26, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(14);
-    pdf.text('FOOD SCIENCE PORTAL — PACKAGING NUTRITION SPECIFICATION', 14, 12);
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(13.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'FOOD SCIENCE PORTAL - PACKAGING NUTRITION SPECIFICATION', pageW - 28),
+      14,
+      12
+    );
+    pdf.setFontSize(9.2);
     pdf.setFont('helvetica', 'normal');
     pdf.text(
-      `Regulatory Format: ${standard === 'FDA' ? 'US FDA 21 CFR 101.9' : standard === 'GCC_SFDA' ? 'GCC / SFDA GSO 2233 + Traffic Light' : 'PSQCA / PFA Mandatory Labeling'} · Product: ${productName}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Regulatory Format: ${standard === 'FDA' ? 'US FDA 21 CFR 101.9' : standard === 'GCC_SFDA' ? 'GCC / SFDA GSO 2233 + Traffic Light' : 'PSQCA / PFA Mandatory Labeling'} | Product: ${productName}`,
+        pageW - 28
+      ),
       14,
       19.5
     );
@@ -267,33 +277,42 @@ export const NutritionLabelGeneratorTool: React.FC<PaidFeatureProps> = ({
 
     // Right Column: Per 100g/mL GCC & PSQCA Table
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(11);
+    pdf.setFontSize(10.5);
     pdf.setTextColor(22, 115, 184);
-    pdf.text('Per 100 g / 100 mL Declaration (GCC / PSQCA)', 110, 40);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'Per 100 g / 100 mL Declaration (GCC / PSQCA)', pageW - 124),
+      110,
+      40
+    );
     pdf.setTextColor(15, 23, 42);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.2);
     const col2Lines = [
       `Energy: ${per100.kcal} kcal (${per100.kj} kJ)`,
-      `Total Fat: ${per100.fat} g  [${trafficLight.fat.level}]`,
-      `Saturated Fat: ${per100.satFat} g  [${trafficLight.satFat.level}]`,
+      `Total Fat: ${per100.fat} g [${trafficLight.fat.level}]`,
+      `Saturated Fat: ${per100.satFat} g [${trafficLight.satFat.level}]`,
       `Trans Fat: ${per100.transFat} g (Target <= 2g/100g fat)`,
       `Total Carbohydrate: ${per100.carb} g`,
-      `Total Sugars: ${per100.sugars} g  [${trafficLight.sugars.level}]`,
+      `Total Sugars: ${per100.sugars} g [${trafficLight.sugars.level}]`,
       `Dietary Fiber: ${per100.fiber} g`,
       `Protein: ${per100.protein} g`,
       `Sodium: ${per100.sodiumMg} mg (Salt eq: ${per100.saltG} g [${trafficLight.salt.level}])`
     ];
     let ry = 49;
     col2Lines.forEach((line) => {
-      pdf.text(`• ${line}`, 110, ry);
-      ry += 7;
+      const wrapped = pdf.splitTextToSize(sanitizePdfText(`- ${line}`, true), pageW - 124);
+      pdf.text(wrapped, 110, ry);
+      ry += wrapped.length * 5.2 + 2;
     });
 
     pdf.setFontSize(8.5);
     pdf.setTextColor(80, 95, 115);
     pdf.text(
-      `Generated via Food Science Portal · QA/Regulatory Artwork Check · ${new Date().toISOString().slice(0, 10)}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Generated via Food Science Portal | QA/Regulatory Artwork Check | ${new Date().toISOString().slice(0, 10)}`,
+        pageW - 28
+      ),
       14,
       200
     );
@@ -714,15 +733,28 @@ export const ThermalAndWaterActivityTool: React.FC<PaidFeatureProps> = ({
       return;
     }
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
     pdf.setFillColor(26, 33, 56);
-    pdf.rect(0, 0, 210, 26, 'F');
+    pdf.rect(0, 0, pageW, 26, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(14);
-    pdf.text('THERMAL LETHALITY (F0/PU) & WATER ACTIVITY LAB REPORT', 14, 12);
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(13.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'THERMAL LETHALITY (F0/PU) & WATER ACTIVITY LAB REPORT', pageW - 28),
+      14,
+      12
+    );
+    pdf.setFontSize(9.2);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Prepared by: ${user.name || 'Food Specialist'} · Date: ${new Date().toISOString().slice(0, 10)}`, 14, 19.5);
+    pdf.text(
+      fitPdfTextToWidth(
+        pdf,
+        `Prepared by: ${user.name || 'Food Specialist'} | Date: ${new Date().toISOString().slice(0, 10)}`,
+        pageW - 28
+      ),
+      14,
+      19.5
+    );
 
     pdf.setTextColor(15, 23, 42);
     pdf.setFont('helvetica', 'bold');
@@ -731,17 +763,18 @@ export const ThermalAndWaterActivityTool: React.FC<PaidFeatureProps> = ({
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(10);
     const thermalLines = [
-      `Process Mode: ${processType === 'sterilization' ? 'Commercial Sterilization (T_ref = 121.1°C)' : 'Pasteurization Units (T_ref = 60.0°C)'}`,
-      `Core Process Temperature: ${tempC.toFixed(1)} °C · Holding Time: ${holdingMins.toFixed(2)} min`,
-      `Thermal Resistance Parameters: z-value = ${zValue.toFixed(1)} °C · D_ref = ${dRefValue.toFixed(3)} min`,
+      `Process Mode: ${processType === 'sterilization' ? 'Commercial Sterilization (T_ref = 121.1 C)' : 'Pasteurization Units (T_ref = 60.0 C)'}`,
+      `Core Process Temperature: ${tempC.toFixed(1)} C | Holding Time: ${holdingMins.toFixed(2)} min`,
+      `Thermal Resistance Parameters: z-value = ${zValue.toFixed(1)} C | D_ref = ${dRefValue.toFixed(3)} min`,
       `Instantaneous Lethal Rate (L): ${thermalMetrics.lethalRate.toFixed(4)}`,
       `Cumulative Process Value (${processType === 'sterilization' ? 'F0' : 'PU'}): ${thermalMetrics.fOrPu.toFixed(2)} min`,
       `Log Reduction Achieved: ${thermalMetrics.logReduction.toFixed(2)} log10 (${thermalMetrics.is12DCompliant ? 'MEETS TARGET' : 'BELOW TARGET'})`
     ];
     let y = 46;
     thermalLines.forEach((l) => {
-      pdf.text(`• ${l}`, 16, y);
-      y += 7;
+      const wrapped = pdf.splitTextToSize(sanitizePdfText(`- ${l}`, true), pageW - 32);
+      pdf.text(wrapped, 16, y);
+      y += wrapped.length * 5.2 + 2;
     });
 
     pdf.setFont('helvetica', 'bold');
@@ -756,11 +789,12 @@ export const ThermalAndWaterActivityTool: React.FC<PaidFeatureProps> = ({
       `Pathogenic Bacteria Growth (>=0.90): ${awMetrics.canGrowBacteria ? 'POSSIBLE' : 'INHIBITED'}`,
       `S. aureus Growth (>=0.85): ${awMetrics.canGrowStaphAerobic ? 'POSSIBLE' : 'INHIBITED'}`,
       `Mold & Yeast Growth (>=0.70 / 0.80): ${awMetrics.canGrowMolds ? 'POSSIBLE' : 'INHIBITED'}`,
-      `Formulation Model Estimate (Sucrose ${soluteSugarPct}% + NaCl ${soluteSaltPct}%): aw ≈ ${awMetrics.estimatedMixAw.toFixed(3)}`
+      `Formulation Model Estimate (Sucrose ${soluteSugarPct}% + NaCl ${soluteSaltPct}%): aw ~ ${awMetrics.estimatedMixAw.toFixed(3)}`
     ];
     awLines.forEach((l) => {
-      pdf.text(`• ${l}`, 16, y);
-      y += 7;
+      const wrapped = pdf.splitTextToSize(sanitizePdfText(`- ${l}`, true), pageW - 32);
+      pdf.text(wrapped, 16, y);
+      y += wrapped.length * 5.2 + 2;
     });
 
     pdf.save(`Thermal-F0-and-aw-Lab-Report-${new Date().toISOString().slice(0, 10)}.pdf`);

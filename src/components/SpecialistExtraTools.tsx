@@ -45,7 +45,12 @@ import {
 import { E_NUMBERS_DATABASE, ENumberAdditive } from '../data/eNumbersData';
 import { jsPDF } from 'jspdf';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
-import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
+import {
+  drawPdfBrandLogo,
+  drawPdfUserPhoto,
+  fitPdfTextToWidth,
+  sanitizePdfText
+} from '../lib/pdfBranding';
 
 interface LabFormulaCalculatorToolProps {
   user?: HubUser;
@@ -535,6 +540,7 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
     }
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+    const headerMaxW = 124; // Fits cleanly between logo (x=40) and user photo (x=172)
 
     // Header Banner
     pdf.setFillColor(26, 33, 56);
@@ -550,20 +556,32 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
 
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(14);
-    pdf.text('Food Science Portal — Official QA Laboratory Log', 44, 17);
-    pdf.setFontSize(17);
+    pdf.setFontSize(13.5);
     pdf.text(
-      rec.recordType === 'ppm'
-        ? 'CHEMICAL / SANITIZER DILUTION BATCH REPORT'
-        : 'TITRATABLE ACIDITY & BRIX:ACID LAB REPORT',
+      fitPdfTextToWidth(pdf, 'Food Science Portal - Official QA Laboratory Log', headerMaxW),
+      44,
+      17
+    );
+    pdf.setFontSize(14.5);
+    pdf.text(
+      fitPdfTextToWidth(
+        pdf,
+        rec.recordType === 'ppm'
+          ? 'CHEMICAL / SANITIZER DILUTION BATCH REPORT'
+          : 'TITRATABLE ACIDITY & BRIX:ACID LAB REPORT',
+        headerMaxW
+      ),
       44,
       26
     );
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.2);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Record ID: ${rec.recordCode}   •   Date Prepared: ${rec.savedDateFormatted}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Record ID: ${rec.recordCode} | Date Prepared: ${rec.savedDateFormatted}`,
+        headerMaxW
+      ),
       44,
       34
     );
@@ -582,17 +600,21 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(11);
     pdf.setTextColor(26, 33, 56);
-    pdf.text(`Prepared By: ${specialistName}`, 20, 61);
+    pdf.text(fitPdfTextToWidth(pdf, `Prepared By: ${specialistName}`, 172), 20, 61);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9.5);
     pdf.setTextColor(74, 85, 104);
     pdf.text(
-      `Batch / Sample Name: ${rec.batchOrSampleName}`,
+      fitPdfTextToWidth(pdf, `Batch / Sample Name: ${rec.batchOrSampleName}`, 172),
       20,
       68
     );
     pdf.text(
-      `Record Code: ${rec.recordCode}   |   Timestamp: ${rec.savedDateFormatted}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Record Code: ${rec.recordCode} | Timestamp: ${rec.savedDateFormatted}`,
+        172
+      ),
       20,
       75
     );
@@ -602,9 +624,13 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
     pdf.setFontSize(12);
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      rec.recordType === 'ppm'
-        ? '1. Sanitizer / Chemical Solution Parameters & Dosing'
-        : '1. Titratable Acidity (% TA) & Brix:Acid Analytical Parameters',
+      fitPdfTextToWidth(
+        pdf,
+        rec.recordType === 'ppm'
+          ? '1. Sanitizer / Chemical Solution Parameters & Dosing'
+          : '1. Titratable Acidity (% TA) & Brix:Acid Analytical Parameters',
+        182
+      ),
       14,
       y
     );
@@ -614,13 +640,13 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
     pdf.setDrawColor(22, 115, 184);
     pdf.roundedRect(14, y, 182, 64, 3, 3, 'FD');
 
-    pdf.setFontSize(10.5);
+    pdf.setFontSize(10);
     pdf.setTextColor(26, 33, 56);
     if (rec.recordType === 'ppm') {
       pdf.setFont('helvetica', 'bold');
       pdf.text(`Chemical / Sanitizer Used:`, 20, y + 12);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${rec.sanitizerName || '-'}`, 82, y + 12);
+      pdf.text(fitPdfTextToWidth(pdf, `${rec.sanitizerName || '-'}`, 108), 82, y + 12);
 
       pdf.setFont('helvetica', 'bold');
       pdf.text(`Stock Chemical Concentration:`, 20, y + 22);
@@ -641,7 +667,11 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
       pdf.setTextColor(22, 115, 184);
       pdf.text(`EXACT CHEMICAL DOSING REQUIRED:`, 20, y + 54);
       pdf.text(
-        `${rec.stockMlRequired} mL (${rec.stockLitersRequired} L)  [${rec.stockMlPerLiter} mL per 1 L water]`,
+        fitPdfTextToWidth(
+          pdf,
+          `${rec.stockMlRequired} mL (${rec.stockLitersRequired} L) [${rec.stockMlPerLiter} mL per 1 L]`,
+          98
+        ),
         92,
         y + 54
       );
@@ -650,7 +680,7 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
       pdf.text(`Predominant Organic Acid & Factor:`, 20, y + 12);
       pdf.setFont('helvetica', 'normal');
       pdf.text(
-        `${(rec.acidName || '-').slice(0, 58)} (Factor: ${rec.acidFactor})`,
+        fitPdfTextToWidth(pdf, `${rec.acidName || '-'} (Factor: ${rec.acidFactor})`, 104),
         86,
         y + 12
       );
@@ -666,44 +696,54 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
       pdf.text(`${rec.naohMl} mL of ${rec.naohNormality} N NaOH`, 86, y + 32);
 
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`Sample Refractometer °Brix:`, 20, y + 42);
+      pdf.text(`Sample Refractometer Brix:`, 20, y + 42);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${rec.sampleBrix} °Brix`, 86, y + 42);
+      pdf.text(sanitizePdfText(`${rec.sampleBrix} °Brix`, true), 86, y + 42);
 
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(22, 115, 184);
       pdf.text(`ANALYTICAL RESULT:`, 20, y + 54);
       pdf.text(
-        `Titratable Acidity = ${rec.acidityPct}%   |   Brix:Acid Ratio = ${rec.brixAcidRatio} : 1`,
+        fitPdfTextToWidth(
+          pdf,
+          `Titratable Acidity = ${rec.acidityPct}% | Brix:Acid Ratio = ${rec.brixAcidRatio} : 1`,
+          118
+        ),
         72,
         y + 54
       );
     }
 
-    y += 76;
+    y += 74;
     if (rec.applicationGuide || rec.notes) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.5);
+      const combinedNote = sanitizePdfText(
+        `${rec.applicationGuide ? `Guideline: ${rec.applicationGuide} ` : ''}${
+          rec.notes ? `| Lab Notes: ${rec.notes}` : ''
+        }`,
+        true
+      );
+      const wrapped = pdf.splitTextToSize(combinedNote, 170).slice(0, 6);
+      const noteBoxH = Math.max(24, wrapped.length * 4.8 + 16);
       pdf.setFillColor(248, 250, 252);
       pdf.setDrawColor(210, 222, 234);
-      pdf.roundedRect(14, y, 182, 34, 3, 3, 'FD');
+      pdf.roundedRect(14, y, 182, noteBoxH, 3, 3, 'FD');
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10);
       pdf.setTextColor(26, 33, 56);
-      pdf.text('HACCP Guideline & Laboratory Notes:', 20, y + 10);
+      pdf.text('HACCP Guideline & Laboratory Notes:', 20, y + 9);
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9.5);
       pdf.setTextColor(74, 85, 104);
-      const combinedNote = `${rec.applicationGuide ? `Guideline: ${rec.applicationGuide} ` : ''}${
-        rec.notes ? `| Lab Notes: ${rec.notes}` : ''
-      }`;
-      const wrapped = pdf.splitTextToSize(combinedNote, 170);
-      pdf.text(wrapped.slice(0, 3), 20, y + 18);
+      pdf.text(wrapped, 20, y + 16.5);
     }
 
     pdf.setFont('helvetica', 'italic');
     pdf.setFontSize(8.5);
     pdf.setTextColor(120, 130, 145);
     pdf.text(
-      'Generated by Food Science Portal — QA & Laboratory Formula Suite',
+      'Generated by Food Science Portal - QA & Laboratory Formula Suite',
       14,
       284
     );
@@ -724,6 +764,7 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
     }
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const specialistName = (user?.name || 'Food Safety & QA Specialist').trim();
+    const headerMaxW = 124;
 
     pdf.setFillColor(26, 33, 56);
     pdf.rect(0, 0, 210, 42, 'F');
@@ -735,14 +776,26 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
 
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'Food Science Portal - QA Laboratory Logbook', headerMaxW),
+      44,
+      17
+    );
     pdf.setFontSize(14);
-    pdf.text('Food Science Portal — QA Laboratory Logbook', 44, 17);
-    pdf.setFontSize(16);
-    pdf.text('SAVED SOLUTIONS & TITRATION DIRECTORY REPORT', 44, 26);
-    pdf.setFontSize(9.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'SAVED SOLUTIONS & TITRATION DIRECTORY REPORT', headerMaxW),
+      44,
+      26
+    );
+    pdf.setFontSize(9.2);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Specialist: ${specialistName}   •   Total Records: ${filteredDirectoryRecords.length}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Specialist: ${specialistName} | Total Records: ${filteredDirectoryRecords.length}`,
+        headerMaxW
+      ),
       44,
       34
     );
@@ -755,7 +808,7 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
 
     let y = 50;
     filteredDirectoryRecords.forEach((rec, idx) => {
-      if (y > 255) {
+      if (y > 250) {
         pdf.addPage();
         y = 20;
       }
@@ -767,7 +820,11 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
       pdf.setFontSize(9.5);
       pdf.setTextColor(26, 33, 56);
       pdf.text(
-        `${idx + 1}. [${rec.recordCode}] ${rec.batchOrSampleName}  (${rec.savedDateFormatted})`,
+        fitPdfTextToWidth(
+          pdf,
+          `${idx + 1}. [${rec.recordCode}] ${rec.batchOrSampleName} (${rec.savedDateFormatted})`,
+          174
+        ),
         18,
         y + 7
       );
@@ -777,13 +834,21 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
       pdf.setTextColor(22, 115, 184);
       if (rec.recordType === 'ppm') {
         pdf.text(
-          `Sanitizer Dilution: ${rec.sanitizerName} (${rec.stockStrengthPct}% stock) -> ${rec.waterVolumeLiters} L @ ${rec.targetPpm} PPM = Add ${rec.stockMlRequired} mL`,
+          fitPdfTextToWidth(
+            pdf,
+            `Sanitizer Dilution: ${rec.sanitizerName} (${rec.stockStrengthPct}% stock) -> ${rec.waterVolumeLiters} L @ ${rec.targetPpm} PPM = Add ${rec.stockMlRequired} mL`,
+            174
+          ),
           18,
           y + 14.5
         );
       } else {
         pdf.text(
-          `Titratable Acidity: ${(rec.acidName || '').split('—')[0].trim()} (Factor ${rec.acidFactor}) | Sample ${rec.sampleWeightG}g, NaOH ${rec.naohMl}mL (${rec.naohNormality}N) => TA: ${rec.acidityPct}% | Brix:Acid: ${rec.brixAcidRatio}:1`,
+          fitPdfTextToWidth(
+            pdf,
+            `Titratable Acidity: ${(rec.acidName || '').split('-')[0].trim()} (Factor ${rec.acidFactor}) | Sample ${rec.sampleWeightG}g, NaOH ${rec.naohMl}mL (${rec.naohNormality}N) => TA: ${rec.acidityPct}% | Brix:Acid: ${rec.brixAcidRatio}:1`,
+            174
+          ),
           18,
           y + 14.5
         );
@@ -791,10 +856,20 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
 
       if (rec.notes) {
         pdf.setTextColor(90, 108, 132);
-        pdf.text(`Notes: ${rec.notes.slice(0, 95)}`, 18, y + 21.5);
+        pdf.text(fitPdfTextToWidth(pdf, `Notes: ${rec.notes}`, 174), 18, y + 21.5);
       }
       y += 30;
     });
+
+    const totalPages = pdf.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p += 1) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(120, 130, 145);
+      pdf.text('Food Science Portal - QA Laboratory Logbook', 14, 290);
+      pdf.text(`Page ${p} of ${totalPages}`, 196, 290, { align: 'right' });
+    }
 
     pdf.save(`Lab_Formula_Directory_Logbook_${Date.now()}.pdf`);
     showToast('Downloaded Complete Lab Directory Logbook PDF!');
@@ -804,7 +879,7 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
     <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-6">
       {/* Toast Notification */}
       {statusToast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+        <div className="fixed bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-24px)] px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40 text-center">
           <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
           <span>{statusToast}</span>
         </div>
@@ -2754,10 +2829,16 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       roundedRadius: 4
     });
 
+    const headerMaxW = 124;
+
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(14);
-    pdf.text('Food Science Portal — Batch Standardization Report', 44, 17);
+    pdf.setFontSize(13.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'Food Science Portal - Batch Standardization Report', headerMaxW),
+      44,
+      17
+    );
 
     const modeTitle =
       rec.calculatorMode === 'beverage'
@@ -2769,14 +2850,18 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         : rec.calculatorMode === 'baking_biscuits'
         ? 'BAKING, BISCUITS & DOUGH STANDARDIZATION CERTIFICATE'
         : 'PEARSON SQUARE MASS BALANCE CERTIFICATE';
-    pdf.setFontSize(13);
-    pdf.text(modeTitle, 44, 25.5);
+    pdf.setFontSize(12);
+    pdf.text(fitPdfTextToWidth(pdf, modeTitle, headerMaxW), 44, 25.5);
 
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.2);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Record ID: ${rec.recordCode}   •   Date & Time: ${rec.savedDateFormatted}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Record ID: ${rec.recordCode} | Date & Time: ${rec.savedDateFormatted}`,
+        headerMaxW
+      ),
       44,
       33.5
     );
@@ -2790,19 +2875,23 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
     // Metadata Card (Specialist + Industry + Product Name)
     pdf.setFillColor(240, 246, 252);
     pdf.setDrawColor(210, 222, 234);
-    pdf.roundedRect(14, 49, 182, 25, 3, 3, 'FD');
+    pdf.roundedRect(14, 49, 182, 26, 3, 3, 'FD');
 
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(10.5);
-    pdf.text(`Product Name: ${rec.productName}`, 19, 58);
-    pdf.text(`Industry Sector: ${rec.industryCategory}`, 19, 66.5);
+    pdf.setFontSize(10.2);
+    pdf.text(fitPdfTextToWidth(pdf, `Product Name: ${rec.productName}`, 90), 19, 57.5);
+    pdf.text(fitPdfTextToWidth(pdf, `Industry Sector: ${rec.industryCategory}`, 172), 19, 65.5);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.2);
     pdf.setTextColor(74, 85, 104);
-    pdf.text(`Prepared By: ${specialistName} (${specialistRole})`, 112, 58);
+    pdf.text(
+      fitPdfTextToWidth(pdf, `Prepared By: ${specialistName} (${specialistRole})`, 82),
+      112,
+      57.5
+    );
 
-    let y = 82;
+    let y = 83;
 
     const renderSpecTableAndBox = (
       title1: string,
@@ -2814,7 +2903,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(11);
       pdf.setTextColor(22, 115, 184);
-      pdf.text(title1, 14, y);
+      pdf.text(fitPdfTextToWidth(pdf, title1, 182), 14, y);
       y += 5.5;
 
       rows.forEach(([label, val], idx) => {
@@ -2826,33 +2915,35 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
         pdf.setDrawColor(210, 222, 234);
         pdf.rect(14, y, 182, 9, 'FD');
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9.2);
+        pdf.setFontSize(9);
         pdf.setTextColor(26, 33, 56);
-        pdf.text(label, 18, y + 6);
+        pdf.text(fitPdfTextToWidth(pdf, label, 75), 18, y + 6);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(22, 115, 184);
-        pdf.text(String(val), 96, y + 6);
+        pdf.text(fitPdfTextToWidth(pdf, String(val), 96), 96, y + 6);
         y += 9;
       });
 
       y += 7;
-      const boxH = 16 + bullets.length * 7.5;
+      const cleanBullets = bullets.map((b) => sanitizePdfText(b.replace(/^•\s*/, '- '), true));
+      const cleanSummary = sanitizePdfText(summaryLine, true);
+      const boxH = 19 + cleanBullets.length * 7.2;
       pdf.setFillColor(26, 33, 56);
       pdf.roundedRect(14, y, 182, boxH, 3, 3, 'F');
       pdf.setTextColor(125, 211, 252);
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10.2);
-      pdf.text(title2, 19, y + 8.5);
+      pdf.setFontSize(10);
+      pdf.text(fitPdfTextToWidth(pdf, title2, 172), 19, y + 8);
 
       pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(10.5);
-      bullets.forEach((b, i) => {
-        pdf.text(b, 19, y + 16.5 + i * 7.2);
+      pdf.setFontSize(10);
+      cleanBullets.forEach((b, i) => {
+        pdf.text(fitPdfTextToWidth(pdf, b, 172), 19, y + 16 + i * 7.2);
       });
 
       pdf.setTextColor(253, 224, 71);
-      pdf.setFontSize(9.8);
-      pdf.text(summaryLine, 19, y + boxH - 4);
+      pdf.setFontSize(9.4);
+      pdf.text(fitPdfTextToWidth(pdf, cleanSummary, 172), 19, y + boxH - 4.2);
       y += boxH + 8;
     };
 
@@ -3061,14 +3152,26 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
 
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'Food Science Portal - Batch Standardization Logbook', 124),
+      44,
+      17
+    );
     pdf.setFontSize(14);
-    pdf.text('Food Science Portal — Batch Standardization Logbook', 44, 17);
-    pdf.setFontSize(15);
-    pdf.text('SAVED BATCH STANDARDIZATION DIRECTORY REPORT', 44, 26);
-    pdf.setFontSize(9.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'SAVED BATCH STANDARDIZATION DIRECTORY REPORT', 124),
+      44,
+      26
+    );
+    pdf.setFontSize(9.2);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Specialist: ${specialistName}   •   Total Saved Batches: ${filteredBatchRecords.length}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Specialist: ${specialistName} | Total Saved Batches: ${filteredBatchRecords.length}`,
+        124
+      ),
       44,
       34
     );
@@ -3097,7 +3200,11 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       pdf.setFontSize(9.5);
       pdf.setTextColor(26, 33, 56);
       pdf.text(
-        `${idx + 1}. [${rec.recordCode}] ${rec.productName} — ${rec.industryCategory} (${rec.savedDateFormatted})`,
+        fitPdfTextToWidth(
+          pdf,
+          `${idx + 1}. [${rec.recordCode}] ${rec.productName} - ${rec.industryCategory} (${rec.savedDateFormatted})`,
+          174
+        ),
         18,
         y + 7
       );
@@ -3107,61 +3214,101 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
       pdf.setTextColor(22, 115, 184);
       if (rec.calculatorMode === 'beverage') {
         pdf.text(
-          `Beverage (${rec.bevBatchKg} L/kg): Brix ${rec.bevCurrentBrix}°->${rec.bevTargetBrix}° | Acid ${rec.bevCurrentAcid}%->${rec.bevTargetAcid}% | pH ${rec.bevCurrentPh ?? 3.85}->${rec.bevTargetPh ?? 3.5}`,
+          fitPdfTextToWidth(
+            pdf,
+            `Beverage (${rec.bevBatchKg} L/kg): Brix ${rec.bevCurrentBrix}->${rec.bevTargetBrix} | Acid ${rec.bevCurrentAcid}%->${rec.bevTargetAcid}% | pH ${rec.bevCurrentPh ?? 3.85}->${rec.bevTargetPh ?? 3.5}`,
+            174
+          ),
           18,
           y + 14
         );
         pdf.setTextColor(26, 33, 56);
         pdf.text(
-          `Prescription: +${rec.bevAddSugarKg} kg Sugar, +${rec.bevAddAcidKg} kg Citric Acid, +${rec.bevAddWaterLiters} L Water => Final: ${rec.bevFinalBatchKg} kg`,
+          fitPdfTextToWidth(
+            pdf,
+            `Prescription: +${rec.bevAddSugarKg} kg Sugar, +${rec.bevAddAcidKg} kg Citric Acid, +${rec.bevAddWaterLiters} L Water => Final: ${rec.bevFinalBatchKg} kg`,
+            174
+          ),
           18,
           y + 20.5
         );
       } else if (rec.calculatorMode === 'dairy') {
         pdf.text(
-          `Dairy (${rec.dairyBatchKg} kg): Fat ${rec.dairyCurrentFat}%->${rec.dairyTargetFat}% | SNF ${rec.dairyCurrentSnf}%->${rec.dairyTargetSnf}%`,
+          fitPdfTextToWidth(
+            pdf,
+            `Dairy (${rec.dairyBatchKg} kg): Fat ${rec.dairyCurrentFat}%->${rec.dairyTargetFat}% | SNF ${rec.dairyCurrentSnf}%->${rec.dairyTargetSnf}%`,
+            174
+          ),
           18,
           y + 14
         );
         pdf.setTextColor(26, 33, 56);
         pdf.text(
-          `Prescription: +${rec.dairyAddSkimKg} kg Skim, +${rec.dairyAddCreamKg} kg Cream, +${rec.dairyAddSmpKg} kg SMP, +${rec.dairyAddWaterKg} kg Water => Final: ${rec.dairyFinalMass} kg`,
+          fitPdfTextToWidth(
+            pdf,
+            `Prescription: +${rec.dairyAddSkimKg} kg Skim, +${rec.dairyAddCreamKg} kg Cream, +${rec.dairyAddSmpKg} kg SMP, +${rec.dairyAddWaterKg} kg Water => Final: ${rec.dairyFinalMass} kg`,
+            174
+          ),
           18,
           y + 20.5
         );
       } else if (rec.calculatorMode === 'sauces_mayo') {
         pdf.text(
-          `Ketchup/Mayo (${rec.sauceBatchKg} kg): TSS/Oil ${rec.sauceCurrentTssOrOil}%->${rec.sauceTargetTssOrOil}% | Acid ${rec.sauceCurrentAcid}%->${rec.sauceTargetAcid}% | Salt ${rec.sauceCurrentSalt}%->${rec.sauceTargetSalt}% | pH ${rec.sauceCurrentPh}->${rec.sauceTargetPh}`,
+          fitPdfTextToWidth(
+            pdf,
+            `Ketchup/Mayo (${rec.sauceBatchKg} kg): TSS/Oil ${rec.sauceCurrentTssOrOil}%->${rec.sauceTargetTssOrOil}% | Acid ${rec.sauceCurrentAcid}%->${rec.sauceTargetAcid}% | Salt ${rec.sauceCurrentSalt}%->${rec.sauceTargetSalt}% | pH ${rec.sauceCurrentPh}->${rec.sauceTargetPh}`,
+            174
+          ),
           18,
           y + 14
         );
         pdf.setTextColor(26, 33, 56);
         pdf.text(
-          `Prescription: +${rec.sauceAddSolidsOrOilKg} kg Solids/Oil, +${rec.sauceAddVinegarKg} kg Vinegar, +${rec.sauceAddSaltKg} kg Salt, +${rec.sauceAddWaterKg} kg Water => Final: ${rec.sauceFinalBatchKg} kg`,
+          fitPdfTextToWidth(
+            pdf,
+            `Prescription: +${rec.sauceAddSolidsOrOilKg} kg Solids/Oil, +${rec.sauceAddVinegarKg} kg Vinegar, +${rec.sauceAddSaltKg} kg Salt, +${rec.sauceAddWaterKg} kg Water => Final: ${rec.sauceFinalBatchKg} kg`,
+            174
+          ),
           18,
           y + 20.5
         );
       } else if (rec.calculatorMode === 'baking_biscuits') {
         pdf.text(
-          `Baking/Biscuit (${rec.bakingBatchKg} kg): Moisture ${rec.bakingCurrentMoisture}%->${rec.bakingTargetMoisture}% | Protein ${rec.bakingCurrentProtein}%->${rec.bakingTargetProtein}% | Fat ${rec.bakingCurrentFat}%->${rec.bakingTargetFat}% | Sugar ${rec.bakingCurrentSugar}%->${rec.bakingTargetSugar}%`,
+          fitPdfTextToWidth(
+            pdf,
+            `Baking/Biscuit (${rec.bakingBatchKg} kg): Moisture ${rec.bakingCurrentMoisture}%->${rec.bakingTargetMoisture}% | Protein ${rec.bakingCurrentProtein}%->${rec.bakingTargetProtein}% | Fat ${rec.bakingCurrentFat}%->${rec.bakingTargetFat}% | Sugar ${rec.bakingCurrentSugar}%->${rec.bakingTargetSugar}%`,
+            174
+          ),
           18,
           y + 14
         );
         pdf.setTextColor(26, 33, 56);
         pdf.text(
-          `Prescription: +${rec.bakingAddWaterLiters} L Water, +${rec.bakingAddGlutenKg} kg Gluten, +${rec.bakingAddShorteningFatKg} kg Fat, +${rec.bakingAddSugarKg} kg Sugar => Final: ${rec.bakingFinalDoughKg} kg`,
+          fitPdfTextToWidth(
+            pdf,
+            `Prescription: +${rec.bakingAddWaterLiters} L Water, +${rec.bakingAddGlutenKg} kg Gluten, +${rec.bakingAddShorteningFatKg} kg Fat, +${rec.bakingAddSugarKg} kg Sugar => Final: ${rec.bakingFinalDoughKg} kg`,
+            174
+          ),
           18,
           y + 20.5
         );
       } else {
         pdf.text(
-          `Classic Pearson (${rec.psTotalBatch} kg/L @ Target ${rec.psTargetVal}%): ${rec.psIngredientAName} (${rec.psHighVal}%) + ${rec.psIngredientBName} (${rec.psLowVal}%)`,
+          fitPdfTextToWidth(
+            pdf,
+            `Classic Pearson (${rec.psTotalBatch} kg/L @ Target ${rec.psTargetVal}%): ${rec.psIngredientAName} (${rec.psHighVal}%) + ${rec.psIngredientBName} (${rec.psLowVal}%)`,
+            174
+          ),
           18,
           y + 14
         );
         pdf.setTextColor(26, 33, 56);
         pdf.text(
-          `Prescription: ${rec.psIngredientAName}: ${rec.psHighAmount} kg/L (${rec.psHighPct}%)  |  ${rec.psIngredientBName}: ${rec.psLowAmount} kg/L (${rec.psLowPct}%)`,
+          fitPdfTextToWidth(
+            pdf,
+            `Prescription: ${rec.psIngredientAName}: ${rec.psHighAmount} kg/L (${rec.psHighPct}%) | ${rec.psIngredientBName}: ${rec.psLowAmount} kg/L (${rec.psLowPct}%)`,
+            174
+          ),
           18,
           y + 20.5
         );
@@ -3169,10 +3316,20 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
 
       if (rec.notes) {
         pdf.setTextColor(90, 108, 132);
-        pdf.text(`Notes: ${rec.notes.slice(0, 85)}`, 18, y + 26);
+        pdf.text(fitPdfTextToWidth(pdf, `Notes: ${rec.notes}`, 174), 18, y + 26);
       }
       y += 32;
     });
+
+    const totalPages = pdf.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p += 1) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(120, 130, 145);
+      pdf.text('Food Science Portal - Batch Standardization Logbook', 14, 290);
+      pdf.text(`Page ${p} of ${totalPages}`, 196, 290, { align: 'right' });
+    }
 
     pdf.save(`Batch_Standardization_Directory_Logbook_${Date.now()}.pdf`);
     showToast('Downloaded Complete Batch Standardization Logbook PDF!');
@@ -3182,7 +3339,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
     <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
       {/* Toast Notification */}
       {statusToast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+        <div className="fixed bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-24px)] px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40 text-center">
           <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
           <span>{statusToast}</span>
         </div>
@@ -5665,20 +5822,32 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
 
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(14);
-    pdf.text('Food Science Portal — Analytical Lab Suite', 45, 17);
-    pdf.setFontSize(16);
+    pdf.setFontSize(13.5);
     pdf.text(
-      rec.recordType === 'solid_prep'
-        ? 'MOLARITY / NORMALITY SOLUTION PREP SHEET'
-        : 'LIQUID STOCK SOLUTION DILUTION SHEET (C1V1=C2V2)',
+      fitPdfTextToWidth(pdf, 'Food Science Portal - Analytical Lab Suite', 121),
+      45,
+      17
+    );
+    pdf.setFontSize(14);
+    pdf.text(
+      fitPdfTextToWidth(
+        pdf,
+        rec.recordType === 'solid_prep'
+          ? 'MOLARITY / NORMALITY SOLUTION PREP SHEET'
+          : 'LIQUID STOCK SOLUTION DILUTION SHEET (C1V1=C2V2)',
+        121
+      ),
       45,
       26
     );
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.2);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Record ID: ${rec.recordCode}   •   Prepared On: ${rec.savedDateFormatted}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Record ID: ${rec.recordCode} | Prepared On: ${rec.savedDateFormatted}`,
+        121
+      ),
       45,
       34
     );
@@ -5696,20 +5865,28 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(11);
-    pdf.text(`Solution / Batch Label: ${rec.solutionName}`, 20, 60);
+    pdf.text(
+      fitPdfTextToWidth(pdf, `Solution / Batch Label: ${rec.solutionName}`, 170),
+      20,
+      60
+    );
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9.5);
     pdf.text(
-      `Prepared By: ${specialistName} (${specialistRole})`,
+      fitPdfTextToWidth(pdf, `Prepared By: ${specialistName} (${specialistRole})`, 170),
       20,
       68
     );
     pdf.text(
-      `Method Type: ${
-        rec.recordType === 'solid_prep'
-          ? 'Solid Reagent to Molar (M) / Normal (N) Solution'
-          : 'Liquid Stock Dilution Formula (C1 × V1 = C2 × V2)'
-      }`,
+      fitPdfTextToWidth(
+        pdf,
+        `Method Type: ${
+          rec.recordType === 'solid_prep'
+            ? 'Solid Reagent to Molar (M) / Normal (N) Solution'
+            : 'Liquid Stock Dilution Formula (C1 x V1 = C2 x V2)'
+        }`,
+        170
+      ),
       20,
       74
     );
@@ -5719,9 +5896,13 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
     pdf.setFontSize(12);
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      rec.recordType === 'solid_prep'
-        ? '1. Analytical Reagent Specifications & Weighing Calculation'
-        : '1. Stock Solution Dilution Parameters & Volumetric Addition',
+      fitPdfTextToWidth(
+        pdf,
+        rec.recordType === 'solid_prep'
+          ? '1. Analytical Reagent Specifications & Weighing Calculation'
+          : '1. Stock Solution Dilution Parameters & Volumetric Addition',
+        182
+      ),
       14,
       y
     );
@@ -5737,13 +5918,17 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
       pdf.setFont('helvetica', 'bold');
       pdf.text('Chemical / Reagent Name:', 20, y + 12);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${rec.reagentName || '-'}`, 82, y + 12);
+      pdf.text(fitPdfTextToWidth(pdf, `${rec.reagentName || '-'}`, 108), 82, y + 12);
 
       pdf.setFont('helvetica', 'bold');
       pdf.text('Molecular Weight & Valency Factor:', 20, y + 22);
       pdf.setFont('helvetica', 'normal');
       pdf.text(
-        `MW = ${rec.mw} g/mol   |   Valency Factor (n) = ${rec.nFactor}   |   Eq. Weight = ${rec.eqWeight} g/eq`,
+        fitPdfTextToWidth(
+          pdf,
+          `MW = ${rec.mw} g/mol | Valency Factor (n) = ${rec.nFactor} | Eq. Weight = ${rec.eqWeight} g/eq`,
+          108
+        ),
         82,
         y + 22
       );
@@ -5752,7 +5937,11 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
       pdf.text('Target Solution Strength & Volume:', 20, y + 32);
       pdf.setFont('helvetica', 'normal');
       pdf.text(
-        `${rec.targetConc} ${rec.concMode}   (Final Volume = ${rec.targetVolMl} mL)   |   Reagent Purity = ${rec.purityPct}%`,
+        fitPdfTextToWidth(
+          pdf,
+          `${rec.targetConc} ${rec.concMode} (Final Volume = ${rec.targetVolMl} mL) | Purity = ${rec.purityPct}%`,
+          108
+        ),
         82,
         y + 32
       );
@@ -5761,7 +5950,7 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
       pdf.text('Equivalent Strength Conversion:', 20, y + 42);
       pdf.setFont('helvetica', 'normal');
       pdf.text(
-        `Normality = ${rec.equivNormality} N   |   Molarity = ${rec.equivMolarity} M`,
+        `Normality = ${rec.equivNormality} N | Molarity = ${rec.equivMolarity} M`,
         82,
         y + 42
       );
@@ -5770,7 +5959,11 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
       pdf.setTextColor(22, 115, 184);
       pdf.text('EXACT MASS TO WEIGH ON BALANCE:', 20, y + 54);
       pdf.text(
-        `${rec.actualGramsToWeigh} grams   (100% Pure Theoretical Mass: ${rec.pureGrams} g)`,
+        fitPdfTextToWidth(
+          pdf,
+          `${rec.actualGramsToWeigh} grams (100% Pure Mass: ${rec.pureGrams} g)`,
+          102
+        ),
         88,
         y + 54
       );
@@ -5779,9 +5972,13 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
       pdf.setFontSize(9.2);
       pdf.setTextColor(74, 85, 104);
       pdf.text(
-        `SOP: Weigh ${rec.actualGramsToWeigh} g reagent, dissolve in ~${Math.round(
-          (rec.targetVolMl || 1000) * 0.6
-        )} mL distilled water, cool to 20°C, and make up to ${rec.targetVolMl} mL.`,
+        fitPdfTextToWidth(
+          pdf,
+          `SOP: Weigh ${rec.actualGramsToWeigh} g reagent, dissolve in ~${Math.round(
+            (rec.targetVolMl || 1000) * 0.6
+          )} mL distilled water, cool to 20 C, and make up to ${rec.targetVolMl} mL.`,
+          170
+        ),
         20,
         y + 65
       );
@@ -5809,7 +6006,7 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
       pdf.setTextColor(26, 33, 56);
       pdf.text('DISTILLED WATER TO ADD:', 20, y + 62);
       pdf.text(
-        `+ ${rec.waterToAddMl} mL   (Total Final Volume = ${rec.finalV2Ml} mL)`,
+        `+ ${rec.waterToAddMl} mL (Total Final Volume = ${rec.finalV2Ml} mL)`,
         92,
         y + 62
       );
@@ -5817,25 +6014,28 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
 
     y += 84;
     if (rec.notes) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.5);
+      const wrapped = pdf.splitTextToSize(sanitizePdfText(rec.notes, true), 170).slice(0, 5);
+      const noteBoxH = Math.max(22, wrapped.length * 4.8 + 14);
       pdf.setFillColor(248, 250, 252);
       pdf.setDrawColor(210, 222, 234);
-      pdf.roundedRect(14, y, 182, 30, 3, 3, 'FD');
+      pdf.roundedRect(14, y, 182, noteBoxH, 3, 3, 'FD');
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10);
       pdf.setTextColor(26, 33, 56);
-      pdf.text('Analyst / Preparation Notes:', 20, y + 10);
+      pdf.text('Analyst / Preparation Notes:', 20, y + 9);
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9.5);
       pdf.setTextColor(74, 85, 104);
-      const wrapped = pdf.splitTextToSize(rec.notes, 170);
-      pdf.text(wrapped.slice(0, 2), 20, y + 18);
+      pdf.text(wrapped, 20, y + 16.5);
     }
 
     pdf.setFont('helvetica', 'italic');
     pdf.setFontSize(8.5);
     pdf.setTextColor(120, 130, 145);
     pdf.text(
-      'Generated by Food Science Portal — Lab Solution & Molarity / Normality Suite',
+      'Generated by Food Science Portal - Lab Solution & Molarity / Normality Suite',
       14,
       284
     );
@@ -5893,14 +6093,26 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
 
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'Food Science Portal - Analytical Reagent Logbook', 124),
+      44,
+      17
+    );
     pdf.setFontSize(14);
-    pdf.text('Food Science Portal — Analytical Reagent Logbook', 44, 17);
-    pdf.setFontSize(15.5);
-    pdf.text('MOLARITY, NORMALITY & DILUTION DIRECTORY REPORT', 44, 26);
-    pdf.setFontSize(9.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'MOLARITY, NORMALITY & DILUTION DIRECTORY REPORT', 124),
+      44,
+      26
+    );
+    pdf.setFontSize(9.2);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Specialist: ${specialistName}   •   Total Logged Solutions: ${filteredDirectoryRecords.length}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Specialist: ${specialistName} | Total Logged Solutions: ${filteredDirectoryRecords.length}`,
+        124
+      ),
       44,
       34
     );
@@ -5929,7 +6141,11 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
       pdf.setFontSize(9.5);
       pdf.setTextColor(26, 33, 56);
       pdf.text(
-        `${idx + 1}. [${rec.recordCode}] ${rec.solutionName}  (${rec.savedDateFormatted})`,
+        fitPdfTextToWidth(
+          pdf,
+          `${idx + 1}. [${rec.recordCode}] ${rec.solutionName} (${rec.savedDateFormatted})`,
+          174
+        ),
         18,
         y + 7
       );
@@ -5939,13 +6155,21 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
       pdf.setTextColor(22, 115, 184);
       if (rec.recordType === 'solid_prep') {
         pdf.text(
-          `Solid Reagent: ${rec.reagentName} (MW ${rec.mw}, n=${rec.nFactor}, Purity ${rec.purityPct}%) -> ${rec.targetConc} ${rec.concMode} (${rec.targetVolMl} mL) => Weigh ${rec.actualGramsToWeigh} g`,
+          fitPdfTextToWidth(
+            pdf,
+            `Solid Reagent: ${rec.reagentName} (MW ${rec.mw}, n=${rec.nFactor}, Purity ${rec.purityPct}%) -> ${rec.targetConc} ${rec.concMode} (${rec.targetVolMl} mL) => Weigh ${rec.actualGramsToWeigh} g`,
+            174
+          ),
           18,
           y + 14.5
         );
       } else {
         pdf.text(
-          `Stock Dilution (C1V1=C2V2): Stock C1=${rec.stockC1} -> Target C2=${rec.desiredC2} (${rec.finalV2Ml} mL) => Take ${rec.requiredStockV1Ml} mL Stock + ${rec.waterToAddMl} mL Water`,
+          fitPdfTextToWidth(
+            pdf,
+            `Stock Dilution (C1V1=C2V2): Stock C1=${rec.stockC1} -> Target C2=${rec.desiredC2} (${rec.finalV2Ml} mL) => Take ${rec.requiredStockV1Ml} mL Stock + ${rec.waterToAddMl} mL Water`,
+            174
+          ),
           18,
           y + 14.5
         );
@@ -5953,10 +6177,20 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
 
       if (rec.notes) {
         pdf.setTextColor(90, 108, 132);
-        pdf.text(`Notes: ${rec.notes.slice(0, 95)}`, 18, y + 21.5);
+        pdf.text(fitPdfTextToWidth(pdf, `Notes: ${rec.notes}`, 174), 18, y + 21.5);
       }
       y += 31;
     });
+
+    const totalPages = pdf.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p += 1) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(120, 130, 145);
+      pdf.text('Food Science Portal - Analytical Reagent Logbook', 14, 290);
+      pdf.text(`Page ${p} of ${totalPages}`, 196, 290, { align: 'right' });
+    }
 
     pdf.save(`Molarity_Normality_Directory_Logbook_${Date.now()}.pdf`);
     showToast('Downloaded Complete Molarity & Solutions Logbook PDF!');
@@ -5966,7 +6200,7 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
     <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
       {/* Toast Notification */}
       {statusToast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+        <div className="fixed bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-24px)] px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40 text-center">
           <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
           <span>{statusToast}</span>
         </div>
@@ -6972,6 +7206,7 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
       user?.qualification ||
       'Food Analytical Chemist'
     ).trim();
+    const headerMaxW = 121;
 
     pdf.setFillColor(26, 33, 56);
     pdf.rect(0, 0, 210, 44, 'F');
@@ -6983,14 +7218,26 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
 
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'Food Science Portal - Proximate & Gravimetric Lab', headerMaxW),
+      45,
+      17
+    );
     pdf.setFontSize(14);
-    pdf.text('Food Science Portal — Proximate & Gravimetric Lab', 45, 17);
-    pdf.setFontSize(15.5);
-    pdf.text('MOISTURE, ASH & CRUDE PROTEIN ANALYSIS REPORT', 45, 26);
-    pdf.setFontSize(9.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'MOISTURE, ASH & CRUDE PROTEIN ANALYSIS REPORT', headerMaxW),
+      45,
+      26
+    );
+    pdf.setFontSize(9.2);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Report Code: ${rec.recordCode}   •   Analyzed On: ${rec.savedDateFormatted}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Report Code: ${rec.recordCode} | Analyzed On: ${rec.savedDateFormatted}`,
+        headerMaxW
+      ),
       45,
       34
     );
@@ -7008,11 +7255,15 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(11);
-    pdf.text(`Sample / Product Name: ${rec.sampleName}`, 20, 59);
+    pdf.text(fitPdfTextToWidth(pdf, `Sample / Product Name: ${rec.sampleName}`, 170), 20, 59);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9.5);
     pdf.text(
-      `Category: ${rec.productCategory || 'General Food Sample'}   |   Analyst: ${specialistName} (${specialistRole})`,
+      fitPdfTextToWidth(
+        pdf,
+        `Category: ${rec.productCategory || 'General Food Sample'} | Analyst: ${specialistName} (${specialistRole})`,
+        170
+      ),
       20,
       67
     );
@@ -7028,23 +7279,35 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
     pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(210, 222, 234);
     pdf.roundedRect(14, y, 182, 42, 3, 3, 'FD');
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.3);
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'normal');
     pdf.text(
-      `Dish Weights: Empty Dish (W1) = ${rec.mEmptyDish} g   |   Dish + Wet (W2) = ${rec.mDishPlusWet} g   |   Dish + Dry (W3) = ${rec.mDishPlusDry} g`,
+      fitPdfTextToWidth(
+        pdf,
+        `Dish Weights: Empty Dish (W1) = ${rec.mEmptyDish} g | Dish + Wet (W2) = ${rec.mDishPlusWet} g | Dish + Dry (W3) = ${rec.mDishPlusDry} g`,
+        170
+      ),
       20,
       y + 10
     );
     pdf.text(
-      `Sample Mass: Wet Sample = ${rec.wetSampleG} g   |   Dried Sample = ${rec.drySampleG} g   |   Moisture Loss = ${rec.waterLossG} g`,
+      fitPdfTextToWidth(
+        pdf,
+        `Sample Mass: Wet Sample = ${rec.wetSampleG} g | Dried Sample = ${rec.drySampleG} g | Moisture Loss = ${rec.waterLossG} g`,
+        170
+      ),
       20,
       y + 19
     );
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      `RESULT: Moisture (Wet Basis) = ${rec.moistureWetBasis}%   |   Total Solids (Dry Matter) = ${rec.totalSolidsPct}%   |   Moisture (Dry Basis) = ${rec.moistureDryBasis}%`,
+      fitPdfTextToWidth(
+        pdf,
+        `RESULT: Moisture (Wet Basis) = ${rec.moistureWetBasis}% | Total Solids = ${rec.totalSolidsPct}% | Moisture (Dry) = ${rec.moistureDryBasis}%`,
+        170
+      ),
       20,
       y + 31
     );
@@ -7054,29 +7317,41 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(11.5);
     pdf.setTextColor(22, 115, 184);
-    pdf.text('2. Muffle Furnace Total Ash Analysis (550°C)', 14, y);
+    pdf.text('2. Muffle Furnace Total Ash Analysis (550 C)', 14, y);
     y += 5;
 
     pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(210, 222, 234);
     pdf.roundedRect(14, y, 182, 38, 3, 3, 'FD');
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.3);
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'normal');
     pdf.text(
-      `Crucible Weights: Empty (W1) = ${rec.aEmptyCrucible} g   |   Crucible + Sample (W2) = ${rec.aCruciblePlusSample} g   |   Crucible + Ash (W3) = ${rec.aCruciblePlusAsh} g`,
+      fitPdfTextToWidth(
+        pdf,
+        `Crucible Weights: Empty (W1) = ${rec.aEmptyCrucible} g | Crucible + Sample (W2) = ${rec.aCruciblePlusSample} g | Crucible + Ash (W3) = ${rec.aCruciblePlusAsh} g`,
+        170
+      ),
       20,
       y + 10
     );
     pdf.text(
-      `Net Sample Incinerated = ${rec.ashSampleG} g   |   Net Inorganic Ash Residue = ${rec.ashResidueG} g`,
+      fitPdfTextToWidth(
+        pdf,
+        `Net Sample Incinerated = ${rec.ashSampleG} g | Net Inorganic Ash Residue = ${rec.ashResidueG} g`,
+        170
+      ),
       20,
       y + 19
     );
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      `RESULT: Total Ash (As-Is Wet Basis) = ${rec.ashWetBasis}%   |   Total Ash (Dry Matter Basis) = ${rec.ashDryBasis}%`,
+      fitPdfTextToWidth(
+        pdf,
+        `RESULT: Total Ash (As-Is Wet Basis) = ${rec.ashWetBasis}% | Total Ash (Dry Matter Basis) = ${rec.ashDryBasis}%`,
+        170
+      ),
       20,
       y + 30
     );
@@ -7092,47 +7367,62 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
     pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(210, 222, 234);
     pdf.roundedRect(14, y, 182, 38, 3, 3, 'FD');
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.3);
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'normal');
     pdf.text(
-      `Digestion Sample = ${rec.kSampleWeightG} g   |   Sample Titre (Vs) = ${rec.kSampleTitrationMl} mL   |   Blank Titre (Vb) = ${rec.kBlankTitrationMl} mL`,
+      fitPdfTextToWidth(
+        pdf,
+        `Digestion Sample = ${rec.kSampleWeightG} g | Sample Titre (Vs) = ${rec.kSampleTitrationMl} mL | Blank Titre (Vb) = ${rec.kBlankTitrationMl} mL`,
+        170
+      ),
       20,
       y + 10
     );
     pdf.text(
-      `Standard Acid Normality = ${rec.kAcidNormality} N   |   Nitrogen-to-Protein Factor = ${rec.kProteinFactor}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Standard Acid Normality = ${rec.kAcidNormality} N | Nitrogen-to-Protein Factor = ${rec.kProteinFactor}`,
+        170
+      ),
       20,
       y + 19
     );
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      `RESULT: Total Nitrogen (% N) = ${rec.nitrogenPct}%   |   Crude Protein = ${rec.crudeProteinPct}%`,
+      fitPdfTextToWidth(
+        pdf,
+        `RESULT: Total Nitrogen (% N) = ${rec.nitrogenPct}% | Crude Protein = ${rec.crudeProteinPct}%`,
+        170
+      ),
       20,
       y + 30
     );
 
-    y += 46;
+    y += 44;
     if (rec.notes) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.5);
+      const wrapped = pdf.splitTextToSize(sanitizePdfText(rec.notes, true), 170).slice(0, 3);
+      const noteBoxH = Math.max(20, wrapped.length * 4.8 + 13);
       pdf.setFillColor(248, 250, 252);
       pdf.setDrawColor(210, 222, 234);
-      pdf.roundedRect(14, y, 182, 26, 3, 3, 'FD');
+      pdf.roundedRect(14, y, 182, noteBoxH, 3, 3, 'FD');
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(9.5);
       pdf.setTextColor(26, 33, 56);
-      pdf.text('Analyst / Quality Remarks:', 20, y + 9);
+      pdf.text('Analyst / Quality Remarks:', 20, y + 8);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(74, 85, 104);
-      const wrapped = pdf.splitTextToSize(rec.notes, 170);
-      pdf.text(wrapped.slice(0, 2), 20, y + 17);
+      pdf.text(wrapped, 20, y + 15);
     }
 
     pdf.setFont('helvetica', 'italic');
     pdf.setFontSize(8.5);
     pdf.setTextColor(120, 130, 145);
     pdf.text(
-      'Generated by Food Science Portal — Moisture, Ash & Proximate Analysis Suite',
+      'Generated by Food Science Portal - Moisture, Ash & Proximate Analysis Suite',
       14,
       284
     );
@@ -7191,14 +7481,26 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
 
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'Food Science Portal - Proximate Analysis Logbook', 124),
+      44,
+      17
+    );
     pdf.setFontSize(14);
-    pdf.text('Food Science Portal — Proximate Analysis Logbook', 44, 17);
-    pdf.setFontSize(15.5);
-    pdf.text('MOISTURE, DRY MATTER, ASH & PROTEIN DIRECTORY', 44, 26);
-    pdf.setFontSize(9.5);
+    pdf.text(
+      fitPdfTextToWidth(pdf, 'MOISTURE, DRY MATTER, ASH & PROTEIN DIRECTORY', 124),
+      44,
+      26
+    );
+    pdf.setFontSize(9.2);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Specialist: ${specialistName}   •   Total Samples Logged: ${filteredDirectoryRecords.length}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Specialist: ${specialistName} | Total Samples Logged: ${filteredDirectoryRecords.length}`,
+        124
+      ),
       44,
       34
     );
@@ -7227,7 +7529,11 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
       pdf.setFontSize(9.5);
       pdf.setTextColor(26, 33, 56);
       pdf.text(
-        `${idx + 1}. [${rec.recordCode}] ${rec.sampleName} — ${rec.productCategory || 'Food Sample'} (${rec.savedDateFormatted})`,
+        fitPdfTextToWidth(
+          pdf,
+          `${idx + 1}. [${rec.recordCode}] ${rec.sampleName} - ${rec.productCategory || 'Food Sample'} (${rec.savedDateFormatted})`,
+          174
+        ),
         18,
         y + 7
       );
@@ -7236,17 +7542,31 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
       pdf.setFontSize(8.8);
       pdf.setTextColor(22, 115, 184);
       pdf.text(
-        `Moisture: ${rec.moistureWetBasis}%  |  Total Solids: ${rec.totalSolidsPct}%  |  Ash (Wet/Dry): ${rec.ashWetBasis}% / ${rec.ashDryBasis}%  |  Nitrogen: ${rec.nitrogenPct}%  |  Crude Protein: ${rec.crudeProteinPct}%`,
+        fitPdfTextToWidth(
+          pdf,
+          `Moisture: ${rec.moistureWetBasis}% | Total Solids: ${rec.totalSolidsPct}% | Ash (Wet/Dry): ${rec.ashWetBasis}% / ${rec.ashDryBasis}% | Nitrogen: ${rec.nitrogenPct}% | Protein: ${rec.crudeProteinPct}%`,
+          174
+        ),
         18,
         y + 15
       );
 
       if (rec.notes) {
         pdf.setTextColor(90, 108, 132);
-        pdf.text(`Notes: ${rec.notes.slice(0, 95)}`, 18, y + 22);
+        pdf.text(fitPdfTextToWidth(pdf, `Notes: ${rec.notes}`, 174), 18, y + 22);
       }
       y += 32;
     });
+
+    const totalPages = pdf.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p += 1) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(120, 130, 145);
+      pdf.text('Food Science Portal - Proximate Analysis Logbook', 14, 290);
+      pdf.text(`Page ${p} of ${totalPages}`, 196, 290, { align: 'right' });
+    }
 
     pdf.save(`Proximate_Analysis_Logbook_${Date.now()}.pdf`);
     showToast('Downloaded Complete Proximate Analysis Logbook PDF!');
@@ -7256,7 +7576,7 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
     <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
       {/* Toast Notification */}
       {statusToast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+        <div className="fixed bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-24px)] px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40 text-center">
           <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
           <span>{statusToast}</span>
         </div>
@@ -8576,18 +8896,26 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
 
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(13.5);
+    pdf.setFontSize(13);
     pdf.text(
-      `${rec.plantCompanyName.slice(0, 48)} — Production Efficiency Report`,
+      fitPdfTextToWidth(pdf, `${rec.plantCompanyName} - Production Efficiency Report`, 121),
       45,
       17
     );
-    pdf.setFontSize(15);
-    pdf.text('1-HR & FULL-DAY NET EFFICIENCY, SYRUP ROOM & YIELD', 45, 26);
-    pdf.setFontSize(9.2);
+    pdf.setFontSize(14);
+    pdf.text(
+      fitPdfTextToWidth(pdf, '1-HR & FULL-DAY NET EFFICIENCY, SYRUP ROOM & YIELD', 121),
+      45,
+      26
+    );
+    pdf.setFontSize(9);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Record Code: ${rec.recordCode}   •   Production Date: ${rec.productionDate}   •   ${rec.shiftName}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Record Code: ${rec.recordCode} | Production Date: ${rec.productionDate} | ${rec.shiftName}`,
+        121
+      ),
       45,
       34
     );
@@ -8604,16 +8932,24 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     pdf.roundedRect(14, 49, 182, 24, 3, 3, 'FD');
     pdf.setTextColor(26, 33, 56);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(10.5);
+    pdf.setFontSize(10.2);
     pdf.text(
-      `Plant / Company: ${rec.plantCompanyName}   |   Line / Product: ${rec.lineOrProductName}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Plant / Company: ${rec.plantCompanyName} | Line / Product: ${rec.lineOrProductName}`,
+        172
+      ),
       19,
       58
     );
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9.2);
     pdf.text(
-      `Supervisor / Specialist: ${specialistName} (${specialistRole})   |   Workers on Line: ${rec.workersCount}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Supervisor / Specialist: ${specialistName} (${specialistRole}) | Workers on Line: ${rec.workersCount}`,
+        172
+      ),
       19,
       66
     );
@@ -8630,28 +8966,40 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     pdf.setDrawColor(210, 222, 234);
     pdf.roundedRect(14, y, 182, 24, 2.5, 2.5, 'FD');
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.3);
     pdf.setTextColor(26, 33, 56);
     pdf.text(
-      `Rated Machine Speed: ${rec.machineSpeedTraysPerHour} Trays/Hour   |   Actual 1-Hour Production: ${rec.oneHourActualTrays} Trays   |   Shortfall: ${rec.oneHourLostTrays} Trays`,
+      fitPdfTextToWidth(
+        pdf,
+        `Rated Machine Speed: ${rec.machineSpeedTraysPerHour} Trays/Hour | Actual 1-Hr: ${rec.oneHourActualTrays} Trays | Shortfall: ${rec.oneHourLostTrays} Trays`,
+        172
+      ),
       19,
       y + 9.5
     );
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      `1-HOUR MACHINE EFFICIENCY = ${rec.oneHourEfficiencyPct}%   (Formula: ${rec.oneHourActualTrays} / ${rec.machineSpeedTraysPerHour} × 100)`,
+      fitPdfTextToWidth(
+        pdf,
+        `1-HOUR MACHINE EFFICIENCY = ${rec.oneHourEfficiencyPct}% (Formula: ${rec.oneHourActualTrays} / ${rec.machineSpeedTraysPerHour} x 100)`,
+        172
+      ),
       19,
       y + 18.5
     );
 
     y += 31;
-    // SECTION 2: Full-Day Net Efficiency (Start Time, Late Start, Break, CIP, Total Trays)
+    // SECTION 2: Full-Day Net Efficiency
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(11);
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      '2. Full-Day Net Efficiency (Including Start Time, Late Start, Break & CIP Factors)',
+      fitPdfTextToWidth(
+        pdf,
+        '2. Full-Day Net Efficiency (Start Time, Late Start, Break & CIP Factors)',
+        182
+      ),
       14,
       y
     );
@@ -8661,33 +9009,49 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     pdf.setDrawColor(210, 222, 234);
     pdf.roundedRect(14, y, 182, 46, 2.5, 2.5, 'FD');
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9.2);
+    pdf.setFontSize(9.1);
     pdf.setTextColor(26, 33, 56);
     pdf.text(
-      `Scheduled Start: ${rec.scheduledStartTime}  |  Actual Start: ${rec.actualStartTime}  |  Total Shift: ${rec.totalShiftHours} Hours  |  Rated Speed: ${rec.machineSpeedTraysPerHour} Trays/Hr`,
+      fitPdfTextToWidth(
+        pdf,
+        `Scheduled Start: ${rec.scheduledStartTime} | Actual Start: ${rec.actualStartTime} | Total Shift: ${rec.totalShiftHours} Hours | Speed: ${rec.machineSpeedTraysPerHour} Trays/Hr`,
+        172
+      ),
       19,
       y + 9
     );
     pdf.text(
-      `Time Factors: Late Start = ${rec.lateStartMins} mins  |  Break Time = ${rec.breakMins} mins  |  CIP Time = ${rec.cipMins} mins  |  Breakdown = ${rec.unplannedDowntimeMins} mins`,
+      fitPdfTextToWidth(
+        pdf,
+        `Time Factors: Late Start = ${rec.lateStartMins} mins | Break = ${rec.breakMins} mins | CIP = ${rec.cipMins} mins | Breakdown = ${rec.unplannedDowntimeMins} mins`,
+        172
+      ),
       19,
       y + 17.5
     );
     pdf.text(
-      `Full-Day Output: Total Produced = ${rec.totalFullDayTrays} Trays  |  Good Trays = ${rec.goodFullDayTrays} (Rejects: ${rec.rejectedTrays})  |  Worker Rate = ${rec.traysPerWorkerHour} Trays/Worker/Hr`,
+      fitPdfTextToWidth(
+        pdf,
+        `Full-Day Output: Produced = ${rec.totalFullDayTrays} Trays | Good = ${rec.goodFullDayTrays} (Rejects: ${rec.rejectedTrays}) | Rate = ${rec.traysPerWorkerHour} Trays/Worker/Hr`,
+        172
+      ),
       19,
       y + 26
     );
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      `FULL-DAY NET EFFICIENCY (After Break & CIP) = ${rec.fullDayNetOperatingEfficiencyPct}%   |   Gross Shift Efficiency = ${rec.fullDayGrossEfficiencyPct}%   |   Line OEE = ${rec.fullDayOeePct}%`,
+      fitPdfTextToWidth(
+        pdf,
+        `FULL-DAY NET EFFICIENCY = ${rec.fullDayNetOperatingEfficiencyPct}% | Gross Shift = ${rec.fullDayGrossEfficiencyPct}% | Line OEE = ${rec.fullDayOeePct}%`,
+        172
+      ),
       19,
       y + 37.5
     );
 
     y += 53;
-    // SECTION 3: Syrup Room / Preparation Room Batch Efficiency
+    // SECTION 3: Syrup Room
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(11);
     pdf.setTextColor(22, 115, 184);
@@ -8705,20 +9069,28 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     pdf.setFontSize(9.2);
     pdf.setTextColor(26, 33, 56);
     pdf.text(
-      `Total Syrup / Batch Prepared: ${rec.syrupPreparedTotal} ${rec.syrupUnit}   |   Total Packed: ${rec.syrupPackedTotal} ${rec.syrupUnit}   |   Total Waste / Drain: ${rec.syrupWasteTotal} ${rec.syrupUnit}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Syrup Prepared: ${rec.syrupPreparedTotal} ${rec.syrupUnit} | Packed: ${rec.syrupPackedTotal} ${rec.syrupUnit} | Waste/Drain: ${rec.syrupWasteTotal} ${rec.syrupUnit}`,
+        172
+      ),
       19,
       y + 10
     );
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      `SYRUP ROOM BATCH EFFICIENCY = ${rec.syrupBatchEfficiencyPct}%   |   Syrup Wastage = ${rec.syrupWastagePct}%   |   Waste Cost = Rs. ${rec.syrupWasteCostRs.toLocaleString()}`,
+      fitPdfTextToWidth(
+        pdf,
+        `SYRUP BATCH EFFICIENCY = ${rec.syrupBatchEfficiencyPct}% | Wastage = ${rec.syrupWastagePct}% | Waste Cost = Rs. ${rec.syrupWasteCostRs.toLocaleString()}`,
+        172
+      ),
       19,
       y + 21
     );
 
     y += 37;
-    // SECTION 4: Process Yield & Material Cost
+    // SECTION 4: Process Yield
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(11);
     pdf.setTextColor(22, 115, 184);
@@ -8736,14 +9108,22 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     pdf.setFontSize(9.2);
     pdf.setTextColor(26, 33, 56);
     pdf.text(
-      `Raw Input: ${rec.rawInputKg} kg   |   After Trim/Prep: ${rec.trimmedPreppedKg} kg (${rec.prepYieldPct}%)   |   Final Packed: ${rec.finalPackedKg} kg`,
+      fitPdfTextToWidth(
+        pdf,
+        `Raw Input: ${rec.rawInputKg} kg | After Trim/Prep: ${rec.trimmedPreppedKg} kg (${rec.prepYieldPct}%) | Final Packed: ${rec.finalPackedKg} kg`,
+        172
+      ),
       19,
       y + 10
     );
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      `NET PACKED YIELD = ${rec.netProcessYieldPct}%   |   Total Loss = ${rec.totalLossKg} kg (${rec.totalLossPct}%)   |   Effective Cost = Rs. ${rec.effectiveRawCostPerFinalKg}/kg`,
+      fitPdfTextToWidth(
+        pdf,
+        `NET PACKED YIELD = ${rec.netProcessYieldPct}% | Total Loss = ${rec.totalLossKg} kg (${rec.totalLossPct}%) | Cost = Rs. ${rec.effectiveRawCostPerFinalKg}/kg`,
+        172
+      ),
       19,
       y + 20
     );
@@ -8756,14 +9136,18 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(9);
       pdf.setTextColor(26, 33, 56);
-      pdf.text(`Production Notes: ${rec.notes.slice(0, 110)}`, 19, y + 11);
+      pdf.text(
+        fitPdfTextToWidth(pdf, `Production Notes: ${rec.notes}`, 172),
+        19,
+        y + 11
+      );
     }
 
     pdf.setFont('helvetica', 'italic');
     pdf.setFontSize(8.5);
     pdf.setTextColor(120, 130, 145);
     pdf.text(
-      'Generated by Food Science Portal — Production Yield, Line Efficiency & Syrup Room Suite',
+      'Generated by Food Science Portal - Production Yield, Line Efficiency & Syrup Room Suite',
       14,
       285
     );
@@ -8772,7 +9156,7 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     showToast(`Downloaded Production Efficiency PDF (${rec.recordCode})!`);
   };
 
-  // Download Plant Efficiency Analytics & Logbook PDF (Daily / Weekly / Monthly / Yearly)
+  // Download Plant Efficiency Analytics & Logbook PDF
   const handleDownloadPlantAnalyticsPdf = () => {
     if (!canUsePremium) {
       onOpenPremiumModal?.();
@@ -8800,17 +9184,25 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(13.5);
-    pdf.text(`${targetPlantTitle.slice(0, 52)}`, 44, 16);
-    pdf.setFontSize(15);
+    pdf.text(fitPdfTextToWidth(pdf, targetPlantTitle, 124), 44, 16);
+    pdf.setFontSize(14);
     pdf.text(
-      `PLANT EFFICIENCY REPORT (${analyticsGrouping.toUpperCase()} BREAKDOWN)`,
+      fitPdfTextToWidth(
+        pdf,
+        `PLANT EFFICIENCY REPORT (${analyticsGrouping.toUpperCase()} BREAKDOWN)`,
+        124
+      ),
       44,
       25
     );
-    pdf.setFontSize(9.2);
+    pdf.setFontSize(9);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `Specialist: ${specialistName}   •   Total Shifts Logged: ${overallPlantKpis.totalShifts}   •   Total Trays: ${overallPlantKpis.totalTraysProduced.toLocaleString()}`,
+      fitPdfTextToWidth(
+        pdf,
+        `Specialist: ${specialistName} | Shifts: ${overallPlantKpis.totalShifts} | Trays: ${overallPlantKpis.totalTraysProduced.toLocaleString()}`,
+        124
+      ),
       44,
       34
     );
@@ -8826,17 +9218,25 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     pdf.setDrawColor(22, 115, 184);
     pdf.roundedRect(14, 50, 182, 24, 3, 3, 'FD');
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(9.2);
     pdf.setTextColor(26, 33, 56);
     pdf.text(
-      `Plant Averages:  1-Hr Efficiency = ${overallPlantKpis.avg1HrEff}%   |   Full-Day Net Efficiency = ${overallPlantKpis.avgNetDayEff}%   |   Syrup Room Efficiency = ${overallPlantKpis.avgSyrupEff}%`,
+      fitPdfTextToWidth(
+        pdf,
+        `Plant Averages: 1-Hr Eff = ${overallPlantKpis.avg1HrEff}% | Full-Day Net Eff = ${overallPlantKpis.avgNetDayEff}% | Syrup Room Eff = ${overallPlantKpis.avgSyrupEff}%`,
+        174
+      ),
       18,
       59
     );
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
+    pdf.setFontSize(8.8);
     pdf.text(
-      `Avg Process Yield: ${overallPlantKpis.avgProcessYield}%   |   Total Syrup Waste: ${overallPlantKpis.totalSyrupWaste}   |   Late Start Hrs: ${overallPlantKpis.totalLateStartHrs}h   |   CIP Hrs: ${overallPlantKpis.totalCipHrs}h`,
+      fitPdfTextToWidth(
+        pdf,
+        `Avg Process Yield: ${overallPlantKpis.avgProcessYield}% | Syrup Waste: ${overallPlantKpis.totalSyrupWaste} | Late Start: ${overallPlantKpis.totalLateStartHrs}h | CIP: ${overallPlantKpis.totalCipHrs}h`,
+        174
+      ),
       18,
       67
     );
@@ -8846,7 +9246,11 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     pdf.setFontSize(11);
     pdf.setTextColor(22, 115, 184);
     pdf.text(
-      `${analyticsGrouping.toUpperCase()} PLANT & SYRUP ROOM EFFICIENCY SUMMARY`,
+      fitPdfTextToWidth(
+        pdf,
+        `${analyticsGrouping.toUpperCase()} PLANT & SYRUP ROOM EFFICIENCY SUMMARY`,
+        182
+      ),
       14,
       y
     );
@@ -8869,9 +9273,13 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
       pdf.setFontSize(9.5);
       pdf.setTextColor(26, 33, 56);
       pdf.text(
-        `${idx + 1}. ${grp.periodLabel}   (${grp.shiftsCount} Shift${
-          grp.shiftsCount > 1 ? 's' : ''
-        } • Total Trays: ${grp.totalTrays.toLocaleString()})`,
+        fitPdfTextToWidth(
+          pdf,
+          `${idx + 1}. ${grp.periodLabel} (${grp.shiftsCount} Shift${
+            grp.shiftsCount > 1 ? 's' : ''
+          } | Total Trays: ${grp.totalTrays.toLocaleString()})`,
+          174
+        ),
         18,
         y + 7.5
       );
@@ -8880,19 +9288,37 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
       pdf.setFontSize(8.8);
       pdf.setTextColor(22, 115, 184);
       pdf.text(
-        `1-Hr Eff: ${grp.avgOneHourEff}%  |  Full-Day Net Eff: ${grp.avgFullDayNetEff}%  |  OEE: ${grp.avgOee}%  |  Syrup Room Eff: ${grp.avgSyrupEff}%  |  Process Yield: ${grp.avgProcessYield}%`,
+        fitPdfTextToWidth(
+          pdf,
+          `1-Hr Eff: ${grp.avgOneHourEff}% | Full-Day Net Eff: ${grp.avgFullDayNetEff}% | OEE: ${grp.avgOee}% | Syrup Room Eff: ${grp.avgSyrupEff}% | Yield: ${grp.avgProcessYield}%`,
+          174
+        ),
         18,
         y + 14.5
       );
 
       pdf.setTextColor(90, 108, 132);
       pdf.text(
-        `Syrup Prepared/Packed/Waste: ${grp.totalSyrupPrepared} / ${grp.totalSyrupPacked} / ${grp.totalSyrupWaste}   |   Late Start: ${grp.totalLateMins}m • Break: ${grp.totalBreakMins}m • CIP: ${grp.totalCipMins}m`,
+        fitPdfTextToWidth(
+          pdf,
+          `Syrup Prep/Pack/Waste: ${grp.totalSyrupPrepared} / ${grp.totalSyrupPacked} / ${grp.totalSyrupWaste} | Late: ${grp.totalLateMins}m | Break: ${grp.totalBreakMins}m | CIP: ${grp.totalCipMins}m`,
+          174
+        ),
         18,
         y + 20.5
       );
       y += 27.5;
     });
+
+    const totalPages = pdf.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p += 1) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(120, 130, 145);
+      pdf.text('Food Science Portal - Plant Efficiency Logbook', 14, 290);
+      pdf.text(`Page ${p} of ${totalPages}`, 196, 290, { align: 'right' });
+    }
 
     pdf.save(
       `Plant_Efficiency_${analyticsGrouping.toUpperCase()}_Report_${Date.now()}.pdf`
@@ -8906,7 +9332,7 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
     <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-5">
       {/* Toast Notification */}
       {statusToast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+        <div className="fixed bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-24px)] px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40 text-center">
           <Check className="w-4 h-4 text-[#60A5FA] shrink-0" />
           <span>{statusToast}</span>
         </div>
@@ -10534,17 +10960,17 @@ ${applicantQualification}`;
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(13.5);
-    pdf.text(applicantName.slice(0, 52), 42, 14);
+    pdf.text(fitPdfTextToWidth(pdf, applicantName, pageW - 56), 42, 14);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(9.2);
     pdf.setTextColor(220, 233, 246);
     pdf.text(
-      `${applicantQualification.slice(0, 55)}  |  ${applicantPhone}`,
+      fitPdfTextToWidth(pdf, `${applicantQualification} | ${applicantPhone}`, pageW - 56),
       42,
       21
     );
     if (applicantEmail) {
-      pdf.text(`Email: ${applicantEmail}`, 42, 27);
+      pdf.text(fitPdfTextToWidth(pdf, `Email: ${applicantEmail}`, pageW - 56), 42, 27);
     }
 
     let y = 46;
@@ -10558,7 +10984,7 @@ ${applicantQualification}`;
         y += 4.2;
         return;
       }
-      const wrapped = pdf.splitTextToSize(rawLine, pageW - margin * 2);
+      const wrapped = pdf.splitTextToSize(sanitizePdfText(rawLine, true), pageW - margin * 2);
       wrapped.forEach((wLine: string) => {
         if (y > pageH - 18) {
           pdf.addPage();
@@ -12168,24 +12594,37 @@ ${refsFormatted}`;
     );
 
     const textX = 41;
+    const headerMaxW = pageW - 39 - textX;
     doc.setTextColor(186, 230, 253);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
     doc.text('Food Science Portal', textX, 12);
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(13);
-    doc.text('OFFICIAL JOURNAL MANUSCRIPT & RESEARCH PAPER', textX, 18.5);
+    doc.setFontSize(12.5);
+    doc.text(
+      fitPdfTextToWidth(doc, 'OFFICIAL JOURNAL MANUSCRIPT & RESEARCH PAPER', headerMaxW),
+      textX,
+      18.5
+    );
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.text(
-      `Author: ${authorName.slice(0, 48)}  |  Target Journal: ${activeJournalMeta.shortName}`,
+      fitPdfTextToWidth(
+        doc,
+        `Author: ${authorName} | Target Journal: ${activeJournalMeta.shortName}`,
+        headerMaxW
+      ),
       textX,
       25.5
     );
     doc.text(
-      `Format: ${activeJournalMeta.hecCategoryOrImpact}  |  Date: ${new Date().toLocaleDateString('en-PK')}`,
+      fitPdfTextToWidth(
+        doc,
+        `Format: ${activeJournalMeta.hecCategoryOrImpact} | Date: ${new Date().toLocaleDateString('en-PK')}`,
+        headerMaxW
+      ),
       textX,
       32
     );
@@ -12195,7 +12634,7 @@ ${refsFormatted}`;
     doc.setFontSize(9.2);
     doc.setTextColor(26, 33, 56);
     const lines = doc.splitTextToSize(
-      compiledJournalManuscript,
+      sanitizePdfText(compiledJournalManuscript, true),
       pageW - margin * 2
     );
     lines.forEach((line: string) => {
@@ -12212,7 +12651,7 @@ ${refsFormatted}`;
         doc.setFontSize(9.5);
         doc.setTextColor(255, 255, 255);
         doc.text(
-          `Food Science Portal  •  ${activeJournalMeta.shortName} Manuscript`,
+          fitPdfTextToWidth(doc, `Food Science Portal | ${activeJournalMeta.shortName} Manuscript`, pageW - margin * 2 - 18),
           margin + 15,
           10
         );
@@ -12236,6 +12675,7 @@ ${refsFormatted}`;
   const handleDownloadStatAnovaPdf = () => {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
     const researcherName = user?.name || 'Food Science Researcher';
 
     doc.setFillColor(26, 33, 56);
@@ -12260,24 +12700,37 @@ ${refsFormatted}`;
     );
 
     const textX = 41;
+    const headerMaxW = pageW - 39 - textX;
     doc.setTextColor(186, 230, 253);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
     doc.text('Food Science Portal', textX, 12);
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(13);
-    doc.text('ONE-WAY ANOVA & LSD STATISTICAL ANALYSIS REPORT', textX, 18.5);
+    doc.setFontSize(12.5);
+    doc.text(
+      fitPdfTextToWidth(doc, 'ONE-WAY ANOVA & LSD STATISTICAL ANALYSIS REPORT', headerMaxW),
+      textX,
+      18.5
+    );
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.text(
-      `Researcher: ${researcherName}  |  Parameter: ${statParameterName}`,
+      fitPdfTextToWidth(
+        doc,
+        `Researcher: ${researcherName} | Parameter: ${statParameterName}`,
+        headerMaxW
+      ),
       textX,
       25.5
     );
     doc.text(
-      `Factor: ${statFactorName}  |  Date: ${new Date().toLocaleDateString('en-PK')}`,
+      fitPdfTextToWidth(
+        doc,
+        `Factor: ${statFactorName} | Date: ${new Date().toLocaleDateString('en-PK')}`,
+        headerMaxW
+      ),
       textX,
       32
     );
@@ -12287,27 +12740,47 @@ ${refsFormatted}`;
     doc.setFontSize(11);
     doc.setTextColor(26, 33, 56);
     doc.text(
-      `1. Treatment Means ± SD & LSD (0.05) Grouping — ${statParameterName}`,
+      fitPdfTextToWidth(
+        doc,
+        `1. Treatment Means +/- SD & LSD (0.05) Grouping - ${statParameterName}`,
+        pageW - 28
+      ),
       14,
       y
     );
     y += 6;
 
     statisticalAnalysis.treatments.forEach((t, idx) => {
+      if (y + 11 > pageH - 18) {
+        doc.addPage();
+        y = 20;
+      }
       doc.setFillColor(idx % 2 === 0 ? 240 : 255, idx % 2 === 0 ? 246 : 255, idx % 2 === 0 ? 252 : 255);
       doc.setDrawColor(210, 222, 234);
       doc.rect(14, y, pageW - 28, 9, 'FD');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       doc.setTextColor(26, 33, 56);
-      doc.text(t.treatmentName.slice(0, 38), 17, y + 6);
+      doc.text(fitPdfTextToWidth(doc, t.treatmentName, 76), 17, y + 6);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Mean ± SD: ${t.formattedMeanSd}`, 98, y + 6);
-      doc.text(`Range: ${t.min.toFixed(2)} – ${t.max.toFixed(2)}`, 155, y + 6);
+      doc.text(
+        fitPdfTextToWidth(doc, sanitizePdfText(`Mean +/- SD: ${t.formattedMeanSd}`, true), 54),
+        96,
+        y + 6
+      );
+      doc.text(
+        fitPdfTextToWidth(doc, `Range: ${t.min.toFixed(2)} - ${t.max.toFixed(2)}`, 40),
+        154,
+        y + 6
+      );
       y += 9;
     });
 
     y += 10;
+    if (y + 44 > pageH - 18) {
+      doc.addPage();
+      y = 20;
+    }
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(26, 33, 56);
@@ -12318,26 +12791,42 @@ ${refsFormatted}`;
     doc.setDrawColor(187, 214, 238);
     doc.roundedRect(14, y, pageW - 28, 34, 3, 3, 'FD');
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.2);
+    doc.setFontSize(9);
     doc.text(
-      `Between Treatments: df = ${statisticalAnalysis.dfBetween}, SS = ${statisticalAnalysis.ssBetween}, MS = ${statisticalAnalysis.msBetween}, F-Value = ${statisticalAnalysis.fCalculated}`,
+      fitPdfTextToWidth(
+        doc,
+        `Between Treatments: df = ${statisticalAnalysis.dfBetween}, SS = ${statisticalAnalysis.ssBetween}, MS = ${statisticalAnalysis.msBetween}, F-Value = ${statisticalAnalysis.fCalculated}`,
+        pageW - 36
+      ),
       18,
       y + 8
     );
     doc.text(
-      `Within Treatments (Error): df = ${statisticalAnalysis.dfWithin}, SS = ${statisticalAnalysis.ssWithin}, MS = ${statisticalAnalysis.msWithin}`,
+      fitPdfTextToWidth(
+        doc,
+        `Within Treatments (Error): df = ${statisticalAnalysis.dfWithin}, SS = ${statisticalAnalysis.ssWithin}, MS = ${statisticalAnalysis.msWithin}`,
+        pageW - 36
+      ),
       18,
       y + 15
     );
     doc.text(
-      `Critical F (0.05) = ${statisticalAnalysis.f05}  |  Critical F (0.01) = ${statisticalAnalysis.f01}  |  Verdict: ${statisticalAnalysis.significanceBadge}`,
+      fitPdfTextToWidth(
+        doc,
+        `Critical F (0.05) = ${statisticalAnalysis.f05} | Critical F (0.01) = ${statisticalAnalysis.f01} | Verdict: ${statisticalAnalysis.significanceBadge}`,
+        pageW - 36
+      ),
       18,
       y + 22
     );
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(22, 115, 184);
     doc.text(
-      `Grand Mean = ${statisticalAnalysis.grandMean}  |  LSD (0.05) = ${statisticalAnalysis.lsd05}  |  SED = ${statisticalAnalysis.sed}  |  CV = ${statisticalAnalysis.cvPct}%`,
+      fitPdfTextToWidth(
+        doc,
+        `Grand Mean = ${statisticalAnalysis.grandMean} | LSD (0.05) = ${statisticalAnalysis.lsd05} | SED = ${statisticalAnalysis.sed} | CV = ${statisticalAnalysis.cvPct}%`,
+        pageW - 36
+      ),
       18,
       y + 29
     );

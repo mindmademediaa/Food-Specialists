@@ -2,7 +2,12 @@ import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { drawPdfBrandLogo, drawPdfUserPhoto } from '../lib/pdfBranding';
+import {
+  drawPdfBrandLogo,
+  drawPdfUserPhoto,
+  fitPdfTextToWidth,
+  sanitizePdfText
+} from '../lib/pdfBranding';
 import {
   CertificateSignatureId,
   drawSignaturePresetOnPdf,
@@ -257,7 +262,7 @@ export function buildOfficialCourseCertificatePdfDoc(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.4);
   doc.setTextColor(22, 115, 184);
-  doc.text('Official FSP verified Credential', brandTextX, 29.8);
+  doc.text('Official FSP Verified Credential', brandTextX, 29.8);
 
   // Top-Right Blue Scalloped Rosette Seal with Two Ribbons (center x = 180mm, y = 26mm)
   const sealX = 180;
@@ -310,7 +315,7 @@ export function buildOfficialCourseCertificatePdfDoc(
   // =========================================================================
   // 5. "This is to certify that" + RECIPIENT NAME + USER PROFILE PICTURE
   // =========================================================================
-  const cleanRecipient = (recipientName || 'Certified Professional').trim();
+  const cleanRecipient = sanitizePdfText(recipientName || 'Certified Professional', true) || 'Certified Professional';
 
   // Draw Recipient's Profile Picture (21mm x 21mm) on the right side of the recipient row
   drawPdfUserPhoto(
@@ -358,8 +363,8 @@ export function buildOfficialCourseCertificatePdfDoc(
   doc.text('has successfully completed', leftX, 92);
 
   // Course Title properly adjusted inside certificate width
-  const cleanCourseTitle = stripAccreditedWord(courseTitle);
-  const cleanStandard = stripAccreditedWord(accreditationStandard);
+  const cleanCourseTitle = sanitizePdfText(stripAccreditedWord(courseTitle), true);
+  const cleanStandard = sanitizePdfText(stripAccreditedWord(accreditationStandard), true);
   doc.setFont('helvetica', 'bold');
   const titleLen = cleanCourseTitle.length;
   const courseFontSize = titleLen > 45 ? 13.5 : titleLen > 32 ? 15.5 : 17.5;
@@ -374,7 +379,10 @@ export function buildOfficialCourseCertificatePdfDoc(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.2);
   doc.setTextColor(45, 55, 72);
-  const codeAndStandardText = `Course Code: ${courseCode}  |  Standard: ${cleanStandard}`;
+  const codeAndStandardText = sanitizePdfText(
+    `Course Code: ${courseCode} | Standard: ${cleanStandard}`,
+    true
+  );
   const wrappedStandard = doc
     .splitTextToSize(codeAndStandardText, contentWidth)
     .slice(0, 2);
@@ -395,7 +403,7 @@ export function buildOfficialCourseCertificatePdfDoc(
 
   const maxModulesToShow = Math.min(sequentialModules.length, 5);
   for (let mIdx = 0; mIdx < maxModulesToShow; mIdx++) {
-    const modItem = sequentialModules[mIdx];
+    const modItem = sanitizePdfText(sequentialModules[mIdx], true);
     const modLines = doc.splitTextToSize(modItem, contentWidth - 3).slice(0, 2);
     doc.text(modLines, leftX + 1.5, cursorY);
     cursorY += modLines.length * 3.6 + 0.8;
@@ -433,15 +441,16 @@ export function buildOfficialCourseCertificatePdfDoc(
     initialSize: number,
     rgb: [number, number, number]
   ) => {
+    const clean = sanitizePdfText(textStr, true);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(rgb[0], rgb[1], rgb[2]);
     let sz = initialSize;
     doc.setFontSize(sz);
-    while (doc.getTextWidth(textStr) > maxW && sz > 6.5) {
+    while (doc.getTextWidth(clean) > maxW && sz > 6.5) {
       sz -= 0.4;
       doc.setFontSize(sz);
     }
-    doc.text(textStr, centerX, yPos, { align: 'center' });
+    doc.text(fitPdfTextToWidth(doc, clean, maxW), centerX, yPos, { align: 'center' });
   };
 
   // Col 1: Certificate No. (center x = 74, width = 42mm)
@@ -450,7 +459,7 @@ export function buildOfficialCourseCertificatePdfDoc(
   drawFittedColText(issueDate, 125, lineY - 2.5, 42, 9.0, [22, 32, 56]);
   // Col 3: Exam Score (center x = 176, width = 42mm)
   drawFittedColText(
-    `${scorePercentage}% (${correctCount}/${totalQuestions} · ${
+    `${scorePercentage}% (${correctCount}/${totalQuestions} | ${
       distinction ? 'Distinction' : 'Passed'
     })`,
     176,

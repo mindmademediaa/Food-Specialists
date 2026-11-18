@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { stripUndefinedDeep } from '../lib/firestoreUtils';
 import { HubUser, UserExamAttempt, UserToolsData } from '../types/hub';
 import {
   draw30ExamSuiteQuestions,
@@ -618,7 +619,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
       new Set([...currentSeen, ...activeQuestions.map((q) => q.id)])
     );
 
-    const updatedTools: UserToolsData = {
+    const updatedTools: UserToolsData = stripUndefinedDeep({
       ...toolsData,
       examAttempts: [legacyAttempt, ...(toolsData.examAttempts || [])].slice(
         0,
@@ -627,7 +628,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
       seenExamQuestionIds: mergedSeen,
       lastActiveTool: 'exam',
       updatedAt: now.toISOString().slice(0, 19) + 'Z'
-    };
+    });
     await onSaveToolsData(updatedTools);
 
     if (user?.uid) {
@@ -640,7 +641,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
         nextAttemptsForStats.reduce((s, a) => s + (Number(a.percentage) || 0), 0) /
           Math.max(1, nextAttemptsForStats.length)
       );
-      const summaryPayload = {
+      const summaryPayload = stripUndefinedDeep({
         bestScorePct,
         avgScorePct,
         totalAttempts: nextAttemptsForStats.length,
@@ -650,7 +651,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             : activeExamTrack,
         optIn: updatedTools.leaderboardOptIn !== false,
         updatedAt: now.toISOString()
-      };
+      });
       try {
         await setDoc(
           doc(db, 'users', user.uid),
@@ -659,19 +660,19 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
         );
         await setDoc(
           doc(db, 'users', user.uid, 'examResults', examId),
-          resultObj
+          stripUndefinedDeep(resultObj)
         );
         await setDoc(
           doc(db, 'users', user.uid, 'progress', 'main'),
-          {
+          stripUndefinedDeep({
             totalStudySeconds: updatedStudySec,
             examsCompleted: nextFirestoreResults.length,
             updatedAt: now.toISOString()
-          },
+          }),
           { merge: true }
         );
-      } catch {
-        // Ignore offline/permission fallback
+      } catch (err) {
+        console.error('Failed to persist exam result summary to Firestore:', err);
       }
     }
 
@@ -692,14 +693,14 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
       try {
         await setDoc(
           doc(db, 'users', user.uid, 'bookmarks', 'main'),
-          {
+          stripUndefinedDeep({
             questions: updated,
             updatedAt: new Date().toISOString()
-          },
+          }),
           { merge: true }
         );
-      } catch {
-        // Ignore
+      } catch (err) {
+        console.error('Failed to persist exam bookmarks:', err);
       }
     }
   };
@@ -779,11 +780,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
 
   const handleToggleLeaderboardOptIn = async () => {
     const nextOptIn = !leaderboardOptIn;
-    const updatedTools: UserToolsData = {
+    const updatedTools: UserToolsData = stripUndefinedDeep({
       ...toolsData,
       leaderboardOptIn: nextOptIn,
       updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
-    };
+    });
     await onSaveToolsData(updatedTools);
     if (user?.uid) {
       const bestScorePct =
@@ -794,7 +795,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
       try {
         await setDoc(
           doc(db, 'users', user.uid),
-          {
+          stripUndefinedDeep({
             examLeaderboardSummary: {
               bestScorePct,
               avgScorePct,
@@ -803,11 +804,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               optIn: nextOptIn,
               updatedAt: new Date().toISOString()
             }
-          },
+          }),
           { merge: true }
         );
-      } catch {
-        // Ignore network failure
+      } catch (err) {
+        console.error('Failed to update exam leaderboard opt-in:', err);
       }
     }
     showToast(
@@ -846,7 +847,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
     <div className="w-full pb-8 space-y-6">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
+        <div className="fixed bottom-32 sm:bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-24px)] text-center px-4 py-2.5 rounded-2xl bg-[#1A2138] text-white text-xs font-extrabold shadow-lg flex items-center gap-2 border border-[#1673B8]/40">
           <Sparkles className="w-4 h-4 text-[#60A5FA] shrink-0" />
           <span>{toastMessage}</span>
         </div>

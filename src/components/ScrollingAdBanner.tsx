@@ -62,12 +62,7 @@ export const ScrollingAdBanner: React.FC<ScrollingAdBannerProps> = ({
   const handleAdClick = (ad: CustomAdBannerItem) => {
     const rawLink = (ad.linkUrl || ad.ctaLink || '').trim();
     if (!rawLink) return;
-    if (rawLink.startsWith('?') && onNavigateInternal) {
-      onNavigateInternal(rawLink);
-      return;
-    }
     if (/^https?:\/\//i.test(rawLink)) {
-      window.open(rawLink, '_blank', 'noopener,noreferrer');
       return;
     }
     if (onNavigateInternal) {
@@ -113,14 +108,9 @@ export const ScrollingAdBanner: React.FC<ScrollingAdBannerProps> = ({
               const ctaTextVal = ad.ctaLabel || ad.ctaText || '';
               const targetLink = ad.linkUrl || ad.ctaLink || '';
 
-              return (
-                <div
-                  key={`${ad.id}-${idx}`}
-                  onClick={() => handleAdClick(ad)}
-                  className={`inline-flex items-center gap-2.5 whitespace-nowrap ${
-                    targetLink ? 'cursor-pointer group' : ''
-                  }`}
-                >
+              const isExternalLink = /^https?:\/\//i.test(targetLink.trim());
+              const sharedContent = (
+                <>
                   {ad.bannerImageUrl && (
                     <img
                       src={ad.bannerImageUrl}
@@ -158,6 +148,32 @@ export const ScrollingAdBanner: React.FC<ScrollingAdBannerProps> = ({
                   )}
 
                   <span className="text-sky-300/50 pl-2">✦</span>
+                </>
+              );
+
+              if (isExternalLink) {
+                return (
+                  <a
+                    key={`${ad.id}-${idx}`}
+                    href={targetLink.trim()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2.5 whitespace-nowrap cursor-pointer group no-underline"
+                  >
+                    {sharedContent}
+                  </a>
+                );
+              }
+
+              return (
+                <div
+                  key={`${ad.id}-${idx}`}
+                  onClick={() => handleAdClick(ad)}
+                  className={`inline-flex items-center gap-2.5 whitespace-nowrap ${
+                    targetLink ? 'cursor-pointer group' : ''
+                  }`}
+                >
+                  {sharedContent}
                 </div>
               );
             })}
