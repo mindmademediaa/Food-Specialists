@@ -1246,9 +1246,8 @@ export default function App() {
         if (snap.exists()) {
           const data = snap.data() as CloudStorageConfig;
           const hydrated: CloudStorageConfig = {
-            provider: data.cloudinaryCloudName?.trim()
-              ? data.provider
-              : 'cloudinary',
+            provider:
+              data.provider === 'smart-firestore' ? 'smart-firestore' : 'cloudinary',
             cloudinaryCloudName:
               data.cloudinaryCloudName?.trim() || 'mhjkrdlh',
             cloudinaryUploadPreset:
@@ -1289,20 +1288,26 @@ export default function App() {
                 !data.paymentGateway?.customPriceUpdated
                   ? 900
                   : Number(data.paymentGateway?.yearlyFeeRs) || 900,
+              monthlyFeeUsd: Number(data.paymentGateway?.monthlyFeeUsd) || 1,
+              yearlyFeeUsd: Number(data.paymentGateway?.yearlyFeeUsd) || 9,
+              certificateFeeUsd:
+                Number(data.paymentGateway?.certificateFeeUsd) || 5,
               customPriceUpdated: Boolean(
                 data.paymentGateway?.customPriceUpdated
               )
             },
-            customAds: Array.isArray(data.customAds)
-              ? data.customAds
-              : undefined,
-            frontPageConfig: data.frontPageConfig || undefined,
-            manualRevenueEntries: Array.isArray(data.manualRevenueEntries)
-              ? data.manualRevenueEntries
-              : undefined,
-            customTrainings: Array.isArray(data.customTrainings)
-              ? data.customTrainings
-              : undefined
+            ...(Array.isArray(data.customAds)
+              ? { customAds: data.customAds }
+              : {}),
+            ...(data.frontPageConfig
+              ? { frontPageConfig: data.frontPageConfig }
+              : {}),
+            ...(Array.isArray(data.manualRevenueEntries)
+              ? { manualRevenueEntries: data.manualRevenueEntries }
+              : {}),
+            ...(Array.isArray(data.customTrainings)
+              ? { customTrainings: data.customTrainings }
+              : {})
           };
           setStorageConfig(hydrated);
         }
@@ -3794,10 +3799,15 @@ export default function App() {
 
   // Trainings & Live Price Manager
   const handleSaveTraining = async (training: HubTraining) => {
+    const safeId =
+      (training.id || `tr-${Date.now()}`)
+        .replace(/[^a-zA-Z0-9_\-]/g, '-')
+        .slice(0, 128) || `tr-${Date.now()}`;
     try {
-      const payload: HubTraining = {
+      const payload: HubTraining = stripUndefinedDeep({
         ...training,
-        title: training.title.slice(0, 195),
+        id: safeId,
+        title: (training.title || 'Certified Training').trim().slice(0, 195),
         category: training.category,
         standardCode: training.standardCode
           ? training.standardCode.slice(0, 75)
@@ -3821,14 +3831,14 @@ export default function App() {
           480
         ),
         isActive: training.isActive !== false,
-        customModules: training.customModules || [],
-        customMcqs: training.customMcqs || []
-      };
-      await setDoc(doc(db, 'trainings', payload.id), payload, { merge: true });
+        customModules: (training.customModules || []).slice(0, 60),
+        customMcqs: (training.customMcqs || []).slice(0, 200)
+      });
+      await setDoc(doc(db, 'trainings', safeId), payload, { merge: true });
       setTrainings((prev) => {
-        const exists = prev.some((t) => t.id === payload.id);
+        const exists = prev.some((t) => t.id === safeId);
         if (exists) {
-          return prev.map((t) => (t.id === payload.id ? payload : t));
+          return prev.map((t) => (t.id === safeId ? payload : t));
         }
         return [payload, ...prev];
       });
@@ -3836,7 +3846,13 @@ export default function App() {
         `Saved training "${payload.title}" (${payload.customModules?.length || 0} Modules, ${payload.customMcqs?.length || 0} MCQs) — Live on App!`
       );
       setTimeout(() => setAdminStatusBanner(null), 4000);
-    } catch {}
+    } catch (error) {
+      setAdminStatusBanner(
+        `Could not save training "${training.title}". Please verify admin login & try again.`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 5000);
+      handleFirestoreError(error, OperationType.WRITE, `trainings/${safeId}`);
+    }
   };
 
   const handleDeleteTraining = async (training: HubTraining) => {
@@ -4033,32 +4049,81 @@ export default function App() {
         .slice(0, 110),
       updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
     };
-    setStorageConfig(updated);
+    const cleanUpdated: CloudStorageConfig = stripUndefinedDeep({
+      ...updated,
+      provider:
+        updated.provider === 'smart-firestore'
+          ? ('smart-firestore' as const)
+          : ('cloudinary' as const)
+    });
+    setStorageConfig(cleanUpdated);
     try {
-      await setDoc(doc(db, 'settings', 'storageConfig'), updated, {
+      await setDoc(doc(db, 'settings', 'storageConfig'), cleanUpdated, {
         merge: true
       });
       setAdminStatusBanner(
         'Settings, Payment Gateway & Official WhatsApp Channel Link saved — Live on App!'
       );
       setTimeout(() => setAdminStatusBanner(null), 4000);
-    } catch {}
+    } catch (error) {
+      setAdminStatusBanner(
+        'Could not save Platform Settings to Firestore. Check admin login & permissions.'
+      );
+      setTimeout(() => setAdminStatusBanner(null), 5000);
+      handleFirestoreError(error, OperationType.WRITE, 'settings/storageConfig');
+    }
   };
 
   const handleSaveCustomTrainingsList = async (
     nextList: CustomTrainingItem[]
   ) => {
-    const updated: CloudStorageConfig = {
+    const cleanList: CustomTrainingItem[] = nextList.slice(0, 100).map((ct) =>
+      stripUndefinedDeep({
+        id: (ct.id || `ct-${Date.now()}`).slice(0, 120),
+        title: (ct.title || 'Custom Training').trim().slice(0, 220),
+        code: (ct.code || 'CT-001').trim().slice(0, 60),
+        priceRs: Math.max(0, Number(ct.priceRs) || 0),
+        priceUsd: Math.max(0, Number(ct.priceUsd) || 0),
+        duration: (ct.duration || '2 Weeks').trim().slice(0, 100),
+        mode: (ct.mode || 'Online Live / Hybrid').trim().slice(0, 100),
+        accreditationStandard: (
+          ct.accreditationStandard || 'Codex Alimentarius & Industrial QA/QC'
+        )
+          .trim()
+          .slice(0, 200),
+        instructor: (ct.instructor || 'Food Science Portal Faculty')
+          .trim()
+          .slice(0, 160),
+        description: (ct.description || '').trim().slice(0, 2000),
+        topics: Array.isArray(ct.topics)
+          ? ct.topics.map((t) => String(t).trim()).filter(Boolean).slice(0, 30)
+          : [],
+        isActive: ct.isActive !== false
+      })
+    );
+
+    const updated: CloudStorageConfig = stripUndefinedDeep({
       ...storageConfig,
-      customTrainings: nextList,
+      provider:
+        storageConfig.provider === 'smart-firestore'
+          ? 'smart-firestore'
+          : 'cloudinary',
+      customTrainings: cleanList,
       updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
-    };
+    });
     setStorageConfig(updated);
     try {
       await setDoc(doc(db, 'settings', 'storageConfig'), updated, {
         merge: true
       });
-    } catch {}
+    } catch (error) {
+      setAdminStatusBanner(
+        'Could not save Custom Trainings to Cloud Firestore. Please verify admin login.'
+      );
+      setTimeout(() => setAdminStatusBanner(null), 5000);
+      handleFirestoreError(error, OperationType.WRITE, 'settings/storageConfig');
+      throw error;
+    }
   };
 
   const handleSubmitCustomTrainingRegistration = async (
@@ -6777,7 +6842,7 @@ export default function App() {
               }
               onSubTabChange={(subTab) => setActiveTrainingsSubTab(subTab)}
               customTrainings={
-                storageConfig.customTrainings || DEFAULT_CUSTOM_TRAININGS
+                storageConfig.customTrainings ?? DEFAULT_CUSTOM_TRAININGS
               }
               onSubmitCustomTrainingRegistration={
                 handleSubmitCustomTrainingRegistration

@@ -76,6 +76,7 @@ import {
 import { buildConfirmationAlertLinks } from '../lib/pwaNotifications';
 import { compressImageFile } from '../lib/storage';
 import { AdminSocialShareStudio } from './AdminSocialShareStudio';
+import { AdminLaunchFlyerStudio } from './AdminLaunchFlyerStudio';
 
 export interface AdminDispatchConfirmationPayload {
   recipientName: string;
@@ -100,6 +101,7 @@ export type AdminSectionTab =
   | 'payments'
   | 'support'
   | 'social'
+  | 'flyer'
   | 'storage';
 
 interface AdminControlPanelProps {
@@ -248,11 +250,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   >({});
 
   const liveCustomTrainings: CustomTrainingItem[] = useMemo(() => {
-    if (
-      storageConfig.customTrainings &&
-      Array.isArray(storageConfig.customTrainings) &&
-      storageConfig.customTrainings.length > 0
-    ) {
+    if (Array.isArray(storageConfig.customTrainings)) {
       return storageConfig.customTrainings;
     }
     return DEFAULT_CUSTOM_TRAININGS;
@@ -263,10 +261,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       ...storageConfig,
       customTrainings: nextList
     });
-    if (onSaveCustomTrainingsList) {
-      await onSaveCustomTrainingsList(nextList);
+    try {
+      if (onSaveCustomTrainingsList) {
+        await onSaveCustomTrainingsList(nextList);
+      }
+      onSetBanner(msg);
+    } catch {
+      onSetBanner('Error saving Custom Trainings to Firestore. Please retry.');
     }
-    onSetBanner(msg);
   };
 
   const updatePaymentGateway = (patch: Partial<PaymentGatewayConfig>) => {
@@ -2141,6 +2143,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       desc: 'Share any tool, calculator, course, or page on LinkedIn/Facebook with Interface + Benefits Card (PNG)',
                       badge: '16 Tools + 8 Pages',
                       icon: Share2
+                    },
+                    {
+                      id: 'flyer' as AdminSectionTab,
+                      title: '12. Website Launch Ad & Promotional Flyer',
+                      desc: 'Create & download high-res Website Launch Flyer (PNG) showcasing Jobs, Scholarships, Tools, Study & Free vs Paid Membership',
+                      badge: 'Launch Flyer PNG',
+                      icon: Megaphone
                     }
                   ].map((item) => {
                     const Icon = item.icon;
@@ -6872,23 +6881,42 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               </div>
                               <div className="sm:col-span-2">
                                 <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
-                                  Price (Rs.)
+                                  Price (Rs. / $)
                                 </label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={editState.priceRs}
-                                  onChange={(e) =>
-                                    setCtEdits((prev) => ({
-                                      ...prev,
-                                      [ct.id]: {
-                                        ...editState,
-                                        priceRs: Number(e.target.value) || 0
-                                      }
-                                    }))
-                                  }
-                                  className="w-full px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-black text-emerald-800"
-                                />
+                                <div className="grid grid-cols-2 gap-1">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={editState.priceRs}
+                                    onChange={(e) =>
+                                      setCtEdits((prev) => ({
+                                        ...prev,
+                                        [ct.id]: {
+                                          ...editState,
+                                          priceRs: Number(e.target.value) || 0
+                                        }
+                                      }))
+                                    }
+                                    title="Fee in PKR"
+                                    className="w-full px-2 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-black text-emerald-800"
+                                  />
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={editState.priceUsd}
+                                    onChange={(e) =>
+                                      setCtEdits((prev) => ({
+                                        ...prev,
+                                        [ct.id]: {
+                                          ...editState,
+                                          priceUsd: Number(e.target.value) || 0
+                                        }
+                                      }))
+                                    }
+                                    title="International Fee in USD"
+                                    className="w-full px-2 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-black text-[#1673B8]"
+                                  />
+                                </div>
                               </div>
                               <div className="sm:col-span-3">
                                 <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
@@ -7943,6 +7971,26 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         )}
 
         {/* =====================================================================
+            TAB 12: WEBSITE LAUNCH ADVERTISEMENT & FLYER BUILDER (flyer)
+           ===================================================================== */}
+        {activeTab === 'flyer' && (
+          <AdminLaunchFlyerStudio
+            monthlyFeeRs={liveMonthlyFee}
+            yearlyFeeRs={liveYearlyFee}
+            monthlyFeeUsd={
+              Number(storageConfig.paymentGateway?.monthlyFeeUsd) || 1
+            }
+            yearlyFeeUsd={
+              Number(storageConfig.paymentGateway?.yearlyFeeUsd) || 9
+            }
+            whatsappContact={
+              storageConfig.paymentGateway?.bankWhatsapp || '+92 324 0906384'
+            }
+            onSetBanner={onSetBanner}
+          />
+        )}
+
+        {/* =====================================================================
             TAB 7: CLOUD STORAGE & FULL BACKUP (storage)
            ===================================================================== */}
         {activeTab === 'storage' && (
@@ -8101,6 +8149,16 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               }`}
             >
               Social Share
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setActiveTab('flyer')}
+              className={`cursor-pointer ${
+                activeTab === 'flyer' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
+              }`}
+            >
+              Launch Flyer
             </button>
           </div>
         </div>
