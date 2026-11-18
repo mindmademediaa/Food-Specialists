@@ -1148,6 +1148,8 @@ export type OrganizationSectorType =
 export type ComplaintSeverity = 'low' | 'medium' | 'high' | 'critical';
 export type ComplaintStatus = 'open' | 'in_progress' | 'closed';
 
+export const FREE_COMPLAINT_QUOTA = 10;
+
 export interface ComplaintOrganizationProfile {
   orgId: string;
   ownerUid: string;
@@ -1159,6 +1161,8 @@ export interface ComplaintOrganizationProfile {
   contactEmail?: string;
   welcomeNote?: string;
   categories?: string[];
+  complaintsCount?: number;
+  lastComplaintId?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

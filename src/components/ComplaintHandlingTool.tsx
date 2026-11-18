@@ -29,10 +29,12 @@ import {
   collection,
   deleteDoc,
   doc,
+  increment,
   onSnapshot,
   orderBy,
   query,
-  setDoc
+  setDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { compressImageFile } from '../lib/storage';
@@ -53,6 +55,7 @@ import {
   ComplaintOrganizationProfile,
   ComplaintSeverity,
   ComplaintStatus,
+  FREE_COMPLAINT_QUOTA,
   HubUser,
   OrganizationComplaintRecord,
   OrganizationSectorType
@@ -83,20 +86,28 @@ const GUEST_STORAGE_KEY = 'fsp_guest_complaint_sandbox_v1';
 interface GuestSandboxState {
   org: ComplaintOrganizationProfile | null;
   complaints: OrganizationComplaintRecord[];
+  totalLogged?: number;
 }
 
 function loadGuestSandbox(): GuestSandboxState {
-  if (typeof window === 'undefined') return { org: null, complaints: [] };
+  if (typeof window === 'undefined') {
+    return { org: null, complaints: [], totalLogged: 0 };
+  }
   try {
     const raw = window.localStorage.getItem(GUEST_STORAGE_KEY);
-    if (!raw) return { org: null, complaints: [] };
+    if (!raw) return { org: null, complaints: [], totalLogged: 0 };
     const parsed = JSON.parse(raw) as GuestSandboxState;
+    const list = Array.isArray(parsed?.complaints) ? parsed.complaints : [];
     return {
       org: parsed?.org || null,
-      complaints: Array.isArray(parsed?.complaints) ? parsed.complaints : []
+      complaints: list,
+      totalLogged:
+        typeof parsed?.totalLogged === 'number'
+          ? Math.max(parsed.totalLogged, list.length)
+          : list.length
     };
   } catch {
-    return { org: null, complaints: [] };
+    return { org: null, complaints: [], totalLogged: 0 };
   }
 }
 
@@ -195,6 +206,12 @@ function sanitizeComplaintOrgForFirestore(
       .filter(Boolean)
       .slice(0, 20);
   }
+  if (typeof org.complaintsCount === 'number' && org.complaintsCount >= 0) {
+    payload.complaintsCount = Math.floor(org.complaintsCount);
+  }
+  if (org.lastComplaintId && org.lastComplaintId.trim()) {
+    payload.lastComplaintId = org.lastComplaintId.trim().slice(0, 128);
+  }
   return payload;
 }
 
@@ -268,10 +285,12 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
 }) => {
   const isSignedIn = Boolean(user?.uid && user.uid.trim().length > 0);
   const canExportPdf = Boolean((isUserPaid && !hasExpiredPremium) || user?.isAdmin);
+  const canAccumulateUnlimited = canExportPdf;
 
   const [orgProfile, setOrgProfile] =
     useState<ComplaintOrganizationProfile | null>(null);
   const [complaints, setComplaints] = useState<OrganizationComplaintRecord[]>([]);
+  const [guestTotalLogged, setGuestTotalLogged] = useState<number>(0);
   const [loadingOrg, setLoadingOrg] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'directory' | 'setup-qr'>(
     'directory'
@@ -360,6 +379,7 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
       const sandbox = loadGuestSandbox();
       setOrgProfile(sandbox.org);
       setComplaints(sandbox.complaints);
+      setGuestTotalLogged(sandbox.totalLogged ?? sandbox.complaints.length);
       if (sandbox.org) {
         setCompanyName(sandbox.org.companyName);
         setOrganizationType(sandbox.org.organizationType);
@@ -459,6 +479,32 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
     return { total, open, inProgress, closed, closurePct };
   }, [complaints]);
 
+  const quotaUsed = isSignedIn
+    ? Math.max(orgProfile?.complaintsCount ?? 0, complaints.length)
+    : Math.max(guestTotalLogged, complaints.length);
+  const isQuotaReached =
+    !canAccumulateUnlimited && quotaUsed >= FREE_COMPLAINT_QUOTA;
+
+  // One-time sync if legacy org doc existed before complaintsCount was added
+  useEffect(() => {
+    if (!isSignedIn || !orgProfile) return;
+    const existingCount = orgProfile.complaintsCount ?? 0;
+    if (complaints.length > existingCount) {
+      const syncedCount = canAccumulateUnlimited
+        ? complaints.length
+        : Math.min(complaints.length, FREE_COMPLAINT_QUOTA);
+      const nowIso = new Date().toISOString().slice(0, 19) + 'Z';
+      const payload = sanitizeComplaintOrgForFirestore({
+        ...orgProfile,
+        complaintsCount: syncedCount,
+        updatedAt: nowIso
+      });
+      setDoc(doc(db, 'complaintOrgs', user.uid), payload).catch(() => {
+        // Silent best-effort sync
+      });
+    }
+  }, [isSignedIn, orgProfile, complaints.length, canAccumulateUnlimited, user.uid]);
+
   const filteredComplaints = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return complaints.filter((c) => {
@@ -547,6 +593,10 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
         parsedCategories.length > 0
           ? parsedCategories
           : DEFAULT_COMPLAINT_CATEGORIES,
+      complaintsCount: orgProfile
+        ? Math.max(orgProfile.complaintsCount ?? 0, complaints.length)
+        : 0,
+      lastComplaintId: orgProfile?.lastComplaintId,
       isActive: isPortalActive,
       createdAt: orgProfile?.createdAt || nowIso,
       updatedAt: nowIso
@@ -555,7 +605,11 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
     try {
       if (!isSignedIn) {
         setOrgProfile(draftOrg);
-        saveGuestSandbox({ org: draftOrg, complaints });
+        saveGuestSandbox({
+          org: draftOrg,
+          complaints,
+          totalLogged: guestTotalLogged
+        });
         showToast(
           'success',
           'Sandbox Organization & QR generated! Sign in free anytime to activate your live public QR link.'
@@ -608,15 +662,30 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
 
     try {
       if (!isSignedIn) {
+        if (!canAccumulateUnlimited && complaints.length > FREE_COMPLAINT_QUOTA) {
+          onOpenPremiumModal();
+          setIsSavingCapa(false);
+          return;
+        }
         const nextList = complaints.map((item) =>
           item.id === updatedRecord.id ? updatedRecord : item
         );
         setComplaints(nextList);
-        saveGuestSandbox({ org: orgProfile, complaints: nextList });
+        saveGuestSandbox({
+          org: orgProfile,
+          complaints: nextList,
+          totalLogged: guestTotalLogged
+        });
         showToast(
           'success',
           `CAPA & Status (${updatedRecord.status.replace('_', ' ').toUpperCase()}) updated locally.`
         );
+        return;
+      }
+
+      if (!canAccumulateUnlimited && complaints.length > FREE_COMPLAINT_QUOTA) {
+        onOpenPremiumModal();
+        setIsSavingCapa(false);
         return;
       }
 
@@ -651,6 +720,15 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
       return;
     }
 
+    if (isQuotaReached) {
+      showToast(
+        'error',
+        `Free Plan limit (${FREE_COMPLAINT_QUOTA} complaints) reached! Upgrade to Paid Membership to continue logging & saving complaints.`
+      );
+      onOpenPremiumModal();
+      return;
+    }
+
     setIsSavingManual(true);
     const nowIso = new Date().toISOString().slice(0, 19) + 'Z';
     const rand = Math.floor(1000 + Math.random() * 9000);
@@ -677,15 +755,28 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
     try {
       if (!isSignedIn) {
         const nextList = [newRecord, ...complaints];
+        const nextTotal = guestTotalLogged + 1;
         setComplaints(nextList);
-        saveGuestSandbox({ org: orgProfile, complaints: nextList });
+        setGuestTotalLogged(nextTotal);
+        saveGuestSandbox({
+          org: orgProfile,
+          complaints: nextList,
+          totalLogged: nextTotal
+        });
       } else {
         const path = `complaintOrgs/${user.uid}/complaints/${id}`;
         try {
-          await setDoc(
+          const batch = writeBatch(db);
+          batch.set(
             doc(db, 'complaintOrgs', user.uid, 'complaints', id),
             newRecord
           );
+          batch.update(doc(db, 'complaintOrgs', user.uid), {
+            complaintsCount: increment(1),
+            lastComplaintId: id,
+            updatedAt: nowIso
+          });
+          await batch.commit();
         } catch (err) {
           handleFirestoreError(err, OperationType.CREATE, path);
         }
@@ -711,7 +802,11 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
       if (!isSignedIn) {
         const nextList = complaints.filter((c) => c.id !== complaintId);
         setComplaints(nextList);
-        saveGuestSandbox({ org: orgProfile, complaints: nextList });
+        saveGuestSandbox({
+          org: orgProfile,
+          complaints: nextList,
+          totalLogged: guestTotalLogged
+        });
       } else {
         const path = `complaintOrgs/${user.uid}/complaints/${complaintId}`;
         try {
@@ -796,10 +891,18 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
       <PublicComplaintIntakeView
         orgId={orgProfile.orgId}
         demoOrgPreview={!isSignedIn ? orgProfile : null}
+        demoQuotaReached={!isSignedIn ? isQuotaReached : false}
         onSubmitDemoComplaint={(rec) => {
+          if (isQuotaReached) return;
           const nextList = [rec, ...complaints];
+          const nextTotal = guestTotalLogged + 1;
           setComplaints(nextList);
-          saveGuestSandbox({ org: orgProfile, complaints: nextList });
+          setGuestTotalLogged(nextTotal);
+          saveGuestSandbox({
+            org: orgProfile,
+            complaints: nextList,
+            totalLogged: nextTotal
+          });
         }}
         onBackToPortal={() => {
           setIsTestingIntakeForm(false);
@@ -884,6 +987,30 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
                   <ShieldCheck className="w-3 h-3" />
                   <span>Private User Isolation</span>
                 </span>
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md border text-[10.5px] font-bold tabular-nums ${
+                    canAccumulateUnlimited
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                      : isQuotaReached
+                        ? 'bg-red-50 border-red-200 text-red-700'
+                        : 'bg-amber-50 border-amber-200 text-amber-800'
+                  }`}
+                >
+                  {canAccumulateUnlimited ? (
+                    <>
+                      <Crown className="w-3 h-3" />
+                      <span>Paid Plan: Unlimited Complaints &amp; PDF Reports</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3 h-3" />
+                      <span>
+                        Free Allowance: {Math.min(quotaUsed, FREE_COMPLAINT_QUOTA)} /{' '}
+                        {FREE_COMPLAINT_QUOTA} Complaints
+                      </span>
+                    </>
+                  )}
+                </span>
               </div>
               <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
                 Configure your organization &amp; logo, generate your scannable QR complaint form, investigate Root Cause, document Correction &amp; Corrective Action, and track Open/Closed status.
@@ -960,6 +1087,31 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Free / Guest 10-Complaint Quota Reached Gate Banner */}
+        {isQuotaReached && (
+          <div className="rounded-xl bg-red-50 border border-red-200 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold text-red-800 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  10 / {FREE_COMPLAINT_QUOTA} Free Complaint Limit Reached — Upgrade Required
+                </span>
+              </div>
+              <p className="text-xs text-red-700 leading-relaxed">
+                Free &amp; Guest accounts are allowed up to {FREE_COMPLAINT_QUOTA} complaints. After 10 complaints, only Paid Members can accumulate new QR complaints, save further data, and download CAPA / Directory PDF reports.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenPremiumModal}
+              className="px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-bold inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0"
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-300" />
+              <span>Upgrade to Paid Plan</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* =====================================================================
@@ -1387,7 +1539,13 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setIsTestingIntakeForm(true)}
+                    onClick={() => {
+                      if (isQuotaReached) {
+                        onOpenPremiumModal();
+                        return;
+                      }
+                      setIsTestingIntakeForm(true);
+                    }}
                     className="px-3 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#E1EEF9] border border-[#D2DEEA] text-[#1673B8] text-xs font-bold inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
                   >
                     <QrCode className="w-3.5 h-3.5" />
@@ -1396,11 +1554,27 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setShowManualModal(true)}
-                    className="px-3 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-bold inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                    onClick={() => {
+                      if (isQuotaReached) {
+                        onOpenPremiumModal();
+                        return;
+                      }
+                      setShowManualModal(true);
+                    }}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                      isQuotaReached
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                        : 'bg-[#1A2138] hover:bg-[#1673B8] text-white'
+                    }`}
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Log Complaint</span>
+                    {isQuotaReached ? (
+                      <Lock className="w-3.5 h-3.5" />
+                    ) : (
+                      <Plus className="w-3.5 h-3.5" />
+                    )}
+                    <span>
+                      {isQuotaReached ? 'Limit Reached (Paid)' : 'Log Complaint'}
+                    </span>
                   </button>
 
                   <button

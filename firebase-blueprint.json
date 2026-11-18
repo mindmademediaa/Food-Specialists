@@ -236,6 +236,8 @@
         "contactEmail": { "type": "string", "maxLength": 200 },
         "welcomeNote": { "type": "string", "maxLength": 600 },
         "categories": { "type": "array" },
+        "complaintsCount": { "type": "number" },
+        "lastComplaintId": { "type": "string", "maxLength": 128 },
         "isActive": { "type": "boolean" },
         "createdAt": { "type": "string", "maxLength": 64 },
         "updatedAt": { "type": "string", "maxLength": 64 }

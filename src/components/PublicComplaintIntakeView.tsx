@@ -6,12 +6,13 @@ import {
   Camera,
   CheckCircle2,
   Loader2,
+  Lock,
   MapPin,
   Phone,
   Send,
   ShieldCheck
 } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, increment, writeBatch } from 'firebase/firestore';
 import {
   db,
   OperationType,
@@ -23,22 +24,32 @@ import { DEFAULT_COMPLAINT_CATEGORIES } from '../lib/complaintPdfGenerator';
 import {
   ComplaintOrganizationProfile,
   ComplaintSeverity,
+  FREE_COMPLAINT_QUOTA,
+  HubUser,
   OrganizationComplaintRecord
 } from '../types/hub';
 
 interface PublicComplaintIntakeViewProps {
   orgId: string;
   demoOrgPreview?: ComplaintOrganizationProfile | null;
+  demoQuotaReached?: boolean;
   onSubmitDemoComplaint?: (record: OrganizationComplaintRecord) => void;
   onBackToPortal?: () => void;
 }
 
 export const PublicComplaintIntakeView: React.FC<
   PublicComplaintIntakeViewProps
-> = ({ orgId, demoOrgPreview, onSubmitDemoComplaint, onBackToPortal }) => {
+> = ({
+  orgId,
+  demoOrgPreview,
+  demoQuotaReached = false,
+  onSubmitDemoComplaint,
+  onBackToPortal
+}) => {
   const [org, setOrg] = useState<ComplaintOrganizationProfile | null>(
     demoOrgPreview || null
   );
+  const [ownerIsPaid, setOwnerIsPaid] = useState<boolean>(false);
   const [loadingOrg, setLoadingOrg] = useState<boolean>(!demoOrgPreview);
   const [orgError, setOrgError] = useState<string | null>(null);
 
@@ -86,8 +97,11 @@ export const PublicComplaintIntakeView: React.FC<
     setLoadingOrg(true);
     setOrgError(null);
 
-    getDoc(doc(db, 'complaintOrgs', orgId))
-      .then((snap) => {
+    Promise.all([
+      getDoc(doc(db, 'complaintOrgs', orgId)),
+      getDoc(doc(db, 'users', orgId)).catch(() => null)
+    ])
+      .then(([snap, ownerSnap]) => {
         if (cancelled) return;
         if (!snap.exists()) {
           setOrgError(
@@ -99,6 +113,20 @@ export const PublicComplaintIntakeView: React.FC<
           setOrg(data);
           if (data.categories && data.categories.length > 0) {
             setCategory(data.categories[0]);
+          }
+          if (ownerSnap && ownerSnap.exists()) {
+            const ownerData = ownerSnap.data() as Partial<HubUser>;
+            const notExpired =
+              !ownerData.premiumExpiresAt ||
+              Number.isNaN(new Date(ownerData.premiumExpiresAt).getTime()) ||
+              new Date(ownerData.premiumExpiresAt).getTime() > Date.now();
+            const activePaid = Boolean(
+              ownerData.isAdmin ||
+                ((ownerData.isPaid || ownerData.isPremium) && notExpired)
+            );
+            setOwnerIsPaid(activePaid);
+          } else {
+            setOwnerIsPaid(false);
           }
         }
         setLoadingOrg(false);
@@ -116,6 +144,10 @@ export const PublicComplaintIntakeView: React.FC<
       cancelled = true;
     };
   }, [orgId, demoOrgPreview]);
+
+  const isFreeQuotaExhausted = demoOrgPreview
+    ? demoQuotaReached
+    : Boolean(org && !ownerIsPaid && (org.complaintsCount ?? 0) >= FREE_COMPLAINT_QUOTA);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -192,6 +224,13 @@ export const PublicComplaintIntakeView: React.FC<
     }
 
     try {
+      if (isFreeQuotaExhausted) {
+        setSubmitError(
+          `This organization has reached its Free Plan limit of ${FREE_COMPLAINT_QUOTA} complaints. Only Paid Plan accounts can accept additional complaints.`
+        );
+        return;
+      }
+
       if (demoOrgPreview && onSubmitDemoComplaint) {
         onSubmitDemoComplaint(cleanPayload);
         setSubmittedRecord(cleanPayload);
@@ -200,17 +239,33 @@ export const PublicComplaintIntakeView: React.FC<
 
       const targetPath = `complaintOrgs/${org.orgId}/complaints/${complaintId}`;
       try {
-        await setDoc(
+        const batch = writeBatch(db);
+        batch.set(
           doc(db, 'complaintOrgs', org.orgId, 'complaints', complaintId),
           cleanPayload
         );
+        batch.update(doc(db, 'complaintOrgs', org.orgId), {
+          complaintsCount: increment(1),
+          lastComplaintId: complaintId,
+          updatedAt: nowIso
+        });
+        await batch.commit();
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, targetPath);
       }
+      setOrg((prev) =>
+        prev
+          ? {
+              ...prev,
+              complaintsCount: (prev.complaintsCount ?? 0) + 1,
+              lastComplaintId: complaintId
+            }
+          : prev
+      );
       setSubmittedRecord(cleanPayload);
     } catch {
       setSubmitError(
-        'Could not submit complaint right now. Please try again in a moment.'
+        'Complaint could not be submitted. This organization may have reached its 10-complaint Free Plan limit or encountered a connection issue.'
       );
     } finally {
       setIsSubmitting(false);
@@ -279,6 +334,40 @@ export const PublicComplaintIntakeView: React.FC<
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Return to Website</span>
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (isFreeQuotaExhausted) {
+    return (
+      <div className="max-w-lg mx-auto my-8 bg-white border border-[#D2DEEA] rounded-2xl p-6 text-center space-y-4 shadow-xs">
+        <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+          <Lock className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-bold text-[#1A2138]">
+          {org.companyName} — Free Complaint Quota Reached
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+          This organization has reached its Free Tier allowance of{' '}
+          <strong>{FREE_COMPLAINT_QUOTA} complaints</strong>. Only Paid Plan accounts can continue accumulating QR complaints, saving records, and generating CAPA PDF reports.
+        </p>
+        {(org.contactPhone || org.contactEmail) && (
+          <div className="p-3 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-xs text-[#1A2138] space-y-1">
+            <div className="font-bold">Direct Organization Contact:</div>
+            {org.contactPhone && <div>Phone: {org.contactPhone}</div>}
+            {org.contactEmail && <div>Email: {org.contactEmail}</div>}
+          </div>
+        )}
+        {onBackToPortal && (
+          <button
+            type="button"
+            onClick={onBackToPortal}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1673B8] text-white text-xs font-bold cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>{demoOrgPreview ? 'Back to Complaint Directory' : 'Return to Website'}</span>
           </button>
         )}
       </div>

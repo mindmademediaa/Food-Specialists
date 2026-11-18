@@ -267,6 +267,32 @@ service cloud.firestore {
         (!('customMcqs' in data) || (data.customMcqs is list && data.customMcqs.size() <= 200));
     }
 
+    function existingComplaintCount(data) {
+      return ('complaintsCount' in data && data.complaintsCount is number)
+        ? data.complaintsCount
+        : 0;
+    }
+
+    function isOrgOwnerPaid(orgId) {
+      return exists(/databases/$(database)/documents/users/$(orgId)) &&
+        (
+          ('isAdmin' in get(/databases/$(database)/documents/users/$(orgId)).data &&
+            get(/databases/$(database)/documents/users/$(orgId)).data.isAdmin == true) ||
+          ('isPaid' in get(/databases/$(database)/documents/users/$(orgId)).data &&
+            get(/databases/$(database)/documents/users/$(orgId)).data.isPaid == true) ||
+          ('isPremium' in get(/databases/$(database)/documents/users/$(orgId)).data &&
+            get(/databases/$(database)/documents/users/$(orgId)).data.isPremium == true) ||
+          ('plan' in get(/databases/$(database)/documents/users/$(orgId)).data &&
+            get(/databases/$(database)/documents/users/$(orgId)).data.plan == 'premium')
+        );
+    }
+
+    function canOrgAcceptMoreComplaints(orgId) {
+      return isAdmin() ||
+        isOrgOwnerPaid(orgId) ||
+        existingComplaintCount(get(/databases/$(database)/documents/complaintOrgs/$(orgId)).data) < 10;
+    }
+
     function isValidComplaintOrg(data, orgId) {
       return data is map &&
         data.keys().hasAll([
@@ -289,6 +315,8 @@ service cloud.firestore {
           'contactEmail',
           'welcomeNote',
           'categories',
+          'complaintsCount',
+          'lastComplaintId',
           'isActive',
           'createdAt',
           'updatedAt'
@@ -305,7 +333,9 @@ service cloud.firestore {
         (!('contactPhone' in data) || (data.contactPhone is string && data.contactPhone.size() <= 60)) &&
         (!('contactEmail' in data) || (data.contactEmail is string && data.contactEmail.size() <= 200)) &&
         (!('welcomeNote' in data) || (data.welcomeNote is string && data.welcomeNote.size() <= 600)) &&
-        (!('categories' in data) || (data.categories is list && data.categories.size() <= 20 && (data.categories.size() == 0 || data.categories[0] is string)));
+        (!('categories' in data) || (data.categories is list && data.categories.size() <= 20 && (data.categories.size() == 0 || data.categories[0] is string))) &&
+        (!('complaintsCount' in data) || (data.complaintsCount is number && data.complaintsCount >= 0 && data.complaintsCount <= 1000000)) &&
+        (!('lastComplaintId' in data) || isValidId(data.lastComplaintId));
     }
 
     function isValidPublicComplaintCreate(data, orgId, complaintId) {
@@ -595,14 +625,41 @@ service cloud.firestore {
 
     // Per-User QR Complaint Handling & CAPA Directory
     // - Anyone scanning a QR code can read that specific org's public branding (/complaintOrgs/{orgId})
-    //   and submit a new 'open' complaint into /complaintOrgs/{orgId}/complaints/{complaintId}.
+    //   and submit up to 10 'open' complaints for Free/Guest accounts, or unlimited for Paid users.
     // - Listing, reading, updating CAPA/status, or deleting complaints is STRICTLY isolated to the org owner (orgId == request.auth.uid) or Admin.
     match /complaintOrgs/{orgId} {
       allow get: if isValidId(orgId);
       allow list: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
-      allow create, update: if (isOwner(orgId) || isAdmin()) &&
+      allow create: if (isOwner(orgId) || isAdmin()) &&
         isValidId(orgId) &&
-        isValidComplaintOrg(request.resource.data, orgId);
+        isValidComplaintOrg(request.resource.data, orgId) &&
+        existingComplaintCount(request.resource.data) == 0;
+      allow update: if isValidId(orgId) &&
+        isValidComplaintOrg(request.resource.data, orgId) &&
+        (
+          (
+            (isOwner(orgId) || isAdmin()) &&
+            request.resource.data.createdAt == resource.data.createdAt &&
+            (
+              isAdmin() ||
+              isOrgOwnerPaid(orgId) ||
+              (
+                existingComplaintCount(request.resource.data) >= existingComplaintCount(resource.data) &&
+                existingComplaintCount(request.resource.data) <= 10
+              )
+            )
+          ) ||
+          (
+            resource.data.isActive == true &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['complaintsCount', 'lastComplaintId', 'updatedAt']) &&
+            ('complaintsCount' in request.resource.data) &&
+            request.resource.data.complaintsCount == existingComplaintCount(resource.data) + 1 &&
+            ('lastComplaintId' in request.resource.data) &&
+            isValidId(request.resource.data.lastComplaintId) &&
+            existsAfter(/databases/$(database)/documents/complaintOrgs/$(orgId)/complaints/$(request.resource.data.lastComplaintId)) &&
+            (existingComplaintCount(resource.data) < 10 || isOrgOwnerPaid(orgId))
+          )
+        );
       allow delete: if (isOwner(orgId) || isAdmin()) && isValidId(orgId);
 
       match /complaints/{complaintId} {
@@ -610,17 +667,23 @@ service cloud.firestore {
         allow list: if isOwner(orgId) || isAdmin();
         allow create: if isValidId(orgId) &&
           isValidId(complaintId) &&
+          exists(/databases/$(database)/documents/complaintOrgs/$(orgId)) &&
+          canOrgAcceptMoreComplaints(orgId) &&
           (
             ((isOwner(orgId) || isAdmin()) && isValidOwnerComplaint(request.resource.data, orgId, complaintId)) ||
-            (exists(/databases/$(database)/documents/complaintOrgs/$(orgId)) &&
-              get(/databases/$(database)/documents/complaintOrgs/$(orgId)).data.isActive == true &&
+            (get(/databases/$(database)/documents/complaintOrgs/$(orgId)).data.isActive == true &&
               isValidPublicComplaintCreate(request.resource.data, orgId, complaintId))
           );
         allow update: if (isOwner(orgId) || isAdmin()) &&
           isValidId(orgId) &&
           isValidId(complaintId) &&
           request.resource.data.createdAt == resource.data.createdAt &&
-          isValidOwnerComplaint(request.resource.data, orgId, complaintId);
+          isValidOwnerComplaint(request.resource.data, orgId, complaintId) &&
+          (
+            isAdmin() ||
+            isOrgOwnerPaid(orgId) ||
+            existingComplaintCount(get(/databases/$(database)/documents/complaintOrgs/$(orgId)).data) <= 10
+          );
         allow delete: if (isOwner(orgId) || isAdmin()) && isValidId(orgId) && isValidId(complaintId);
       }
     }
