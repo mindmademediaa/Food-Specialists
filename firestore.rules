@@ -267,6 +267,167 @@ service cloud.firestore {
         (!('customMcqs' in data) || (data.customMcqs is list && data.customMcqs.size() <= 200));
     }
 
+    function isValidComplaintOrg(data, orgId) {
+      return data is map &&
+        data.keys().hasAll([
+          'orgId',
+          'ownerUid',
+          'companyName',
+          'organizationType',
+          'isActive',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'orgId',
+          'ownerUid',
+          'companyName',
+          'organizationType',
+          'logoUrl',
+          'branchLocation',
+          'contactPhone',
+          'contactEmail',
+          'welcomeNote',
+          'categories',
+          'isActive',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.orgId == orgId &&
+        data.ownerUid == orgId &&
+        data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 160 &&
+        data.organizationType is string && data.organizationType.size() >= 1 && data.organizationType.size() <= 100 &&
+        data.isActive is bool &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64 &&
+        data.updatedAt is string && data.updatedAt.size() >= 1 && data.updatedAt.size() <= 64 &&
+        (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 450000)) &&
+        (!('branchLocation' in data) || (data.branchLocation is string && data.branchLocation.size() <= 240)) &&
+        (!('contactPhone' in data) || (data.contactPhone is string && data.contactPhone.size() <= 60)) &&
+        (!('contactEmail' in data) || (data.contactEmail is string && data.contactEmail.size() <= 200)) &&
+        (!('welcomeNote' in data) || (data.welcomeNote is string && data.welcomeNote.size() <= 600)) &&
+        (!('categories' in data) || (data.categories is list && data.categories.size() <= 20 && (data.categories.size() == 0 || data.categories[0] is string)));
+    }
+
+    function isValidPublicComplaintCreate(data, orgId, complaintId) {
+      return data is map &&
+        data.keys().hasAll([
+          'id',
+          'orgId',
+          'complaintCode',
+          'companyNameSnapshot',
+          'complainantName',
+          'category',
+          'severity',
+          'subject',
+          'description',
+          'status',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'orgId',
+          'complaintCode',
+          'companyNameSnapshot',
+          'complainantName',
+          'complainantPhone',
+          'complainantEmail',
+          'category',
+          'severity',
+          'subject',
+          'description',
+          'batchOrOrderRef',
+          'incidentDate',
+          'evidencePhotoUrl',
+          'status',
+          'createdAt'
+        ]) &&
+        data.id == complaintId &&
+        data.orgId == orgId &&
+        data.status == 'open' &&
+        data.complaintCode is string && data.complaintCode.size() >= 3 && data.complaintCode.size() <= 64 &&
+        data.companyNameSnapshot is string && data.companyNameSnapshot.size() >= 1 && data.companyNameSnapshot.size() <= 160 &&
+        data.complainantName is string && data.complainantName.size() >= 1 && data.complainantName.size() <= 120 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 100 &&
+        data.severity in ['low', 'medium', 'high', 'critical'] &&
+        data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 200 &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 4000 &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64 &&
+        (!('complainantPhone' in data) || (data.complainantPhone is string && data.complainantPhone.size() <= 60)) &&
+        (!('complainantEmail' in data) || (data.complainantEmail is string && data.complainantEmail.size() <= 200)) &&
+        (!('batchOrOrderRef' in data) || (data.batchOrOrderRef is string && data.batchOrOrderRef.size() <= 120)) &&
+        (!('incidentDate' in data) || (data.incidentDate is string && data.incidentDate.size() <= 64)) &&
+        (!('evidencePhotoUrl' in data) || (data.evidencePhotoUrl is string && data.evidencePhotoUrl.size() <= 450000));
+    }
+
+    function isValidOwnerComplaint(data, orgId, complaintId) {
+      return data is map &&
+        data.keys().hasAll([
+          'id',
+          'orgId',
+          'complaintCode',
+          'companyNameSnapshot',
+          'complainantName',
+          'category',
+          'severity',
+          'subject',
+          'description',
+          'status',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'orgId',
+          'complaintCode',
+          'companyNameSnapshot',
+          'complainantName',
+          'complainantPhone',
+          'complainantEmail',
+          'category',
+          'severity',
+          'subject',
+          'description',
+          'batchOrOrderRef',
+          'incidentDate',
+          'evidencePhotoUrl',
+          'status',
+          'rootCauseCategory',
+          'rootCause',
+          'correction',
+          'correctiveAction',
+          'assignedTo',
+          'targetClosureDate',
+          'verificationNotes',
+          'closedAt',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.id == complaintId &&
+        data.orgId == orgId &&
+        data.status in ['open', 'in_progress', 'closed'] &&
+        data.complaintCode is string && data.complaintCode.size() >= 3 && data.complaintCode.size() <= 64 &&
+        data.companyNameSnapshot is string && data.companyNameSnapshot.size() >= 1 && data.companyNameSnapshot.size() <= 160 &&
+        data.complainantName is string && data.complainantName.size() >= 1 && data.complainantName.size() <= 120 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 100 &&
+        data.severity in ['low', 'medium', 'high', 'critical'] &&
+        data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 200 &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 4000 &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64 &&
+        (!('complainantPhone' in data) || (data.complainantPhone is string && data.complainantPhone.size() <= 60)) &&
+        (!('complainantEmail' in data) || (data.complainantEmail is string && data.complainantEmail.size() <= 200)) &&
+        (!('batchOrOrderRef' in data) || (data.batchOrOrderRef is string && data.batchOrOrderRef.size() <= 120)) &&
+        (!('incidentDate' in data) || (data.incidentDate is string && data.incidentDate.size() <= 64)) &&
+        (!('evidencePhotoUrl' in data) || (data.evidencePhotoUrl is string && data.evidencePhotoUrl.size() <= 450000)) &&
+        (!('rootCauseCategory' in data) || (data.rootCauseCategory is string && data.rootCauseCategory.size() <= 120)) &&
+        (!('rootCause' in data) || (data.rootCause is string && data.rootCause.size() <= 4000)) &&
+        (!('correction' in data) || (data.correction is string && data.correction.size() <= 4000)) &&
+        (!('correctiveAction' in data) || (data.correctiveAction is string && data.correctiveAction.size() <= 4000)) &&
+        (!('assignedTo' in data) || (data.assignedTo is string && data.assignedTo.size() <= 120)) &&
+        (!('targetClosureDate' in data) || (data.targetClosureDate is string && data.targetClosureDate.size() <= 64)) &&
+        (!('verificationNotes' in data) || (data.verificationNotes is string && data.verificationNotes.size() <= 2000)) &&
+        (!('closedAt' in data) || (data.closedAt is string && data.closedAt.size() <= 64)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
     // Strict Per-User Profile & Community Visibility Rules:
     // 1. Only the authenticated owner (request.auth.uid == uid) or Admin can create, update, or delete their profile.
     // 2. Public visitors and signed-in users can read the sanitized /users/{uid} profile document; private PII is isolated in /users/{uid}/private/{docId}.
@@ -430,6 +591,38 @@ service cloud.firestore {
       allow create: if isValidId(regId) && isValidCustomTrainingRegistration(request.resource.data);
       allow update: if isAdmin() && isValidId(regId) && isValidCustomTrainingRegistration(request.resource.data);
       allow delete: if isAdmin() && isValidId(regId);
+    }
+
+    // Per-User QR Complaint Handling & CAPA Directory
+    // - Anyone scanning a QR code can read that specific org's public branding (/complaintOrgs/{orgId})
+    //   and submit a new 'open' complaint into /complaintOrgs/{orgId}/complaints/{complaintId}.
+    // - Listing, reading, updating CAPA/status, or deleting complaints is STRICTLY isolated to the org owner (orgId == request.auth.uid) or Admin.
+    match /complaintOrgs/{orgId} {
+      allow get: if isValidId(orgId);
+      allow list: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create, update: if (isOwner(orgId) || isAdmin()) &&
+        isValidId(orgId) &&
+        isValidComplaintOrg(request.resource.data, orgId);
+      allow delete: if (isOwner(orgId) || isAdmin()) && isValidId(orgId);
+
+      match /complaints/{complaintId} {
+        allow get: if isValidId(orgId) && isValidId(complaintId) && (isOwner(orgId) || isAdmin());
+        allow list: if isOwner(orgId) || isAdmin();
+        allow create: if isValidId(orgId) &&
+          isValidId(complaintId) &&
+          (
+            ((isOwner(orgId) || isAdmin()) && isValidOwnerComplaint(request.resource.data, orgId, complaintId)) ||
+            (exists(/databases/$(database)/documents/complaintOrgs/$(orgId)) &&
+              get(/databases/$(database)/documents/complaintOrgs/$(orgId)).data.isActive == true &&
+              isValidPublicComplaintCreate(request.resource.data, orgId, complaintId))
+          );
+        allow update: if (isOwner(orgId) || isAdmin()) &&
+          isValidId(orgId) &&
+          isValidId(complaintId) &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          isValidOwnerComplaint(request.resource.data, orgId, complaintId);
+        allow delete: if (isOwner(orgId) || isAdmin()) && isValidId(orgId) && isValidId(complaintId);
+      }
     }
   }
 }

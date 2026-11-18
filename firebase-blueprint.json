@@ -220,6 +220,60 @@
         "createdAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "title", "category"]
+    },
+    "ComplaintOrganization": {
+      "title": "ComplaintOrganization",
+      "description": "Public branding setup (Company Name, Logo, Organization Type, Location, Welcome Note, Categories) for a user's QR Complaint Portal",
+      "type": "object",
+      "properties": {
+        "orgId": { "type": "string", "maxLength": 128 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "companyName": { "type": "string", "maxLength": 160 },
+        "organizationType": { "type": "string", "maxLength": 100 },
+        "logoUrl": { "type": "string", "maxLength": 450000 },
+        "branchLocation": { "type": "string", "maxLength": 240 },
+        "contactPhone": { "type": "string", "maxLength": 60 },
+        "contactEmail": { "type": "string", "maxLength": 200 },
+        "welcomeNote": { "type": "string", "maxLength": 600 },
+        "categories": { "type": "array" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["orgId", "ownerUid", "companyName", "organizationType", "isActive", "createdAt", "updatedAt"]
+    },
+    "OrganizationComplaint": {
+      "title": "OrganizationComplaint",
+      "description": "Private customer complaint and CAPA investigation record (Root Cause, Correction, Corrective Action, Open/Closed status) isolated per organization owner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "orgId": { "type": "string", "maxLength": 128 },
+        "complaintCode": { "type": "string", "maxLength": 64 },
+        "companyNameSnapshot": { "type": "string", "maxLength": 160 },
+        "complainantName": { "type": "string", "maxLength": 120 },
+        "complainantPhone": { "type": "string", "maxLength": 60 },
+        "complainantEmail": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "subject": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 4000 },
+        "batchOrOrderRef": { "type": "string", "maxLength": 120 },
+        "incidentDate": { "type": "string", "maxLength": 64 },
+        "evidencePhotoUrl": { "type": "string", "maxLength": 450000 },
+        "status": { "type": "string", "enum": ["open", "in_progress", "closed"] },
+        "rootCauseCategory": { "type": "string", "maxLength": 120 },
+        "rootCause": { "type": "string", "maxLength": 4000 },
+        "correction": { "type": "string", "maxLength": 4000 },
+        "correctiveAction": { "type": "string", "maxLength": 4000 },
+        "assignedTo": { "type": "string", "maxLength": 120 },
+        "targetClosureDate": { "type": "string", "maxLength": 64 },
+        "verificationNotes": { "type": "string", "maxLength": 2000 },
+        "closedAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "orgId", "complaintCode", "companyNameSnapshot", "complainantName", "category", "severity", "subject", "description", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -306,6 +360,14 @@
     "/trainings/{trainingId}": {
       "schema": { "$ref": "#/entities/Training" },
       "description": "Highfield and Lead Auditor training programs"
+    },
+    "/complaintOrgs/{orgId}": {
+      "schema": { "$ref": "#/entities/ComplaintOrganization" },
+      "description": "Per-user organization setup & public QR complaint intake branding (orgId == ownerUid)"
+    },
+    "/complaintOrgs/{orgId}/complaints/{complaintId}": {
+      "schema": { "$ref": "#/entities/OrganizationComplaint" },
+      "description": "Strictly owner-isolated complaint & CAPA records submitted via QR scan or manual log"
     }
   }
 }

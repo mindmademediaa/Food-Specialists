@@ -142,6 +142,7 @@ import {
 } from './components/LegalComplianceModal';
 import { ToolsHubView, ActiveToolSection } from './components/ToolsHubView';
 import { TrainingsAcademyView } from './components/TrainingsAcademyView';
+import { PublicComplaintIntakeView } from './components/PublicComplaintIntakeView';
 import { ScrollingAdBanner } from './components/ScrollingAdBanner';
 import { SEOManager, SEODirectoryFooter } from './components/SEOManager';
 import {
@@ -330,6 +331,7 @@ type RouteView =
   | { name: 'trainings-lead-auditor-hub' }
   | { name: 'training-detail'; trainingId: string }
   | { name: 'tools'; initialSection?: ActiveToolSection }
+  | { name: 'complaint-form'; orgId: string }
   | { name: 'profile' }
   | { name: 'admin' };
 
@@ -506,6 +508,12 @@ export default function App() {
   const [route, setRoute] = useState<RouteView>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
+      const complaintOrgParam =
+        params.get('complaintOrg') ||
+        (params.get('section') === 'complaint-form' ? params.get('org') : null);
+      if (complaintOrgParam && complaintOrgParam.trim()) {
+        return { name: 'complaint-form', orgId: complaintOrgParam.trim() };
+      }
       const tabParam = (params.get('tab') || '').toLowerCase();
       const pageParam = (params.get('page') || '').toLowerCase();
       if (
@@ -1538,6 +1546,7 @@ export default function App() {
       case 'search':
         return 'home';
       case 'tools':
+      case 'complaint-form':
         return 'tools';
       case 'communities':
       case 'community-member':
@@ -1566,6 +1575,7 @@ export default function App() {
       case 'scholarship-detail':
         return 'scholarships';
       case 'tools':
+      case 'complaint-form':
         return 'tools';
       case 'communities':
       case 'community-member':
@@ -6564,6 +6574,23 @@ export default function App() {
             />
           )}
 
+          {/* ==================== 6D. PUBLIC QR COMPLAINT SUBMISSION FORM (?complaintOrg=<uid>) ==================== */}
+          {route.name === 'complaint-form' && (
+            <PublicComplaintIntakeView
+              orgId={route.orgId}
+              onBackToPortal={() => {
+                try {
+                  const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+                  window.history.replaceState({}, '', cleanUrl);
+                } catch {
+                  // Ignore history errors
+                }
+                setRoute({ name: 'home' });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          )}
+
           {/* ==================== 7. MY OWN PROFILE — CREATE / EDIT VIEW (/profile & /profile/edit) ==================== */}
           {route.name === 'profile' && (
             <EditProfileView
@@ -6599,7 +6626,9 @@ export default function App() {
               onOpenLegalModal={(tab) => setLegalModalTab(tab)}
               onDeleteOwnAccount={handleDeleteOwnAccount}
               onOpenToolsSection={(sec) => {
-                setRoute({ name: 'tools', initialSection: sec || 'hub' });
+                const target = sec || 'hub';
+                setActiveToolSection(target);
+                setRoute({ name: 'tools', initialSection: target });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               monthlyFeeRs={liveGateway.monthlyFeeRs}

@@ -1134,7 +1134,60 @@ export interface HubTraining {
 
 export type NavTab = 'home' | 'search' | 'communities' | 'trainings' | 'tools' | 'profile';
 
+export type OrganizationSectorType =
+  | 'Restaurant / Cafe'
+  | 'Food Processing / Factory'
+  | 'Bakery & Confectionery'
+  | 'Dairy & Beverages'
+  | 'Catering / Cloud Kitchen'
+  | 'Hotel & Hospitality'
+  | 'Retail / Supermarket'
+  | 'Cold Storage / Logistics'
+  | 'Other Food Business';
 
+export type ComplaintSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type ComplaintStatus = 'open' | 'in_progress' | 'closed';
 
+export interface ComplaintOrganizationProfile {
+  orgId: string;
+  ownerUid: string;
+  companyName: string;
+  organizationType: OrganizationSectorType | string;
+  logoUrl?: string;
+  branchLocation?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  welcomeNote?: string;
+  categories?: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
-
+export interface OrganizationComplaintRecord {
+  id: string;
+  orgId: string;
+  complaintCode: string;
+  companyNameSnapshot: string;
+  complainantName: string;
+  complainantPhone?: string;
+  complainantEmail?: string;
+  category: string;
+  severity: ComplaintSeverity;
+  subject: string;
+  description: string;
+  batchOrOrderRef?: string;
+  incidentDate?: string;
+  evidencePhotoUrl?: string;
+  status: ComplaintStatus;
+  rootCauseCategory?: string;
+  rootCause?: string;
+  correction?: string;
+  correctiveAction?: string;
+  assignedTo?: string;
+  targetClosureDate?: string;
+  verificationNotes?: string;
+  closedAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}

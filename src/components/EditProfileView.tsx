@@ -26,6 +26,7 @@ import {
   Activity,
   GraduationCap,
   MessageSquare,
+  QrCode,
   Wrench
 } from 'lucide-react';
 import {
@@ -208,7 +209,12 @@ interface EditProfileViewProps {
   onOpenLegalModal?: (tab: 'privacy' | 'terms' | 'ads' | 'deletion') => void;
   onDeleteOwnAccount?: () => Promise<void>;
   onOpenToolsSection?: (
-    section?: 'hub' | 'nutrition' | 'exam' | 'interview'
+    section?:
+      | 'hub'
+      | 'nutrition'
+      | 'exam'
+      | 'interview'
+      | 'complaint-handling'
   ) => void;
   monthlyFeeRs?: number;
   yearlyFeeRs?: number;
@@ -1799,6 +1805,33 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           </button>
         </div>
       </form>
+
+      {/* MY ORGANIZATION COMPLAINT HANDLING, QR PORTAL & CAPA DIRECTORY */}
+      {onOpenToolsSection && (
+        <div className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#EBF4FC] border border-[#9AC2E6] text-[#1673B8] flex items-center justify-center shrink-0">
+              <QrCode className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-extrabold text-[#1A2138]">
+                My Organization Complaint Directory &amp; QR Portal
+              </h3>
+              <p className="text-xs text-[#475569] leading-relaxed mt-0.5">
+                Configure your company name &amp; logo, download your scannable Complaint QR Poster, manage Root Cause &amp; CAPA (Open / Closed), and export PDF reports. Strictly isolated to your account.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onOpenToolsSection('complaint-handling')}
+            className="px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold whitespace-nowrap inline-flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span>Open Complaint Directory</span>
+          </button>
+        </div>
+      )}
 
       {/* FREE USER NOTIFICATION MESSAGE: FREE VS PREMIUM MEMBERSHIP DETAILS LIST + UPGRADE BUTTON */}
       <div className="space-y-3">

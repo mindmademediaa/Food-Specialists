@@ -1,6 +1,6 @@
 import { CloudStorageConfig } from '../types/hub';
 
-export type StorageFolder = 'avatars' | 'receipts' | 'cvs';
+export type StorageFolder = 'avatars' | 'receipts' | 'cvs' | 'complaints';
 
 export interface UploadResult {
   url: string;

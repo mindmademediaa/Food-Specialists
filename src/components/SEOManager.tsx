@@ -112,6 +112,12 @@ const TOOL_SEO_METADATA: Record<
       'Food Authority Limits Quick Lookup (PFA / PSQCA / SFDA / Codex) | Food Science Portal',
     description:
       'Instant statutory critical limit lookup for Dairy Fat/SNF, Aflatoxin M1, Bottled Water TDS, Edible Oils, Spices, and Microbiology across PFA, PSQCA, SFDA, and Codex.'
+  },
+  'complaint-handling': {
+    title:
+      'Organization Complaint Handling, QR Intake Form & CAPA Directory | Food Science Portal',
+    description:
+      'Create your custom branded QR Complaint Portal with Company Logo, collect isolated customer complaints, document Root Cause & CAPA, track Open/Closed status, and export PDF reports.'
   }
 };
 
@@ -212,9 +218,18 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
       tabParam === 'verify-portal' ||
       pageParam === 'verify-certificate';
 
+    const complaintOrgParam = params.get('complaintOrg');
+
     let seo = ROUTE_SEO_METADATA[routeName] || ROUTE_SEO_METADATA.home;
 
-    if (routeName === 'tools') {
+    if (routeName === 'complaint-form' || complaintOrgParam) {
+      seo = {
+        title:
+          'Customer Complaint & Feedback Registration Portal | Food Science Portal',
+        description:
+          'Submit an official food quality, hygiene, or service complaint directly to the organization’s Quality Assurance & CAPA directory.'
+      };
+    } else if (routeName === 'tools') {
       seo = TOOL_SEO_METADATA[activeToolSection] || TOOL_SEO_METADATA.hub;
     } else if (routeName === 'trainings' && isVerifyActive) {
       seo = {
@@ -243,8 +258,8 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
     upsertMetaTag('name', 'twitter:title', seo.title);
     upsertMetaTag('name', 'twitter:description', seo.description);
 
-    // Keep URL clean and indexable without overwriting QR verification URLs
-    if (!verifyParam) {
+    // Keep URL clean and indexable without overwriting QR verification or QR complaint form URLs
+    if (!verifyParam && !complaintOrgParam && routeName !== 'complaint-form') {
       const nextParams = new URLSearchParams();
       if (routeName === 'tools') {
         nextParams.set('section', 'tools');
@@ -355,6 +370,10 @@ export const SEODirectoryFooter: React.FC<SEODirectoryFooterProps> = ({
     {
       id: 'authority-limits',
       label: 'Food Authority Limits Quick Lookup (PFA / PSQCA / SFDA / Codex)'
+    },
+    {
+      id: 'complaint-handling',
+      label: 'Organization Complaint Handling, QR Intake Form & CAPA Directory'
     }
   ];
 

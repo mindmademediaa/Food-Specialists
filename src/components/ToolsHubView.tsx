@@ -21,6 +21,7 @@ import {
   Lock,
   Mail,
   Plus,
+  QrCode,
   RotateCcw,
   Scale,
   Search,
@@ -85,6 +86,7 @@ import {
   QaQcTemplatesVaultTool,
   FoodAuthorityLimitsLookupTool
 } from './IndustryFoodTools';
+import { ComplaintHandlingTool } from './ComplaintHandlingTool';
 import {
   getSavedOfflinePackMeta,
   saveFactoryFloorOfflinePack,
@@ -111,7 +113,8 @@ export type ActiveToolSection =
   | 'nutrition-label'
   | 'thermal-aw'
   | 'templates-vault'
-  | 'authority-limits';
+  | 'authority-limits'
+  | 'complaint-handling';
 
 interface ToolsHubViewProps {
   user: HubUser;
@@ -1310,6 +1313,25 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 Food Authority Limits Lookup
               </span>
             </button>
+
+            {/* TOOL 16: COMPLAINT HANDLING & QR CAPA DIRECTORY */}
+            <button
+              type="button"
+              onClick={() =>
+                handleSelectToolOrAction(
+                  'complaint-handling',
+                  'Complaint Handling, QR Portal & CAPA Directory'
+                )
+              }
+              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
+            >
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                <QrCode className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                Complaint Handling &amp; QR CAPA
+              </span>
+            </button>
           </div>
         </div>
       )}
@@ -1484,6 +1506,19 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           VIEW 10E: FOOD AUTHORITY LIMITS QUICK LOOKUP (PFA / PSQCA / SFDA / CODEX)
          ===================================================================== */}
       {activeSection === 'authority-limits' && <FoodAuthorityLimitsLookupTool />}
+
+      {/* =====================================================================
+          VIEW 10F: COMPLAINT HANDLING, QR FORM & PRIVATE CAPA DIRECTORY
+         ===================================================================== */}
+      {activeSection === 'complaint-handling' && (
+        <ComplaintHandlingTool
+          user={user}
+          isUserPaid={isUserPaid}
+          hasExpiredPremium={hasExpiredPremium}
+          onOpenPremiumModal={onOpenPremiumModal}
+          onRequireSignIn={onRequireSignIn}
+        />
+      )}
 
       {/* =====================================================================
           VIEW 11: FOOD INDUSTRY JOB INTERVIEW Q&A PREPARATION (2,000+ BANK)
