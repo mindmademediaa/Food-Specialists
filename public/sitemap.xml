@@ -108,6 +108,21 @@
     <changefreq>weekly</changefreq>
     <priority>0.92</priority>
   </url>
+  <url>
+    <loc>https://foodscienceportal.com/?section=tools&amp;tool=complaint-handling</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://foodscienceportal.com/?section=trainings&amp;tab=custom-trainings</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.88</priority>
+  </url>
+  <url>
+    <loc>https://foodscienceportal.com/?section=trainings&amp;tab=verify-portal</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.88</priority>
+  </url>
 
   <!-- 13 Accredited Food Safety, ISO & Professional Certification Courses -->
   <url>
