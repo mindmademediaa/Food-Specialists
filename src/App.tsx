@@ -158,6 +158,15 @@ import {
   getPushAlertsEnabled,
   showPortalPushNotification
 } from './lib/pwaNotifications';
+import {
+  ShareTargetModal,
+  FlyerPublishPayload
+} from './components/ShareTargetModal';
+import {
+  SharedTargetDraft,
+  readSharedTargetPayload,
+  subscribeShareTargetBroadcast
+} from './lib/shareTargetStorage';
 import { buildDirectCertificateVerifyUrl } from './utils/certificatePdfGenerator';
 import {
   useGeoCurrency,
@@ -479,6 +488,14 @@ export default function App() {
   );
 
   const [showGuestAuthModal, setShowGuestAuthModal] = useState<boolean>(false);
+  const [showShareTargetModal, setShowShareTargetModal] =
+    useState<boolean>(false);
+  const [shareTargetDraft, setShareTargetDraft] =
+    useState<SharedTargetDraft | null>(null);
+  const [shareTargetInitialSection, setShareTargetInitialSection] = useState<
+    'job' | 'scholarship'
+  >('job');
+  const [flyerLightboxUrl, setFlyerLightboxUrl] = useState<string | null>(null);
 
   const [activeTrainingsSubTab, setActiveTrainingsSubTab] = useState<
     'catalog' | 'custom-trainings' | 'my-certificates' | 'verify-portal'
@@ -1322,6 +1339,45 @@ export default function App() {
       unsubTr();
       unsubCerts();
       unsubStorageCfg();
+    };
+  }, []);
+
+  // Listen for images/text shared via PWA Web Share Target (WhatsApp / Gallery -> App)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const checkIncomingShareDraft = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasShareFlag = urlParams.get('share-target') === '1';
+      const draft = await readSharedTargetPayload();
+      if (draft || hasShareFlag) {
+        if (draft) {
+          setShareTargetDraft(draft);
+        }
+        setShowShareTargetModal(true);
+        if (hasShareFlag || urlParams.get('share-target') === 'error') {
+          urlParams.delete('share-target');
+          const remaining = urlParams.toString();
+          const cleanUrl = `${window.location.pathname}${
+            remaining ? `?${remaining}` : ''
+          }${window.location.hash}`;
+          window.history.replaceState({}, '', cleanUrl);
+        }
+      }
+    };
+
+    void checkIncomingShareDraft();
+    const unsubBroadcast = subscribeShareTargetBroadcast(() => {
+      void checkIncomingShareDraft();
+    });
+    const onFocus = () => {
+      void checkIncomingShareDraft();
+    };
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      unsubBroadcast();
+      window.removeEventListener('focus', onFocus);
     };
   }, []);
 
@@ -3561,10 +3617,11 @@ export default function App() {
     }
   };
 
-  // 1-Box Smart Paste Job Publisher (Supports auto-created tags from Job Title & custom tags)
+  // 1-Box Smart Paste Job Publisher (Supports auto-created tags from Job Title, custom tags & optional flyer image)
   const handleQuickPasteJob = async (
     rawText: string,
-    category: string
+    category: string,
+    flyerImageUrl?: string
   ) => {
     const cleanText = rawText.trim();
     if (!cleanText) return;
@@ -3651,7 +3708,7 @@ export default function App() {
     const todayStr = new Date().toISOString().slice(0, 10);
     const id = `job-${Date.now()}`;
 
-    const newJob: HubJob = {
+    const newJob: HubJob = stripUndefinedDeep({
       id,
       title: firstLine,
       company: detectedCompany,
@@ -3670,8 +3727,9 @@ export default function App() {
       ).filter(Boolean),
       postedAt: todayStr,
       expiryAt: '2026-12-31',
-      isActive: true
-    };
+      isActive: true,
+      ...(flyerImageUrl ? { flyerImageUrl: flyerImageUrl.slice(0, 449000) } : {})
+    });
 
     try {
       await setDoc(doc(db, 'jobs', id), newJob);
@@ -3680,26 +3738,35 @@ export default function App() {
         `Job shared with Tag "${effectiveTag}" (${todayStr})! Live on app now.`
       );
       setTimeout(() => setAdminStatusBanner(null), 4000);
-    } catch {}
+    } catch (err) {
+      console.error('Failed to publish job:', err);
+      setAdminStatusBanner(
+        'Error publishing job to Firestore. Verify admin login & image size, then retry.'
+      );
+    }
   };
 
   const handleDeleteJob = async (job: HubJob) => {
     try {
       await setDoc(
         doc(db, 'jobs', job.id),
-        { ...job, isActive: false },
+        stripUndefinedDeep({ ...job, isActive: false }),
         { merge: true }
       );
       setJobs((prev) => prev.filter((j) => j.id !== job.id));
       setAdminStatusBanner(`Removed job "${job.title}" from the app.`);
       setTimeout(() => setAdminStatusBanner(null), 3500);
-    } catch {}
+    } catch (err) {
+      console.error('Failed to delete job:', err);
+      setAdminStatusBanner('Could not remove job right now. Please retry.');
+    }
   };
 
-  // 1-Box Smart Paste Scholarship Publisher
+  // 1-Box Smart Paste Scholarship Publisher (Supports optional flyer poster image)
   const handleQuickPasteScholarship = async (
     rawText: string,
-    fundingType: 'Fellowships' | 'International' | 'Grants'
+    fundingType: 'Fellowships' | 'International' | 'Grants',
+    flyerImageUrl?: string
   ) => {
     const cleanText = rawText.trim();
     if (!cleanText) return;
@@ -3757,7 +3824,7 @@ export default function App() {
     const todayStr = new Date().toISOString().slice(0, 10);
     const id = `sch-${Date.now()}`;
 
-    const newSch: HubScholarship = {
+    const newSch: HubScholarship = stripUndefinedDeep({
       id,
       title: firstLine,
       organization: detectedOrg,
@@ -3771,8 +3838,9 @@ export default function App() {
         'Please refer to the complete scholarship announcement above for eligibility & application steps.',
       hrEmail: detectedEmail.slice(0, 190),
       applyLink: detectedLink,
-      isActive: true
-    };
+      isActive: true,
+      ...(flyerImageUrl ? { flyerImageUrl: flyerImageUrl.slice(0, 449000) } : {})
+    });
 
     try {
       await setDoc(doc(db, 'scholarships', id), newSch);
@@ -3781,7 +3849,100 @@ export default function App() {
         `Scholarship shared in "${fundingType}" with date ${todayStr}! Live on app now.`
       );
       setTimeout(() => setAdminStatusBanner(null), 4000);
-    } catch {}
+    } catch (err) {
+      console.error('Failed to publish scholarship:', err);
+      setAdminStatusBanner(
+        'Error publishing scholarship to Firestore. Verify admin login & image size, then retry.'
+      );
+    }
+  };
+
+  // Dedicated Share-Image-to-Post Publisher (WhatsApp / Gallery Share Target & Admin Flyer Modal)
+  const handlePublishFlyerOpportunity = async (
+    payload: FlyerPublishPayload
+  ): Promise<{ id: string; section: 'job' | 'scholarship' } | null> => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    if (payload.section === 'scholarship') {
+      const id = `sch-${Date.now()}`;
+      const newSch: HubScholarship = stripUndefinedDeep({
+        id,
+        title: (payload.title || 'Food Science Scholarship').slice(0, 220),
+        organization: (
+          payload.organization || 'Global Academic & Research Institute'
+        ).slice(0, 220),
+        country: (payload.country || 'International').slice(0, 100),
+        specialization: 'Food Science & Technology',
+        deadline: (payload.experienceOrDeadline || todayStr).slice(0, 60),
+        fundingType: payload.scholarshipCategory || 'International',
+        degreeLevel: (payload.degreeLevel || 'BS / MS / PhD').slice(0, 100),
+        description: (
+          payload.description ||
+          'Please inspect the attached official scholarship poster for details.'
+        ).slice(0, 7800),
+        eligibility: (
+          payload.requirementsOrEligibility ||
+          'Refer to the official scholarship poster and details above for eligibility & application instructions.'
+        ).slice(0, 7800),
+        hrEmail: (payload.hrEmail || '').slice(0, 190),
+        applyLink: (payload.applyLink || '#').slice(0, 480),
+        isActive: true,
+        ...(payload.flyerImageUrl
+          ? { flyerImageUrl: payload.flyerImageUrl.slice(0, 449000) }
+          : {})
+      });
+      await setDoc(doc(db, 'scholarships', id), newSch);
+      setScholarships((prev) => [newSch, ...prev.filter((s) => s.id !== id)]);
+      setAdminStatusBanner(
+        `Scholarship flyer published in "${newSch.fundingType}"! Live now.`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+      return { id, section: 'scholarship' };
+    }
+
+    const id = `job-${Date.now()}`;
+    const cat = (payload.jobCategory || 'Quality & Safety').slice(0, 100);
+    const newJob: HubJob = stripUndefinedDeep({
+      id,
+      title: (payload.title || `${cat} Opening`).slice(0, 180),
+      company: (
+        payload.organization || 'Verified Food Industry Employer'
+      ).slice(0, 180),
+      location: (payload.location || payload.country || 'Pakistan').slice(
+        0,
+        180
+      ),
+      country: (payload.country || 'Pakistan').slice(0, 100),
+      specialization: cat,
+      experienceRequired: (
+        payload.experienceOrDeadline || 'See Flyer Poster'
+      ).slice(0, 100),
+      category: cat,
+      description: (
+        payload.description ||
+        'Please view the attached official job flyer poster for full role details and how to apply.'
+      ).slice(0, 7800),
+      requirements: (
+        payload.requirementsOrEligibility ||
+        'Please refer to the job flyer poster and details above for qualification & application steps.'
+      ).slice(0, 7800),
+      hrEmail: (payload.hrEmail || '').slice(0, 190),
+      applyLink: (payload.applyLink || '#').slice(0, 480),
+      tags: Array.from(
+        new Set([cat, payload.country || 'Pakistan'].filter(Boolean))
+      ),
+      postedAt: todayStr,
+      expiryAt: '2026-12-31',
+      isActive: true,
+      ...(payload.flyerImageUrl
+        ? { flyerImageUrl: payload.flyerImageUrl.slice(0, 449000) }
+        : {})
+    });
+    await setDoc(doc(db, 'jobs', id), newJob);
+    setJobs((prev) => [newJob, ...prev.filter((j) => j.id !== id)]);
+    setAdminStatusBanner(`Job flyer published in "${cat}"! Live now.`);
+    setTimeout(() => setAdminStatusBanner(null), 4000);
+    return { id, section: 'job' };
   };
 
   const handleDeleteScholarship = async (sch: HubScholarship) => {
@@ -4381,54 +4542,83 @@ export default function App() {
   // 3. Dedicated Admin Control Panel Entry: When Admin logs in, enter AdminControlPanel directly (not as a normal user)
   if (isUserAdmin && !adminPreviewUserMode) {
     return (
-      <AdminControlPanel
-        adminEmail={authUser?.email || 'mindmademedia9@gmail.com'}
-        users={users}
-        paymentRequests={adminAllPaymentRequests}
-        jobs={activeJobs}
-        scholarships={activeScholarships}
-        trainings={trainings}
-        storageConfig={storageConfig}
-        adminStatusBanner={adminStatusBanner}
-        onClearBanner={() => setAdminStatusBanner(null)}
-        onSetBanner={(msg) => {
-          setAdminStatusBanner(msg);
-          setTimeout(() => setAdminStatusBanner(null), 4000);
-        }}
-        onVerifyPayment={handleAdminVerifyPayment}
-        onDeletePaymentRequest={handleDeletePaymentRequest}
-        onToggleUserPremium={handleToggleUserPremium}
-        onDeleteUser={handleDeleteUser}
-        onAdminSaveCommunityUser={handleAdminSaveCommunityUser}
-        onQuickPasteJob={handleQuickPasteJob}
-        onDeleteJob={handleDeleteJob}
-        onQuickPasteScholarship={handleQuickPasteScholarship}
-        onDeleteScholarship={handleDeleteScholarship}
-        onSaveTraining={handleSaveTraining}
-        onDeleteTraining={handleDeleteTraining}
-        certificates={certificates}
-        onAdminDirectIssueCertificate={handleAdminDirectIssueCertificate}
-        onDeleteCertificate={handleDeleteDirectCertificate}
-        onChangeStorageConfig={setStorageConfig}
-        onSaveStorageConfig={handleSaveStorageConfig}
-        onSaveCustomTrainingsList={handleSaveCustomTrainingsList}
-        customTrainingRegistrations={customTrainingRegistrations}
-        onUpdateCustomTrainingRegistrationStatus={
-          handleUpdateCustomTrainingRegistrationStatus
-        }
-        onDeleteCustomTrainingRegistration={
-          handleDeleteCustomTrainingRegistration
-        }
-        onExportBackup={handleExportFullBackupJson}
-        onPreviewUserApp={() => setAdminPreviewUserMode(true)}
-        onSignOut={handleSignOut}
-        lastDispatchConfirmation={lastDispatchConfirmation}
-        onClearDispatchConfirmation={() => setLastDispatchConfirmation(null)}
-        onSetDispatchConfirmation={setLastDispatchConfirmation}
-        supportTickets={supportTickets}
-        onReplySupportTicket={handleReplySupportTicket}
-        onDeleteSupportTicket={handleDeleteSupportTicket}
-      />
+      <>
+        <AdminControlPanel
+          adminEmail={authUser?.email || 'mindmademedia9@gmail.com'}
+          users={users}
+          paymentRequests={adminAllPaymentRequests}
+          jobs={activeJobs}
+          scholarships={activeScholarships}
+          trainings={trainings}
+          storageConfig={storageConfig}
+          adminStatusBanner={adminStatusBanner}
+          onClearBanner={() => setAdminStatusBanner(null)}
+          onSetBanner={(msg) => {
+            setAdminStatusBanner(msg);
+            setTimeout(() => setAdminStatusBanner(null), 4000);
+          }}
+          onVerifyPayment={handleAdminVerifyPayment}
+          onDeletePaymentRequest={handleDeletePaymentRequest}
+          onToggleUserPremium={handleToggleUserPremium}
+          onDeleteUser={handleDeleteUser}
+          onAdminSaveCommunityUser={handleAdminSaveCommunityUser}
+          onQuickPasteJob={handleQuickPasteJob}
+          onDeleteJob={handleDeleteJob}
+          onQuickPasteScholarship={handleQuickPasteScholarship}
+          onDeleteScholarship={handleDeleteScholarship}
+          onOpenShareFlyerModal={(sec) => {
+            setShareTargetInitialSection(sec);
+            setShareTargetDraft(null);
+            setShowShareTargetModal(true);
+          }}
+          onSaveTraining={handleSaveTraining}
+          onDeleteTraining={handleDeleteTraining}
+          certificates={certificates}
+          onAdminDirectIssueCertificate={handleAdminDirectIssueCertificate}
+          onDeleteCertificate={handleDeleteDirectCertificate}
+          onChangeStorageConfig={setStorageConfig}
+          onSaveStorageConfig={handleSaveStorageConfig}
+          onSaveCustomTrainingsList={handleSaveCustomTrainingsList}
+          customTrainingRegistrations={customTrainingRegistrations}
+          onUpdateCustomTrainingRegistrationStatus={
+            handleUpdateCustomTrainingRegistrationStatus
+          }
+          onDeleteCustomTrainingRegistration={
+            handleDeleteCustomTrainingRegistration
+          }
+          onExportBackup={handleExportFullBackupJson}
+          onPreviewUserApp={() => setAdminPreviewUserMode(true)}
+          onSignOut={handleSignOut}
+          lastDispatchConfirmation={lastDispatchConfirmation}
+          onClearDispatchConfirmation={() => setLastDispatchConfirmation(null)}
+          onSetDispatchConfirmation={setLastDispatchConfirmation}
+          supportTickets={supportTickets}
+          onReplySupportTicket={handleReplySupportTicket}
+          onDeleteSupportTicket={handleDeleteSupportTicket}
+        />
+        <ShareTargetModal
+          isOpen={showShareTargetModal}
+          initialDraft={shareTargetDraft}
+          initialSection={shareTargetInitialSection}
+          storageConfig={storageConfig}
+          isSignedIn={Boolean(authUser)}
+          isUserAdmin={Boolean(isUserAdmin)}
+          onClose={() => {
+            setShowShareTargetModal(false);
+            setShareTargetDraft(null);
+          }}
+          onOpenAuthModal={() => setShowGuestAuthModal(true)}
+          onPublish={handlePublishFlyerOpportunity}
+          onNavigateToPublished={(id, sec) => {
+            setAdminPreviewUserMode(true);
+            setRoute(
+              sec === 'scholarship'
+                ? { name: 'scholarship-detail', scholarshipId: id }
+                : { name: 'job-detail', jobId: id }
+            );
+          }}
+        />
+      </>
     );
   }
 
@@ -5710,6 +5900,40 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* Official Job Flyer Poster (When Shared as Picture) */}
+                  {job.flyerImageUrl && (
+                    <div className="rounded-2xl border border-[#D2DEEA] bg-[#F8FAFC] p-2.5 space-y-2">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#105E9A] flex items-center gap-1.5">
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span>Official Job Poster / Flyer</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFlyerLightboxUrl(job.flyerImageUrl || null)
+                          }
+                          className="text-[11px] font-extrabold text-[#1673B8] hover:underline cursor-pointer"
+                        >
+                          Tap to Zoom Full Poster
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFlyerLightboxUrl(job.flyerImageUrl || null)
+                        }
+                        className="w-full block rounded-xl overflow-hidden bg-white border border-[#D2DEEA] cursor-pointer"
+                      >
+                        <img
+                          src={job.flyerImageUrl}
+                          alt={`${job.title} Flyer Poster`}
+                          className="max-h-[440px] w-full object-contain mx-auto"
+                        />
+                      </button>
+                    </div>
+                  )}
+
                   {/* Full Job Description */}
                   <div>
                     <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
@@ -6046,6 +6270,30 @@ export default function App() {
                           )}
                         </div>
 
+                        {/* Attached Official Flyer Thumbnail Preview (If Shared via Image/WhatsApp) */}
+                        {sch.flyerImageUrl && (
+                          <div
+                            onClick={() => {
+                              setRoute({
+                                name: 'scholarship-detail',
+                                scholarshipId: sch.id
+                              });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="relative rounded-xl overflow-hidden border border-[#D2DEEA] bg-[#F8FAFC] cursor-pointer group"
+                          >
+                            <img
+                              src={sch.flyerImageUrl}
+                              alt={`${sch.title} Poster`}
+                              loading="lazy"
+                              className="w-full h-36 sm:h-40 object-cover object-top group-hover:scale-[1.01] transition-transform"
+                            />
+                            <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#1A2138]/85 text-white text-[10px] font-bold shadow-xs">
+                              Tap to View Poster
+                            </span>
+                          </div>
+                        )}
+
                         {/* Bottom Row: Deadline + Royal Blue Button */}
                         <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
                           <span className="text-[11px] font-semibold text-slate-500 tabular-nums">
@@ -6180,6 +6428,40 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Official Scholarship Poster (When Shared as Picture) */}
+                  {sch.flyerImageUrl && (
+                    <div className="rounded-2xl border border-[#D2DEEA] bg-[#F8FAFC] p-2.5 space-y-2">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#105E9A] flex items-center gap-1.5">
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span>Official Scholarship Poster / Flyer</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFlyerLightboxUrl(sch.flyerImageUrl || null)
+                          }
+                          className="text-[11px] font-extrabold text-[#1673B8] hover:underline cursor-pointer"
+                        >
+                          Tap to Zoom Full Poster
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFlyerLightboxUrl(sch.flyerImageUrl || null)
+                        }
+                        className="w-full block rounded-xl overflow-hidden bg-white border border-[#D2DEEA] cursor-pointer"
+                      >
+                        <img
+                          src={sch.flyerImageUrl}
+                          alt={`${sch.title} Scholarship Poster`}
+                          className="max-h-[440px] w-full object-contain mx-auto"
+                        />
+                      </button>
+                    </div>
+                  )}
 
                   {/* Description Section */}
                   <div>
@@ -8895,6 +9177,57 @@ export default function App() {
           paymentGateway={liveGateway}
           onOpenAuthModal={() => setShowGuestAuthModal(true)}
         />
+
+        {/* SHARED PICTURE TO JOB / SCHOLARSHIP PUBLISHER MODAL (PWA Share Target) */}
+        <ShareTargetModal
+          isOpen={showShareTargetModal}
+          initialDraft={shareTargetDraft}
+          initialSection={shareTargetInitialSection}
+          storageConfig={storageConfig}
+          isSignedIn={Boolean(authUser)}
+          isUserAdmin={Boolean(isUserAdmin)}
+          onClose={() => {
+            setShowShareTargetModal(false);
+            setShareTargetDraft(null);
+          }}
+          onOpenAuthModal={() => setShowGuestAuthModal(true)}
+          onPublish={handlePublishFlyerOpportunity}
+          onNavigateToPublished={(id, sec) => {
+            setRoute(
+              sec === 'scholarship'
+                ? { name: 'scholarship-detail', scholarshipId: id }
+                : { name: 'job-detail', jobId: id }
+            );
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+
+        {/* FULLSCREEN FLYER LIGHTBOX VIEWER */}
+        {flyerLightboxUrl && (
+          <div
+            onClick={() => setFlyerLightboxUrl(null)}
+            className="fixed inset-0 z-50 bg-[#0C182D]/85 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-3xl w-full bg-white rounded-2xl p-2 sm:p-3 shadow-2xl border border-[#D2DEEA]"
+            >
+              <button
+                type="button"
+                onClick={() => setFlyerLightboxUrl(null)}
+                aria-label="Close Poster Lightbox"
+                className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-[#1673B8] hover:bg-[#105E9A] text-white shadow-lg flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <img
+                src={flyerLightboxUrl}
+                alt="Full Official Poster"
+                className="max-h-[84dvh] w-full object-contain rounded-xl"
+              />
+            </div>
+          </div>
+        )}
 
         {/* FACTORY FLOOR OFFLINE MODE TOAST / INDICATOR */}
         <OfflineIndicator />

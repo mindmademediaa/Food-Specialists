@@ -212,7 +212,8 @@ service cloud.firestore {
         (!('applyLink' in data) || (data.applyLink is string && data.applyLink.size() <= 500)) &&
         (!('tags' in data) || (data.tags is list && data.tags.size() <= 20)) &&
         (!('postedAt' in data) || (data.postedAt is string && data.postedAt.size() <= 64)) &&
-        (!('expiryAt' in data) || (data.expiryAt is string && data.expiryAt.size() <= 64));
+        (!('expiryAt' in data) || (data.expiryAt is string && data.expiryAt.size() <= 64)) &&
+        (!('flyerImageUrl' in data) || (data.flyerImageUrl is string && data.flyerImageUrl.size() <= 450000));
     }
 
     function isValidScholarship(data) {
@@ -232,7 +233,8 @@ service cloud.firestore {
         (!('hrEmail' in data) || (data.hrEmail is string && data.hrEmail.size() <= 200)) &&
         (!('emailSubject' in data) || (data.emailSubject is string && data.emailSubject.size() <= 300)) &&
         (!('applicationGuidelines' in data) || (data.applicationGuidelines is string && data.applicationGuidelines.size() <= 2000)) &&
-        (!('applyLink' in data) || (data.applyLink is string && data.applyLink.size() <= 500));
+        (!('applyLink' in data) || (data.applyLink is string && data.applyLink.size() <= 500)) &&
+        (!('flyerImageUrl' in data) || (data.flyerImageUrl is string && data.flyerImageUrl.size() <= 450000));
     }
 
     function isSignedIn() {

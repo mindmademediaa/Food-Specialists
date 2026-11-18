@@ -106,6 +106,24 @@ export const JobCard: React.FC<JobCardProps> = ({
         </div>
       </div>
 
+      {/* Attached Official Flyer Thumbnail Preview (If Shared via Image/WhatsApp) */}
+      {job.flyerImageUrl && (
+        <div
+          onClick={() => onClick(job)}
+          className="relative rounded-xl overflow-hidden border border-[#D2DEEA] bg-[#F8FAFC] cursor-pointer group"
+        >
+          <img
+            src={job.flyerImageUrl}
+            alt={`${job.title} Flyer`}
+            loading="lazy"
+            className="w-full h-36 sm:h-40 object-cover object-top group-hover:scale-[1.01] transition-transform"
+          />
+          <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-[#1A2138]/85 text-white text-[10px] font-bold shadow-xs">
+            Tap to View Flyer
+          </span>
+        </div>
+      )}
+
       {/* Bottom Row: Posted Date on Left + Royal Blue 'See Details' Button on Right */}
       <div className="flex items-center justify-between gap-2 pt-0.5">
         <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">

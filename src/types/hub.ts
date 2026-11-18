@@ -1081,6 +1081,7 @@ export interface HubJob {
   postedAt: string;
   expiryAt: string;
   isActive: boolean;
+  flyerImageUrl?: string;
 }
 
 export interface HubScholarship {
@@ -1099,6 +1100,7 @@ export interface HubScholarship {
   applicationGuidelines?: string;
   applyLink: string;
   isActive: boolean;
+  flyerImageUrl?: string;
 }
 
 export interface CustomTrainingModule {

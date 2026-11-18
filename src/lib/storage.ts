@@ -1,6 +1,11 @@
 import { CloudStorageConfig } from '../types/hub';
 
-export type StorageFolder = 'avatars' | 'receipts' | 'cvs' | 'complaints';
+export type StorageFolder =
+  | 'avatars'
+  | 'receipts'
+  | 'cvs'
+  | 'complaints'
+  | 'flyers';
 
 export interface UploadResult {
   url: string;
@@ -60,9 +65,12 @@ export async function compressImageFile(
           dataUrl = canvas.toDataURL('image/jpeg', quality);
         }
 
-        // If still larger than 240KB, step down quality slightly to guarantee fast Firestore writes
+        // If still larger than 240KB, step down quality to guarantee fast Firestore writes within 450KB field ceiling
         if (dataUrl.length > 245000) {
           dataUrl = canvas.toDataURL('image/jpeg', 0.62);
+        }
+        if (dataUrl.length > 380000) {
+          dataUrl = canvas.toDataURL('image/jpeg', 0.45);
         }
 
         resolve({
@@ -141,11 +149,17 @@ export async function uploadMediaFile(
     }
   }
 
-  // 2. Smart Built-in Compression for Images (Avatars, Payment Receipts, Certificates)
+  // 2. Smart Built-in Compression for Images (Avatars, Payment Receipts, Certificates, Flyers)
   if (file.type.startsWith('image/')) {
     const maxDim =
-      folder === 'avatars' ? 420 : folder === 'receipts' ? 960 : 1100;
-    const quality = folder === 'avatars' ? 0.8 : 0.76;
+      folder === 'avatars'
+        ? 420
+        : folder === 'receipts'
+        ? 960
+        : folder === 'flyers'
+        ? 1100
+        : 1100;
+    const quality = folder === 'avatars' ? 0.8 : folder === 'flyers' ? 0.78 : 0.76;
     const compressed = await compressImageFile(file, maxDim, quality);
     return {
       url: compressed.dataUrl,

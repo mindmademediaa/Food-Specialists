@@ -1,5 +1,37 @@
-const CACHE_NAME = 'food-science-portal-v20261117-v6';
+const CACHE_NAME = 'food-science-portal-v20261118-v7';
 const CORE_SHELL_URLS = ['./', './index.html', './manifest.json'];
+const SHARE_TARGET_DB_NAME = 'fsp_share_target_db';
+const SHARE_TARGET_STORE_NAME = 'shared_items';
+
+function openShareTargetDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(SHARE_TARGET_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(SHARE_TARGET_STORE_NAME)) {
+        db.createObjectStore(SHARE_TARGET_STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveSharedTargetToIdb(record) {
+  const db = await openShareTargetDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(SHARE_TARGET_STORE_NAME, 'readwrite');
+    tx.objectStore(SHARE_TARGET_STORE_NAME).put(record);
+    tx.oncomplete = () => {
+      db.close();
+      resolve(true);
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -67,11 +99,75 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Network-First strategy: Always fetch latest live version when online, fallback to cache if offline
+// Handle Android/Chrome Web Share Target POST (/share-target) + Network-First GET caching
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Intercept Web Share Target multipart/form-data image shares from WhatsApp / Gallery / Chrome
+  if (
+    event.request.method === 'POST' &&
+    (url.pathname === '/share-target' || url.pathname.endsWith('/share-target'))
+  ) {
+    event.respondWith(
+      (async () => {
+        try {
+          const formData = await event.request.formData();
+          const title = String(formData.get('title') || '');
+          const text = String(formData.get('text') || '');
+          const sharedUrl = String(formData.get('url') || '');
+          const rawFiles = formData.getAll('media');
+          const imageFile =
+            rawFiles.find(
+              (item) =>
+                item &&
+                typeof item === 'object' &&
+                'size' in item &&
+                Number(item.size) > 0
+            ) || null;
+
+          let fileBlob = null;
+          let fileName = 'shared-flyer.jpg';
+          let fileType = 'image/jpeg';
+
+          if (imageFile && typeof imageFile.arrayBuffer === 'function') {
+            const buffer = await imageFile.arrayBuffer();
+            fileType = imageFile.type || 'image/jpeg';
+            fileName = imageFile.name || 'shared-flyer.jpg';
+            fileBlob = new Blob([buffer], { type: fileType });
+          }
+
+          await saveSharedTargetToIdb({
+            id: 'latest',
+            fileBlob,
+            fileName,
+            fileType,
+            title,
+            text,
+            url: sharedUrl,
+            receivedAt: Date.now()
+          });
+
+          if (typeof BroadcastChannel !== 'undefined') {
+            try {
+              const ch = new BroadcastChannel('fsp-share-target');
+              ch.postMessage({ type: 'NEW_SHARED_TARGET', receivedAt: Date.now() });
+              ch.close();
+            } catch {
+              // Ignore BroadcastChannel unavailability
+            }
+          }
+
+          return Response.redirect('/?share-target=1', 303);
+        } catch {
+          return Response.redirect('/?share-target=error', 303);
+        }
+      })()
+    );
+    return;
+  }
+
+  if (event.request.method !== 'GET') return;
 
   // Never intercept Vite dev server or module script paths
   if (
@@ -79,6 +175,12 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/node_modules/') ||
     url.pathname.startsWith('/@')
   ) {
+    return;
+  }
+
+  // Fallback if browser visits /share-target directly via GET
+  if (url.pathname === '/share-target' || url.pathname.endsWith('/share-target')) {
+    event.respondWith(Response.redirect('/?share-target=1', 302));
     return;
   }
 

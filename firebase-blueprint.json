@@ -152,7 +152,8 @@
         "tags": { "type": "array" },
         "postedAt": { "type": "string", "maxLength": 64 },
         "expiryAt": { "type": "string", "maxLength": 64 },
-        "isActive": { "type": "boolean" }
+        "isActive": { "type": "boolean" },
+        "flyerImageUrl": { "type": "string", "maxLength": 450000 }
       },
       "required": ["title", "company", "category", "isActive"]
     },
@@ -175,7 +176,8 @@
         "emailSubject": { "type": "string", "maxLength": 300 },
         "applicationGuidelines": { "type": "string", "maxLength": 2000 },
         "applyLink": { "type": "string", "maxLength": 500 },
-        "isActive": { "type": "boolean" }
+        "isActive": { "type": "boolean" },
+        "flyerImageUrl": { "type": "string", "maxLength": 450000 }
       },
       "required": ["title", "organization", "country", "isActive"]
     },

@@ -19,6 +19,7 @@ import {
   FileText,
   GraduationCap,
   Headset,
+  Image as ImageIcon,
   LogOut,
   Mail,
   MapPin,
@@ -36,6 +37,7 @@ import {
   Star,
   Trash2,
   TrendingUp,
+  Upload,
   UserCheck,
   UserX,
   Users,
@@ -126,13 +128,19 @@ interface AdminControlPanelProps {
   ) => Promise<void>;
   onDeleteUser: (uid: string, userName: string) => Promise<void>;
   onAdminSaveCommunityUser?: (member: HubUser) => Promise<void>;
-  onQuickPasteJob: (rawText: string, category: string) => Promise<void>;
+  onQuickPasteJob: (
+    rawText: string,
+    category: string,
+    flyerImageUrl?: string
+  ) => Promise<void>;
   onDeleteJob: (job: HubJob) => Promise<void>;
   onQuickPasteScholarship: (
     rawText: string,
-    fundingType: 'Fellowships' | 'International' | 'Grants'
+    fundingType: 'Fellowships' | 'International' | 'Grants',
+    flyerImageUrl?: string
   ) => Promise<void>;
   onDeleteScholarship: (sch: HubScholarship) => Promise<void>;
+  onOpenShareFlyerModal?: (initialSection: 'job' | 'scholarship') => void;
   onSaveTraining: (training: HubTraining) => Promise<void>;
   onDeleteTraining: (training: HubTraining) => Promise<void>;
   certificates?: HubCertificate[];
@@ -181,6 +189,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onDeleteJob,
   onQuickPasteScholarship,
   onDeleteScholarship,
+  onOpenShareFlyerModal,
   onSaveTraining,
   onDeleteTraining,
   certificates = [],
@@ -494,6 +503,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const [useAutoTitleTag, setUseAutoTitleTag] = useState<boolean>(true);
   const [jobFilterCat, setJobFilterCat] = useState<string>('All');
   const [isPostingJob, setIsPostingJob] = useState(false);
+  const [jobFlyerPreview, setJobFlyerPreview] = useState<string>('');
+  const [schFlyerPreview, setSchFlyerPreview] = useState<string>('');
 
   // Auto-calculate 25% OFF on Yearly Fee when Admin changes Monthly Fee
   const [autoApply25PctYearly, setAutoApply25PctYearly] =
@@ -1471,9 +1482,29 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     return scholarships.filter((s) => s.fundingType === schFilterCat);
   }, [scholarships, schFilterCat]);
 
+  const handleQuickFlyerPick = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    target: 'job' | 'scholarship'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const { dataUrl } = await compressImageFile(file, 1000, 0.76);
+      if (target === 'job') {
+        setJobFlyerPreview(dataUrl);
+      } else {
+        setSchFlyerPreview(dataUrl);
+      }
+    } catch {
+      onSetBanner('Could not compress selected image. Please try a JPG or PNG.');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
   const handleSubmitQuickJob = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!jobPasteText.trim()) return;
+    if (!jobPasteText.trim() && !jobFlyerPreview) return;
     const finalTag =
       customJobTagInput.trim() ||
       (useAutoTitleTag && autoDetectedJobTitleTag
@@ -1488,9 +1519,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       ) {
         setCustomCreatedJobTags((prev) => [customJobTagInput.trim(), ...prev]);
       }
-      await onQuickPasteJob(jobPasteText, finalTag);
+      const effectiveText =
+        jobPasteText.trim() ||
+        `${finalTag} Opening\nPlease see the attached official job flyer poster for details and application instructions.`;
+      await onQuickPasteJob(
+        effectiveText,
+        finalTag,
+        jobFlyerPreview || undefined
+      );
       setJobPasteText('');
       setCustomJobTagInput('');
+      setJobFlyerPreview('');
     } finally {
       setIsPostingJob(false);
     }
@@ -1498,11 +1537,19 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
   const handleSubmitQuickScholarship = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schPasteText.trim()) return;
+    if (!schPasteText.trim() && !schFlyerPreview) return;
     setIsPostingSch(true);
     try {
-      await onQuickPasteScholarship(schPasteText, schCategory);
+      const effectiveText =
+        schPasteText.trim() ||
+        `${schCategory} Food Science Scholarship\nPlease view the attached official scholarship poster for eligibility and application guidelines.`;
+      await onQuickPasteScholarship(
+        effectiveText,
+        schCategory,
+        schFlyerPreview || undefined
+      );
       setSchPasteText('');
+      setSchFlyerPreview('');
     } finally {
       setIsPostingSch(false);
     }
@@ -4645,12 +4692,21 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     Paste Full Job Post &amp; Select Category
                   </h2>
                   <p className="text-xs text-[#4A5568] font-medium">
-                    No separate fields needed! Just choose the category, paste
-                    the complete job details in one box below, and click Share.
-                    It will automatically publish with today&apos;s date (
-                    {todayFormatted}).
+                    No separate fields needed! Paste text OR attach a job flyer
+                    picture below, choose category, and publish with today&apos;s
+                    date ({todayFormatted}).
                   </p>
                 </div>
+                {onOpenShareFlyerModal && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenShareFlyerModal('job')}
+                    className="px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
+                  >
+                    <ImageIcon className="w-4 h-4 text-sky-300" />
+                    <span>Post from Picture / Flyer (AI Read)</span>
+                  </button>
+                )}
               </div>
 
               {/* STEP 1: DYNAMIC JOB TAGS (Auto-Create from Job Title OR Create Custom Tag OR Pick Tag) */}
@@ -4791,8 +4847,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </span>
                 </div>
                 <textarea
-                  rows={7}
-                  required
+                  rows={6}
+                  required={!jobFlyerPreview}
                   value={jobPasteText}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -4809,9 +4865,58 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 />
               </div>
 
+              {/* OPTIONAL FLYER IMAGE UPLOAD */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA]">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {jobFlyerPreview ? (
+                    <img
+                      src={jobFlyerPreview}
+                      alt="Job Flyer Preview"
+                      className="w-12 h-12 rounded-xl object-cover border border-[#D2DEEA] shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center shrink-0">
+                      <ImageIcon className="w-5 h-5" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-xs font-extrabold text-[#1A2138]">
+                      {jobFlyerPreview
+                        ? 'Job Picture Attached ✓'
+                        : 'Attach Job Flyer Picture (Optional)'}
+                    </div>
+                    <div className="text-[11px] text-[#4A5568] truncate">
+                      Upload a job poster from gallery or share directly from
+                      WhatsApp to the app
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <label className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#94B8D7] text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{jobFlyerPreview ? 'Change Pic' : 'Pick Picture'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => void handleQuickFlyerPick(e, 'job')}
+                      className="hidden"
+                    />
+                  </label>
+                  {jobFlyerPreview && (
+                    <button
+                      type="button"
+                      onClick={() => setJobFlyerPreview('')}
+                      className="px-2.5 py-1.5 rounded-xl bg-red-50 text-red-700 text-xs font-bold cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <button
                 type="submit"
-                disabled={isPostingJob || !jobPasteText.trim()}
+                disabled={isPostingJob || (!jobPasteText.trim() && !jobFlyerPreview)}
                 className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -4878,26 +4983,35 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       key={job.id}
                       className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start justify-between gap-3"
                     >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
-                            {job.category || job.specialization}
-                          </span>
-                          <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10.5px] font-bold">
-                            Posted: {job.postedAt || todayFormatted}
-                          </span>
-                          {job.country && (
-                            <span className="text-[11px] font-bold text-[#1673B8]">
-                              • {job.country}
+                      <div className="flex items-start gap-3 min-w-0">
+                        {job.flyerImageUrl && (
+                          <img
+                            src={job.flyerImageUrl}
+                            alt={job.title}
+                            className="w-12 h-12 rounded-xl object-cover border border-[#D2DEEA] shrink-0"
+                          />
+                        )}
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
+                              {job.category || job.specialization}
                             </span>
-                          )}
+                            <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10.5px] font-bold">
+                              Posted: {job.postedAt || todayFormatted}
+                            </span>
+                            {job.country && (
+                              <span className="text-[11px] font-bold text-[#1673B8]">
+                                • {job.country}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug">
+                            {job.title}
+                          </h4>
+                          <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line">
+                            {job.description}
+                          </p>
                         </div>
-                        <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug">
-                          {job.title}
-                        </h4>
-                        <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line">
-                          {job.description}
-                        </p>
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -4952,12 +5066,21 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     Paste Full Scholarship Post &amp; Select Category
                   </h2>
                   <p className="text-xs text-[#4A5568] font-medium">
-                    Choose the scholarship category, paste the entire
-                    scholarship announcement in one box below, and click Share.
-                    It publishes immediately with today&apos;s date (
+                    Choose category, paste text OR attach a scholarship poster
+                    below, and publish immediately with today&apos;s date (
                     {todayFormatted}).
                   </p>
                 </div>
+                {onOpenShareFlyerModal && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenShareFlyerModal('scholarship')}
+                    className="px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
+                  >
+                    <ImageIcon className="w-4 h-4 text-sky-300" />
+                    <span>Post from Picture / Flyer (AI Read)</span>
+                  </button>
+                )}
               </div>
 
               {/* STEP 1: CHOOSE SCHOLARSHIP CATEGORY */}
@@ -4997,8 +5120,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </span>
                 </div>
                 <textarea
-                  rows={7}
-                  required
+                  rows={6}
+                  required={!schFlyerPreview}
                   value={schPasteText}
                   onChange={(e) => setSchPasteText(e.target.value)}
                   placeholder={`Paste the full scholarship details here...\nExample:\nErasmus Mundus MSc Food Innovation Scholarship (Europe)\nFully funded fellowship for BS Food Science & Technology graduates.\nApply online at: https://example.org or email admissions@university.edu`}
@@ -5006,9 +5129,62 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 />
               </div>
 
+              {/* OPTIONAL SCHOLARSHIP FLYER UPLOAD */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA]">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {schFlyerPreview ? (
+                    <img
+                      src={schFlyerPreview}
+                      alt="Scholarship Flyer Preview"
+                      className="w-12 h-12 rounded-xl object-cover border border-[#D2DEEA] shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-[#EBF4FC] text-[#1673B8] flex items-center justify-center shrink-0">
+                      <ImageIcon className="w-5 h-5" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-xs font-extrabold text-[#1A2138]">
+                      {schFlyerPreview
+                        ? 'Scholarship Poster Attached ✓'
+                        : 'Attach Scholarship Poster Picture (Optional)'}
+                    </div>
+                    <div className="text-[11px] text-[#4A5568] truncate">
+                      Upload a flyer from gallery or share directly from
+                      WhatsApp to the app
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <label className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#94B8D7] text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{schFlyerPreview ? 'Change Pic' : 'Pick Picture'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        void handleQuickFlyerPick(e, 'scholarship')
+                      }
+                      className="hidden"
+                    />
+                  </label>
+                  {schFlyerPreview && (
+                    <button
+                      type="button"
+                      onClick={() => setSchFlyerPreview('')}
+                      className="px-2.5 py-1.5 rounded-xl bg-red-50 text-red-700 text-xs font-bold cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <button
                 type="submit"
-                disabled={isPostingSch || !schPasteText.trim()}
+                disabled={
+                  isPostingSch || (!schPasteText.trim() && !schFlyerPreview)
+                }
                 className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -5065,26 +5241,35 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       key={sch.id}
                       className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start justify-between gap-3"
                     >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
-                            {sch.fundingType}
-                          </span>
-                          <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10.5px] font-bold">
-                            Date: {sch.deadline || todayFormatted}
-                          </span>
-                          {sch.country && (
-                            <span className="text-[11px] font-bold text-[#1673B8]">
-                              • {sch.country}
+                      <div className="flex items-start gap-3 min-w-0">
+                        {sch.flyerImageUrl && (
+                          <img
+                            src={sch.flyerImageUrl}
+                            alt={sch.title}
+                            className="w-12 h-12 rounded-xl object-cover border border-[#D2DEEA] shrink-0"
+                          />
+                        )}
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
+                              {sch.fundingType}
                             </span>
-                          )}
+                            <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10.5px] font-bold">
+                              Date: {sch.deadline || todayFormatted}
+                            </span>
+                            {sch.country && (
+                              <span className="text-[11px] font-bold text-[#1673B8]">
+                                • {sch.country}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug">
+                            {sch.title}
+                          </h4>
+                          <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line">
+                            {sch.description}
+                          </p>
                         </div>
-                        <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug">
-                          {sch.title}
-                        </h4>
-                        <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line">
-                          {sch.description}
-                        </p>
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">

@@ -3,7 +3,7 @@ import express, { type Request, type Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -93,7 +93,7 @@ HONESTY & ESCALATION RULE:
 - If a user needs manual account action (e.g., pending payment approval, certificate name correction, bug fix) or wants to send personal feedback / a custom opinion to the admin, tell them clearly to switch to the **"Opinion & Issue"** tab (or click **"Give Custom Opinion"** / **"Highlight Issue"**) inside this **Support and Help** panel — it delivers straight into the Admin Control Panel!`;
 
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '2mb' }));
 
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'food-science-portal-support' });
@@ -182,6 +182,144 @@ app.post('/api/support-chat', async (req: Request, res: Response) => {
     res.status(status >= 400 && status < 600 ? status : 500).json({
       error: message,
       code: errObj?.code || 'GEMINI_API_ERROR'
+    });
+  }
+});
+
+interface ExtractFlyerRequestBody {
+  imageBase64?: string;
+  mimeType?: string;
+  sharedText?: string;
+}
+
+app.post('/api/extract-flyer', async (req: Request, res: Response) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({
+      error: 'GEMINI_API_KEY is not configured.',
+      code: 'MISSING_API_KEY'
+    });
+    return;
+  }
+
+  const body = (req.body || {}) as ExtractFlyerRequestBody;
+  const rawBase64 = (body.imageBase64 || '').trim();
+  const cleanBase64 = rawBase64.replace(/^data:[^;]+;base64,/i, '');
+  if (!cleanBase64 || cleanBase64.length > 1800000) {
+    res.status(400).json({
+      error: 'Invalid or oversized image payload.',
+      code: 'INVALID_IMAGE'
+    });
+    return;
+  }
+
+  const rawMime = (body.mimeType || 'image/jpeg').toLowerCase();
+  const mimeType = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(
+    rawMime
+  )
+    ? rawMime
+    : 'image/jpeg';
+
+  const sharedHint = (body.sharedText || '').trim().slice(0, 1200);
+
+  try {
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build'
+        }
+      }
+    });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-4-hydrogen',
+      contents: [
+        {
+          inlineData: {
+            mimeType,
+            data: cleanBase64
+          }
+        },
+        {
+          text: `Read this job or scholarship poster/flyer image and extract structured information accurately in English.
+${sharedHint ? `Additional caption shared with image: "${sharedHint}"\n` : ''}
+Classify section as "job" or "scholarship".
+If job, pick the closest suggestedJobCategory from ["Quality & Safety", "R&D Lab", "Production", "Food Safety & HACCP", "Dairy & Beverages", "Nutrition & Dietetics", "Internship"] or a concise 2-3 word job specialty.
+If scholarship, pick suggestedScholarshipCategory from "Fellowships", "International", or "Grants".
+Leave unknown fields as empty strings.`
+        }
+      ],
+      config: {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW
+        },
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            section: { type: Type.STRING },
+            suggestedJobCategory: { type: Type.STRING },
+            suggestedScholarshipCategory: { type: Type.STRING },
+            title: { type: Type.STRING },
+            organization: { type: Type.STRING },
+            location: { type: Type.STRING },
+            country: { type: Type.STRING },
+            hrEmail: { type: Type.STRING },
+            applyLink: { type: Type.STRING },
+            experienceOrDeadline: { type: Type.STRING },
+            degreeLevel: { type: Type.STRING },
+            description: { type: Type.STRING },
+            requirementsOrEligibility: { type: Type.STRING }
+          },
+          required: ['section', 'title', 'organization', 'description']
+        }
+      }
+    });
+
+    const rawJson = (response.text || '{}').trim();
+    const parsed = JSON.parse(rawJson) as Record<string, unknown>;
+    const cleanStr = (val: unknown, maxLen: number) =>
+      typeof val === 'string' ? val.trim().slice(0, maxLen) : '';
+
+    const schCatRaw = cleanStr(parsed.suggestedScholarshipCategory, 40);
+    const schCat =
+      schCatRaw === 'Fellowships' ||
+      schCatRaw === 'International' ||
+      schCatRaw === 'Grants'
+        ? schCatRaw
+        : 'International';
+
+    res.json({
+      extracted: {
+        section: parsed.section === 'scholarship' ? 'scholarship' : 'job',
+        suggestedJobCategory:
+          cleanStr(parsed.suggestedJobCategory, 80) || 'Quality & Safety',
+        suggestedScholarshipCategory: schCat,
+        title: cleanStr(parsed.title, 200),
+        organization: cleanStr(parsed.organization, 200),
+        location: cleanStr(parsed.location, 180),
+        country: cleanStr(parsed.country, 100),
+        hrEmail: cleanStr(parsed.hrEmail, 180),
+        applyLink: cleanStr(parsed.applyLink, 480),
+        experienceOrDeadline: cleanStr(parsed.experienceOrDeadline, 100),
+        degreeLevel: cleanStr(parsed.degreeLevel, 100),
+        description: cleanStr(parsed.description, 4000),
+        requirementsOrEligibility: cleanStr(
+          parsed.requirementsOrEligibility,
+          4000
+        )
+      }
+    });
+  } catch (err: unknown) {
+    const errObj = err as { status?: number; message?: string; code?: string };
+    const status = typeof errObj?.status === 'number' ? errObj.status : 500;
+    const message =
+      err instanceof Error ? err.message : 'Unable to analyze flyer image.';
+    console.error('Flyer Extraction API Error:', status, message);
+    res.status(status >= 400 && status < 600 ? status : 500).json({
+      error: message,
+      code: errObj?.code || 'FLYER_EXTRACTION_ERROR'
     });
   }
 });
