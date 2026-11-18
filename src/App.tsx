@@ -3424,6 +3424,138 @@ export default function App() {
     } catch {}
   };
 
+  const handleAdminSaveCommunityUser = async (member: HubUser) => {
+    const rawUid = (member.uid || '').trim();
+    const safeUid =
+      rawUid && /^[a-zA-Z0-9_\-]+$/.test(rawUid)
+        ? rawUid.slice(0, 128)
+        : `member_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const isNew = !users.some((u) => u.uid === safeUid);
+    const nowIso = new Date().toISOString().slice(0, 19) + 'Z';
+    const isPaidFlag = Boolean(
+      member.isPaid || member.isPremium || member.plan === 'premium'
+    );
+    const futureYearIso =
+      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 19) + 'Z';
+    const existingExpMs = member.premiumExpiresAt
+      ? new Date(member.premiumExpiresAt).getTime()
+      : NaN;
+    const validFutureExp =
+      !Number.isNaN(existingExpMs) && existingExpMs > Date.now()
+        ? member.premiumExpiresAt!.slice(0, 64)
+        : futureYearIso;
+
+    const cleanName = (member.name || 'Food Specialist').trim().slice(0, 120);
+    const cleanTitle = (member.title || member.currentRole || 'Food Safety & Quality Specialist')
+      .trim()
+      .slice(0, 200);
+    const cleanPhone = (member.whatsappNumber || member.phone || '')
+      .trim()
+      .slice(0, 60);
+    const cleanPic = (member.profilePicUrl || member.profilePhotoUrl || '').slice(
+      0,
+      350000
+    );
+
+    const normalizedUser: HubUser = {
+      ...DEFAULT_CURRENT_USER_PROFILE,
+      ...member,
+      uid: safeUid,
+      name: cleanName || 'Food Specialist',
+      title: cleanTitle,
+      currentRole: cleanTitle,
+      company: (member.company || '').trim().slice(0, 200),
+      location: (member.location || '').trim().slice(0, 200),
+      country: (member.country || '').trim().slice(0, 120),
+      bio: (member.bio || '').trim().slice(0, 2000),
+      qualification: (member.qualification || '').trim().slice(0, 300),
+      experience:
+        typeof member.experience === 'string'
+          ? member.experience.trim().slice(0, 5000)
+          : Array.isArray(member.experience)
+          ? member.experience.slice(0, 50)
+          : [],
+      email: (member.email || '').trim().slice(0, 200),
+      phone: cleanPhone,
+      whatsappNumber: cleanPhone,
+      linkedinUrl: (member.linkedinUrl || '').trim().slice(0, 500),
+      profilePicUrl: cleanPic,
+      profilePhotoUrl: cleanPic,
+      skills: Array.isArray(member.skills)
+        ? member.skills
+            .map((s) => String(s).trim())
+            .filter(Boolean)
+            .slice(0, 30)
+        : [],
+      hireMe: member.hireMe !== false,
+      isPaid: isPaidFlag,
+      isPremium: isPaidFlag,
+      plan: isPaidFlag ? 'premium' : 'free',
+      paymentStatus: isPaidFlag ? 'verified' : member.paymentStatus || 'none',
+      premiumActivatedAt: isPaidFlag
+        ? (member.premiumActivatedAt || nowIso).slice(0, 64)
+        : '',
+      premiumExpiresAt: isPaidFlag ? validFutureExp : '',
+      profileCompleted: true,
+      profileVisibility: member.profileVisibility !== false,
+      isAdmin: false,
+      createdAt: (member.createdAt || nowIso).slice(0, 64),
+      visibility: {
+        ...DEFAULT_VISIBILITY_MAP,
+        ...(member.visibility || {})
+      },
+      privacySettings: {
+        qualification_public: member.privacySettings?.qualification_public ?? true,
+        experience_public: member.privacySettings?.experience_public ?? true,
+        currentRole_public: member.privacySettings?.currentRole_public ?? true,
+        location_public: member.privacySettings?.location_public ?? true,
+        email_public: member.privacySettings?.email_public ?? true,
+        phone_public: member.privacySettings?.phone_public ?? true,
+        hireMe_public: member.hireMe !== false
+      }
+    };
+
+    const cleanFullUser = stripUndefinedDeep(normalizedUser);
+    const sanitizedPublicUser = stripUndefinedDeep(
+      buildSanitizedPublicUser(cleanFullUser)
+    );
+
+    try {
+      await Promise.all([
+        setDoc(doc(db, 'users', safeUid), sanitizedPublicUser, { merge: true }),
+        setDoc(
+          doc(db, 'users', safeUid, 'private', 'profile'),
+          cleanFullUser,
+          { merge: true }
+        ),
+        setDoc(
+          doc(db, 'users', safeUid, 'profile', 'main'),
+          sanitizedPublicUser,
+          { merge: true }
+        )
+      ]);
+      setUsers((prev) =>
+        prev.some((u) => u.uid === safeUid)
+          ? prev.map((u) => (u.uid === safeUid ? cleanFullUser : u))
+          : [cleanFullUser, ...prev]
+      );
+      setAdminStatusBanner(
+        isNew
+          ? `Added "${cleanName}" to Users & Community Directory (${
+              isPaidFlag && normalizedUser.profileVisibility
+                ? 'Visible in Community'
+                : 'Saved'
+            }).`
+          : `Updated Community & Profile settings for "${cleanName}".`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${safeUid}`);
+    }
+  };
+
   // 1-Box Smart Paste Job Publisher (Supports auto-created tags from Job Title & custom tags)
   const handleQuickPasteJob = async (
     rawText: string,
@@ -4182,6 +4314,7 @@ export default function App() {
         onDeletePaymentRequest={handleDeletePaymentRequest}
         onToggleUserPremium={handleToggleUserPremium}
         onDeleteUser={handleDeleteUser}
+        onAdminSaveCommunityUser={handleAdminSaveCommunityUser}
         onQuickPasteJob={handleQuickPasteJob}
         onDeleteJob={handleDeleteJob}
         onQuickPasteScholarship={handleQuickPasteScholarship}

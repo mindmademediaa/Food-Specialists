@@ -12,7 +12,9 @@ import {
   Database,
   Download,
   DollarSign,
+  Edit3,
   Eye,
+  EyeOff,
   ExternalLink,
   FileText,
   GraduationCap,
@@ -72,6 +74,8 @@ import {
   parseRevenuePkrFromRequestText
 } from '../lib/geoCurrency';
 import { buildConfirmationAlertLinks } from '../lib/pwaNotifications';
+import { compressImageFile } from '../lib/storage';
+import { AdminSocialShareStudio } from './AdminSocialShareStudio';
 
 export interface AdminDispatchConfirmationPayload {
   recipientName: string;
@@ -95,6 +99,7 @@ export type AdminSectionTab =
   | 'trainings'
   | 'payments'
   | 'support'
+  | 'social'
   | 'storage';
 
 interface AdminControlPanelProps {
@@ -118,6 +123,7 @@ interface AdminControlPanelProps {
     makePremium: boolean
   ) => Promise<void>;
   onDeleteUser: (uid: string, userName: string) => Promise<void>;
+  onAdminSaveCommunityUser?: (member: HubUser) => Promise<void>;
   onQuickPasteJob: (rawText: string, category: string) => Promise<void>;
   onDeleteJob: (job: HubJob) => Promise<void>;
   onQuickPasteScholarship: (
@@ -168,6 +174,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onDeletePaymentRequest,
   onToggleUserPremium,
   onDeleteUser,
+  onAdminSaveCommunityUser,
   onQuickPasteJob,
   onDeleteJob,
   onQuickPasteScholarship,
@@ -290,10 +297,163 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   // Users & Approvals Filter State
   const [userSearch, setUserSearch] = useState('');
   const [userFilter, setUserFilter] = useState<
-    'all' | 'premium' | 'pending' | 'free' | 'cv'
+    'all' | 'community' | 'hidden' | 'premium' | 'pending' | 'free' | 'cv'
   >('all');
   const [expandedUserUid, setExpandedUserUid] = useState<string | null>(null);
   const [confirmDeleteUid, setConfirmDeleteUid] = useState<string | null>(null);
+
+  // Admin Community Member Add / Edit Form State
+  const [showCommunityForm, setShowCommunityForm] = useState(false);
+  const [editingMemberUid, setEditingMemberUid] = useState<string | null>(null);
+  const [cmName, setCmName] = useState('');
+  const [cmTitle, setCmTitle] = useState('');
+  const [cmCompany, setCmCompany] = useState('');
+  const [cmLocation, setCmLocation] = useState('');
+  const [cmCountry, setCmCountry] = useState('');
+  const [cmQualification, setCmQualification] = useState('');
+  const [cmExperience, setCmExperience] = useState('');
+  const [cmSkills, setCmSkills] = useState('');
+  const [cmEmail, setCmEmail] = useState('');
+  const [cmPhone, setCmPhone] = useState('');
+  const [cmLinkedin, setCmLinkedin] = useState('');
+  const [cmBio, setCmBio] = useState('');
+  const [cmAvatar, setCmAvatar] = useState('');
+  const [cmIsPaid, setCmIsPaid] = useState(true);
+  const [cmVisibleInCommunity, setCmVisibleInCommunity] = useState(true);
+  const [cmHireMe, setCmHireMe] = useState(true);
+  const [isSavingCommunityMember, setIsSavingCommunityMember] = useState(false);
+
+  const resetCommunityMemberForm = () => {
+    setEditingMemberUid(null);
+    setCmName('');
+    setCmTitle('');
+    setCmCompany('');
+    setCmLocation('');
+    setCmCountry('');
+    setCmQualification('');
+    setCmExperience('');
+    setCmSkills('');
+    setCmEmail('');
+    setCmPhone('');
+    setCmLinkedin('');
+    setCmBio('');
+    setCmAvatar('');
+    setCmIsPaid(true);
+    setCmVisibleInCommunity(true);
+    setCmHireMe(true);
+  };
+
+  const openNewCommunityMemberForm = () => {
+    resetCommunityMemberForm();
+    setShowCommunityForm(true);
+  };
+
+  const openEditCommunityMemberForm = (u: HubUser) => {
+    setEditingMemberUid(u.uid);
+    setCmName(u.name || '');
+    setCmTitle(u.title || u.currentRole || '');
+    setCmCompany(u.company || '');
+    setCmLocation(u.location || '');
+    setCmCountry(u.country || '');
+    setCmQualification(u.qualification || '');
+    setCmExperience(
+      typeof u.experience === 'string'
+        ? u.experience
+        : Array.isArray(u.experienceItems) && u.experienceItems.length > 0
+        ? u.experienceItems
+            .map((e) => `${e.jobTitle} @ ${e.company}`)
+            .join(' | ')
+        : ''
+    );
+    setCmSkills(Array.isArray(u.skills) ? u.skills.join(', ') : '');
+    setCmEmail(u.email || '');
+    setCmPhone(u.whatsappNumber || u.phone || '');
+    setCmLinkedin(u.linkedinUrl || '');
+    setCmBio(u.bio || '');
+    setCmAvatar(u.profilePicUrl || u.profilePhotoUrl || '');
+    setCmIsPaid(Boolean(u.isPaid || u.isPremium || u.plan === 'premium'));
+    setCmVisibleInCommunity(u.profileVisibility !== false);
+    setCmHireMe(u.hireMe !== false);
+    setShowCommunityForm(true);
+  };
+
+  const handleCommunityAvatarUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const { dataUrl } = await compressImageFile(file, 360, 0.8);
+      setCmAvatar(dataUrl);
+    } catch {
+      onSetBanner('Could not process profile photo. Please try a JPG/PNG image.');
+    }
+  };
+
+  const handleSaveCommunityMemberSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cmName.trim()) {
+      onSetBanner('Please enter the Community member Full Name.');
+      return;
+    }
+    if (!onAdminSaveCommunityUser) return;
+    setIsSavingCommunityMember(true);
+    try {
+      const existing = editingMemberUid
+        ? users.find((u) => u.uid === editingMemberUid)
+        : undefined;
+      const skillsArray = cmSkills
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 30);
+
+      const payload: HubUser = {
+        ...(existing || ({} as HubUser)),
+        uid: editingMemberUid || '',
+        name: cmName.trim(),
+        title: cmTitle.trim() || 'Food Safety & Quality Specialist',
+        currentRole: cmTitle.trim() || 'Food Safety & Quality Specialist',
+        company: cmCompany.trim(),
+        location: cmLocation.trim(),
+        country: cmCountry.trim(),
+        qualification: cmQualification.trim(),
+        experience: cmExperience.trim() || existing?.experience || [],
+        skills: skillsArray,
+        email: cmEmail.trim(),
+        phone: cmPhone.trim(),
+        whatsappNumber: cmPhone.trim(),
+        linkedinUrl: cmLinkedin.trim(),
+        bio: cmBio.trim(),
+        profilePicUrl: cmAvatar,
+        profilePhotoUrl: cmAvatar,
+        isPaid: cmIsPaid,
+        isPremium: cmIsPaid,
+        plan: cmIsPaid ? 'premium' : 'free',
+        profileVisibility: cmVisibleInCommunity,
+        hireMe: cmHireMe,
+        profileCompleted: true,
+        isAdmin: false,
+        cvUrl: existing?.cvUrl || '',
+        createdAt: existing?.createdAt || new Date().toISOString().slice(0, 19) + 'Z',
+        privacySettings: existing?.privacySettings || {
+          qualification_public: true,
+          experience_public: true,
+          currentRole_public: true,
+          location_public: true,
+          email_public: true,
+          phone_public: true,
+          hireMe_public: cmHireMe
+        }
+      };
+
+      await onAdminSaveCommunityUser(payload);
+      setShowCommunityForm(false);
+      resetCommunityMemberForm();
+    } finally {
+      setIsSavingCommunityMember(false);
+    }
+  };
 
   // 1-Box Job Paste & Dynamic/Custom Tag State
   const [jobPasteText, setJobPasteText] = useState('');
@@ -1198,11 +1358,41 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     };
   }, [users, paymentRequests, jobs, scholarships, trainings, dismissedReqIds]);
 
+  const communityVisibleCount = useMemo(
+    () =>
+      users.filter(
+        (u) =>
+          u.email?.toLowerCase() !== 'mindmademedia9@gmail.com' &&
+          Boolean(u.isPaid || u.isPremium || u.plan === 'premium') &&
+          u.profileVisibility !== false
+      ).length,
+    [users]
+  );
+
+  const hiddenCommunityCount = useMemo(
+    () =>
+      users.filter(
+        (u) =>
+          u.email?.toLowerCase() !== 'mindmademedia9@gmail.com' &&
+          u.profileVisibility === false
+      ).length,
+    [users]
+  );
+
   const filteredUsersList = useMemo(() => {
     const q = userSearch.trim().toLowerCase();
     return users
       .filter((u) => u.email?.toLowerCase() !== 'mindmademedia9@gmail.com')
       .filter((u) => {
+        if (userFilter === 'community') {
+          return (
+            Boolean(u.isPaid || u.isPremium || u.plan === 'premium') &&
+            u.profileVisibility !== false
+          );
+        }
+        if (userFilter === 'hidden') {
+          return u.profileVisibility === false;
+        }
         if (userFilter === 'premium') {
           return Boolean(u.isPaid || u.isPremium || u.plan === 'premium');
         }
@@ -1888,12 +2078,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     },
                     {
                       id: 'users' as AdminSectionTab,
-                      title: '3. Users & Payment Slip Approvals',
-                      desc: 'Accept/Reject membership slips (auto-closes on click), manage users & CVs',
+                      title: '3. Users, Community Profiles & Approvals',
+                      desc: 'Add, edit, show/hide or delete Community members, accept/reject payment slips & monitor CVs',
                       badge:
                         stats.pendingRequests > 0
                           ? `${stats.pendingRequests} Pending`
-                          : `${stats.premiumUsers} Premium`,
+                          : `${communityVisibleCount} in Community`,
                       icon: Users
                     },
                     {
@@ -1944,6 +2134,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       desc: 'Review user issue highlights, personal custom opinions/ratings, AI chat context & reply directly to users',
                       badge: `${supportTickets.filter((t) => t.status !== 'resolved').length} Open (${supportTickets.length})`,
                       icon: Headset
+                    },
+                    {
+                      id: 'social' as AdminSectionTab,
+                      title: '11. Social Media Tool & Page Publisher',
+                      desc: 'Share any tool, calculator, course, or page on LinkedIn/Facebook with Interface + Benefits Card (PNG)',
+                      badge: '16 Tools + 8 Pages',
+                      icon: Share2
                     }
                   ].map((item) => {
                     const Icon = item.icon;
@@ -3707,40 +3904,338 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               )}
             </div>
 
-            {/* SECTION B: ALL REGISTERED USERS & ACTIVITY MONITOR */}
+            {/* SECTION B: ALL REGISTERED USERS & COMMUNITY DIRECTORY CONTROL */}
             <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#D2DEEA] pb-3">
                 <div>
                   <h2 className="text-lg font-extrabold text-[#1A2138] flex items-center gap-2">
                     <Users className="w-5 h-5 text-[#1673B8]" />
                     <span>
-                      All Users &amp; Activity Monitor ({filteredUsersList.length})
+                      Users &amp; Community Directory Control ({filteredUsersList.length})
                     </span>
                   </h2>
                   <p className="text-xs text-[#4A5568] font-medium">
-                    Monitor user profiles, CVs, visibility settings, and
-                    Accept/Premium, Reject/Free, or Remove any user.
+                    Add new Community specialists, edit any member profile, control Community visibility, or remove any user.
                   </p>
                 </div>
 
-                {/* Search Box */}
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-4 h-4 text-[#4A5568] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    placeholder="Search name, email, city, role..."
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
-                  />
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  {onAdminSaveCommunityUser && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        showCommunityForm
+                          ? (setShowCommunityForm(false), resetCommunityMemberForm())
+                          : openNewCommunityMemberForm()
+                      }
+                      className="px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs whitespace-nowrap"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>
+                        {showCommunityForm
+                          ? 'Close Member Form'
+                          : 'Add Community Member'}
+                      </span>
+                    </button>
+                  )}
+
+                  {/* Search Box */}
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="w-4 h-4 text-[#4A5568] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      placeholder="Search name, email, city, role..."
+                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* User Filter Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {/* ADMIN ADD / EDIT COMMUNITY MEMBER FORM */}
+              {showCommunityForm && onAdminSaveCommunityUser && (
+                <form
+                  onSubmit={handleSaveCommunityMemberSubmit}
+                  className="p-4 sm:p-5 rounded-2xl bg-[#F8FAFC] border border-[#1673B8] space-y-4"
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-[#D2DEEA] pb-2.5">
+                    <div>
+                      <h3 className="text-sm font-extrabold text-[#1A2138]">
+                        {editingMemberUid
+                          ? `Edit Community Profile: ${cmName || 'Member'}`
+                          : 'Add New Specialist Profile to Community Directory'}
+                      </h3>
+                      <p className="text-[11px] text-[#4A5568] font-medium">
+                        Profiles marked Paid Premium + Visible appear directly in the public Community directory.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCommunityForm(false);
+                        resetCommunityMemberForm();
+                      }}
+                      className="p-1.5 rounded-lg bg-white border border-[#D2DEEA] text-[#4A5568] hover:text-[#1A2138] cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Avatar + Core Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-3 flex flex-wrap items-center gap-3 p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                      <div className="w-12 h-12 rounded-xl bg-[#1A2138] text-white font-extrabold flex items-center justify-center overflow-hidden border border-[#D2DEEA] shrink-0">
+                        {cmAvatar ? (
+                          <img
+                            src={cmAvatar}
+                            alt={cmName || 'Member'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          (cmName || 'M').charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="px-3 py-1.5 rounded-lg bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#105E9A] text-xs font-extrabold cursor-pointer">
+                          <span>Upload Profile Photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleCommunityAvatarUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {cmAvatar && (
+                          <button
+                            type="button"
+                            onClick={() => setCmAvatar('')}
+                            className="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-bold cursor-pointer"
+                          >
+                            Remove Photo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={cmName}
+                        onChange={(e) => setCmName(e.target.value)}
+                        placeholder="e.g. Dr. Ayesha Tariq"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Role / Job Title *
+                      </label>
+                      <input
+                        type="text"
+                        value={cmTitle}
+                        onChange={(e) => setCmTitle(e.target.value)}
+                        placeholder="e.g. QA/QC Manager · FSSC 22000 Auditor"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Company / Organization
+                      </label>
+                      <input
+                        type="text"
+                        value={cmCompany}
+                        onChange={(e) => setCmCompany(e.target.value)}
+                        placeholder="e.g. Nestle / FrieslandCampina"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        City / Location
+                      </label>
+                      <input
+                        type="text"
+                        value={cmLocation}
+                        onChange={(e) => setCmLocation(e.target.value)}
+                        placeholder="e.g. Lahore, Pakistan"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Country
+                      </label>
+                      <input
+                        type="text"
+                        value={cmCountry}
+                        onChange={(e) => setCmCountry(e.target.value)}
+                        placeholder="e.g. Pakistan / UAE / Saudi Arabia"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Qualification
+                      </label>
+                      <input
+                        type="text"
+                        value={cmQualification}
+                        onChange={(e) => setCmQualification(e.target.value)}
+                        placeholder="e.g. MSc Food Science & Technology"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        value={cmEmail}
+                        onChange={(e) => setCmEmail(e.target.value)}
+                        placeholder="specialist@company.com"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Phone / WhatsApp
+                      </label>
+                      <input
+                        type="text"
+                        value={cmPhone}
+                        onChange={(e) => setCmPhone(e.target.value)}
+                        placeholder="+92 300 0000000"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        LinkedIn Profile URL
+                      </label>
+                      <input
+                        type="text"
+                        value={cmLinkedin}
+                        onChange={(e) => setCmLinkedin(e.target.value)}
+                        placeholder="https://linkedin.com/in/..."
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Skills (Comma Separated)
+                      </label>
+                      <input
+                        type="text"
+                        value={cmSkills}
+                        onChange={(e) => setCmSkills(e.target.value)}
+                        placeholder="HACCP, ISO 22000, FSSC 22000, Dairy QA, Microbiology"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Experience Summary
+                      </label>
+                      <input
+                        type="text"
+                        value={cmExperience}
+                        onChange={(e) => setCmExperience(e.target.value)}
+                        placeholder="e.g. 6+ Years in Dairy & Beverages QA"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label className="block text-[11px] font-bold text-[#1A2138] mb-1">
+                        Professional Bio
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={cmBio}
+                        onChange={(e) => setCmBio(e.target.value)}
+                        placeholder="Brief background, food safety audits led, and expertise areas..."
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#D2DEEA] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Directory Visibility & Tier Switches */}
+                  <div className="flex flex-wrap items-center gap-4 p-3 rounded-xl bg-white border border-[#D2DEEA]">
+                    <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1A2138] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={cmIsPaid}
+                        onChange={(e) => setCmIsPaid(e.target.checked)}
+                        className="w-4 h-4 accent-[#1673B8]"
+                      />
+                      <span>Paid Premium Tier (Required for Community Directory)</span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1A2138] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={cmVisibleInCommunity}
+                        onChange={(e) => setCmVisibleInCommunity(e.target.checked)}
+                        className="w-4 h-4 accent-[#1673B8]"
+                      />
+                      <span>Visible in Community Section</span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-2 text-xs font-bold text-[#1A2138] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={cmHireMe}
+                        onChange={(e) => setCmHireMe(e.target.checked)}
+                        className="w-4 h-4 accent-[#1673B8]"
+                      />
+                      <span>Available for Hire (Hire Me)</span>
+                    </label>
+
+                    <button
+                      type="submit"
+                      disabled={isSavingCommunityMember}
+                      className="ml-auto px-5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer transition-colors disabled:opacity-60"
+                    >
+                      {isSavingCommunityMember
+                        ? 'Saving Profile...'
+                        : editingMemberUid
+                        ? 'Update Community Profile'
+                        : 'Save & Publish to Community'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* User Filter Tabs */}
+              <div className="flex items-center gap-1.5 p-1 bg-[#F0F6FC] rounded-xl overflow-x-auto no-scrollbar">
                 {(
                   [
                     { id: 'all', label: `All Users (${stats.totalUsers})` },
+                    {
+                      id: 'community',
+                      label: `Community Visible (${communityVisibleCount})`
+                    },
+                    {
+                      id: 'hidden',
+                      label: `Hidden Profiles (${hiddenCommunityCount})`
+                    },
                     {
                       id: 'premium',
                       label: `Paid Premium (${stats.premiumUsers})`
@@ -3760,10 +4255,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     key={f.id}
                     type="button"
                     onClick={() => setUserFilter(f.id)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 cursor-pointer transition-colors ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 whitespace-nowrap cursor-pointer transition-colors ${
                       userFilter === f.id
-                        ? 'bg-[#1673B8] text-white'
-                        : 'bg-[#EBF4FC] text-[#1A2138] hover:bg-[#DCE9F6]'
+                        ? 'bg-[#1673B8] text-white shadow-2xs'
+                        : 'text-[#1A2138] hover:bg-white'
                     }`}
                   >
                     {f.label}
@@ -3821,25 +4316,35 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                                 <h3 className="text-sm font-extrabold text-[#1A2138]">
                                   {u.name}
                                 </h3>
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                    isPremium
-                                      ? 'bg-[#EBF4FC] text-[#105E9A]'
-                                      : 'bg-gray-200 text-gray-700'
-                                  }`}
-                                >
-                                  {isPremium ? '★ PREMIUM MEMBER' : 'FREE USER'}
-                                </span>
-                                {u.paymentStatus === 'pending' && (
-                                  <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 text-[10px] font-extrabold">
-                                    PAYMENT PENDING
+                                <div className="text-[11px] font-bold text-[#4A5568] flex flex-wrap items-center gap-1.5">
+                                  <span>{isPremium ? 'Paid Premium' : 'Free Tier'}</span>
+                                  <span aria-hidden="true">·</span>
+                                  <span
+                                    className={
+                                      isPremium && u.profileVisibility !== false
+                                        ? 'text-emerald-700'
+                                        : 'text-amber-700'
+                                    }
+                                  >
+                                    {isPremium && u.profileVisibility !== false
+                                      ? 'Visible in Community'
+                                      : u.profileVisibility === false
+                                      ? 'Hidden from Community'
+                                      : 'Not Listed (Free)'}
                                   </span>
-                                )}
-                                {u.paymentStatus === 'rejected' && (
-                                  <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 text-[10px] font-extrabold">
-                                    REJECTED
-                                  </span>
-                                )}
+                                  {u.paymentStatus === 'pending' && (
+                                    <>
+                                      <span aria-hidden="true">·</span>
+                                      <span className="text-amber-800">Payment Pending</span>
+                                    </>
+                                  )}
+                                  {u.paymentStatus === 'rejected' && (
+                                    <>
+                                      <span aria-hidden="true">·</span>
+                                      <span className="text-red-700">Payment Rejected</span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
 
                               <p className="text-xs font-bold text-[#1673B8]">
@@ -3850,15 +4355,61 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               </p>
 
                               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#4A5568] font-medium">
-                                {u.email && <span>✉ {u.email}</span>}
-                                {u.phone && <span>📞 {u.phone}</span>}
-                                {u.location && <span>📍 {u.location}</span>}
+                                {u.email && <span>{u.email}</span>}
+                                {u.phone && <span>{u.phone}</span>}
+                                {u.location && <span>{u.location}</span>}
                               </div>
                             </div>
                           </div>
 
                           {/* DIRECT ADMIN CONTROL BUTTONS FOR THIS USER */}
                           <div className="flex flex-wrap items-center gap-1.5">
+                            {onAdminSaveCommunityUser && (
+                              <button
+                                type="button"
+                                onClick={() => openEditCommunityMemberForm(u)}
+                                className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#1673B8]/40 text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit Profile</span>
+                              </button>
+                            )}
+
+                            {onAdminSaveCommunityUser && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onAdminSaveCommunityUser({
+                                    ...u,
+                                    profileVisibility:
+                                      u.profileVisibility === false ? true : false
+                                  })
+                                }
+                                className={`px-3 py-1.5 rounded-xl border text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors ${
+                                  u.profileVisibility === false
+                                    ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                                    : 'bg-white hover:bg-amber-50 text-[#1A2138] border-[#D2DEEA]'
+                                }`}
+                                title={
+                                  u.profileVisibility === false
+                                    ? 'Show this user in Community directory'
+                                    : 'Hide this user from Community directory'
+                                }
+                              >
+                                {u.profileVisibility === false ? (
+                                  <>
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>Show in Community</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <EyeOff className="w-3.5 h-3.5" />
+                                    <span>Hide from Community</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+
                             {!isPremium ? (
                               <button
                                 type="button"
@@ -7379,6 +7930,19 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         )}
 
         {/* =====================================================================
+            TAB 11: SOCIAL MEDIA TOOL & PAGE PUBLISHER (social)
+           ===================================================================== */}
+        {activeTab === 'social' && (
+          <AdminSocialShareStudio
+            jobsCount={jobs.length}
+            scholarshipsCount={scholarships.length}
+            trainingsCount={trainings.length}
+            communityCount={communityVisibleCount}
+            onSetBanner={onSetBanner}
+          />
+        )}
+
+        {/* =====================================================================
             TAB 7: CLOUD STORAGE & FULL BACKUP (storage)
            ===================================================================== */}
         {activeTab === 'storage' && (
@@ -7527,6 +8091,16 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               }`}
             >
               Support ({supportTickets.filter((t) => t.status !== 'resolved').length})
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setActiveTab('social')}
+              className={`cursor-pointer ${
+                activeTab === 'social' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
+              }`}
+            >
+              Social Share
             </button>
           </div>
         </div>
