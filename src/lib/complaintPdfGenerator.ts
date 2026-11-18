@@ -390,16 +390,83 @@ export async function downloadSingleComplaintCapaPdf(
     [13, 92, 58]
   );
 
-  // Sign-off footer
-  ensureSpace(26);
-  doc.setDrawColor(210, 222, 234);
-  doc.line(margin, y + 12, margin + 70, y + 12);
-  doc.line(W - margin - 70, y + 12, W - margin, y + 12);
+  // Sign-off footer with Electronic / Digital Signature Stamp
+  ensureSpace(32);
+  const sigLineY = y + 16;
+  const sigColW = 76;
+  const rightSigX = W - margin - sigColW;
+  const investigatorName = (
+    complaint.assignedTo ||
+    org.companyName ||
+    'Quality Assurance / Manager'
+  )
+    .trim()
+    .slice(0, 34);
+  const signedDateLabel = formatReadableDate(
+    complaint.updatedAt || complaint.createdAt
+  );
+
+  // Left: Prepared / Investigated By — Digitally Signed
+  doc.setFillColor(244, 248, 253);
+  doc.setDrawColor(191, 219, 254);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, y + 1, sigColW, 13.5, 1.8, 1.8, 'FD');
+
+  doc.setFont('helvetica', 'bolditalic');
+  doc.setFontSize(11);
+  doc.setTextColor(15, 37, 71);
+  doc.text('Digitally Signed', margin + 3.5, y + 7.2);
+
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.8);
+  doc.setTextColor(22, 115, 184);
+  doc.text(
+    `Verified by ${investigatorName} · ${signedDateLabel}`,
+    margin + 3.5,
+    y + 12.2,
+    { maxWidth: sigColW - 6 }
+  );
+
+  // Right: Approved & Closed By
+  if (complaint.status === 'closed') {
+    const closedDateLabel = formatReadableDate(
+      complaint.closedAt || complaint.updatedAt || complaint.createdAt
+    );
+    doc.setFillColor(240, 253, 244);
+    doc.setDrawColor(187, 247, 208);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(rightSigX, y + 1, sigColW, 13.5, 1.8, 1.8, 'FD');
+
+    doc.setFont('helvetica', 'bolditalic');
+    doc.setFontSize(11);
+    doc.setTextColor(21, 128, 61);
+    doc.text('Digitally Signed', rightSigX + 3.5, y + 7.2);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.8);
+    doc.setTextColor(21, 128, 61);
+    doc.text(
+      `Approved & Closed · ${closedDateLabel}`,
+      rightSigX + 3.5,
+      y + 12.2
+    );
+  } else {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.8);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Pending Final Closure Sign-Off', rightSigX + 2, y + 11.5);
+  }
+
+  doc.setDrawColor(148, 163, 184);
+  doc.setLineWidth(0.4);
+  doc.line(margin, sigLineY, margin + sigColW, sigLineY);
+  doc.line(rightSigX, sigLineY, W - margin, sigLineY);
+
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
-  doc.text('Prepared / Investigated By (QA / Manager)', margin, y + 16.5);
-  doc.text('Approved & Closed By (Authorized Signatory)', W - margin - 70, y + 16.5);
+  doc.text('Prepared / Investigated By (QA / Manager)', margin, sigLineY + 4.5);
+  doc.text('Approved & Closed By (Authorized Signatory)', rightSigX, sigLineY + 4.5);
 
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
