@@ -102,7 +102,9 @@ import {
   NavTab,
   UserToolsData,
   UserCourseProgress,
-  UserPortalNotification
+  UserPortalNotification,
+  SupportTicketItem,
+  SupportTicketStatus
 } from './types/hub';
 import {
   INITIAL_JOBS,
@@ -136,6 +138,7 @@ import {
   AdminControlPanel,
   AdminDispatchConfirmationPayload
 } from './components/AdminControlPanel';
+import { SupportAgentWidget } from './components/SupportAgentWidget';
 import {
   LegalComplianceModal,
   LegalTabType
@@ -568,6 +571,7 @@ export default function App() {
   );
   const [customTrainingRegistrations, setCustomTrainingRegistrations] =
     useState<CustomTrainingRegistration[]>([]);
+  const [supportTickets, setSupportTickets] = useState<SupportTicketItem[]>([]);
   const [storageConfig, setStorageConfig] = useState<CloudStorageConfig>({
     provider: 'cloudinary',
     cloudinaryCloudName: 'mhjkrdlh',
@@ -1418,10 +1422,33 @@ export default function App() {
       );
     }
 
+    const supportQuery = isAdminUser
+      ? collection(db, 'supportTickets')
+      : query(
+          collection(db, 'supportTickets'),
+          where('uid', '==', authUser.uid)
+        );
+    const unsubSupport = onSnapshot(
+      supportQuery,
+      (snap) => {
+        const list = snap.docs
+          .map((d) => ({
+            ...(d.data() as SupportTicketItem),
+            id: d.id
+          }))
+          .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        setSupportTickets(list);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'supportTickets');
+      }
+    );
+
     return () => {
       unsubMyDoc();
       unsubPay();
       if (unsubCustomRegs) unsubCustomRegs();
+      unsubSupport();
     };
   }, [authUser]);
 
@@ -2449,124 +2476,6 @@ export default function App() {
     }
   };
 
-  const myPaymentApplications = useMemo<HubPaymentRequest[]>(() => {
-    const ownList = paymentRequests
-      .filter((r) => r.uid === (authUser?.uid || myProfile.uid))
-      .sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
-
-    if (ownList.length > 0) return ownList;
-
-    if (myProfile.paymentStatus && myProfile.paymentStatus !== 'none') {
-      return [
-        {
-          id: `app-${myProfile.uid || 'user'}`,
-          uid: myProfile.uid,
-          userName: myProfile.name || 'Food Specialist',
-          userEmail: myProfile.email || '',
-          userPhone: myProfile.phone || '',
-          qualification: myProfile.qualification || '',
-          currentRole: myProfile.title || myProfile.currentRole || '',
-          paymentMethod:
-            (myProfile.paymentMethod as
-              | 'JazzCash'
-              | 'EasyPaisa'
-              | 'Bank Transfer') || 'JazzCash',
-          transactionId: myProfile.paymentReference || 'SCREENSHOT-UPLOADED',
-          amount: myProfile.paymentAmount || 'Rs. 100 (1 Month)',
-          notes: '1 Month Premium Subscription (Rs. 100)',
-          receiptImageUrl: myProfile.receiptImageUrl || payReceiptUrl || '',
-          status: myProfile.paymentStatus as 'pending' | 'verified' | 'rejected',
-          submittedAt:
-            myProfile.createdAt || new Date().toISOString().slice(0, 19) + 'Z',
-          subscriptionPlan: myProfile.subscriptionPlan || '1 Month (Rs. 100)',
-          approvedAt: myProfile.premiumActivatedAt || '',
-          premiumExpiresAt: myProfile.premiumExpiresAt || ''
-        }
-      ];
-    }
-
-    return [];
-  }, [paymentRequests, authUser?.uid, myProfile, payReceiptUrl]);
-
-  const myLatestApplication = myPaymentApplications[0] || null;
-
-  useEffect(() => {
-    preloadUserAvatarForPdf(myProfile.profilePicUrl);
-    users.forEach((u) => {
-      if (u.profilePicUrl) {
-        preloadUserAvatarForPdf(u.profilePicUrl);
-      }
-    });
-  }, [myProfile.profilePicUrl, users]);
-
-  const [deletedPaymentReqIds, setDeletedPaymentReqIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('fsp_deleted_payment_reqs');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // All payment requests for Admin (combines /paymentRequests collection + any /users doc with paymentStatus/receiptImageUrl)
-  const adminAllPaymentRequests = useMemo<HubPaymentRequest[]>(() => {
-    const deletedSet = new Set(deletedPaymentReqIds);
-    const map = new Map<string, HubPaymentRequest>();
-    paymentRequests.forEach((req) => {
-      if (!deletedSet.has(req.id) && !deletedSet.has(`user-pay-${req.uid}`)) {
-        map.set(req.id, req);
-      }
-    });
-    users.forEach((u) => {
-      const fallbackId = `user-pay-${u.uid}`;
-      if (deletedSet.has(fallbackId)) return;
-      if (
-        (u.paymentStatus && u.paymentStatus !== 'none') ||
-        Boolean(u.receiptImageUrl)
-      ) {
-        const hasExistingForUid = Array.from(map.values()).some(
-          (r) => r.uid === u.uid
-        );
-        if (!hasExistingForUid) {
-          map.set(fallbackId, {
-            id: fallbackId,
-            uid: u.uid,
-            userName: u.name || 'Food Specialist',
-            userEmail: u.email || '',
-            userPhone: u.phone || '',
-            qualification: u.qualification || '',
-            currentRole: u.title || u.currentRole || '',
-            paymentMethod:
-              (u.paymentMethod as 'JazzCash' | 'EasyPaisa' | 'Bank Transfer') ||
-              'JazzCash',
-            transactionId: u.paymentReference || 'SCREENSHOT-UPLOADED',
-            amount: u.paymentAmount || 'Rs. 100 (1 Month)',
-            notes: '1 Month Premium Subscription (Rs. 100)',
-            receiptImageUrl: u.receiptImageUrl || '',
-            status:
-              (u.paymentStatus as 'pending' | 'verified' | 'rejected') ||
-              'pending',
-            submittedAt: u.createdAt || '',
-            subscriptionPlan: u.subscriptionPlan || '1 Month (Rs. 100)',
-            approvedAt: u.premiumActivatedAt || '',
-            premiumExpiresAt: u.premiumExpiresAt || ''
-          });
-        }
-      }
-    });
-    return Array.from(map.values()).sort((a, b) => {
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
-      return (b.submittedAt || '').localeCompare(a.submittedAt || '');
-    });
-  }, [paymentRequests, users, deletedPaymentReqIds]);
-
-  const pendingPaymentRequestsCount = useMemo(
-    () =>
-      adminAllPaymentRequests.filter((r) => r.status === 'pending').length,
-    [adminAllPaymentRequests]
-  );
-
   // Visitor automatic country & currency detection
   const geo = useGeoCurrency();
 
@@ -2620,6 +2529,124 @@ export default function App() {
   const localizedPlan = useMemo(
     () => getLocalizedMembershipPricing(liveGateway, geo),
     [liveGateway, geo]
+  );
+
+  const myPaymentApplications = useMemo<HubPaymentRequest[]>(() => {
+    const ownList = paymentRequests
+      .filter((r) => r.uid === (authUser?.uid || myProfile.uid))
+      .sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+
+    if (ownList.length > 0) return ownList;
+
+    if (myProfile.paymentStatus && myProfile.paymentStatus !== 'none') {
+      return [
+        {
+          id: `app-${myProfile.uid || 'user'}`,
+          uid: myProfile.uid,
+          userName: myProfile.name || 'Food Specialist',
+          userEmail: myProfile.email || '',
+          userPhone: myProfile.phone || '',
+          qualification: myProfile.qualification || '',
+          currentRole: myProfile.title || myProfile.currentRole || '',
+          paymentMethod:
+            (myProfile.paymentMethod as
+              | 'JazzCash'
+              | 'EasyPaisa'
+              | 'Bank Transfer') || 'JazzCash',
+          transactionId: myProfile.paymentReference || 'SCREENSHOT-UPLOADED',
+          amount: myProfile.paymentAmount || localizedPlan.monthlySubmissionAmount,
+          notes: `${localizedPlan.monthlyPlanLabel} Premium Subscription`,
+          receiptImageUrl: myProfile.receiptImageUrl || payReceiptUrl || '',
+          status: myProfile.paymentStatus as 'pending' | 'verified' | 'rejected',
+          submittedAt:
+            myProfile.createdAt || new Date().toISOString().slice(0, 19) + 'Z',
+          subscriptionPlan: myProfile.subscriptionPlan || localizedPlan.monthlyPlanLabel,
+          approvedAt: myProfile.premiumActivatedAt || '',
+          premiumExpiresAt: myProfile.premiumExpiresAt || ''
+        }
+      ];
+    }
+
+    return [];
+  }, [paymentRequests, authUser?.uid, myProfile, payReceiptUrl, localizedPlan]);
+
+  const myLatestApplication = myPaymentApplications[0] || null;
+
+  useEffect(() => {
+    preloadUserAvatarForPdf(myProfile.profilePicUrl);
+    users.forEach((u) => {
+      if (u.profilePicUrl) {
+        preloadUserAvatarForPdf(u.profilePicUrl);
+      }
+    });
+  }, [myProfile.profilePicUrl, users]);
+
+  const [deletedPaymentReqIds, setDeletedPaymentReqIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('fsp_deleted_payment_reqs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // All payment requests for Admin (combines /paymentRequests collection + any /users doc with paymentStatus/receiptImageUrl)
+  const adminAllPaymentRequests = useMemo<HubPaymentRequest[]>(() => {
+    const deletedSet = new Set(deletedPaymentReqIds);
+    const map = new Map<string, HubPaymentRequest>();
+    paymentRequests.forEach((req) => {
+      if (!deletedSet.has(req.id) && !deletedSet.has(`user-pay-${req.uid}`)) {
+        map.set(req.id, req);
+      }
+    });
+    users.forEach((u) => {
+      const fallbackId = `user-pay-${u.uid}`;
+      if (deletedSet.has(fallbackId)) return;
+      if (
+        (u.paymentStatus && u.paymentStatus !== 'none') ||
+        Boolean(u.receiptImageUrl)
+      ) {
+        const hasExistingForUid = Array.from(map.values()).some(
+          (r) => r.uid === u.uid
+        );
+        if (!hasExistingForUid) {
+          map.set(fallbackId, {
+            id: fallbackId,
+            uid: u.uid,
+            userName: u.name || 'Food Specialist',
+            userEmail: u.email || '',
+            userPhone: u.phone || '',
+            qualification: u.qualification || '',
+            currentRole: u.title || u.currentRole || '',
+            paymentMethod:
+              (u.paymentMethod as 'JazzCash' | 'EasyPaisa' | 'Bank Transfer') ||
+              'JazzCash',
+            transactionId: u.paymentReference || 'SCREENSHOT-UPLOADED',
+            amount: u.paymentAmount || localizedPlan.monthlySubmissionAmount,
+            notes: `${localizedPlan.monthlyPlanLabel} Premium Subscription`,
+            receiptImageUrl: u.receiptImageUrl || '',
+            status:
+              (u.paymentStatus as 'pending' | 'verified' | 'rejected') ||
+              'pending',
+            submittedAt: u.createdAt || '',
+            subscriptionPlan: u.subscriptionPlan || localizedPlan.monthlyPlanLabel,
+            approvedAt: u.premiumActivatedAt || '',
+            premiumExpiresAt: u.premiumExpiresAt || ''
+          });
+        }
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      return (b.submittedAt || '').localeCompare(a.submittedAt || '');
+    });
+  }, [paymentRequests, users, deletedPaymentReqIds, localizedPlan]);
+
+  const pendingPaymentRequestsCount = useMemo(
+    () =>
+      adminAllPaymentRequests.filter((r) => r.status === 'pending').length,
+    [adminAllPaymentRequests]
   );
 
   // Last 5 Days Expiry Countdown for Paid Premium Members
@@ -3956,6 +3983,71 @@ export default function App() {
     } catch {}
   };
 
+  const handleReplySupportTicket = async (
+    ticket: SupportTicketItem,
+    replyText: string,
+    nextStatus: SupportTicketStatus
+  ) => {
+    const nowIso = new Date().toISOString();
+    const cleanReply = replyText.trim().slice(0, 3000);
+    try {
+      const patch: Partial<SupportTicketItem> = {
+        status: nextStatus,
+        updatedAt: nowIso
+      };
+      if (cleanReply) {
+        patch.adminReply = cleanReply;
+        patch.adminRepliedAt = nowIso;
+      }
+      await setDoc(doc(db, 'supportTickets', ticket.id), patch, { merge: true });
+
+      if (!ticket.isGuest && ticket.uid && !ticket.uid.startsWith('guest_') && cleanReply) {
+        const targetUser = users.find((u) => u.uid === ticket.uid);
+        if (targetUser) {
+          const existingAlerts = targetUser.toolsData?.portalNotifications || [];
+          const newAlert: UserPortalNotification = {
+            id: `notif-sup-${Date.now()}`,
+            title: `Support Reply: ${ticket.subject.slice(0, 48)}`,
+            message: cleanReply.slice(0, 320),
+            type: 'system',
+            createdAt: nowIso,
+            read: false
+          };
+          await setDoc(
+            doc(db, 'users', targetUser.uid),
+            {
+              toolsData: {
+                ...(targetUser.toolsData || DEFAULT_USER_TOOLS_DATA),
+                portalNotifications: [newAlert, ...existingAlerts].slice(0, 30)
+              }
+            },
+            { merge: true }
+          );
+        }
+      }
+
+      setAdminStatusBanner(
+        `Updated support request "${ticket.subject}" (${nextStatus})${
+          cleanReply ? ' and sent Admin reply to user.' : '.'
+        }`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `supportTickets/${ticket.id}`);
+    }
+  };
+
+  const handleDeleteSupportTicket = async (ticketId: string) => {
+    try {
+      await deleteDoc(doc(db, 'supportTickets', ticketId));
+      setSupportTickets((prev) => prev.filter((t) => t.id !== ticketId));
+      setAdminStatusBanner('Deleted support request / custom opinion.');
+      setTimeout(() => setAdminStatusBanner(null), 3500);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `supportTickets/${ticketId}`);
+    }
+  };
+
   const handleExportFullBackupJson = () => {
     const backupPayload = {
       exportedAt: new Date().toISOString(),
@@ -4115,6 +4207,9 @@ export default function App() {
         lastDispatchConfirmation={lastDispatchConfirmation}
         onClearDispatchConfirmation={() => setLastDispatchConfirmation(null)}
         onSetDispatchConfirmation={setLastDispatchConfirmation}
+        supportTickets={supportTickets}
+        onReplySupportTicket={handleReplySupportTicket}
+        onDeleteSupportTicket={handleDeleteSupportTicket}
       />
     );
   }
@@ -6259,7 +6354,16 @@ export default function App() {
                               {t.title}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {t.duration} • {t.fees}
+                              {t.duration} •{' '}
+                              {geo.isPakistan
+                                ? t.fees
+                                : `Free Study & Exam · ${
+                                    getLocalizedCertificateFee(
+                                      t.certificateFeeRs || 1000,
+                                      liveGateway,
+                                      geo
+                                    ).formattedWithUsdHint
+                                  } Certificate`}
                             </div>
                           </div>
                           <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
@@ -8560,6 +8664,18 @@ export default function App() {
           monthlyFeeUsd={liveGateway.monthlyFeeUsd}
           yearlyFeeUsd={liveGateway.yearlyFeeUsd}
           yearlyDiscountPct={liveGateway.yearlyDiscountPct}
+        />
+
+        {/* FLOATING SUPPORT AND HELP, ISSUE HIGHLIGHT & CUSTOM OPINION WIDGET */}
+        <SupportAgentWidget
+          user={myProfile}
+          isSignedIn={Boolean(authUser)}
+          isUserPaid={Boolean(isCurrentUserPaid && !hasExpiredPremium)}
+          routeName={route.name}
+          activeToolSection={activeToolSection}
+          myTickets={supportTickets}
+          paymentGateway={liveGateway}
+          onOpenAuthModal={() => setShowGuestAuthModal(true)}
         />
 
         {/* FACTORY FLOOR OFFLINE MODE TOAST / INDICATOR */}

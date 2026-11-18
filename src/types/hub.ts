@@ -1195,3 +1195,35 @@ export interface OrganizationComplaintRecord {
   createdAt: string;
   updatedAt?: string;
 }
+
+export type SupportRequestType = 'issue_report' | 'custom_opinion' | 'admin_chat';
+export type SupportTicketStatus = 'open' | 'in_review' | 'resolved';
+
+export interface SupportTranscriptMessage {
+  role: 'user' | 'assistant';
+  text: string;
+  at: string;
+}
+
+export interface SupportTicketItem {
+  id: string;
+  uid: string;
+  isGuest: boolean;
+  userName: string;
+  userEmail: string;
+  userPhone: string;
+  userPlan: 'guest' | 'free' | 'paid';
+  requestType: SupportRequestType;
+  pageContext: string;
+  subject: string;
+  message: string;
+  rating?: number;
+  chatTranscript?: SupportTranscriptMessage[];
+  status: SupportTicketStatus;
+  adminReply?: string;
+  adminRepliedAt?: string;
+  userFollowUp?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+

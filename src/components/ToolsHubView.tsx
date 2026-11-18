@@ -817,8 +817,8 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           >
             <Crown className="w-4 h-4" />
             <span>
-              Renew Premium Membership Now (Rs. {monthlyFeeRs}/Month • Rs.{' '}
-              {yearlyFeeRs}/Year)
+              Renew Premium Membership Now ({localizedPlan.monthlyWithUsdHint}/Month •{' '}
+              {localizedPlan.yearlyWithUsdHint}/Year)
             </span>
           </button>
         </div>

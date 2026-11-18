@@ -61,7 +61,8 @@ import { AlisonCourseModuleViewer } from './AlisonCourseModuleViewer';
 import { CertificateBundleOffersCard } from './PricingAndBundlesSection';
 import {
   useGeoCurrency,
-  getLocalizedCertificateFee
+  getLocalizedCertificateFee,
+  formatUsdConverted
 } from '../lib/geoCurrency';
 import { buildLinkedInAddCertificateUrl } from '../lib/pwaNotifications';
 import {
@@ -1791,10 +1792,23 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                     {selectedCustomTrainingForReg.title}
                   </h3>
                   <p className="text-xs text-[#105E9A] font-bold">
-                    Fee: Rs. {Number(selectedCustomTrainingForReg.priceRs || 0).toLocaleString()}
-                    {selectedCustomTrainingForReg.priceUsd
-                      ? ` ($${selectedCustomTrainingForReg.priceUsd} USD)`
-                      : ''}{' '}
+                    Fee:{' '}
+                    {geo.isPakistan
+                      ? `Rs. ${Number(selectedCustomTrainingForReg.priceRs || 0).toLocaleString()}`
+                      : formatUsdConverted(
+                          selectedCustomTrainingForReg.priceUsd &&
+                            selectedCustomTrainingForReg.priceUsd > 0
+                            ? selectedCustomTrainingForReg.priceUsd
+                            : Math.max(
+                                5,
+                                Math.round(
+                                  (Number(selectedCustomTrainingForReg.priceRs || 0) ||
+                                    1000) /
+                                    (geo.usdToPkrRate || 278.5)
+                                )
+                              ),
+                          geo
+                        ).localWithUsdHint}{' '}
                     · Duration: {selectedCustomTrainingForReg.duration} · Mode:{' '}
                     {selectedCustomTrainingForReg.mode}
                   </p>
@@ -1858,12 +1872,26 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           selectedCustomTrainingForReg.feeRs ??
                           0
                       );
+                      const localizedCustomFee = geo.isPakistan
+                        ? selectedCustomTrainingForReg.fee ||
+                          `Rs. ${numericFee.toLocaleString()}`
+                        : formatUsdConverted(
+                            selectedCustomTrainingForReg.priceUsd &&
+                              selectedCustomTrainingForReg.priceUsd > 0
+                              ? selectedCustomTrainingForReg.priceUsd
+                              : Math.max(
+                                  5,
+                                  Math.round(
+                                    (numericFee || 1000) /
+                                      (geo.usdToPkrRate || 278.5)
+                                  )
+                                ),
+                            geo
+                          ).localWithUsdHint;
                       await onSubmitCustomTrainingRegistration?.({
                         trainingId: selectedCustomTrainingForReg.id,
                         trainingTitle: selectedCustomTrainingForReg.title,
-                        trainingFee:
-                          selectedCustomTrainingForReg.fee ||
-                          `Rs. ${numericFee.toLocaleString()}`,
+                        trainingFee: localizedCustomFee,
                         trainingCode: selectedCustomTrainingForReg.code,
                         trainingPriceRs: numericFee,
                         name: regName.trim(),
@@ -2079,8 +2107,21 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                           #{idx + 1} · {ct.code} · {ct.mode}
                         </span>
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black">
-                          Fee: Rs. {Number(ct.priceRs || 0).toLocaleString()}
-                          {ct.priceUsd ? ` ($${ct.priceUsd})` : ''}
+                          Fee:{' '}
+                          {geo.isPakistan
+                            ? `Rs. ${Number(ct.priceRs || 0).toLocaleString()}`
+                            : formatUsdConverted(
+                                ct.priceUsd && ct.priceUsd > 0
+                                  ? ct.priceUsd
+                                  : Math.max(
+                                      5,
+                                      Math.round(
+                                        (Number(ct.priceRs || 0) || 1000) /
+                                          (geo.usdToPkrRate || 278.5)
+                                      )
+                                    ),
+                                geo
+                              ).localWithUsdHint}
                         </span>
                       </div>
 
@@ -2819,7 +2860,18 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       </h3>
 
                       <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
-                        {course.description}
+                        {geo.isPakistan
+                          ? course.description
+                          : (course.description || '').replace(
+                              /\(Certificate Fee:\s*Rs\.?\s*[\d,]+\)/gi,
+                              `(Certificate Fee: ${
+                                getLocalizedCertificateFee(
+                                  course.certificateFeeRs || 1000,
+                                  paymentGatewayConfig,
+                                  geo
+                                ).formattedWithUsdHint
+                              })`
+                            )}
                       </p>
 
                       <div className="text-[11px] text-slate-500 font-medium space-y-1 pt-1">

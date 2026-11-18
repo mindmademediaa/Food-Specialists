@@ -521,6 +521,64 @@ service cloud.firestore {
         data.payload is map;
     }
 
+    function isValidSupportTicket(data, ticketId) {
+      return data is map &&
+        data.keys().hasAll([
+          'id',
+          'uid',
+          'isGuest',
+          'userName',
+          'userPlan',
+          'requestType',
+          'pageContext',
+          'subject',
+          'message',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'uid',
+          'isGuest',
+          'userName',
+          'userEmail',
+          'userPhone',
+          'userPlan',
+          'requestType',
+          'pageContext',
+          'subject',
+          'message',
+          'rating',
+          'chatTranscript',
+          'status',
+          'adminReply',
+          'adminRepliedAt',
+          'userFollowUp',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.id == ticketId &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.isGuest is bool &&
+        data.userName is string && data.userName.size() >= 1 && data.userName.size() <= 120 &&
+        (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 200)) &&
+        (!('userPhone' in data) || (data.userPhone is string && data.userPhone.size() <= 60)) &&
+        data.userPlan in ['guest', 'free', 'paid'] &&
+        data.requestType in ['issue_report', 'custom_opinion', 'admin_chat'] &&
+        data.pageContext is string && data.pageContext.size() >= 1 && data.pageContext.size() <= 160 &&
+        data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 200 &&
+        data.message is string && data.message.size() >= 1 && data.message.size() <= 3000 &&
+        (!('rating' in data) || (data.rating is number && data.rating >= 1 && data.rating <= 5)) &&
+        (!('chatTranscript' in data) || (data.chatTranscript is list && data.chatTranscript.size() <= 30 && (data.chatTranscript.size() == 0 || data.chatTranscript[0] is map))) &&
+        data.status in ['open', 'in_review', 'resolved'] &&
+        (!('adminReply' in data) || (data.adminReply is string && data.adminReply.size() <= 3000)) &&
+        (!('adminRepliedAt' in data) || (data.adminRepliedAt is string && data.adminRepliedAt.size() <= 64)) &&
+        (!('userFollowUp' in data) || (data.userFollowUp is string && data.userFollowUp.size() <= 2000)) &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64 &&
+        data.updatedAt is string && data.updatedAt.size() >= 1 && data.updatedAt.size() <= 64;
+    }
+
     // Strict Per-User Profile & Community Visibility Rules:
     // 1. Only the authenticated owner (request.auth.uid == uid) or Admin can create, update, or delete their profile.
     // 2. Public visitors and signed-in users can read the sanitized /users/{uid} profile document; private PII is isolated in /users/{uid}/private/{docId}.
@@ -782,6 +840,40 @@ service cloud.firestore {
           request.resource.data.ownerUid == resource.data.ownerUid;
         allow delete: if (isOwner(uid) || isAdmin()) && isValidId(uid) && isValidId(moduleId);
       }
+    }
+
+    // AI Support Escalations, Issue Highlights & Custom User Opinions
+    // - Signed-in users can read/list ONLY their own tickets and add follow-ups until resolved.
+    // - Guests can submit valid open requests (strictly without adminReply), readable ONLY by Admin (preventing any PII leak).
+    // - Admin can list, review, reply to, resolve, or delete any ticket inside Admin Control Panel.
+    match /supportTickets/{ticketId} {
+      allow get: if isValidId(ticketId) && (isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isValidId(ticketId) &&
+        isValidSupportTicket(request.resource.data, ticketId) &&
+        request.resource.data.status == 'open' &&
+        !('adminReply' in request.resource.data) &&
+        (
+          (isSignedIn() &&
+            request.resource.data.isGuest == false &&
+            request.resource.data.uid == request.auth.uid) ||
+          (!isSignedIn() &&
+            request.resource.data.isGuest == true &&
+            request.resource.data.uid.matches('^guest_[a-zA-Z0-9_\\-]+$'))
+        );
+      allow update: if isValidId(ticketId) &&
+        isValidSupportTicket(request.resource.data, ticketId) &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        (
+          isAdmin() ||
+          (isSignedIn() &&
+            resource.data.uid == request.auth.uid &&
+            resource.data.status != 'resolved' &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userFollowUp', 'message', 'updatedAt']))
+        );
+      allow delete: if isValidId(ticketId) && (isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid));
     }
   }
 }
