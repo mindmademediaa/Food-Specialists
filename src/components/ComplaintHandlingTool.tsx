@@ -749,7 +749,7 @@ export const ComplaintHandlingTool: React.FC<ComplaintHandlingToolProps> = ({
     if (!orgProfile) return;
     setExportingPdfId(rec.id);
     try {
-      await downloadSingleComplaintCapaPdf(orgProfile, rec);
+      await downloadSingleComplaintCapaPdf(orgProfile, rec, user?.name || '');
       showToast('success', `Downloaded CAPA Report PDF (${rec.complaintCode}).`);
     } finally {
       setExportingPdfId(null);

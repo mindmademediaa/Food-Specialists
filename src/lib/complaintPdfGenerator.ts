@@ -120,7 +120,8 @@ function severityLabel(sev: OrganizationComplaintRecord['severity']): string {
 
 export async function downloadSingleComplaintCapaPdf(
   org: ComplaintOrganizationProfile,
-  complaint: OrganizationComplaintRecord
+  complaint: OrganizationComplaintRecord,
+  actionByUserName?: string
 ): Promise<void> {
   const logoPng = await loadImageAsDataUrl(org.logoUrl, 240);
   const evidencePng = await loadImageAsDataUrl(complaint.evidencePhotoUrl, 480);
@@ -390,71 +391,34 @@ export async function downloadSingleComplaintCapaPdf(
     [13, 92, 58]
   );
 
-  // Sign-off footer with Electronic / Digital Signature Stamp
-  ensureSpace(32);
-  const sigLineY = y + 16;
-  const sigColW = 76;
+  // Clean Sign-off Lines (without "Digitally Signed" stamp on upper lines)
+  ensureSpace(26);
+  const sigLineY = y + 12;
+  const sigColW = 74;
   const rightSigX = W - margin - sigColW;
-  const investigatorName = (
+  const responsibleUserName = (
     complaint.assignedTo ||
+    actionByUserName ||
     org.companyName ||
     'Quality Assurance / Manager'
   )
     .trim()
-    .slice(0, 34);
+    .slice(0, 40);
   const signedDateLabel = formatReadableDate(
-    complaint.updatedAt || complaint.createdAt
+    complaint.closedAt || complaint.updatedAt || complaint.createdAt
   );
-
-  // Left: Prepared / Investigated By — Digitally Signed
-  doc.setFillColor(244, 248, 253);
-  doc.setDrawColor(191, 219, 254);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(margin, y + 1, sigColW, 13.5, 1.8, 1.8, 'FD');
-
-  doc.setFont('helvetica', 'bolditalic');
-  doc.setFontSize(11);
-  doc.setTextColor(15, 37, 71);
-  doc.text('Digitally Signed', margin + 3.5, y + 7.2);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6.8);
-  doc.setTextColor(22, 115, 184);
-  doc.text(
-    `Verified by ${investigatorName} · ${signedDateLabel}`,
-    margin + 3.5,
-    y + 12.2,
-    { maxWidth: sigColW - 6 }
-  );
+  doc.setFontSize(8.5);
+  doc.setTextColor(26, 33, 56);
+  doc.text(responsibleUserName, margin, sigLineY - 2, {
+    maxWidth: sigColW - 2
+  });
 
-  // Right: Approved & Closed By
   if (complaint.status === 'closed') {
-    const closedDateLabel = formatReadableDate(
-      complaint.closedAt || complaint.updatedAt || complaint.createdAt
-    );
-    doc.setFillColor(240, 253, 244);
-    doc.setDrawColor(187, 247, 208);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(rightSigX, y + 1, sigColW, 13.5, 1.8, 1.8, 'FD');
-
-    doc.setFont('helvetica', 'bolditalic');
-    doc.setFontSize(11);
-    doc.setTextColor(21, 128, 61);
-    doc.text('Digitally Signed', rightSigX + 3.5, y + 7.2);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.8);
-    doc.setTextColor(21, 128, 61);
-    doc.text(
-      `Approved & Closed · ${closedDateLabel}`,
-      rightSigX + 3.5,
-      y + 12.2
-    );
-  } else {
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(7.8);
-    doc.setTextColor(148, 163, 184);
-    doc.text('Pending Final Closure Sign-Off', rightSigX + 2, y + 11.5);
+    doc.text(responsibleUserName, rightSigX, sigLineY - 2, {
+      maxWidth: sigColW - 2
+    });
   }
 
   doc.setDrawColor(148, 163, 184);
@@ -468,18 +432,36 @@ export async function downloadSingleComplaintCapaPdf(
   doc.text('Prepared / Investigated By (QA / Manager)', margin, sigLineY + 4.5);
   doc.text('Approved & Closed By (Authorized Signatory)', rightSigX, sigLineY + 4.5);
 
+  const actionRoleLabel =
+    complaint.status === 'closed'
+      ? 'Closed & Investigated by'
+      : 'Investigated by';
+
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
+    doc.setDrawColor(210, 222, 234);
+    doc.setLineWidth(0.3);
+    doc.line(margin, H - 14.5, W - margin, H - 14.5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.6);
+    doc.setTextColor(15, 37, 71);
+    doc.text(
+      `Digitally Signed Document  ·  ${actionRoleLabel}: ${responsibleUserName}  ·  ${signedDateLabel}`,
+      margin,
+      H - 10
+    );
+
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFontSize(7.2);
     doc.setTextColor(100, 116, 139);
     doc.text(
-      `${org.companyName} — Complaint & CAPA Record ${complaint.complaintCode} · Generated via Food Science Portal`,
+      `${org.companyName} — Complaint & CAPA Record ${complaint.complaintCode} · Food Science Portal`,
       margin,
-      H - 7
+      H - 5.5
     );
-    doc.text(`Page ${p} of ${totalPages}`, W - margin, H - 7, { align: 'right' });
+    doc.text(`Page ${p} of ${totalPages}`, W - margin, H - 5.5, { align: 'right' });
   }
 
   doc.save(
