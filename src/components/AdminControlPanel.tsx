@@ -63,7 +63,7 @@ import {
   SupportTicketItem,
   SupportTicketStatus
 } from '../types/hub';
-import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
+import { FS_PORTAL_LOGO_WIDE_DATA_URI } from '../lib/brandLogo';
 import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsData';
 import {
   buildDirectCertificateVerifyUrl,
@@ -2125,22 +2125,17 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               type="button"
               onClick={() => setActiveTab('menu')}
               title="Admin Control Panel Home"
-              className="w-9 h-9 rounded-xl bg-white p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-[#D2DEEA] cursor-pointer"
+              className="h-9 sm:h-10 px-2.5 py-1 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm border border-[#D2DEEA] cursor-pointer"
             >
               <img
-                src={FS_PORTAL_LOGO_DATA_URI}
+                src={FS_PORTAL_LOGO_WIDE_DATA_URI}
                 alt="Food Science Portal Admin"
-                className="w-full h-full object-contain select-none"
+                className="h-full w-auto max-w-[140px] sm:max-w-[165px] object-contain select-none"
               />
             </button>
-            <div className="flex items-center gap-2 min-w-0">
-              <h1 className="text-[15px] sm:text-[18px] font-extrabold tracking-tight leading-none text-white truncate">
-                Food Science <span className="text-[#38BDF8]">Portal</span>
-              </h1>
-              <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold uppercase tracking-wider shrink-0">
-                Admin
-              </span>
-            </div>
+            <span className="px-2 py-0.5 rounded-md bg-[#1673B8] text-white text-[10px] font-extrabold uppercase tracking-wider shrink-0">
+              Admin
+            </span>
           </div>
 
           {/* Integrated Quick Search Bar + All Pages + View App + 3-Dots Menu (Sign Out inside) */}

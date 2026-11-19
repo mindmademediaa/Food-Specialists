@@ -1171,7 +1171,11 @@ export const FoodAuthorityLimitsLookupTool: React.FC = () => {
       'Spices, Grains & Mycotoxins',
       'Beverages & Juices',
       'Meat, Poultry & Seafood',
-      'Bakery, Flour & Sugar'
+      'Bakery, Flour & Sugar',
+      'Heavy Metals & Contaminants',
+      'Honey, Jams, Sauces & Tea',
+      'Infant Formula & Special Nutrition',
+      'Plant Hygiene & Swab Limits'
     ],
     []
   );
@@ -1211,10 +1215,10 @@ export const FoodAuthorityLimitsLookupTool: React.FC = () => {
           <span>Statutory Standards &amp; Critical Limits Reference</span>
         </div>
         <h2 className="text-lg sm:text-xl font-black text-[#1A2138]">
-          Food Authority Limits Quick Lookup (PFA / PSQCA / SFDA / Codex)
+          Food Authority Limits Quick Lookup (PFA / PSQCA / SFDA / Codex / EU / FDA / ISO)
         </h2>
         <p className="text-xs text-[#5A6C84] max-w-3xl">
-          Instant plant-floor &amp; laboratory lookup of statutory MRLs, microbiological criteria, fat/SNF standards, mycotoxin ceilings, and official analytical methods across Punjab Food Authority, PSQCA, GCC SFDA/GSO, and Codex Alimentarius.
+          Comprehensive international &amp; national statutory critical limits: MRLs, microbiological criteria, heavy metals, mycotoxins, dairy/oil/water/honey standards, infant formula, and plant hygiene swabs across PFA, PSQCA, GCC SFDA/GSO, Codex Alimentarius, EFSA/EU, US FDA, and FSSAI/ISO.
         </p>
       </div>
 
@@ -1226,7 +1230,7 @@ export const FoodAuthorityLimitsLookupTool: React.FC = () => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search parameter, food, or standard (e.g. Aflatoxin, Peroxide, TDS, Fat, Bromate)..."
+            placeholder="Search parameter, food, or standard (e.g. Aflatoxin, Acrylamide, Lead, Patulin, HMF, Swab, Bromate)..."
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#D2DEEA] text-xs font-bold text-[#1A2138] focus:outline-none focus:border-[#1673B8] focus:bg-white"
           />
         </div>
@@ -1237,11 +1241,14 @@ export const FoodAuthorityLimitsLookupTool: React.FC = () => {
             onChange={(e) => setAuthorityFilter(e.target.value as 'All' | FoodAuthorityBody)}
             className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#D2DEEA] text-xs font-extrabold text-[#1A2138]"
           >
-            <option value="All">All Authorities (PFA / PSQCA / SFDA / Codex)</option>
+            <option value="All">All Authorities (Global &amp; National)</option>
             <option value="PFA">PFA (Punjab Food Authority)</option>
             <option value="PSQCA">PSQCA (Pakistan Standards)</option>
             <option value="SFDA / GSO">SFDA / GSO (GCC Export)</option>
-            <option value="Codex">Codex Alimentarius</option>
+            <option value="Codex">Codex Alimentarius (WHO/FAO)</option>
+            <option value="EFSA / EU">EFSA / EU Regulations</option>
+            <option value="FDA / USA">US FDA / USDA FSIS</option>
+            <option value="FSSAI / ISO">FSSAI / ISO / BRCGS</option>
           </select>
         </div>
 

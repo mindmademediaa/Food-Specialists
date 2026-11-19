@@ -90,7 +90,6 @@ export async function saveFactoryFloorOfflinePack(): Promise<FactoryOfflinePackM
           './?section=tools&tool=authority-limits',
           './?section=tools&tool=lab-formula',
           './?section=tools&tool=pearson-square',
-          './?section=tools&tool=thermal-aw',
           './?section=tools&tool=e-numbers',
           './?section=trainings'
         ]
@@ -177,8 +176,8 @@ export async function showPortalPushNotification(
       if (reg && 'showNotification' in reg) {
         await reg.showNotification(title, {
           body,
-          icon: '/favicon.ico',
-          badge: '/favicon.ico',
+          icon: '/pwa-192x192.png?v=fsp-20261119-v11',
+          badge: '/favicon.png?v=fsp-20261119-v11',
           data: { url: targetUrl }
         });
         return;
@@ -186,7 +185,7 @@ export async function showPortalPushNotification(
     }
     new Notification(title, {
       body,
-      icon: '/favicon.ico'
+      icon: '/pwa-192x192.png?v=fsp-20261119-v11'
     });
   } catch {
     // Ignore restricted notification contexts

@@ -81,12 +81,11 @@ const TOOL_LABELS: Record<string, string> = {
   'pearson-square': 'Pearson Square Batch Tool',
   'molarity-normality': 'Molarity & Normality Calculator',
   'moisture-ash': 'Moisture, Ash & Yield %',
-  'production-floor': 'Production Floor & OEE',
+  'production-floor': 'Production Yield & Efficiency Tool',
   'e-numbers': 'E-Numbers Instant Finder',
   'job-cover-letter': 'Job Cover Letter Generator',
   'citation-generator': 'Citation & Reference Generator',
   'nutrition-label': 'Nutrition Facts Label Generator',
-  'thermal-aw': 'Thermal (F0 / PU) & aw Calculator',
   'templates-vault': 'QA/QC, ISO 9001, FSSC 22000 & HACCP Vault',
   'authority-limits': 'Food Authority Limits Lookup',
   'complaint-handling': 'Complaint Handling & QR CAPA'

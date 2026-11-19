@@ -28,7 +28,7 @@ import {
   BellOff,
   Award
 } from 'lucide-react';
-import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
+import { FS_PORTAL_LOGO_WIDE_DATA_URI } from '../lib/brandLogo';
 import { LegalTabType } from './LegalComplianceModal';
 import { HubJob, UserPortalNotification } from '../types/hub';
 import {
@@ -188,30 +188,19 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Brand Logo + Food Science Portal Title */}
+          {/* Brand Logo (Full Horizontal Food Science Portal Lockup) */}
           <button
             type="button"
             onClick={onHomeClick}
             aria-label="Food Science Portal Home"
             title="Food Science Portal"
-            className="flex items-center gap-1.5 sm:gap-3 min-w-0 cursor-pointer text-left group"
+            className="flex items-center min-w-0 cursor-pointer text-left group"
           >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl bg-white border border-[#1673B8]/35 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs group-hover:border-[#1673B8] transition-colors">
-              <img
-                src={FS_PORTAL_LOGO_DATA_URI}
-                alt="Food Science Portal"
-                className="w-full h-full object-contain select-none"
-              />
-            </div>
-
-            <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap min-w-0 leading-none">
-              <span className="text-[13.5px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight text-[#0C182D] truncate">
-                Food Science
-              </span>
-              <span className="text-[13.5px] sm:text-[18.5px] md:text-[20px] font-black tracking-tight text-[#1673B8] underline decoration-[#1673B8] decoration-2 underline-offset-4 shrink-0">
-                Portal
-              </span>
-            </div>
+            <img
+              src={FS_PORTAL_LOGO_WIDE_DATA_URI}
+              alt="Food Science Portal"
+              className="h-8 sm:h-10 md:h-11 w-auto max-w-[165px] sm:max-w-[215px] object-contain select-none transition-opacity group-hover:opacity-90"
+            />
           </button>
         </div>
 

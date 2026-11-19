@@ -28,19 +28,19 @@
   },
   "icons": [
     {
-      "src": "/pwa-192x192.png?v=fsp-20261118-v8",
+      "src": "/pwa-192x192.png?v=fsp-20261119-v11",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa-512x512.png?v=fsp-20261118-v8",
+      "src": "/pwa-512x512.png?v=fsp-20261119-v11",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa-maskable-512x512.png?v=fsp-20261118-v8",
+      "src": "/pwa-maskable-512x512.png?v=fsp-20261119-v11",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

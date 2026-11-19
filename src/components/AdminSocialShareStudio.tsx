@@ -191,7 +191,7 @@ export const AdminSocialShareStudio: React.FC<AdminSocialShareStudioProps> = ({
         id: 'tool-production-floor',
         category: 'tools',
         badge: 'Manufacturing & OEE',
-        title: 'Production Floor Net Efficiency (OEE), Syrup Yield & Labor',
+        title: 'Production Yield & Efficiency Tool (OEE & Syrup Yield)',
         subtitle:
           'Measure 1-Hour & Full-Day Line OEE, CIP/Changeover downtime, Syrup Room yield & worker KPIs.',
         url: `${PORTAL_BASE_URL}/?section=tools&tool=production-floor`,
@@ -359,35 +359,6 @@ export const AdminSocialShareStudio: React.FC<AdminSocialShareStudioProps> = ({
             { label: 'Total Dry Matter', value: '87.80% Solids' }
           ],
           actionLabel: 'Run Proximate Calculation'
-        }
-      },
-      {
-        id: 'tool-thermal-aw',
-        category: 'tools',
-        badge: 'Retort & Shelf-Life',
-        title: 'Thermal Processing (F0 / Pasteurization) & Water Activity (aw)',
-        subtitle:
-          'Evaluate retort sterilization lethality (F0), Pasteurization Units (PU) & microbial aw hurdles.',
-        url: `${PORTAL_BASE_URL}/?section=tools&tool=thermal-aw`,
-        benefits: [
-          'Computes F0 lethality against Clostridium botulinum 12D benchmark',
-          'Calculates Pasteurization Units (PU) for beer, juice & dairy lines',
-          'Maps Water Activity (aw) hurdles against Salmonella, Staphylococcus & molds',
-          'Essential tool for Process Authority & Shelf-Life Validation engineers'
-        ],
-        hashtags: '#ThermalProcessing #FoodMicrobiology #WaterActivity #FoodSafety',
-        mockup: {
-          headerLabel: 'Lethality F0 & aw Validator',
-          statusLabel: '12D Safety Check',
-          inputs: [
-            { label: 'Retort Core Temp', value: '121.1 °C (Z = 10 °C)' },
-            { label: 'Holding Time', value: '4.5 Minutes' }
-          ],
-          outputs: [
-            { label: 'Cumulative F0 Value', value: 'F0 = 4.50 min (Safe ≥ 3.0)', highlight: true },
-            { label: 'Microbial Hurdle', value: 'aw < 0.85 Pathogens Inhibited' }
-          ],
-          actionLabel: 'Validate Thermal Process'
         }
       },
       {

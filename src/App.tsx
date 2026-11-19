@@ -87,7 +87,10 @@ import {
   OperationType,
   handleFirestoreError
 } from './lib/firebase';
-import { FS_PORTAL_LOGO_DATA_URI } from './lib/brandLogo';
+import {
+  FS_PORTAL_LOGO_DATA_URI,
+  FS_PORTAL_LOGO_WIDE_DATA_URI
+} from './lib/brandLogo';
 import { preloadUserAvatarForPdf } from './lib/pdfBranding';
 import {
   HubUser,
@@ -2692,10 +2695,10 @@ export default function App() {
       },
       {
         id: 'production-floor' as const,
-        title: 'Production Floor Sanitizer ppm, Line Speed & OEE Tool',
-        category: 'Plant Operations & Sanitation',
+        title: 'Production Yield & Efficiency Tool',
+        category: 'Plant Operations & OEE',
         description:
-          'Calculate chlorine/QAC sanitizer ppm dosing, CIP flow rates, thermal pasteurization lethality, and OEE.'
+          'Calculate 1-hour & full-day net line efficiency (OEE), syrup room batch yield, waste, and labor productivity.'
       },
       {
         id: 'job-cover-letter' as const,
@@ -8611,17 +8614,12 @@ export default function App() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-8 border-b border-white/10">
                 {/* Col 1: Brand & Mission */}
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-white p-0.5 flex items-center justify-center shrink-0">
-                      <img
-                        src={FS_PORTAL_LOGO_DATA_URI}
-                        alt="Food Science Portal"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <span className="text-lg font-black tracking-tight text-white">
-                      Food Science <span className="text-sky-400">Portal</span>
-                    </span>
+                  <div className="inline-flex items-center rounded-xl bg-white px-3 py-1.5 shadow-sm">
+                    <img
+                      src={FS_PORTAL_LOGO_WIDE_DATA_URI}
+                      alt="Food Science Portal"
+                      className="h-9 sm:h-10 w-auto max-w-[190px] object-contain select-none"
+                    />
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings.

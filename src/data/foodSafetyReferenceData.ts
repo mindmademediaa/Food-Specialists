@@ -1,4 +1,11 @@
-export type FoodAuthorityBody = 'PFA' | 'PSQCA' | 'SFDA / GSO' | 'Codex';
+export type FoodAuthorityBody =
+  | 'PFA'
+  | 'PSQCA'
+  | 'SFDA / GSO'
+  | 'Codex'
+  | 'EFSA / EU'
+  | 'FDA / USA'
+  | 'FSSAI / ISO';
 
 export type FoodCommodityCategory =
   | 'Dairy & Milk'
@@ -7,7 +14,11 @@ export type FoodCommodityCategory =
   | 'Spices, Grains & Mycotoxins'
   | 'Beverages & Juices'
   | 'Meat, Poultry & Seafood'
-  | 'Bakery, Flour & Sugar';
+  | 'Bakery, Flour & Sugar'
+  | 'Heavy Metals & Contaminants'
+  | 'Honey, Jams, Sauces & Tea'
+  | 'Infant Formula & Special Nutrition'
+  | 'Plant Hygiene & Swab Limits';
 
 export interface FoodAuthorityLimitRecord {
   id: string;
@@ -283,6 +294,622 @@ export const FOOD_AUTHORITY_LIMITS: FoodAuthorityLimitRecord[] = [
     testMethod: 'ICUMSA GS2/3-10 & Monier-Williams',
     clauseRef: 'Codex CXS 212-1999 Sugars',
     complianceNote: 'Beverage bottling plants require Low-ICUMSA (< 45 IU) floc-free sugar to prevent acid-beverage flocculation.'
+  },
+
+  // ============================================================================
+  // ADDITIONAL DAIRY & MILK (INTERNATIONAL & REGIONAL)
+  // ============================================================================
+  {
+    id: 'pfa-buffalo-milk-fat',
+    authority: 'PFA',
+    category: 'Dairy & Milk',
+    product: 'Raw / Pasteurized Buffalo Milk',
+    parameter: 'Milk Fat (Minimum) & SNF (Minimum)',
+    limitValue: '≥ 5.0% Fat · ≥ 9.0% SNF',
+    unit: '% w/w',
+    limitType: 'Minimum',
+    testMethod: 'ISO 2446 Gerber / Lactoscan',
+    clauseRef: 'Punjab Pure Food Regulations 2018 (Dairy)',
+    complianceNote: 'Must be free from added water, urea, formalin, detergents, starch, and vegetable fat adulterants.'
+  },
+  {
+    id: 'codex-uht-milk-sterility',
+    authority: 'Codex',
+    category: 'Dairy & Milk',
+    product: 'UHT Sterilized Milk & Flavored Milk',
+    parameter: 'Commercial Sterility (30°C / 15 days & 55°C / 7 days)',
+    limitValue: '< 10 CFU / 0.1 mL · pH drop ≤ 0.2 · Zero Swelling',
+    unit: 'CFU / 0.1 mL',
+    limitType: 'Maximum',
+    testMethod: 'ISO 4833 / Incubation Stability Test',
+    clauseRef: 'Codex CAC/RCP 57-2004 / GSO 984',
+    complianceNote: 'Mandatory pre-incubation hold-and-release testing before shipping UHT milk cartons.'
+  },
+  {
+    id: 'efsa-dairy-listeria-cheese',
+    authority: 'EFSA / EU',
+    category: 'Dairy & Milk',
+    product: 'Ready-to-Eat Soft Cheese & Dairy Desserts',
+    parameter: 'Listeria monocytogenes (End of Shelf-Life)',
+    limitValue: 'Absent in 25 g (before leaving plant) · ≤ 100 CFU/g (if growth not supported)',
+    unit: 'CFU/g / 25 g',
+    limitType: 'Zero Tolerance',
+    testMethod: 'ISO 11290-1 / ISO 11290-2',
+    clauseRef: 'EU Commission Regulation (EC) No 2073/2005',
+    complianceNote: 'Challenge study or pH ≤ 4.4 / aw ≤ 0.92 validation required to justify 100 CFU/g limit.'
+  },
+  {
+    id: 'fda-milk-antibiotics-scc',
+    authority: 'FDA / USA',
+    category: 'Dairy & Milk',
+    product: 'Grade "A" Raw Milk for Pasteurization',
+    parameter: 'Somatic Cell Count (SCC), SPC & Beta-Lactam Drug Residues',
+    limitValue: 'SCC ≤ 750,000/mL · SPC ≤ 100,000 CFU/mL · Antibiotics = Zero (Negative)',
+    unit: 'cells/mL / CFU/mL',
+    limitType: 'Maximum',
+    testMethod: 'Charm / Delvotest / Fossomatic',
+    clauseRef: 'US FDA Grade "A" Pasteurized Milk Ordinance (PMO)',
+    complianceNote: 'Every bulk milk tanker must test negative for beta-lactam antibiotics before unloading.'
+  },
+  {
+    id: 'codex-butter-moisture-fat',
+    authority: 'Codex',
+    category: 'Dairy & Milk',
+    product: 'Salted & Unsalted Butter',
+    parameter: 'Minimum Milk Fat, Max Moisture & Max Non-Fat Milk Solids',
+    limitValue: 'Milk Fat ≥ 80.0% · Moisture ≤ 16.0% · MSNF ≤ 2.0%',
+    unit: '% w/w',
+    limitType: 'Range',
+    testMethod: 'ISO 3727-1 / ISO 3727-2 / ISO 3727-3',
+    clauseRef: 'Codex CXS 279-1971 Standard for Butter',
+    complianceNote: 'Moisture droplets must be finely dispersed (< 10 µm) to prevent mold and Pseudomonas spoilage.'
+  },
+  {
+    id: 'sfda-yogurt-acidity-cultures',
+    authority: 'SFDA / GSO',
+    category: 'Dairy & Milk',
+    product: 'Plain & Flavored Set/Stirred Yogurt',
+    parameter: 'Live Starter Cultures, Titratable Acidity & Coliforms',
+    limitValue: 'Live LAB ≥ 10⁷ CFU/g · Acidity 0.6–1.5% Lactic · Coliforms ≤ 10 CFU/g',
+    unit: 'CFU/g / %',
+    limitType: 'Range',
+    testMethod: 'ISO 7889 / ISO 4832',
+    clauseRef: 'GSO 2033 / SFDA Fermented Milks Standard',
+    complianceNote: 'Must contain viable Streptococcus thermophilus and Lactobacillus delbrueckii subsp. bulgaricus through expiry.'
+  },
+
+  // ============================================================================
+  // ADDITIONAL EDIBLE OILS & GHEE
+  // ============================================================================
+  {
+    id: 'efsa-oil-3mcpd-glycidyl',
+    authority: 'EFSA / EU',
+    category: 'Edible Oils & Ghee',
+    product: 'Refined Vegetable Oils (Palm, Sunflower, Soy, Canola)',
+    parameter: 'Glycidyl Fatty Acid Esters (GE) & 3-MCPD Esters',
+    limitValue: 'GE ≤ 1,000 µg/kg (500 µg/kg baby food) · 3-MCPD ≤ 1,250–2,500 µg/kg',
+    unit: 'µg/kg (ppb)',
+    limitType: 'Maximum',
+    testMethod: 'AOCS Cd 29a-13 / ISO 18363-1 (GC-MS)',
+    clauseRef: 'EU Regulation (EU) 2023/915 Contaminants',
+    complianceNote: 'Deodorization temperature must be optimized (< 240°C) with clay washing to control 3-MCPD and GE.'
+  },
+  {
+    id: 'pfa-frying-oil-tpm',
+    authority: 'PFA',
+    category: 'Edible Oils & Ghee',
+    product: 'Used Commercial Deep-Frying Oil (Restaurants & Snack Lines)',
+    parameter: 'Total Polar Materials (TPM) & Free Fatty Acid',
+    limitValue: 'TPM ≤ 24% – 25% (Discard Mandatory above 25%) · Smoke Point ≥ 170°C',
+    unit: '% TPM',
+    limitType: 'Maximum',
+    testMethod: 'Testo 270 Oil Tester / AOCS Cd 20-91',
+    clauseRef: 'PFA Frying Oil Safety Regulations / FSSAI RUCO',
+    complianceNote: 'Immediate oil discard required once TPM exceeds 24–25% to prevent carcinogenic aldehydes and polymers.'
+  },
+  {
+    id: 'codex-olive-oil-ev',
+    authority: 'Codex',
+    category: 'Edible Oils & Ghee',
+    product: 'Extra Virgin Olive Oil (EVOO)',
+    parameter: 'Free Fatty Acidity (as Oleic), Peroxide Value & UV K232/K270',
+    limitValue: 'FFA ≤ 0.8% · Peroxide Value ≤ 20 meq O₂/kg · K270 ≤ 0.22',
+    unit: '% / meq O₂/kg',
+    limitType: 'Maximum',
+    testMethod: 'ISO 660 / ISO 3960 / COI/T.20',
+    clauseRef: 'Codex CXS 33-1981 / IOC Trade Standard',
+    complianceNote: 'Cold-pressed mechanical extraction only; sensory panel must score zero defects and fruity median > 0.'
+  },
+  {
+    id: 'efsa-trans-fat-limit',
+    authority: 'EFSA / EU',
+    category: 'Edible Oils & Ghee',
+    product: 'Industrial Bakery Shortenings, Margarine & Processed Foods',
+    parameter: 'Industrial Trans Fatty Acids (iTFA)',
+    limitValue: '≤ 2.0 g per 100 g of Total Fat (WHO REPLACE Target)',
+    unit: '% of total fat',
+    limitType: 'Maximum',
+    testMethod: 'ISO 12966-4 Capillary GC-FID',
+    clauseRef: 'EU Reg (EU) 2019/649 & WHO Global Trans-Fat Elimination',
+    complianceNote: 'Partially hydrogenated oils (PHOs) are phased out globally; use interesterification or palm fractions.'
+  },
+
+  // ============================================================================
+  // ADDITIONAL DRINKING & BOTTLED WATER
+  // ============================================================================
+  {
+    id: 'codex-water-bromate-ozone',
+    authority: 'Codex',
+    category: 'Drinking & Bottled Water',
+    product: 'Ozonated Bottled Drinking Water',
+    parameter: 'Bromate (BrO₃⁻) Disinfection By-Product',
+    limitValue: '≤ 0.01 mg/L (10 µg/L / 10 ppb)',
+    unit: 'mg/L (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'ISO 15061 Ion Chromatography',
+    clauseRef: 'WHO Guidelines / Codex CXS 227-2001 / FDA 21 CFR 165.110',
+    complianceNote: 'Excessive ozone dosing in raw water containing bromide forms carcinogenic bromate — monitor O₃ residual (0.1–0.4 ppm).'
+  },
+  {
+    id: 'psqca-water-micro-pseudomonas',
+    authority: 'PSQCA',
+    category: 'Drinking & Bottled Water',
+    product: 'Packaged Drinking Water & Natural Mineral Water',
+    parameter: 'E. coli, Coliforms, Pseudomonas aeruginosa & TPC (22°C)',
+    limitValue: 'E. coli = 0/250 mL · Pseudomonas = 0/250 mL · TPC ≤ 100 CFU/mL',
+    unit: 'CFU / 250 mL',
+    limitType: 'Zero Tolerance',
+    testMethod: 'ISO 9308-1 / ISO 16266 Membrane Filtration',
+    clauseRef: 'PSQCA PS: 4639 / GSO 1025 Bottled Water',
+    complianceNote: 'Pseudomonas aeruginosa indicates biofilm contamination in filler nozzles, RO membranes, or cap chutes.'
+  },
+  {
+    id: 'fda-water-fluoride-nitrate',
+    authority: 'FDA / USA',
+    category: 'Drinking & Bottled Water',
+    product: 'Bottled Drinking Water (Potable Process & Retail)',
+    parameter: 'Nitrate (NO₃-N), Nitrite (NO₂-N), Arsenic & Lead',
+    limitValue: 'Nitrate ≤ 10 mg/L · Nitrite ≤ 1.0 mg/L · Arsenic ≤ 0.010 mg/L · Lead ≤ 0.005 mg/L',
+    unit: 'mg/L (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'EPA 200.8 ICP-MS / EPA 300.0 IC',
+    clauseRef: 'US FDA 21 CFR 165.110 Quality Standards',
+    complianceNote: 'FDA bottled water lead limit (5 ppb) is stricter than municipal tap water action level (15 ppb).'
+  },
+
+  // ============================================================================
+  // ADDITIONAL SPICES, GRAINS & MYCOTOXINS
+  // ============================================================================
+  {
+    id: 'efsa-mycotoxin-ota-spices',
+    authority: 'EFSA / EU',
+    category: 'Spices, Grains & Mycotoxins',
+    product: 'Red Chili, Black Pepper, Turmeric, Ginger & Nutmeg',
+    parameter: 'Ochratoxin A (OTA) & Aflatoxin B1 / Total',
+    limitValue: 'Chili/Paprika OTA ≤ 20 µg/kg · Other Spices OTA ≤ 15 µg/kg · AFB1 ≤ 5 µg/kg · Total Aflatoxin ≤ 10 µg/kg',
+    unit: 'µg/kg (ppb)',
+    limitType: 'Maximum',
+    testMethod: 'ISO 16050 / EN 14132 HPLC-FLD',
+    clauseRef: 'EU Regulation (EU) 2023/915',
+    complianceNote: 'Primary cause of EU RASFF border rejections for South Asian spices — dry rapidly to moisture < 10% and aw < 0.65.'
+  },
+  {
+    id: 'efsa-spices-sudan-dyes',
+    authority: 'EFSA / EU',
+    category: 'Spices, Grains & Mycotoxins',
+    product: 'Red Chili Powder, Paprika, Curry & Sumac',
+    parameter: 'Illegal Industrial Dyes (Sudan I, II, III, IV, Para Red, Rhodamine B)',
+    limitValue: 'Zero Tolerance (Not Detected; LOD ≤ 0.5 mg/kg)',
+    unit: 'mg/kg',
+    limitType: 'Zero Tolerance',
+    testMethod: 'LC-MS/MS Multi-Dye Screening',
+    clauseRef: 'EU Commission Decision 2005/402/EC & PFA Spices Standard',
+    complianceNote: 'Any trace detection of Sudan dyes triggers immediate global product recall and import ban.'
+  },
+  {
+    id: 'efsa-spices-eto-ethylene-oxide',
+    authority: 'EFSA / EU',
+    category: 'Spices, Grains & Mycotoxins',
+    product: 'Sesame Seeds, Spices, Herbs & Dried Vegetables',
+    parameter: 'Ethylene Oxide (EtO) + 2-Chloroethanol (Sum)',
+    limitValue: '≤ 0.05 – 0.1 mg/kg (EU MRL at LOQ)',
+    unit: 'mg/kg (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'GC-MS/MS (QuEChERS)',
+    clauseRef: 'EU Regulation (EC) No 396/2005',
+    complianceNote: 'EtO fumigation is banned for EU exports — use steam sterilization instead for microbial reduction.'
+  },
+  {
+    id: 'codex-cereal-don-fumonisin',
+    authority: 'Codex',
+    category: 'Spices, Grains & Mycotoxins',
+    product: 'Wheat Flour, Cornmeal & Breakfast Cereals',
+    parameter: 'Deoxynivalenol (DON / Vomitoxin) & Fumonisins (B1+B2)',
+    limitValue: 'Wheat Flour DON ≤ 1,000 µg/kg · Cornmeal Fumonisins ≤ 2,000 µg/kg',
+    unit: 'µg/kg (ppb)',
+    limitType: 'Maximum',
+    testMethod: 'AOAC 986.17 / LC-MS/MS',
+    clauseRef: 'Codex CXS 193-1995 General Standard for Contaminants',
+    complianceNote: 'Stricter thresholds (DON ≤ 200 µg/kg) apply to cereal-based infant foods.'
+  },
+  {
+    id: 'fda-peanuts-aflatoxin',
+    authority: 'FDA / USA',
+    category: 'Spices, Grains & Mycotoxins',
+    product: 'Peanuts, Tree Nuts, Corn & Peanut Butter',
+    parameter: 'Total Aflatoxins (B1 + B2 + G1 + G2)',
+    limitValue: '≤ 20 µg/kg (ppb) US FDA · ≤ 4 µg/kg (ppb) EU Ready-to-Eat',
+    unit: 'µg/kg (ppb)',
+    limitType: 'Maximum',
+    testMethod: 'AOAC 991.31 Immunoaffinity HPLC',
+    clauseRef: 'US FDA CPG Sec. 555.400 / EU Reg 2023/915',
+    complianceNote: 'Optical color sorting and roasting controls are mandatory CCPs for export nut processors.'
+  },
+
+  // ============================================================================
+  // ADDITIONAL BEVERAGES & JUICES
+  // ============================================================================
+  {
+    id: 'codex-apple-juice-patulin',
+    authority: 'Codex',
+    category: 'Beverages & Juices',
+    product: 'Apple Juice, Apple Nectar & Apple Concentrates',
+    parameter: 'Patulin Mycotoxin',
+    limitValue: '≤ 50 µg/kg (Regular Juice) · ≤ 10 µg/kg (Infant/Baby Apple Juice)',
+    unit: 'µg/kg (ppb)',
+    limitType: 'Maximum',
+    testMethod: 'AOAC 2000.02 HPLC-UV',
+    clauseRef: 'Codex CXS 193-1995 / EU Reg 2023/915 / FDA Action Level',
+    complianceNote: 'Sorting out bruised/rotten apples before crushing is the primary CCP to control Penicillium expansum patulin.'
+  },
+  {
+    id: 'sfda-energy-drink-caffeine',
+    authority: 'SFDA / GSO',
+    category: 'Beverages & Juices',
+    product: 'Caffeinated Energy Drinks & Cola Beverages',
+    parameter: 'Caffeine, Taurine & Mandatory Health Warnings',
+    limitValue: 'Energy Drinks ≤ 320 mg/L (32 mg/100 mL) · Cola ≤ 150–200 mg/L · Taurine ≤ 4,000 mg/L',
+    unit: 'mg/L (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'ISO 20481 HPLC-UV',
+    clauseRef: 'GSO 1926 Energy Drinks / PFA Beverage Rules',
+    complianceNote: 'Mandatory warning for children, pregnant women & caffeine-sensitive individuals; daily intake cap declaration required.'
+  },
+  {
+    id: 'psqca-juice-brix-pulp',
+    authority: 'PSQCA',
+    category: 'Beverages & Juices',
+    product: 'Fruit Nectars (Mango, Guava, Peach, Orange) vs Fruit Drinks',
+    parameter: 'Minimum Fruit Juice/Pulp Content & Minimum °Brix',
+    limitValue: 'Mango Nectar ≥ 25% Pulp (≥ 13.5°Bx) · Fruit Drink ≥ 8–10% Pulp · 100% Juice = No Added Sugar',
+    unit: '% Pulp / °Brix',
+    limitType: 'Minimum',
+    testMethod: 'Refractometry (ISO 2173) & Formulation Audit',
+    clauseRef: 'PSQCA PS: 527 / Codex CXS 247-2005 Fruit Juices & Nectars',
+    complianceNote: 'Products below minimum nectar fruit content cannot be labeled "Juice" or "Nectar" — must be labeled "Fruit Drink".'
+  },
+  {
+    id: 'fda-juice-haccp-5log',
+    authority: 'FDA / USA',
+    category: 'Beverages & Juices',
+    product: 'Pasteurized Fruit & Vegetable Juices',
+    parameter: 'Pathogen Log Reduction (E. coli O157:H7, Salmonella, Cryptosporidium)',
+    limitValue: '≥ 5-Log (99.999%) Reduction of Pertinent Pathogen',
+    unit: 'Log₁₀ CFU reduction',
+    limitType: 'Minimum',
+    testMethod: 'Thermal/HPP Process Validation Study',
+    clauseRef: 'US FDA 21 CFR Part 120 Juice HACCP',
+    complianceNote: 'Typically validated at 71.1°C for 6–15 seconds (pH ≤ 4.0) or equivalent HPP/UV treatment.'
+  },
+
+  // ============================================================================
+  // ADDITIONAL MEAT, POULTRY & SEAFOOD
+  // ============================================================================
+  {
+    id: 'fda-poultry-core-temp',
+    authority: 'FDA / USA',
+    category: 'Meat, Poultry & Seafood',
+    product: 'Cooked Poultry, Nuggets, Sausages & Ground Meat',
+    parameter: 'Minimum Internal Cooking Core Temperature & Cooling Curve',
+    limitValue: 'Poultry ≥ 74°C (165°F) · Ground Beef ≥ 71°C (160°F) · Chill 54°C→27°C in ≤ 1.5h, 27°C→4°C in ≤ 5h',
+    unit: '°C / Hours',
+    limitType: 'Minimum',
+    testMethod: 'Calibrated Core Probe Thermocouple',
+    clauseRef: 'USDA FSIS Appendix A & B / FDA Food Code',
+    complianceNote: 'Appendix B rapid cooling prevents Clostridium perfringens spore germination in cooked meats.'
+  },
+  {
+    id: 'sfda-halal-slaughter-stunning',
+    authority: 'SFDA / GSO',
+    category: 'Meat, Poultry & Seafood',
+    product: 'Halal Fresh, Chilled & Frozen Meat & Poultry',
+    parameter: 'Halal Slaughter Compliance, Pork DNA & Blood Drainage',
+    limitValue: 'Porcine DNA = 0% (Zero Tolerance) · Reversible Stunning Only (If Permitted) · Chilled ≤ 4°C / Frozen ≤ -18°C',
+    unit: 'PCR / °C',
+    limitType: 'Zero Tolerance',
+    testMethod: 'Real-Time PCR Porcine Assay / Calibrated Probe',
+    clauseRef: 'GSO 993 / OIC-SMIIC 1:2019 Halal Food Requirements',
+    complianceNote: 'Mandatory Halal slaughterhouse certification and zero cross-contamination during cutting & transport.'
+  },
+  {
+    id: 'efsa-seafood-tvbn',
+    authority: 'EFSA / EU',
+    category: 'Meat, Poultry & Seafood',
+    product: 'Fresh & Frozen Marine Fish / Seafood',
+    parameter: 'Total Volatile Basic Nitrogen (TVB-N) Freshness Limit',
+    limitValue: '≤ 25 – 35 mg N / 100 g (species-dependent)',
+    unit: 'mg N / 100 g',
+    limitType: 'Maximum',
+    testMethod: 'EU Ref Distillation Method (EC 2074/2005)',
+    clauseRef: 'EU Regulation (EC) No 2074/2005 Fishery Products',
+    complianceNote: 'TVB-N measures ammonia, TMA & DMA produced by bacterial spoilage; values > 35 mg/100g indicate unfit fish.'
+  },
+
+  // ============================================================================
+  // ADDITIONAL BAKERY, FLOUR & SUGAR
+  // ============================================================================
+  {
+    id: 'efsa-acrylamide-bakery-chips',
+    authority: 'EFSA / EU',
+    category: 'Bakery, Flour & Sugar',
+    product: 'Potato Chips, Biscuits, Crackers, Bread & Roasted Coffee',
+    parameter: 'Acrylamide Benchmark Level (Maillard Process Contaminant)',
+    limitValue: 'Potato Chips ≤ 750 µg/kg · Biscuits ≤ 350 µg/kg · Wheat Bread ≤ 50 µg/kg · Roast Coffee ≤ 400 µg/kg',
+    unit: 'µg/kg (ppb)',
+    limitType: 'Maximum',
+    testMethod: 'EN 16618 LC-MS/MS',
+    clauseRef: 'EU Commission Regulation (EU) 2017/2158',
+    complianceNote: 'Mitigate via asparaginase enzyme, low-reducing-sugar potatoes, and controlling baking/frying temperature < 175°C.'
+  },
+  {
+    id: 'pfa-biscuits-acid-insoluble-ash',
+    authority: 'PFA',
+    category: 'Bakery, Flour & Sugar',
+    product: 'Biscuits, Cookies, Rusks & Wafer Products',
+    parameter: 'Moisture, Acid-Insoluble Ash (Sand/Silica) & Acidity of Extracted Fat',
+    limitValue: 'Moisture ≤ 5.0% · Acid-Insoluble Ash ≤ 0.10% · Fat Acidity (as Oleic) ≤ 1.5%',
+    unit: '% w/w',
+    limitType: 'Maximum',
+    testMethod: 'AOAC 925.10 / ISO 5985 / ISO 660',
+    clauseRef: 'PFA Bakery Standards / PSQCA PS: 381',
+    complianceNote: 'High extracted-fat acidity signals rancid shortening or poor packaging moisture/oxygen barrier.'
+  },
+
+  // ============================================================================
+  // HEAVY METALS & CHEMICAL CONTAMINANTS
+  // ============================================================================
+  {
+    id: 'codex-rice-inorganic-arsenic',
+    authority: 'Codex',
+    category: 'Heavy Metals & Contaminants',
+    product: 'Polished White Rice, Brown Rice & Rice-Based Baby Cereal',
+    parameter: 'Inorganic Arsenic (iAs)',
+    limitValue: 'Polished Rice ≤ 0.20 mg/kg · Husked/Brown Rice ≤ 0.35 mg/kg · Infant Rice Cereal ≤ 0.10 mg/kg',
+    unit: 'mg/kg (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'HPLC-ICP-MS Speciation (EN 16802)',
+    clauseRef: 'Codex CXS 193-1995 / EU Reg 2023/915 / FDA Action Level',
+    complianceNote: 'Critical screening parameter for exported Basmati rice and infant cereal manufacturers.'
+  },
+  {
+    id: 'efsa-heavy-metals-lead-general',
+    authority: 'EFSA / EU',
+    category: 'Heavy Metals & Contaminants',
+    product: 'Milk, Fruit Juices, Vegetables, Spices & Salt',
+    parameter: 'Lead (Pb) Maximum Levels',
+    limitValue: 'Milk ≤ 0.02 mg/kg · Fruit Juices ≤ 0.03 mg/kg · Root Spices ≤ 1.5 mg/kg · Food-Grade Salt ≤ 1.0 mg/kg',
+    unit: 'mg/kg (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'ISO 17294-2 ICP-MS / AAS',
+    clauseRef: 'EU Regulation (EU) 2023/915 & Codex CXS 193-1995',
+    complianceNote: 'Turmeric must also be screened for illegal lead chromate adulteration used to brighten yellow color.'
+  },
+  {
+    id: 'codex-heavy-metals-cadmium',
+    authority: 'Codex',
+    category: 'Heavy Metals & Contaminants',
+    product: 'Dark Chocolate, Cocoa Powder, Wheat & Rice',
+    parameter: 'Cadmium (Cd) Maximum Levels',
+    limitValue: 'Dark Chocolate (≥50% cocoa) ≤ 0.80 mg/kg · Wheat ≤ 0.20 mg/kg · Polished Rice ≤ 0.40 mg/kg',
+    unit: 'mg/kg (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'ICP-MS (AOAC 2015.01)',
+    clauseRef: 'Codex CXS 193-1995 / EU Reg 2023/915',
+    complianceNote: 'Cocoa beans grown in volcanic South American soils frequently require cadmium lot-blending verification.'
+  },
+  {
+    id: 'codex-fish-methylmercury',
+    authority: 'Codex',
+    category: 'Heavy Metals & Contaminants',
+    product: 'Canned Tuna, Predatory Marine Fish & General Seafood',
+    parameter: 'Methylmercury / Total Mercury (Hg)',
+    limitValue: 'General Fish ≤ 0.50 mg/kg · Tuna ≤ 1.0–1.2 mg/kg · Swordfish/Shark ≤ 1.0–1.6 mg/kg',
+    unit: 'mg/kg (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'EPA 7473 Direct Mercury Analyzer / ICP-MS',
+    clauseRef: 'Codex CXS 193-1995 / EU Reg 2023/915',
+    complianceNote: 'Bioaccumulates in large predatory marine species; strictly tested on canned tuna lots.'
+  },
+  {
+    id: 'codex-canned-food-tin',
+    authority: 'Codex',
+    category: 'Heavy Metals & Contaminants',
+    product: 'Canned Foods & Canned Beverages (Tinplate Cans)',
+    parameter: 'Inorganic Tin (Sn)',
+    limitValue: 'Canned Foods ≤ 250 mg/kg (EU 200 mg/kg) · Canned Beverages ≤ 150 mg/kg (EU 100 mg/kg) · Baby Food ≤ 50 mg/kg',
+    unit: 'mg/kg (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'AOAC 985.16 AAS / ICP-MS',
+    clauseRef: 'Codex CXS 193-1995 / EU Reg 2023/915',
+    complianceNote: 'Internal BPA-free lacquer integrity and headspace oxygen control prevent acid corrosion of tinplate.'
+  },
+
+  // ============================================================================
+  // HONEY, JAMS, SAUCES & TEA
+  // ============================================================================
+  {
+    id: 'codex-honey-hmf-moisture',
+    authority: 'Codex',
+    category: 'Honey, Jams, Sauces & Tea',
+    product: 'Pure Blossom & Floral Honey',
+    parameter: 'Moisture, HMF (Hydroxymethylfurfural), Diastase & Sucrose',
+    limitValue: 'Moisture ≤ 20.0% · HMF ≤ 40 mg/kg (80 mg/kg tropical) · Diastase ≥ 8 Schade · Sucrose ≤ 5%',
+    unit: '% / mg/kg',
+    limitType: 'Range',
+    testMethod: 'IHC Harmonized Methods / HPLC / EA-IRMS (C4 Sugar)',
+    clauseRef: 'Codex CXS 12-1981 Standard for Honey',
+    complianceNote: 'Elevated HMF indicates overheating or old honey; EA-IRMS / NMR detects C4/C3 corn & rice syrup adulteration.'
+  },
+  {
+    id: 'codex-ketchup-tss-lycopene',
+    authority: 'Codex',
+    category: 'Honey, Jams, Sauces & Tea',
+    product: 'Tomato Ketchup & Tomato Sauces',
+    parameter: 'Total Soluble Solids (TSS), Acidity, pH & Howard Mold Count',
+    limitValue: 'TSS ≥ 25% (PFA/PSQCA) / ≥ 28% Premium · Acidity ≥ 1.0% Acetic · pH ≤ 4.0 · Howard Mold ≤ 40% fields',
+    unit: '°Brix / % / pH',
+    limitType: 'Range',
+    testMethod: 'Refractometer / AOAC 965.41 Howard Mold Count',
+    clauseRef: 'PSQCA PS: 511 / PFA Standards / USDA Grades',
+    complianceNote: 'Maintaining pH < 3.9 and hot-fill ≥ 88°C ensures ambient shelf stability without high benzoate.'
+  },
+  {
+    id: 'codex-jams-jellies-brix',
+    authority: 'Codex',
+    category: 'Honey, Jams, Sauces & Tea',
+    product: 'Fruit Jams, Jellies & Marmalades',
+    parameter: 'Soluble Solids (°Brix) & Minimum Fruit Content',
+    limitValue: 'Soluble Solids ≥ 60% – 65°Brix (Regular) · Fruit Content ≥ 35% – 45% (Extra Jam ≥ 45%)',
+    unit: '°Brix / %',
+    limitType: 'Minimum',
+    testMethod: 'ISO 2173 Refractometry',
+    clauseRef: 'Codex CXS 296-2009 Jams, Jellies & Marmalades',
+    complianceNote: '65°Brix combined with pH 3.0–3.3 achieves water activity aw ≤ 0.82 to prevent xerophilic mold growth.'
+  },
+  {
+    id: 'fssai-mayonnaise-fat-ph',
+    authority: 'FSSAI / ISO',
+    category: 'Honey, Jams, Sauces & Tea',
+    product: 'Real Mayonnaise & Eggless Mayo Dressing',
+    parameter: 'Vegetable Oil Fat %, pH & Salmonella',
+    limitValue: 'Real Mayo ≥ 65% Oil (US FDA) / ≥ 50–70% (EU/GSO) · pH ≤ 4.1 · Salmonella = Absent in 25 g',
+    unit: '% / pH / 25 g',
+    limitType: 'Range',
+    testMethod: 'Acid Hydrolysis Fat / pH Meter / ISO 6579',
+    clauseRef: 'FDA 21 CFR 169.140 / GSO 1335 / FSSAI',
+    complianceNote: 'Pasteurized egg yolk and aqueous-phase acetic acid ≥ 0.7% prevent Salmonella survival at ambient temperature.'
+  },
+  {
+    id: 'fssai-black-tea-iso3720',
+    authority: 'FSSAI / ISO',
+    category: 'Honey, Jams, Sauces & Tea',
+    product: 'Black Tea (CTC & Orthodox Loose/Bagged)',
+    parameter: 'Water Extract, Total Ash, Crude Fiber & Iron Filings',
+    limitValue: 'Water Extract ≥ 32% · Total Ash 4–8% · Crude Fiber ≤ 16.5% · Iron Filings ≤ 150–250 mg/kg (PFA Zero Added)',
+    unit: '% w/w / mg/kg',
+    limitType: 'Range',
+    testMethod: 'ISO 3720 / ISO 9768 / Magnet Test',
+    clauseRef: 'ISO 3720:2011 Black Tea / PSQCA PS: 493 / FSSAI',
+    complianceNote: 'Check for illegal artificial coal-tar dyes (Sunset Yellow/Carmoisine) and spent tea leaf adulteration.'
+  },
+
+  // ============================================================================
+  // INFANT FORMULA & SPECIAL NUTRITION
+  // ============================================================================
+  {
+    id: 'codex-infant-cronobacter',
+    authority: 'Codex',
+    category: 'Infant Formula & Special Nutrition',
+    product: 'Powdered Infant Formula (0–6 Months)',
+    parameter: 'Cronobacter sakazakii & Salmonella spp.',
+    limitValue: 'Cronobacter = Absent in 30 × 10 g samples · Salmonella = Absent in 60 × 25 g samples',
+    unit: 'Absent / sample',
+    limitType: 'Zero Tolerance',
+    testMethod: 'ISO 22964 (Cronobacter) / ISO 6579 (Salmonella)',
+    clauseRef: 'Codex CXC 66-2008 / EU Reg 2073/2005',
+    complianceNote: 'Strict dry-zoning hygiene (no wet cleaning in high-care spray-drying & canning zones) is mandatory.'
+  },
+  {
+    id: 'codex-infant-melamine',
+    authority: 'Codex',
+    category: 'Infant Formula & Special Nutrition',
+    product: 'Powdered Infant Formula & Milk Powders',
+    parameter: 'Melamine (Nitrogen-Adulteration Contaminant)',
+    limitValue: 'Powdered Infant Formula ≤ 1.0 mg/kg · Liquid Infant Formula ≤ 0.15 mg/kg · Other Foods ≤ 2.5 mg/kg',
+    unit: 'mg/kg (ppm)',
+    limitType: 'Maximum',
+    testMethod: 'LC-MS/MS (FDA LIB 4421)',
+    clauseRef: 'Codex CXS 193-1995 / EU Reg 2023/915',
+    complianceNote: 'Melamine fraudulently inflates Kjeldahl protein readings — direct LC-MS/MS verification required on milk powder imports.'
+  },
+
+  // ============================================================================
+  // PLANT HYGIENE, CIP & ENVIRONMENTAL SWAB LIMITS
+  // ============================================================================
+  {
+    id: 'iso-hygiene-surface-swabs',
+    authority: 'FSSAI / ISO',
+    category: 'Plant Hygiene & Swab Limits',
+    product: 'Food Contact Surfaces (Post-CIP / Pre-Op Ready-to-Eat Lines)',
+    parameter: 'Total Viable Count (TVC), Enterobacteriaceae & Pathogens (Listeria/Salmonella)',
+    limitValue: 'TVC ≤ 10 – 100 CFU/100 cm² · Entero < 10 CFU/100 cm² · Listeria/Salmonella = Absent / Swab',
+    unit: 'CFU / 100 cm²',
+    limitType: 'Maximum',
+    testMethod: 'ISO 18593 Surface Sampling / ISO 4833',
+    clauseRef: 'ISO 22000 / FSSC 22000 / BRCGS Environmental Monitoring',
+    complianceNote: 'Zone 1 food-contact surfaces require immediate re-cleaning and root-cause CAPA if TVC exceeds action limit.'
+  },
+  {
+    id: 'iso-hygiene-atp-bioluminescence',
+    authority: 'FSSAI / ISO',
+    category: 'Plant Hygiene & Swab Limits',
+    product: 'Stainless Steel Tanks, Conveyors & Filling Nozzles (Pre-Op)',
+    parameter: 'ATP Bioluminescence Swab Reading (Hygiena / 3M Benchmark)',
+    limitValue: 'Pass ≤ 10–30 RLU · Caution 31–99 RLU · Fail ≥ 100 RLU (device-calibrated)',
+    unit: 'RLU (Relative Light Units)',
+    limitType: 'Maximum',
+    testMethod: 'ATP Bioluminescence Luminometer (Pre-Op)',
+    clauseRef: 'FSSC 22000 / BRCGS Issue 9 Clause 4.11',
+    complianceNote: 'Real-time 15-second verification of organic residue removal before line startup; calibrate pass/fail thresholds per luminometer brand.'
+  },
+  {
+    id: 'iso-hygiene-food-handler-hands',
+    authority: 'FSSAI / ISO',
+    category: 'Plant Hygiene & Swab Limits',
+    product: 'Food Handler Washed Hands & Gloves (High-Care RTE Zones)',
+    parameter: 'E. coli, Staphylococcus aureus & Coliforms',
+    limitValue: 'E. coli = Absent / Hand · S. aureus = Absent / Hand · TVC ≤ 100 – 500 CFU / Hand',
+    unit: 'CFU / Hand Swab',
+    limitType: 'Zero Tolerance',
+    testMethod: 'ISO 18593 Swab / Contact Plate',
+    clauseRef: 'Codex CXC 1-1969 (GHP) / ISO TS 22002-1',
+    complianceNote: 'Mandatory 20-second antimicrobial handwashing + 70% alcohol sanitizer before entering high-risk rooms.'
+  },
+  {
+    id: 'iso-hygiene-air-plate-highcare',
+    authority: 'FSSAI / ISO',
+    category: 'Plant Hygiene & Swab Limits',
+    product: 'Processing Hall Ambient Air (Settle Plate & Active Air Sampler)',
+    parameter: 'Yeast, Mold & Total Aerobic Plate Count (High-Care vs Low-Risk)',
+    limitValue: 'High-Care Settle Plate (15 min) ≤ 5–15 CFU · Yeast & Mold ≤ 5 CFU · Active Air ≤ 50–100 CFU/m³',
+    unit: 'CFU / plate or m³',
+    limitType: 'Maximum',
+    testMethod: 'ISO 14698 Active Air Sampler / 90 mm Settle Plate',
+    clauseRef: 'ISO TS 22002-1 / BRCGS High-Care Positive Pressure',
+    complianceNote: 'Maintain positive air pressure (+5 to +15 Pa) and HEPA/F9 filtration in open-product filling rooms.'
+  },
+  {
+    id: 'fda-cip-sanitizer-limits',
+    authority: 'FDA / USA',
+    category: 'Plant Hygiene & Swab Limits',
+    product: 'No-Rinse Food Contact Chemical Sanitizers (CIP & Spray)',
+    parameter: 'Free Chlorine (NaOCl), Peracetic Acid (PAA) & QAC Concentration',
+    limitValue: 'Chlorine 50–200 ppm · PAA 80–200 ppm · QAC 150–400 ppm (Follow EPA Label)',
+    unit: 'ppm (mg/L)',
+    limitType: 'Range',
+    testMethod: 'Titration Drop Kit / Calibrated Test Strips',
+    clauseRef: 'US FDA 21 CFR 178.1010 Sanitizing Solutions',
+    complianceNote: 'Exceeding 200 ppm chlorine or 400 ppm QAC without potable water rinse creates chemical food-safety hazard.'
   }
 ];
 

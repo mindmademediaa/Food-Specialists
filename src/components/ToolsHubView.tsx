@@ -119,11 +119,6 @@ const NutritionLabelGeneratorTool = lazy(() =>
     default: m.NutritionLabelGeneratorTool
   }))
 );
-const ThermalAndWaterActivityTool = lazy(() =>
-  import('./IndustryFoodTools').then((m) => ({
-    default: m.ThermalAndWaterActivityTool
-  }))
-);
 const QaQcTemplatesVaultTool = lazy(() =>
   import('./IndustryFoodTools').then((m) => ({
     default: m.QaQcTemplatesVaultTool
@@ -163,7 +158,6 @@ export type ActiveToolSection =
   | 'job-cover-letter'
   | 'citation-generator'
   | 'nutrition-label'
-  | 'thermal-aw'
   | 'templates-vault'
   | 'authority-limits'
   | 'complaint-handling';
@@ -442,8 +436,19 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     featureName: string,
     afterUnlock?: () => void
   ) => {
-    // All 11+ Specialist Tools open in Free On-Screen Live Preview Mode without login/registration
-    if (!hasExpiredPremium) {
+    const FREE_OPEN_TOOLS: ActiveToolSection[] = [
+      'hub',
+      'lab-formula',
+      'pearson-square',
+      'molarity-normality',
+      'moisture-ash',
+      'e-numbers',
+      'citation-generator',
+      'interview',
+      'authority-limits'
+    ];
+    // All free open tools & live preview tools open without login/paywall
+    if (!hasExpiredPremium || FREE_OPEN_TOOLS.includes(targetSection)) {
       setActiveSection(targetSection);
       if (afterUnlock) afterUnlock();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1216,13 +1221,13 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </span>
             </button>
 
-            {/* TOOL 7: PRODUCTION FLOOR, YIELD & WORKERS TOOL */}
+            {/* TOOL 7: PRODUCTION YIELD & EFFICIENCY TOOL */}
             <button
               type="button"
               onClick={() =>
                 handleSelectToolOrAction(
                   'production-floor',
-                  'Production Floor, Yield & Line Workers Calculator'
+                  'Production Yield & Efficiency Tool'
                 )
               }
               className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
@@ -1231,7 +1236,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 <Factory className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
               </div>
               <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Production Yield &amp; Workers Tool
+                Production Yield &amp; Efficiency Tool
               </span>
             </button>
 
@@ -1330,26 +1335,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </span>
             </button>
 
-            {/* TOOL 13: THERMAL PROCESSING (F0 / PASTEURIZATION) & WATER ACTIVITY */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'thermal-aw',
-                  'Thermal Processing (F0 / PU) & Water Activity Calculator'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Thermometer className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Thermal (F₀ / PU) &amp; Water Activity
-              </span>
-            </button>
-
-            {/* TOOL 14: QA/QC, ISO 9001, FSSC 22000 & HACCP DOCUMENT VAULT */}
+            {/* TOOL 13: QA/QC, ISO 9001, FSSC 22000 & HACCP DOCUMENT VAULT */}
             <button
               type="button"
               onClick={() =>
@@ -1565,18 +1551,6 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       )}
 
       {/* =====================================================================
-          VIEW 10C: THERMAL PROCESSING (F0 / PU) & WATER ACTIVITY (aw)
-         ===================================================================== */}
-      {activeSection === 'thermal-aw' && (
-        <ThermalAndWaterActivityTool
-          user={user}
-          isUserPaid={isUserPaid}
-          hasExpiredPremium={hasExpiredPremium}
-          onOpenPremiumModal={onOpenPremiumModal}
-        />
-      )}
-
-      {/* =====================================================================
           VIEW 10D: QA/QC, ISO 9001, FSSC 22000 & HACCP DOCUMENT VAULT STUDIO
          ===================================================================== */}
       {activeSection === 'templates-vault' && (
@@ -1627,49 +1601,32 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 Food Industry Job Interview Preparation Suite
               </h2>
               <p className="text-xs sm:text-sm text-sky-100 max-w-2xl leading-relaxed">
-                Master QA/QC Manager, HACCP Lead, ISO/FSSC 22000 Auditor, R&amp;D Technologist, and Production Manager technical interviews.{' '}
-                {isUserPaid
-                  ? 'Full Paid Premium unlocked: all 30 session Q&As, fresh batch loader, cloud mastery tracking, and PDF transcript!'
-                  : 'Free Preview Mode: Study the first 15 verified Q&As below without login. Upgrade to Paid Premium for all 2,000+ Q&As, cloud tracking & PDF reports.'}
+                Master QA/QC Manager, HACCP Lead, ISO/FSSC 22000 Auditor, R&amp;D Technologist, and Production Manager technical interviews. 100% Free Open Access: study all 30 session Q&amp;As, load fresh batches from the 2,000+ bank, track mastered questions, and download PDF reports!
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
               <button
                 type="button"
-                onClick={() => {
-                  if (!isUserPaid) {
-                    onOpenPremiumModal();
-                    return;
-                  }
-                  handleLoadNext30InterviewQuestions();
-                }}
+                onClick={() => handleLoadNext30InterviewQuestions()}
                 className="px-4 py-2.5 rounded-xl bg-white text-[#1A2138] hover:bg-sky-50 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-[#1673B8]" />
-                <span>
-                  {isUserPaid ? 'Load Next 30 Q&As' : '🔒 Load Next 30 Q&As (Paid)'}
-                </span>
+                <span>Load Next 30 Q&amp;As</span>
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  if (!isUserPaid) {
-                    onOpenPremiumModal();
-                    return;
-                  }
+                onClick={() =>
                   downloadInterviewSessionReportPdf(
                     user,
                     activeInterviewQuestions,
                     toolsData.masteredInterviewIds || [],
                     interviewBatchNumber
-                  );
-                }}
+                  )
+                }
                 className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>
-                  {isUserPaid ? 'Download PDF Report' : '🔒 Download PDF (Paid)'}
-                </span>
+                <span>Download PDF Report</span>
               </button>
             </div>
           </div>
@@ -1695,7 +1652,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               )}
             </div>
             <div className="text-xs font-bold text-[#5A6C84]">
-              Showing {isUserPaid ? '30 / 30 Full Session' : '15 Free Preview Q&As (16–30 Paid Premium)'}
+              Showing 30 / 30 Full Session (100% Free)
             </div>
           </div>
 
@@ -1708,36 +1665,10 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                   q.topic === interviewTopicFilter
               )
               .map((q, idx) => {
-                const isLockedForFree = !isUserPaid && idx >= 15;
                 const isExpanded = expandedQuestionId === q.id;
                 const isMastered = (toolsData.masteredInterviewIds || []).includes(
                   q.id
                 );
-
-                if (isLockedForFree) {
-                  return (
-                    <div
-                      key={q.id}
-                      onClick={onOpenPremiumModal}
-                      className="p-4 rounded-2xl bg-[#F8FAFC] border border-dashed border-[#94A3B8] flex items-center justify-between gap-3 cursor-pointer hover:border-[#1673B8]"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 text-xs font-extrabold flex items-center justify-center shrink-0">
-                          #{idx + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="text-xs sm:text-sm font-extrabold text-slate-700 truncate">
-                            {q.question}
-                          </div>
-                          <div className="text-[11px] font-semibold text-[#1673B8]">
-                            🔒 Paid Premium Member Q&amp;A ({q.topic}) — Click to Register &amp; Unlock Full 2,000+ Bank
-                          </div>
-                        </div>
-                      </div>
-                      <Lock className="w-4 h-4 text-[#1673B8] shrink-0" />
-                    </div>
-                  );
-                }
 
                 return (
                   <div
@@ -1790,13 +1721,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                           </span>
                           <button
                             type="button"
-                            onClick={() => {
-                              if (!isUserPaid) {
-                                onOpenPremiumModal();
-                                return;
-                              }
-                              handleToggleMasteredInterview(q.id);
-                            }}
+                            onClick={() => handleToggleMasteredInterview(q.id)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer ${
                               isMastered
                                 ? 'bg-emerald-600 text-white'
@@ -1806,10 +1731,8 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>
                               {isMastered
-                                ? 'Saved as Mastered'
-                                : isUserPaid
-                                ? 'Mark as Mastered (Save to Cloud)'
-                                : '🔒 Save Mastery to Cloud (Paid)'}
+                                ? 'Marked as Mastered'
+                                : 'Mark as Mastered'}
                             </span>
                           </button>
                         </div>

@@ -49,7 +49,7 @@ const TOOL_SEO_METADATA: Record<
   },
   'production-floor': {
     title:
-      'Production Line Net Efficiency (1-Hour & Full-Day OEE), Syrup Room Yield & Worker Calculator | Food Science Portal',
+      'Production Yield & Efficiency Tool (1-Hour & Full-Day OEE, Syrup Room Yield) | Food Science Portal',
     description:
       'Calculate 1-Hour Line Efficiency, Full-Day Net Production Efficiency (including late start, breaks & CIP downtime), Syrup Room Batch Yield & Waste, and Labor Productivity.'
   },
@@ -94,12 +94,6 @@ const TOOL_SEO_METADATA: Record<
       'Nutrition Facts Label Generator (FDA / GCC-SFDA / PSQCA) | Food Science Portal',
     description:
       'Generate FDA 2020, GCC/SFDA GSO 2233 traffic-light, and PSQCA Nutrition Facts packaging panels with % Daily Value and per-100g conversion.'
-  },
-  'thermal-aw': {
-    title:
-      'Thermal Processing (F0 / Pasteurization) & Water Activity (aw) Calculator | Food Science Portal',
-    description:
-      'Calculate retort F0 lethality, Pasteurization Units (PU), 12D log reduction, and water activity (aw) microbial growth hurdles.'
   },
   'templates-vault': {
     title:
@@ -321,7 +315,7 @@ export const SEODirectoryFooter: React.FC<SEODirectoryFooterProps> = ({
     },
     {
       id: 'production-floor',
-      label: 'Production Line 1-Hour & Full-Day Net Efficiency (OEE) & Syrup Yield Calculator'
+      label: 'Production Yield & Efficiency Tool'
     },
     {
       id: 'citation-generator',
@@ -358,10 +352,6 @@ export const SEODirectoryFooter: React.FC<SEODirectoryFooterProps> = ({
     {
       id: 'nutrition-label',
       label: 'Nutrition Facts Label Generator (FDA / GCC-SFDA / PSQCA)'
-    },
-    {
-      id: 'thermal-aw',
-      label: 'Thermal Processing (F0 / Pasteurization) & Water Activity Calculator'
     },
     {
       id: 'templates-vault',

@@ -1841,11 +1841,14 @@ export const CitationReferenceGeneratorTool: React.FC<
   CitationReferenceGeneratorToolProps
 > = ({
   user,
-  isUserPaid = false,
+  isUserPaid: _ignoredIsUserPaid = false,
   toolsData,
   onSaveToolsData,
   onOpenPremiumModal
 }) => {
+  void _ignoredIsUserPaid;
+  void onOpenPremiumModal;
+  const isUserPaid = true;
   const [activeResearchTab, setActiveResearchTab] = useState<
     'extractor' | 'thesis-converter' | 'statistics' | 'references' | 'directory'
   >('extractor');
@@ -4061,21 +4064,9 @@ Means sharing the same letter within a column do not differ significantly at p <
               <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
                 Research Paper, Thesis Converter, Statistical ANOVA &amp; Citation Suite
               </h2>
-              {isUserPaid ? (
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1">
-                  <Crown className="w-3 h-3 text-amber-600" />
-                  <span>Premium Active • Cloud Log &amp; Export Unlocked</span>
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onOpenPremiumModal?.()}
-                  className="px-2.5 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 text-[#92400E] border border-amber-300 text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer"
-                >
-                  <Lock className="w-3 h-3" />
-                  <span>Free Preview • Upgrade to Log, Save &amp; Download</span>
-                </button>
-              )}
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1">
+                <span>100% Free Open Access • Thesis Converter, ANOVA &amp; Exports Unlocked</span>
+              </span>
             </div>
             <p className="text-xs text-[#4A5568] font-medium">
               Extract Paper Sections, Customize Journal Requirements &amp; Auto-Convert Thesis, Run Custom ANOVA/LSD Statistics &amp; Format References

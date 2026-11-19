@@ -114,9 +114,9 @@ export function resolveUserAvatarForJsPdf(
 }
 
 /**
- * Draws the official Food Science Portal circular emblem logo inside a crisp,
- * high-contrast white rounded container so the full microscope, gears, and DNA emblem
- * is large, zoomed, and crystal-clear on every PDF and Certificate.
+ * Draws the official Food Science Portal brand logo inside a crisp,
+ * high-contrast white rounded container so the full geometric emblem & wordmark
+ * renders razor-sharp without distortion on every PDF report and certificate.
  */
 export function drawPdfBrandLogo(
   doc: jsPDF,
@@ -139,7 +139,7 @@ export function drawPdfBrandLogo(
   doc.roundedRect(x, y, sizeMm, sizeMm, radius, radius, 'FD');
 
   try {
-    const pad = Math.max(0.4, sizeMm * 0.02);
+    const pad = Math.max(0.5, sizeMm * 0.03);
     doc.addImage(
       FS_PORTAL_LOGO_DATA_URI,
       'PNG',

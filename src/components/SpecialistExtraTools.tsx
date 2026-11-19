@@ -91,9 +91,12 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
   onSaveToolsData,
   onOpenPremiumModal
 }) => {
-  const canUsePremium = Boolean(
-    (isUserPaid && !hasExpiredPremium) || user?.isAdmin
-  );
+  // Pure online calculator mode (premium/cloud directory features removed)
+  const canUsePremium = false;
+  void user;
+  void isUserPaid;
+  void hasExpiredPremium;
+  void onOpenPremiumModal;
 
   const [subMode, setSubMode] = useState<
     'ppm' | 'acidity' | 'converter' | 'directory'
@@ -897,14 +900,12 @@ export const LabFormulaCalculatorTool: React.FC<LabFormulaCalculatorToolProps> =
                 Lab &amp; Formula Calculator
               </h2>
               <span className="text-[11px] font-extrabold text-[#1673B8]">
-                {canUsePremium
-                  ? '· Paid Pro Mode (Custom Chemicals & Directory Unlocked)'
-                  : '· Free Basic Calculator'}
+                · Instant Online Calculator
               </span>
             </div>
             <p className="text-xs text-[#4A5568] font-medium">
-              Sanitizer PPM Dilution, Titratable Acidity (% TA), Brix:Acid Ratio,
-              Unit Converter &amp; Saved Lab Solutions Directory
+              Sanitizer PPM Dilution, Titratable Acidity (% TA), Brix:Acid Ratio
+              &amp; Unit Converter
             </p>
           </div>
         </div>
@@ -1824,9 +1825,12 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
   onSaveToolsData,
   onOpenPremiumModal
 }) => {
-  const canUsePremium = Boolean(
-    (isUserPaid && !hasExpiredPremium) || user?.isAdmin
-  );
+  // Pure online calculator mode (paid batch directory & data saving removed)
+  const canUsePremium = false;
+  void user;
+  void isUserPaid;
+  void hasExpiredPremium;
+  void onOpenPremiumModal;
 
   const [industryMode, setIndustryMode] = useState<
     PearsonCalculatorMode | 'directory'
@@ -3358,9 +3362,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   Pearson Square &amp; Batch Standardization Calculator
                 </h2>
                 <span className="text-[11px] font-extrabold text-[#1673B8]">
-                  {canUsePremium
-                    ? '· Paid Pro Mode (Industry Batch Logbook & PDF Active)'
-                    : '· Free Standard Calculator'}
+                  · Instant Online Calculator
                 </span>
               </div>
               <p className="text-xs text-[#4A5568] font-medium">
@@ -3823,21 +3825,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs text-slate-200">
-                  Want to save adjusted batches by Product Name &amp; Industry
-                  and download PDF Batch Standardization Reports?
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onOpenPremiumModal?.()}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
-                >
-                  Unlock Paid Batch Directory &amp; PDF
-                </button>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
@@ -4016,21 +4004,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs text-slate-200">
-                  Want to save Dairy Standardization batches and download
-                  official PDF certificates?
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onOpenPremiumModal?.()}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
-                >
-                  Unlock Paid Batch Directory &amp; PDF
-                </button>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
@@ -4743,21 +4717,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs text-slate-200">
-                  Want to save Ketchup, Mayonnaise &amp; Jam batches and
-                  download PDF reports?
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onOpenPremiumModal?.()}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
-                >
-                  Unlock Paid Batch Directory &amp; PDF
-                </button>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
@@ -4988,21 +4948,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="pt-2 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs text-slate-200">
-                  Want to save Baking &amp; Biscuit dough batches and download
-                  PDF reports?
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onOpenPremiumModal?.()}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
-                >
-                  Unlock Paid Batch Directory &amp; PDF
-                </button>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
@@ -5159,21 +5105,7 @@ export const PearsonSquareBatchTool: React.FC<PearsonSquareBatchToolProps> = ({
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div className="pt-2 border-t border-[#D2DEEA] flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-[#1A2138]">
-                    Want to save Classic Pearson Square batches by Product Name
-                    and download official PDF reports?
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onOpenPremiumModal?.()}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#1673B8] text-white text-xs font-extrabold cursor-pointer"
-                  >
-                    Unlock Paid Batch Directory &amp; PDF
-                  </button>
-                </div>
-              )}
+              ) : null}
             </div>
           )}
         </div>
@@ -5504,7 +5436,12 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
   onSaveToolsData,
   onOpenPremiumModal
 }) => {
-  const canUsePremium = Boolean(isUserPaid && !hasExpiredPremium);
+  // Pure online calculator mode (premium/cloud directory features removed)
+  const canUsePremium = false;
+  void user;
+  void isUserPaid;
+  void hasExpiredPremium;
+  void onOpenPremiumModal;
 
   const [viewTab, setViewTab] = useState<'calculator' | 'directory'>('calculator');
   const [statusToast, setStatusToast] = useState<string | null>(null);
@@ -6217,9 +6154,7 @@ export const LabSolutionMolarityTool: React.FC<LabFormulaCalculatorToolProps> = 
                 Lab Solution &amp; Molarity / Normality Calculator
               </h2>
               <span className="text-[11px] font-extrabold text-[#1673B8]">
-                {canUsePremium
-                  ? '· Paid Pro Mode (Solution Log, Directory & PDF Unlocked)'
-                  : '· Free Basic Calculator'}
+                · Instant Online Calculator
               </span>
             </div>
             <p className="text-xs text-[#4A5568] font-medium">
@@ -6948,7 +6883,12 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
   onSaveToolsData,
   onOpenPremiumModal
 }) => {
-  const canUsePremium = Boolean(isUserPaid && !hasExpiredPremium);
+  // Pure online calculator mode (premium/cloud directory features removed)
+  const canUsePremium = false;
+  void user;
+  void isUserPaid;
+  void hasExpiredPremium;
+  void onOpenPremiumModal;
 
   const [viewTab, setViewTab] = useState<'calculator' | 'directory'>('calculator');
   const [statusToast, setStatusToast] = useState<string | null>(null);
@@ -7593,9 +7533,7 @@ export const MoistureAshYieldTool: React.FC<LabFormulaCalculatorToolProps> = ({
                 Moisture, Ash &amp; Proximate Analysis % Calculator
               </h2>
               <span className="text-[11px] font-extrabold text-[#1673B8]">
-                {canUsePremium
-                  ? '· Paid Pro Mode (Sample Log, Directory & COA PDF Unlocked)'
-                  : '· Free Basic Calculator'}
+                · Instant Online Calculator
               </span>
             </div>
             <p className="text-xs text-[#4A5568] font-medium">
@@ -9347,7 +9285,7 @@ export const ProductionFloorWorkersTool: React.FC<LabFormulaCalculatorToolProps>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
-                Production Floor, Net Efficiency, Syrup Room &amp; Yield Tool
+                Production Yield &amp; Efficiency Tool
               </h2>
               <span className="text-[11px] font-extrabold text-[#1673B8]">
                 {canUsePremium
@@ -10606,11 +10544,16 @@ export const ENumbersInstantFinderTool: React.FC = () => {
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
-              E-Numbers &amp; Food Additives Instant Finder
-            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138]">
+                E-Numbers &amp; Food Additives Instant Finder
+              </h2>
+              <span className="text-[11px] font-extrabold text-[#1673B8]">
+                · {E_NUMBERS_DATABASE.length} Global Codex / EU / FDA Entries
+              </span>
+            </div>
             <p className="text-xs text-[#4A5568] font-medium">
-              Search Preservatives, Antioxidants, Colors, Emulsifiers, Codex Limits (PPM) &amp; Halal Status
+              Worldwide Dictionary of Colors, Preservatives, Antioxidants, Emulsifiers, Stabilizers, Sweeteners, Modified Starches, Codex Limits (PPM) &amp; Halal Status
             </p>
           </div>
         </div>
