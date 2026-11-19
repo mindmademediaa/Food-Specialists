@@ -1,4 +1,4 @@
-const CACHE_NAME = 'food-science-portal-v20261119-v13';
+const CACHE_NAME = 'food-science-portal-__BUILD_VERSION__';
 const CORE_SHELL_URLS = ['./', './index.html', './manifest.json'];
 const SHARE_TARGET_DB_NAME = 'fsp_share_target_db';
 const SHARE_TARGET_STORE_NAME = 'shared_items';
@@ -33,11 +33,34 @@ async function saveSharedTargetToIdb(record) {
   });
 }
 
+function fetchWithTimeout(request, options, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Network timeout')), timeoutMs);
+    fetch(request, options)
+      .then((res) => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(CORE_SHELL_URLS).catch(() => {}))
+      .then((cache) =>
+        Promise.all(
+          CORE_SHELL_URLS.map((url) =>
+            fetch(url, { cache: 'no-store' })
+              .then((res) => (res && res.status === 200 ? cache.put(url, res) : null))
+              .catch(() => null)
+          )
+        )
+      )
       .then(() => self.skipWaiting())
   );
 });
@@ -57,10 +80,15 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Warm-cache Factory Floor Offline Mode URLs on explicit user action
+// Handle explicit SKIP_WAITING & offline URL warming messages
 self.addEventListener('message', (event) => {
   const data = event.data;
-  if (!data || data.type !== 'CACHE_OFFLINE_URLS' || !Array.isArray(data.urls)) {
+  if (!data) return;
+  if (data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+  if (data.type !== 'CACHE_OFFLINE_URLS' || !Array.isArray(data.urls)) {
     return;
   }
   event.waitUntil(
@@ -99,7 +127,7 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Handle Android/Chrome Web Share Target POST (/share-target) + Network-First GET caching
+// Handle Android/Chrome Web Share Target POST (/share-target) + Fresh Network-First HTML + Immutable Hashed Asset Cache
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
@@ -169,11 +197,13 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.method !== 'GET') return;
 
-  // Never intercept Vite dev server or module script paths
+  // Never intercept Vite dev server, module scripts, API calls, or version.json checks
   if (
     url.pathname.startsWith('/src/') ||
     url.pathname.startsWith('/node_modules/') ||
-    url.pathname.startsWith('/@')
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.endsWith('/version.json')
   ) {
     return;
   }
@@ -184,12 +214,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-First for immutable hashed bundles & static icons/images/fonts for instant launch
-  const isStaticAsset =
-    url.pathname.startsWith('/assets/') ||
-    /\.(?:js|css|png|jpg|jpeg|webp|svg|ico|woff2?|ttf)$/i.test(url.pathname);
+  // 1. HTML Navigations & index.html: STRICT NETWORK-FIRST (cache: 'no-store') with 3.5s offline fallback
+  // Guarantees every pushed deploy reflects immediately on the very first load/refresh!
+  if (
+    event.request.mode === 'navigate' ||
+    url.pathname === '/' ||
+    url.pathname.endsWith('/index.html')
+  ) {
+    event.respondWith(
+      fetchWithTimeout(event.request, { cache: 'no-store' }, 3500)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put('./index.html', copy).catch(() => {});
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() =>
+          caches.open(CACHE_NAME).then((cache) =>
+            cache.match('./index.html').then((cached) => cached || cache.match('./') || Response.error())
+          )
+        )
+    );
+    return;
+  }
 
-  if (isStaticAsset) {
+  // 2. Immutable Vite content-hashed bundles inside /assets/: CACHE-FIRST for instant sub-second loads
+  const isImmutableHashedAsset =
+    url.pathname.includes('/assets/') &&
+    /-[A-Za-z0-9_-]{6,}\.(?:js|mjs|css|woff2?|ttf|png|jpg|jpeg|webp|svg)$/i.test(url.pathname);
+
+  if (isImmutableHashedAsset) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
@@ -207,41 +264,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-While-Revalidate for HTML navigations & manifest so installed PWA opens immediately while refreshing in background
-  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('/index.html')) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then((cache) =>
-        cache.match('./index.html').then((cachedHtml) => {
-          const networkPromise = fetch(event.request)
-            .then((networkResponse) => {
-              if (networkResponse && networkResponse.status === 200) {
-                cache.put('./index.html', networkResponse.clone()).catch(() => {});
-              }
-              return networkResponse;
-            })
-            .catch(() => cachedHtml || cache.match('./') || Response.error());
-          return cachedHtml || networkPromise;
-        })
-      )
-    );
-    return;
-  }
-
-  // Default: Stale-While-Revalidate for other same-origin GETs
+  // 3. Manifest, favicons, and other unhashed static files: NETWORK-FIRST so icon/manifest updates show immediately
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const cloned = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, cloned).catch(() => {});
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => cached || Response.error());
-      return cached || fetchPromise;
-    })
+    fetchWithTimeout(event.request, { cache: 'no-cache' }, 3000)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const cloned = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, cloned).catch(() => {});
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(event.request).then((cached) => cached || Response.error()))
   );
 });
