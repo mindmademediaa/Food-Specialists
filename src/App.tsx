@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense, useCallback } from 'react';
 import {
   ArrowRight,
   Wheat,
@@ -65,10 +65,15 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  limit,
   onSnapshot,
   query,
   setDoc,
-  where
+  startAfter,
+  where,
+  type DocumentData,
+  type QueryDocumentSnapshot
 } from 'firebase/firestore';
 import {
   db,
@@ -110,19 +115,13 @@ import {
 import {
   INITIAL_JOBS,
   INITIAL_SCHOLARSHIPS,
-  INITIAL_TRAININGS,
   makeAvatarSvg
 } from './data/mockHubData';
-import { INTERNATIONAL_TRAINING_COURSES } from './data/internationalTrainingsData';
 import {
-  buildMergedLiveCourses,
+  buildMergedLiveCourseSummaries,
   parseLiveCourseFeeRs
-} from './lib/liveCoursesMerge';
-import {
-  hasLegacyMcqFormat,
-  isLegacyHaccpVisualDoc
-} from './data/coursesHaccp3And4';
-import { DEFAULT_USER_TOOLS_DATA } from './data/examPrepData';
+} from './data/courseCatalogSummary';
+import { DEFAULT_USER_TOOLS_DATA } from './lib/defaultUserToolsData';
 import {
   uploadMediaFile,
   formatFileSizeLabel
@@ -133,30 +132,19 @@ import { JobCard } from './components/JobCard';
 import { MemberCard, canViewerSeeField } from './components/MemberCard';
 import { AuthScreen } from './components/AuthScreen';
 import {
-  EditProfileView,
   DEFAULT_VISIBILITY_MAP,
   normalizeEducationArray,
   normalizeExperienceArray
-} from './components/EditProfileView';
-import { PublicProfileView } from './components/PublicProfileView';
-import {
-  AdminControlPanel,
-  AdminDispatchConfirmationPayload
-} from './components/AdminControlPanel';
-import { SupportAgentWidget } from './components/SupportAgentWidget';
-import {
-  LegalComplianceModal,
-  LegalTabType
-} from './components/LegalComplianceModal';
-import { ToolsHubView, ActiveToolSection } from './components/ToolsHubView';
-import { TrainingsAcademyView } from './components/TrainingsAcademyView';
-import { PublicComplaintIntakeView } from './components/PublicComplaintIntakeView';
+} from './lib/profileHelpers';
+import type { AdminDispatchConfirmationPayload } from './components/AdminControlPanel';
+import type { LegalTabType } from './components/LegalComplianceModal';
+import type { ActiveToolSection } from './components/ToolsHubView';
+import type { FlyerPublishPayload } from './components/ShareTargetModal';
 import { ScrollingAdBanner } from './components/ScrollingAdBanner';
 import { SEOManager, SEODirectoryFooter } from './components/SEOManager';
 import {
   CertificateBundleOffersCard
 } from './components/PricingAndBundlesSection';
-import { QuestionOfTheDayCard } from './components/QuestionOfTheDayCard';
 import {
   OfflineIndicator,
   buildConfirmationAlertLinks,
@@ -164,20 +152,75 @@ import {
   showPortalPushNotification
 } from './lib/pwaNotifications';
 import {
-  ShareTargetModal,
-  FlyerPublishPayload
-} from './components/ShareTargetModal';
-import {
   SharedTargetDraft,
   readSharedTargetPayload,
   subscribeShareTargetBroadcast
 } from './lib/shareTargetStorage';
-import { buildDirectCertificateVerifyUrl } from './utils/certificatePdfGenerator';
+import { buildDirectCertificateVerifyUrl } from './lib/certificateVerifyUrl';
 import {
   useGeoCurrency,
   getLocalizedMembershipPricing,
   getLocalizedCertificateFee
 } from './lib/geoCurrency';
+
+// Route & Modal Code Splitting (Keeps initial Home bundle ultra-light for 50K-100K daily users)
+const AdminControlPanel = lazy(() =>
+  import('./components/AdminControlPanel').then((m) => ({
+    default: m.AdminControlPanel
+  }))
+);
+const TrainingsAcademyView = lazy(() =>
+  import('./components/TrainingsAcademyView').then((m) => ({
+    default: m.TrainingsAcademyView
+  }))
+);
+const ToolsHubView = lazy(() =>
+  import('./components/ToolsHubView').then((m) => ({ default: m.ToolsHubView }))
+);
+const EditProfileView = lazy(() =>
+  import('./components/EditProfileView').then((m) => ({
+    default: m.EditProfileView
+  }))
+);
+const PublicProfileView = lazy(() =>
+  import('./components/PublicProfileView').then((m) => ({
+    default: m.PublicProfileView
+  }))
+);
+const PublicComplaintIntakeView = lazy(() =>
+  import('./components/PublicComplaintIntakeView').then((m) => ({
+    default: m.PublicComplaintIntakeView
+  }))
+);
+const LegalComplianceModal = lazy(() =>
+  import('./components/LegalComplianceModal').then((m) => ({
+    default: m.LegalComplianceModal
+  }))
+);
+const SupportAgentWidget = lazy(() =>
+  import('./components/SupportAgentWidget').then((m) => ({
+    default: m.SupportAgentWidget
+  }))
+);
+const ShareTargetModal = lazy(() =>
+  import('./components/ShareTargetModal').then((m) => ({
+    default: m.ShareTargetModal
+  }))
+);
+const QuestionOfTheDayCard = lazy(() =>
+  import('./components/QuestionOfTheDayCard').then((m) => ({
+    default: m.QuestionOfTheDayCard
+  }))
+);
+
+const LazySectionFallback: React.FC<{ label?: string }> = ({
+  label = 'Loading section...'
+}) => (
+  <div className="min-h-[240px] flex flex-col items-center justify-center gap-3 py-12 px-4">
+    <div className="w-8 h-8 rounded-full border-3 border-[#D2DEEA] border-t-[#1673B8] animate-spin" />
+    <p className="text-xs font-extrabold text-[#1A2138]">{label}</p>
+  </div>
+);
 
 // Custom Duotone SVGs & Botanical Watermarks for the Home Screen Cards
 const DuotoneBriefcaseIcon = () => (
@@ -652,17 +695,37 @@ export default function App() {
   });
   const [hasSavedProfile, setHasSavedProfile] = useState<boolean>(true);
 
-  // Collections State (Real Firestore Users — No Placeholder Profiles)
+  // Collections State (Real Firestore Users — Loaded On-Demand & Paginated for 50K-100K Daily Scale)
   const [users, setUsers] = useState<HubUser[]>([]);
+  const [usersLastDoc, setUsersLastDoc] =
+    useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMoreUsers, setHasMoreUsers] = useState<boolean>(false);
+  const [isLoadingMoreUsers, setIsLoadingMoreUsers] = useState<boolean>(false);
+  const communityDirectoryLoadedRef = useRef<boolean>(false);
+
   const [showCommunityPaywall, setShowCommunityPaywall] =
     useState<boolean>(false);
   const [jobs, setJobs] = useState<HubJob[]>(INITIAL_JOBS);
+  const [jobsLastDoc, setJobsLastDoc] =
+    useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMoreJobs, setHasMoreJobs] = useState<boolean>(false);
+  const [isLoadingMoreJobs, setIsLoadingMoreJobs] = useState<boolean>(false);
+
   const [scholarships, setScholarships] = useState<HubScholarship[]>(
     INITIAL_SCHOLARSHIPS
   );
-  const [trainings, setTrainings] = useState<HubTraining[]>(INITIAL_TRAININGS);
+  const [scholarshipsLastDoc, setScholarshipsLastDoc] =
+    useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMoreScholarships, setHasMoreScholarships] =
+    useState<boolean>(false);
+  const [isLoadingMoreScholarships, setIsLoadingMoreScholarships] =
+    useState<boolean>(false);
+
+  const [trainings, setTrainings] = useState<HubTraining[]>([]);
+  const builtInTrainingsRef = useRef<HubTraining[]>([]);
+  const firestoreTrainingsRef = useRef<HubTraining[]>([]);
   const mergedLiveCourses = useMemo(
-    () => buildMergedLiveCourses(trainings),
+    () => buildMergedLiveCourseSummaries(trainings),
     [trainings]
   );
   const [certificates, setCertificates] = useState<HubCertificate[]>([]);
@@ -1223,282 +1286,603 @@ export default function App() {
     }
   };
 
-  // Real-time Public Portal Listeners (Available to Guests, Free Users & Paid Members)
+  // Helper to hydrate storageConfig consistently from Firestore doc snapshot
+  const hydrateStorageConfigFromData = useCallback((data: CloudStorageConfig) => {
+    const hydrated: CloudStorageConfig = {
+      provider:
+        data.provider === 'smart-firestore' ? 'smart-firestore' : 'cloudinary',
+      cloudinaryCloudName:
+        data.cloudinaryCloudName?.trim() || 'mhjkrdlh',
+      cloudinaryUploadPreset:
+        data.cloudinaryUploadPreset?.trim() || 'Food Specialists',
+      updatedAt: data.updatedAt || '2026-11-03T11:45:00Z',
+      whatsappChannelUrl:
+        data.whatsappChannelUrl?.trim() ||
+        'https://whatsapp.com/channel/0029VaFoodSpecialists',
+      whatsappChannelButtonText:
+        data.whatsappChannelButtonText?.trim() ||
+        'Follow WhatsApp Channel',
+      paymentGateway: {
+        jazzCashTitle:
+          data.paymentGateway?.jazzCashTitle || 'Muneeb Khan',
+        jazzCashNumber:
+          data.paymentGateway?.jazzCashNumber || '0324-0906384',
+        easyPaisaTitle:
+          data.paymentGateway?.easyPaisaTitle || 'Muneeb Khan',
+        easyPaisaNumber:
+          data.paymentGateway?.easyPaisaNumber || '0324-0906384',
+        bankTitle: data.paymentGateway?.bankTitle || 'Muneeb Khan',
+        bankName:
+          data.paymentGateway?.bankName || 'Allied Bank / Bank Transfer',
+        bankAccountOrIban:
+          data.paymentGateway?.bankAccountOrIban ||
+          'Contact on WhatsApp for IBAN',
+        bankWhatsapp:
+          data.paymentGateway?.bankWhatsapp || '+92 324 0906384',
+        monthlyFeeRs:
+          data.paymentGateway?.monthlyFeeRs === 200 &&
+          data.paymentGateway?.yearlyFeeRs === 1800 &&
+          !data.paymentGateway?.customPriceUpdated
+            ? 100
+            : Number(data.paymentGateway?.monthlyFeeRs) || 100,
+        yearlyFeeRs:
+          data.paymentGateway?.monthlyFeeRs === 200 &&
+          data.paymentGateway?.yearlyFeeRs === 1800 &&
+          !data.paymentGateway?.customPriceUpdated
+            ? 900
+            : Number(data.paymentGateway?.yearlyFeeRs) || 900,
+        monthlyFeeUsd: Number(data.paymentGateway?.monthlyFeeUsd) || 1,
+        yearlyFeeUsd: Number(data.paymentGateway?.yearlyFeeUsd) || 9,
+        certificateFeeUsd:
+          Number(data.paymentGateway?.certificateFeeUsd) || 5,
+        customPriceUpdated: Boolean(
+          data.paymentGateway?.customPriceUpdated
+        )
+      },
+      ...(Array.isArray(data.customAds)
+        ? { customAds: data.customAds }
+        : {}),
+      ...(data.frontPageConfig
+        ? { frontPageConfig: data.frontPageConfig }
+        : {}),
+      ...(Array.isArray(data.manualRevenueEntries)
+        ? { manualRevenueEntries: data.manualRevenueEntries }
+        : {}),
+      ...(Array.isArray(data.customTrainings)
+        ? { customTrainings: data.customTrainings }
+        : {})
+    };
+    setStorageConfig(hydrated);
+  }, []);
+
+  // Merge Firestore jobs docs cleanly with built-in initial jobs
+  const applyJobsList = useCallback((fsJobs: HubJob[], append = false) => {
+    setJobs((prev) => {
+      const map = new Map<string, HubJob>();
+      if (append) {
+        prev.forEach((j) => map.set(j.id, j));
+      }
+      fsJobs
+        .filter((j) => !INITIAL_JOBS.some((ij) => ij.id === j.id))
+        .sort((a, b) => b.id.localeCompare(a.id))
+        .forEach((j) => map.set(j.id, j));
+      INITIAL_JOBS.forEach((j) => {
+        if (!map.has(j.id)) map.set(j.id, j);
+      });
+      fsJobs.forEach((j) => {
+        const initMatch = INITIAL_JOBS.find((ij) => ij.id === j.id);
+        if (initMatch) {
+          map.set(j.id, { ...initMatch, ...j });
+        }
+      });
+      return Array.from(map.values()).filter((j) => j.isActive);
+    });
+  }, []);
+
+  // Merge Firestore scholarships docs cleanly with built-in initial scholarships
+  const applyScholarshipsList = useCallback(
+    (fsSch: HubScholarship[], append = false) => {
+      setScholarships((prev) => {
+        const map = new Map<string, HubScholarship>();
+        if (append) {
+          prev.forEach((s) => map.set(s.id, s));
+        }
+        fsSch
+          .filter((s) => !INITIAL_SCHOLARSHIPS.some((is) => is.id === s.id))
+          .sort((a, b) => b.id.localeCompare(a.id))
+          .forEach((s) => map.set(s.id, s));
+        INITIAL_SCHOLARSHIPS.forEach((s) => {
+          if (!map.has(s.id)) map.set(s.id, s);
+        });
+        fsSch.forEach((s) => {
+          const initMatch = INITIAL_SCHOLARSHIPS.find((is) => is.id === s.id);
+          if (initMatch) {
+            map.set(s.id, { ...initMatch, ...s });
+          }
+        });
+        return Array.from(map.values()).filter((s) => s.isActive);
+      });
+    },
+    []
+  );
+
+  // Merge Firestore trainings docs cleanly (and optionally merge full built-in trainings once dynamically loaded)
+  const applyMergedTrainingsState = useCallback(
+    (
+      fsTr: HubTraining[],
+      builtInList: HubTraining[],
+      legacyHelpers?: {
+        hasLegacyMcqFormat: (q: any) => boolean;
+        isLegacyHaccpVisualDoc: (t: HubTraining, expectedLen: number) => boolean;
+      }
+    ) => {
+      const cleanedFs = fsTr.filter(
+        (t) =>
+          !t.id.startsWith('tr-hf-') &&
+          !t.id.startsWith('tr-la-') &&
+          !t.id.startsWith('tr-int-') &&
+          !t.id.startsWith('tr-intl-') &&
+          !t.id.startsWith('tr-haccp-level-4') &&
+          !t.id.startsWith('course-') &&
+          t.id !== 'haccp-level-demo' &&
+          t.category !== 'Highfield' &&
+          t.category !== 'Lead Auditor'
+      );
+      firestoreTrainingsRef.current = cleanedFs;
+      setTrainings(() => {
+        const map = new Map<string, HubTraining>();
+        builtInList.forEach((t) => map.set(t.id, t));
+        cleanedFs.forEach((t) => {
+          const initMatch = builtInList.find((it) => it.id === t.id);
+          if (initMatch && legacyHelpers) {
+            const isStaleVisual = legacyHelpers.isLegacyHaccpVisualDoc(
+              t,
+              initMatch.customModules?.length || 0
+            );
+            const hasLegacyMcqs =
+              isStaleVisual ||
+              !t.customMcqs ||
+              t.customMcqs.length === 0 ||
+              t.customMcqs.some((q) => legacyHelpers.hasLegacyMcqFormat(q));
+            map.set(t.id, {
+              ...initMatch,
+              ...t,
+              ...(isStaleVisual
+                ? {
+                    title: initMatch.title,
+                    standardCode: initMatch.standardCode,
+                    accreditationStandard: initMatch.accreditationStandard,
+                    subType: initMatch.subType,
+                    duration: initMatch.duration,
+                    description: initMatch.description,
+                    customModules: initMatch.customModules
+                  }
+                : {}),
+              customMcqs: hasLegacyMcqs ? initMatch.customMcqs : t.customMcqs
+            });
+          } else if (initMatch) {
+            map.set(t.id, { ...initMatch, ...t });
+          } else {
+            map.set(t.id, t);
+          }
+        });
+        return Array.from(map.values());
+      });
+    },
+    []
+  );
+
+  const isAdminSession = Boolean(
+    authUser?.email?.toLowerCase() === 'mindmademedia9@gmail.com'
+  );
+
+  // Scalable Public Data Loader:
+  // - Normal visitors/guests use bounded one-time getDocs/getDoc queries (backed by IndexedDB persistentLocalCache)
+  //   instead of 6 unbounded real-time onSnapshot collection scans — slashing Firebase reads by 95%+ at 50K-100K daily users!
+  // - Admin session gets live bounded real-time listeners for instant Control Panel management.
   useEffect(() => {
-    const unsubUsers = onSnapshot(
-      collection(db, 'users'),
-      (snap) => {
-        const fsUsers = snap.docs
-          .map((d) => ({ ...(d.data() as HubUser), uid: d.id }))
-          .filter((u) => Boolean(u.uid && u.name));
-        setUsers(fsUsers);
-      },
-      (err) => {
-        try {
-          handleFirestoreError(err, OperationType.LIST, 'users');
-        } catch {}
-      }
-    );
+    let cancelled = false;
 
-    const unsubJobs = onSnapshot(
-      collection(db, 'jobs'),
-      (snap) => {
-        const fsJobs = snap.docs.map((d) => ({
-          ...(d.data() as HubJob),
-          id: d.id
-        }));
-        if (knownJobIdsRef.current === null) {
-          knownJobIdsRef.current = new Set(fsJobs.map((j) => j.id));
-        } else {
-          const newPostedJobs = fsJobs.filter(
-            (j) => j.isActive && !knownJobIdsRef.current!.has(j.id)
-          );
-          fsJobs.forEach((j) => knownJobIdsRef.current!.add(j.id));
-          if (newPostedJobs.length > 0 && getPushAlertsEnabled()) {
-            const newest = newPostedJobs[0];
-            void showPortalPushNotification(
-              `New Job: ${newest.title}`,
-              `${newest.company} · ${newest.location}`,
-              '/?section=jobs'
-            );
-          }
+    if (isAdminSession) {
+      const unsubUsers = onSnapshot(
+        query(collection(db, 'users'), limit(250)),
+        (snap) => {
+          const fsUsers = snap.docs
+            .map((d) => ({ ...(d.data() as HubUser), uid: d.id }))
+            .filter((u) => Boolean(u.uid && u.name));
+          setUsers(fsUsers);
+          setUsersLastDoc(snap.docs[snap.docs.length - 1] || null);
+          setHasMoreUsers(snap.docs.length >= 250);
+          communityDirectoryLoadedRef.current = true;
+        },
+        (err) => {
+          try {
+            handleFirestoreError(err, OperationType.LIST, 'users');
+          } catch {}
         }
-        setJobs(() => {
-          const map = new Map<string, HubJob>();
-          fsJobs
-            .filter((j) => !INITIAL_JOBS.some((ij) => ij.id === j.id))
-            .sort((a, b) => b.id.localeCompare(a.id))
-            .forEach((j) => map.set(j.id, j));
-          INITIAL_JOBS.forEach((j) => map.set(j.id, j));
-          fsJobs.forEach((j) => {
-            const initMatch = INITIAL_JOBS.find((ij) => ij.id === j.id);
-            if (initMatch) {
-              map.set(j.id, { ...initMatch, ...j });
-            }
-          });
-          return Array.from(map.values()).filter((j) => j.isActive);
-        });
-      },
-      (err) => {
-        try {
-          handleFirestoreError(err, OperationType.LIST, 'jobs');
-        } catch {}
-      }
-    );
+      );
 
-    const unsubSch = onSnapshot(
-      collection(db, 'scholarships'),
-      (snap) => {
-        const fsSch = snap.docs.map((d) => ({
-          ...(d.data() as HubScholarship),
-          id: d.id
-        }));
-        if (knownScholarshipIdsRef.current === null) {
-          knownScholarshipIdsRef.current = new Set(fsSch.map((s) => s.id));
-        } else {
-          const newPostedSch = fsSch.filter(
-            (s) => s.isActive && !knownScholarshipIdsRef.current!.has(s.id)
-          );
-          fsSch.forEach((s) => knownScholarshipIdsRef.current!.add(s.id));
-          if (newPostedSch.length > 0 && getPushAlertsEnabled()) {
-            const newest = newPostedSch[0];
-            void showPortalPushNotification(
-              `New Scholarship: ${newest.title}`,
-              `${newest.organization} · ${newest.country}`,
-              '/?section=scholarships'
-            );
-          }
+      const unsubJobs = onSnapshot(
+        query(collection(db, 'jobs'), limit(200)),
+        (snap) => {
+          const fsJobs = snap.docs.map((d) => ({
+            ...(d.data() as HubJob),
+            id: d.id
+          }));
+          applyJobsList(fsJobs, false);
+          setJobsLastDoc(snap.docs[snap.docs.length - 1] || null);
+          setHasMoreJobs(snap.docs.length >= 200);
+        },
+        (err) => {
+          try {
+            handleFirestoreError(err, OperationType.LIST, 'jobs');
+          } catch {}
         }
-        setScholarships(() => {
-          const map = new Map<string, HubScholarship>();
-          fsSch
-            .filter((s) => !INITIAL_SCHOLARSHIPS.some((is) => is.id === s.id))
-            .sort((a, b) => b.id.localeCompare(a.id))
-            .forEach((s) => map.set(s.id, s));
-          INITIAL_SCHOLARSHIPS.forEach((s) => map.set(s.id, s));
-          fsSch.forEach((s) => {
-            const initMatch = INITIAL_SCHOLARSHIPS.find(
-              (is) => is.id === s.id
-            );
-            if (initMatch) {
-              map.set(s.id, { ...initMatch, ...s });
-            }
-          });
-          return Array.from(map.values()).filter((s) => s.isActive);
-        });
-      },
-      (err) => {
-        try {
-          handleFirestoreError(err, OperationType.LIST, 'scholarships');
-        } catch {}
-      }
-    );
+      );
 
-    const unsubTr = onSnapshot(
-      collection(db, 'trainings'),
-      (snap) => {
-        const fsTr = snap.docs
-          .map((d) => ({
+      const unsubSch = onSnapshot(
+        query(collection(db, 'scholarships'), limit(200)),
+        (snap) => {
+          const fsSch = snap.docs.map((d) => ({
+            ...(d.data() as HubScholarship),
+            id: d.id
+          }));
+          applyScholarshipsList(fsSch, false);
+          setScholarshipsLastDoc(snap.docs[snap.docs.length - 1] || null);
+          setHasMoreScholarships(snap.docs.length >= 200);
+        },
+        (err) => {
+          try {
+            handleFirestoreError(err, OperationType.LIST, 'scholarships');
+          } catch {}
+        }
+      );
+
+      const unsubTr = onSnapshot(
+        query(collection(db, 'trainings'), limit(80)),
+        (snap) => {
+          const fsTr = snap.docs.map((d) => ({
             ...(d.data() as HubTraining),
             id: d.id
-          }))
-          .filter(
-            (t) =>
-              !t.id.startsWith('tr-hf-') &&
-              !t.id.startsWith('tr-la-') &&
-              !t.id.startsWith('tr-int-') &&
-              !t.id.startsWith('tr-intl-') &&
-              !t.id.startsWith('tr-haccp-level-4') &&
-              !t.id.startsWith('course-') &&
-              t.id !== 'haccp-level-demo' &&
-              t.category !== 'Highfield' &&
-              t.category !== 'Lead Auditor'
-          );
-        setTrainings(() => {
-          const map = new Map<string, HubTraining>();
-          INITIAL_TRAININGS.forEach((t) => map.set(t.id, t));
-          fsTr.forEach((t) => {
-            const initMatch = INITIAL_TRAININGS.find((it) => it.id === t.id);
-            if (initMatch) {
-              const isStaleVisual = isLegacyHaccpVisualDoc(
-                t,
-                initMatch.customModules?.length || 0
-              );
-              const hasLegacyMcqs =
-                isStaleVisual ||
-                !t.customMcqs ||
-                t.customMcqs.length === 0 ||
-                t.customMcqs.some((q) => hasLegacyMcqFormat(q));
-              map.set(t.id, {
-                ...initMatch,
-                ...t,
-                ...(isStaleVisual
-                  ? {
-                      title: initMatch.title,
-                      standardCode: initMatch.standardCode,
-                      accreditationStandard: initMatch.accreditationStandard,
-                      subType: initMatch.subType,
-                      duration: initMatch.duration,
-                      description: initMatch.description,
-                      customModules: initMatch.customModules
-                    }
-                  : {}),
-                customMcqs: hasLegacyMcqs ? initMatch.customMcqs : t.customMcqs
-              });
-            } else {
-              map.set(t.id, t);
-            }
-          });
-          return Array.from(map.values());
-        });
-      },
-      (err) => {
-        try {
-          handleFirestoreError(err, OperationType.LIST, 'trainings');
-        } catch {}
-      }
-    );
-
-    const unsubCerts = onSnapshot(
-      collection(db, 'certificates'),
-      (snap) => {
-        const list = snap.docs.map((d) => ({
-          ...(d.data() as HubCertificate),
-          id: d.id
-        }));
-        setCertificates(list);
-      },
-      (err) => {
-        try {
-          handleFirestoreError(err, OperationType.LIST, 'certificates');
-        } catch {}
-      }
-    );
-
-    const unsubStorageCfg = onSnapshot(
-      doc(db, 'settings', 'storageConfig'),
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data() as CloudStorageConfig;
-          const hydrated: CloudStorageConfig = {
-            provider:
-              data.provider === 'smart-firestore' ? 'smart-firestore' : 'cloudinary',
-            cloudinaryCloudName:
-              data.cloudinaryCloudName?.trim() || 'mhjkrdlh',
-            cloudinaryUploadPreset:
-              data.cloudinaryUploadPreset?.trim() || 'Food Specialists',
-            updatedAt: data.updatedAt || '2026-11-03T11:45:00Z',
-            whatsappChannelUrl:
-              data.whatsappChannelUrl?.trim() ||
-              'https://whatsapp.com/channel/0029VaFoodSpecialists',
-            whatsappChannelButtonText:
-              data.whatsappChannelButtonText?.trim() ||
-              'Follow WhatsApp Channel',
-            paymentGateway: {
-              jazzCashTitle:
-                data.paymentGateway?.jazzCashTitle || 'Muneeb Khan',
-              jazzCashNumber:
-                data.paymentGateway?.jazzCashNumber || '0324-0906384',
-              easyPaisaTitle:
-                data.paymentGateway?.easyPaisaTitle || 'Muneeb Khan',
-              easyPaisaNumber:
-                data.paymentGateway?.easyPaisaNumber || '0324-0906384',
-              bankTitle: data.paymentGateway?.bankTitle || 'Muneeb Khan',
-              bankName:
-                data.paymentGateway?.bankName || 'Allied Bank / Bank Transfer',
-              bankAccountOrIban:
-                data.paymentGateway?.bankAccountOrIban ||
-                'Contact on WhatsApp for IBAN',
-              bankWhatsapp:
-                data.paymentGateway?.bankWhatsapp || '+92 324 0906384',
-              monthlyFeeRs:
-                data.paymentGateway?.monthlyFeeRs === 200 &&
-                data.paymentGateway?.yearlyFeeRs === 1800 &&
-                !data.paymentGateway?.customPriceUpdated
-                  ? 100
-                  : Number(data.paymentGateway?.monthlyFeeRs) || 100,
-              yearlyFeeRs:
-                data.paymentGateway?.monthlyFeeRs === 200 &&
-                data.paymentGateway?.yearlyFeeRs === 1800 &&
-                !data.paymentGateway?.customPriceUpdated
-                  ? 900
-                  : Number(data.paymentGateway?.yearlyFeeRs) || 900,
-              monthlyFeeUsd: Number(data.paymentGateway?.monthlyFeeUsd) || 1,
-              yearlyFeeUsd: Number(data.paymentGateway?.yearlyFeeUsd) || 9,
-              certificateFeeUsd:
-                Number(data.paymentGateway?.certificateFeeUsd) || 5,
-              customPriceUpdated: Boolean(
-                data.paymentGateway?.customPriceUpdated
-              )
-            },
-            ...(Array.isArray(data.customAds)
-              ? { customAds: data.customAds }
-              : {}),
-            ...(data.frontPageConfig
-              ? { frontPageConfig: data.frontPageConfig }
-              : {}),
-            ...(Array.isArray(data.manualRevenueEntries)
-              ? { manualRevenueEntries: data.manualRevenueEntries }
-              : {}),
-            ...(Array.isArray(data.customTrainings)
-              ? { customTrainings: data.customTrainings }
-              : {})
-          };
-          setStorageConfig(hydrated);
+          }));
+          applyMergedTrainingsState(fsTr, builtInTrainingsRef.current);
+        },
+        (err) => {
+          try {
+            handleFirestoreError(err, OperationType.LIST, 'trainings');
+          } catch {}
         }
-      },
-      () => {}
-    );
+      );
+
+      const unsubCerts = onSnapshot(
+        query(collection(db, 'certificates'), limit(250)),
+        (snap) => {
+          const list = snap.docs.map((d) => ({
+            ...(d.data() as HubCertificate),
+            id: d.id
+          }));
+          setCertificates(list);
+        },
+        (err) => {
+          try {
+            handleFirestoreError(err, OperationType.LIST, 'certificates');
+          } catch {}
+        }
+      );
+
+      const unsubStorageCfg = onSnapshot(
+        doc(db, 'settings', 'storageConfig'),
+        (snap) => {
+          if (snap.exists()) {
+            hydrateStorageConfigFromData(snap.data() as CloudStorageConfig);
+          }
+        },
+        () => {}
+      );
+
+      return () => {
+        unsubUsers();
+        unsubJobs();
+        unsubSch();
+        unsubTr();
+        unsubCerts();
+        unsubStorageCfg();
+      };
+    }
+
+    // PUBLIC / NORMAL USER FAST BOUNDED BOOT FETCH (Zero `users` or `certificates` collection scan!)
+    async function loadPublicPortalDataOnce() {
+      try {
+        const [jobsSnap, schSnap, trSnap, cfgSnap] = await Promise.allSettled([
+          getDocs(query(collection(db, 'jobs'), limit(45))),
+          getDocs(query(collection(db, 'scholarships'), limit(45))),
+          getDocs(query(collection(db, 'trainings'), limit(60))),
+          getDoc(doc(db, 'settings', 'storageConfig'))
+        ]);
+        if (cancelled) return;
+
+        if (jobsSnap.status === 'fulfilled') {
+          const fsJobs = jobsSnap.value.docs.map((d) => ({
+            ...(d.data() as HubJob),
+            id: d.id
+          }));
+          knownJobIdsRef.current = new Set(fsJobs.map((j) => j.id));
+          applyJobsList(fsJobs, false);
+          setJobsLastDoc(
+            jobsSnap.value.docs[jobsSnap.value.docs.length - 1] || null
+          );
+          setHasMoreJobs(jobsSnap.value.docs.length >= 45);
+        }
+
+        if (schSnap.status === 'fulfilled') {
+          const fsSch = schSnap.value.docs.map((d) => ({
+            ...(d.data() as HubScholarship),
+            id: d.id
+          }));
+          knownScholarshipIdsRef.current = new Set(fsSch.map((s) => s.id));
+          applyScholarshipsList(fsSch, false);
+          setScholarshipsLastDoc(
+            schSnap.value.docs[schSnap.value.docs.length - 1] || null
+          );
+          setHasMoreScholarships(schSnap.value.docs.length >= 45);
+        }
+
+        if (trSnap.status === 'fulfilled') {
+          const fsTr = trSnap.value.docs.map((d) => ({
+            ...(d.data() as HubTraining),
+            id: d.id
+          }));
+          applyMergedTrainingsState(fsTr, builtInTrainingsRef.current);
+        }
+
+        if (cfgSnap.status === 'fulfilled' && cfgSnap.value.exists()) {
+          hydrateStorageConfigFromData(
+            cfgSnap.value.data() as CloudStorageConfig
+          );
+        }
+      } catch {
+        // Silent offline/cache fallback
+      }
+    }
+
+    void loadPublicPortalDataOnce();
+
+    // Only attach lightweight push-alert listener if user explicitly opted into push alerts
+    let unsubPushJobs: (() => void) | null = null;
+    let unsubPushSch: (() => void) | null = null;
+    if (getPushAlertsEnabled()) {
+      unsubPushJobs = onSnapshot(
+        query(collection(db, 'jobs'), limit(25)),
+        (snap) => {
+          const fsJobs = snap.docs.map((d) => ({
+            ...(d.data() as HubJob),
+            id: d.id
+          }));
+          if (knownJobIdsRef.current === null) {
+            knownJobIdsRef.current = new Set(fsJobs.map((j) => j.id));
+          } else {
+            const newPostedJobs = fsJobs.filter(
+              (j) => j.isActive && !knownJobIdsRef.current!.has(j.id)
+            );
+            fsJobs.forEach((j) => knownJobIdsRef.current!.add(j.id));
+            if (newPostedJobs.length > 0) {
+              const newest = newPostedJobs[0];
+              void showPortalPushNotification(
+                `New Job: ${newest.title}`,
+                `${newest.company} · ${newest.location}`,
+                '/?section=jobs'
+              );
+              applyJobsList(fsJobs, true);
+            }
+          }
+        },
+        () => {}
+      );
+      unsubPushSch = onSnapshot(
+        query(collection(db, 'scholarships'), limit(25)),
+        (snap) => {
+          const fsSch = snap.docs.map((d) => ({
+            ...(d.data() as HubScholarship),
+            id: d.id
+          }));
+          if (knownScholarshipIdsRef.current === null) {
+            knownScholarshipIdsRef.current = new Set(fsSch.map((s) => s.id));
+          } else {
+            const newPostedSch = fsSch.filter(
+              (s) => s.isActive && !knownScholarshipIdsRef.current!.has(s.id)
+            );
+            fsSch.forEach((s) => knownScholarshipIdsRef.current!.add(s.id));
+            if (newPostedSch.length > 0) {
+              const newest = newPostedSch[0];
+              void showPortalPushNotification(
+                `New Scholarship: ${newest.title}`,
+                `${newest.organization} · ${newest.country}`,
+                '/?section=scholarships'
+              );
+              applyScholarshipsList(fsSch, true);
+            }
+          }
+        },
+        () => {}
+      );
+    }
 
     return () => {
-      unsubUsers();
-      unsubJobs();
-      unsubSch();
-      unsubTr();
-      unsubCerts();
-      unsubStorageCfg();
+      cancelled = true;
+      if (unsubPushJobs) unsubPushJobs();
+      if (unsubPushSch) unsubPushSch();
     };
-  }, []);
+  }, [
+    isAdminSession,
+    applyJobsList,
+    applyScholarshipsList,
+    applyMergedTrainingsState,
+    hydrateStorageConfigFromData
+  ]);
+
+  // Dynamically hydrate full built-in trainings ONLY when needed (Admin, Trainings, or Search)
+  // so Home Page never bundles 700KB of 15-module slides & MCQ banks
+  useEffect(() => {
+    const needsFullTrainings =
+      isAdminSession ||
+      route.name === 'trainings' ||
+      route.name === 'trainings-highfield' ||
+      route.name === 'trainings-lead-auditor-hub' ||
+      route.name === 'training-detail' ||
+      route.name === 'search';
+    if (!needsFullTrainings || builtInTrainingsRef.current.length > 0) return;
+    let cancelled = false;
+    Promise.all([
+      import('./data/internationalTrainingsData'),
+      import('./data/coursesHaccp3And4')
+    ])
+      .then(([intlMod, haccpMod]) => {
+        if (cancelled) return;
+        builtInTrainingsRef.current = intlMod.INITIAL_INTERNATIONAL_TRAININGS;
+        applyMergedTrainingsState(
+          firestoreTrainingsRef.current,
+          intlMod.INITIAL_INTERNATIONAL_TRAININGS,
+          {
+            hasLegacyMcqFormat: haccpMod.hasLegacyMcqFormat,
+            isLegacyHaccpVisualDoc: haccpMod.isLegacyHaccpVisualDoc
+          }
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdminSession, route.name, applyMergedTrainingsState]);
+
+  // On-Demand Community Specialists Loader (Only runs when user visits Communities or Search — never on Home Page!)
+  useEffect(() => {
+    if (isAdminSession || communityDirectoryLoadedRef.current) return;
+    if (route.name !== 'communities' && route.name !== 'search') return;
+    let cancelled = false;
+    communityDirectoryLoadedRef.current = true;
+    getDocs(
+      query(collection(db, 'users'), where('isPaid', '==', true), limit(30))
+    )
+      .then((snap) => {
+        if (cancelled) return;
+        const paidUsers = snap.docs
+          .map((d) => ({ ...(d.data() as HubUser), uid: d.id }))
+          .filter((u) => Boolean(u.uid && u.name));
+        setUsers((prev) => {
+          const map = new Map<string, HubUser>();
+          prev.forEach((u) => map.set(u.uid, u));
+          paidUsers.forEach((u) => map.set(u.uid, u));
+          return Array.from(map.values());
+        });
+        setUsersLastDoc(snap.docs[snap.docs.length - 1] || null);
+        setHasMoreUsers(snap.docs.length >= 30);
+      })
+      .catch(() => {
+        communityDirectoryLoadedRef.current = false;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdminSession, route.name]);
+
+  // On-Demand Single Member Profile Fetch (1 read when opening /member/:uid directly)
+  useEffect(() => {
+    if (route.name !== 'community-member') return;
+    const targetUid = route.uid;
+    if (!targetUid || targetUid === myProfile.uid) return;
+    if (users.some((u) => u.uid === targetUid)) return;
+    let cancelled = false;
+    getDoc(doc(db, 'users', targetUid))
+      .then((snap) => {
+        if (cancelled || !snap.exists()) return;
+        const fetched = { ...(snap.data() as HubUser), uid: snap.id };
+        setUsers((prev) =>
+          prev.some((u) => u.uid === fetched.uid) ? prev : [...prev, fetched]
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [route, myProfile.uid, users]);
+
+  // Pagination Handlers (Jobs, Scholarships, Community Specialists)
+  const handleLoadMoreJobs = async () => {
+    if (!jobsLastDoc || isLoadingMoreJobs) return;
+    setIsLoadingMoreJobs(true);
+    try {
+      const snap = await getDocs(
+        query(collection(db, 'jobs'), startAfter(jobsLastDoc), limit(45))
+      );
+      const nextBatch = snap.docs.map((d) => ({
+        ...(d.data() as HubJob),
+        id: d.id
+      }));
+      applyJobsList(nextBatch, true);
+      setJobsLastDoc(snap.docs[snap.docs.length - 1] || null);
+      setHasMoreJobs(snap.docs.length >= 45);
+    } catch {
+      // Ignore transient error
+    } finally {
+      setIsLoadingMoreJobs(false);
+    }
+  };
+
+  const handleLoadMoreScholarships = async () => {
+    if (!scholarshipsLastDoc || isLoadingMoreScholarships) return;
+    setIsLoadingMoreScholarships(true);
+    try {
+      const snap = await getDocs(
+        query(
+          collection(db, 'scholarships'),
+          startAfter(scholarshipsLastDoc),
+          limit(45)
+        )
+      );
+      const nextBatch = snap.docs.map((d) => ({
+        ...(d.data() as HubScholarship),
+        id: d.id
+      }));
+      applyScholarshipsList(nextBatch, true);
+      setScholarshipsLastDoc(snap.docs[snap.docs.length - 1] || null);
+      setHasMoreScholarships(snap.docs.length >= 45);
+    } catch {
+      // Ignore transient error
+    } finally {
+      setIsLoadingMoreScholarships(false);
+    }
+  };
+
+  const handleLoadMoreCommunityUsers = async () => {
+    if (!usersLastDoc || isLoadingMoreUsers) return;
+    setIsLoadingMoreUsers(true);
+    try {
+      const q = isAdminSession
+        ? query(collection(db, 'users'), startAfter(usersLastDoc), limit(100))
+        : query(
+            collection(db, 'users'),
+            where('isPaid', '==', true),
+            startAfter(usersLastDoc),
+            limit(30)
+          );
+      const snap = await getDocs(q);
+      const nextUsers = snap.docs
+        .map((d) => ({ ...(d.data() as HubUser), uid: d.id }))
+        .filter((u) => Boolean(u.uid && u.name));
+      setUsers((prev) => {
+        const map = new Map<string, HubUser>();
+        prev.forEach((u) => map.set(u.uid, u));
+        nextUsers.forEach((u) => map.set(u.uid, u));
+        return Array.from(map.values());
+      });
+      setUsersLastDoc(snap.docs[snap.docs.length - 1] || null);
+      setHasMoreUsers(snap.docs.length >= (isAdminSession ? 100 : 30));
+    } catch {
+      // Ignore transient error
+    } finally {
+      setIsLoadingMoreUsers(false);
+    }
+  };
 
   // Listen for images/text shared via PWA Web Share Target (WhatsApp / Gallery -> App)
   useEffect(() => {
@@ -1641,11 +2025,32 @@ export default function App() {
       );
     }
 
+    // Normal signed-in users ONLY listen to their OWN certificates (max 50 docs instead of full collection!)
+    let unsubMyCerts: (() => void) | null = null;
+    if (!isAdminUser) {
+      unsubMyCerts = onSnapshot(
+        query(
+          collection(db, 'certificates'),
+          where('recipientUid', '==', authUser.uid),
+          limit(50)
+        ),
+        (snap) => {
+          const myCerts = snap.docs.map((d) => ({
+            ...(d.data() as HubCertificate),
+            id: d.id
+          }));
+          setCertificates(myCerts);
+        },
+        () => {}
+      );
+    }
+
     const supportQuery = isAdminUser
-      ? collection(db, 'supportTickets')
+      ? query(collection(db, 'supportTickets'), limit(150))
       : query(
           collection(db, 'supportTickets'),
-          where('uid', '==', authUser.uid)
+          where('uid', '==', authUser.uid),
+          limit(30)
         );
     const unsubSupport = onSnapshot(
       supportQuery,
@@ -1667,6 +2072,7 @@ export default function App() {
       unsubMyDoc();
       unsubPay();
       if (unsubCustomRegs) unsubCustomRegs();
+      if (unsubMyCerts) unsubMyCerts();
       unsubSupport();
     };
   }, [authUser]);
@@ -2792,13 +3198,10 @@ export default function App() {
   const myLatestApplication = myPaymentApplications[0] || null;
 
   useEffect(() => {
-    preloadUserAvatarForPdf(myProfile.profilePicUrl);
-    users.forEach((u) => {
-      if (u.profilePicUrl) {
-        preloadUserAvatarForPdf(u.profilePicUrl);
-      }
-    });
-  }, [myProfile.profilePicUrl, users]);
+    if (myProfile.profilePicUrl) {
+      preloadUserAvatarForPdf(myProfile.profilePicUrl);
+    }
+  }, [myProfile.profilePicUrl]);
 
   const [deletedPaymentReqIds, setDeletedPaymentReqIds] = useState<string[]>(() => {
     try {
@@ -3034,8 +3437,10 @@ export default function App() {
               phone: req.userPhone || ''
             } as HubUser);
 
+        const { INTERNATIONAL_TRAINING_COURSES: intlCoursesForVerify } =
+          await import('./data/internationalTrainingsData');
         const courseId = req.certificateCourseId || 'int-tr-01';
-        const matchedCourse = INTERNATIONAL_TRAINING_COURSES.find(
+        const matchedCourse = intlCoursesForVerify.find(
           (c) => c.id === courseId
         );
         const baseTools: UserToolsData =
@@ -3097,7 +3502,7 @@ export default function App() {
         };
 
         if (decision === 'verified' && isAllCertBundle) {
-          for (const c of INTERNATIONAL_TRAINING_COURSES) {
+          for (const c of intlCoursesForVerify) {
             const prevProg = nextCourseProgressMap[c.id];
             const cCertNo =
               prevProg?.certificateNumber ||
@@ -3216,7 +3621,7 @@ export default function App() {
         if (decision === 'verified') {
           if (isAllCertBundle) {
             const bundleCertRecords: HubCertificate[] = [];
-            for (const c of INTERNATIONAL_TRAINING_COURSES) {
+            for (const c of intlCoursesForVerify) {
               const progForC = nextCourseProgressMap[c.id];
               const cCertNo = progForC?.certificateNumber || `FSP-CERT-${c.code}-${req.uid.slice(0, 6).toUpperCase()}`;
               const cleanCertDocId = `cert-${cCertNo.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
@@ -4798,7 +5203,7 @@ export default function App() {
   // 3. Dedicated Admin Control Panel Entry: When Admin logs in, enter AdminControlPanel directly (not as a normal user)
   if (isUserAdmin && !adminPreviewUserMode) {
     return (
-      <>
+      <Suspense fallback={<LazySectionFallback label="Loading Admin Control Panel..." />}>
         <AdminControlPanel
           adminEmail={authUser?.email || 'mindmademedia9@gmail.com'}
           users={users}
@@ -4855,29 +5260,31 @@ export default function App() {
           onReplySupportTicket={handleReplySupportTicket}
           onDeleteSupportTicket={handleDeleteSupportTicket}
         />
-        <ShareTargetModal
-          isOpen={showShareTargetModal}
-          initialDraft={shareTargetDraft}
-          initialSection={shareTargetInitialSection}
-          storageConfig={storageConfig}
-          isSignedIn={Boolean(authUser)}
-          isUserAdmin={Boolean(isUserAdmin)}
-          onClose={() => {
-            setShowShareTargetModal(false);
-            setShareTargetDraft(null);
-          }}
-          onOpenAuthModal={() => setShowGuestAuthModal(true)}
-          onPublish={handlePublishFlyerOpportunity}
-          onNavigateToPublished={(id, sec) => {
-            setAdminPreviewUserMode(true);
-            setRoute(
-              sec === 'scholarship'
-                ? { name: 'scholarship-detail', scholarshipId: id }
-                : { name: 'job-detail', jobId: id }
-            );
-          }}
-        />
-      </>
+        {showShareTargetModal && (
+          <ShareTargetModal
+            isOpen={showShareTargetModal}
+            initialDraft={shareTargetDraft}
+            initialSection={shareTargetInitialSection}
+            storageConfig={storageConfig}
+            isSignedIn={Boolean(authUser)}
+            isUserAdmin={Boolean(isUserAdmin)}
+            onClose={() => {
+              setShowShareTargetModal(false);
+              setShareTargetDraft(null);
+            }}
+            onOpenAuthModal={() => setShowGuestAuthModal(true)}
+            onPublish={handlePublishFlyerOpportunity}
+            onNavigateToPublished={(id, sec) => {
+              setAdminPreviewUserMode(true);
+              setRoute(
+                sec === 'scholarship'
+                  ? { name: 'scholarship-detail', scholarshipId: id }
+                  : { name: 'job-detail', jobId: id }
+              );
+            }}
+          />
+        )}
+      </Suspense>
     );
   }
 
@@ -5282,7 +5689,9 @@ export default function App() {
                         <Users className="w-4 h-4" />
                       </div>
                       <p className="text-2xl font-black text-white tabular-nums pt-1">
-                        {paidCommunityMembers.length}
+                        {paidCommunityMembers.length > 0
+                          ? paidCommunityMembers.length
+                          : 'Live'}
                       </p>
                       <p className="text-xs font-extrabold text-sky-100">
                         Verified Specialists
@@ -5301,10 +5710,10 @@ export default function App() {
                         <Award className="w-4 h-4" />
                       </div>
                       <p className="text-2xl font-black text-white tabular-nums pt-1">
-                        {certificates.length}
+                        {mergedLiveCourses.length}
                       </p>
                       <p className="text-xs font-extrabold text-sky-100">
-                        Certificates &amp; Courses
+                        Courses &amp; Certificates
                       </p>
                       <p className="text-[10.5px] text-sky-200/80">
                         Online QR Registry
@@ -5713,8 +6122,8 @@ export default function App() {
                     </p>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
                       {mergedLiveCourses.length > 0
-                        ? `${mergedLiveCourses.length} Accredited Courses • ${certificates.length} Verified Certificates Issued`
-                        : `Study Food Safety modules & verify ${certificates.length} official QR certificates`}
+                        ? `${mergedLiveCourses.length} Accredited Courses • Official QR Verification Registry`
+                        : 'Study Food Safety modules & verify official QR certificates'}
                     </p>
                   </div>
                 </button>
@@ -5732,7 +6141,9 @@ export default function App() {
                       Professional Network
                     </span>
                     <p className="text-sm font-extrabold text-[#1A2138] mt-0.5">
-                      Specialist Community ({paidCommunityMembers.length})
+                      {paidCommunityMembers.length > 0
+                        ? `Specialist Community (${paidCommunityMembers.length})`
+                        : 'Specialist Community Directory'}
                     </p>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
                       Connect with verified Food Technologists, QA Managers &amp; R&amp;D Specialists.
@@ -5763,16 +6174,22 @@ export default function App() {
               </div>
 
               {/* QUESTION OF THE DAY & STREAK WIDGET */}
-              <QuestionOfTheDayCard
-                toolsData={myProfile.toolsData || DEFAULT_USER_TOOLS_DATA}
-                isLoggedIn={Boolean(authUser)}
-                onSaveToolsData={handleSaveUserToolsData}
-                onOpenExamSuite={() => {
-                  setActiveToolSection('exam');
-                  setRoute({ name: 'tools', initialSection: 'exam' });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              />
+              <Suspense
+                fallback={
+                  <div className="bg-white border border-[#D2DEEA] rounded-2xl p-5 h-32 animate-pulse" />
+                }
+              >
+                <QuestionOfTheDayCard
+                  toolsData={myProfile.toolsData || DEFAULT_USER_TOOLS_DATA}
+                  isLoggedIn={Boolean(authUser)}
+                  onSaveToolsData={handleSaveUserToolsData}
+                  onOpenExamSuite={() => {
+                    setActiveToolSection('exam');
+                    setRoute({ name: 'tools', initialSection: 'exam' });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
+              </Suspense>
 
               {/* SECTION E: OFFICIAL WHATSAPP CHANNEL + INSTALL MOBILE APP ROW */}
               <div
@@ -6039,6 +6456,18 @@ export default function App() {
                   ))
                 )}
               </div>
+              {hasMoreJobs && (
+                <div className="pt-2 flex justify-center">
+                  <button
+                    type="button"
+                    disabled={isLoadingMoreJobs}
+                    onClick={handleLoadMoreJobs}
+                    className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] text-xs font-extrabold shadow-2xs transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    {isLoadingMoreJobs ? 'Loading more jobs...' : 'Load More Jobs'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -6614,6 +7043,20 @@ export default function App() {
                   })
                 )}
               </div>
+              {hasMoreScholarships && (
+                <div className="pt-2 flex justify-center">
+                  <button
+                    type="button"
+                    disabled={isLoadingMoreScholarships}
+                    onClick={handleLoadMoreScholarships}
+                    className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] text-xs font-extrabold shadow-2xs transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    {isLoadingMoreScholarships
+                      ? 'Loading more scholarships...'
+                      : 'Load More Scholarships'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -7396,19 +7839,35 @@ export default function App() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {filteredMembers.map((member) => (
-                    <MemberCard
-                      key={member.uid}
-                      member={member}
-                      viewerIsPremium={isCurrentUserPaid || isUserAdmin}
-                      viewerUid={myProfile.uid}
-                      onClick={(m) => {
-                        setRoute({ name: 'community-member', uid: m.uid });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                    />
-                  ))}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {filteredMembers.map((member) => (
+                      <MemberCard
+                        key={member.uid}
+                        member={member}
+                        viewerIsPremium={isCurrentUserPaid || isUserAdmin}
+                        viewerUid={myProfile.uid}
+                        onClick={(m) => {
+                          setRoute({ name: 'community-member', uid: m.uid });
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      />
+                    ))}
+                  </div>
+                  {hasMoreUsers && (
+                    <div className="pt-1 flex justify-center">
+                      <button
+                        type="button"
+                        disabled={isLoadingMoreUsers}
+                        onClick={handleLoadMoreCommunityUsers}
+                        className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] text-xs font-extrabold shadow-2xs transition-colors cursor-pointer disabled:opacity-60"
+                      >
+                        {isLoadingMoreUsers
+                          ? 'Loading more specialists...'
+                          : 'Load More Specialists'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -7427,25 +7886,27 @@ export default function App() {
               if (!member) return null;
 
               return (
-                <PublicProfileView
-                  member={member}
-                  viewerIsPremium={isCurrentUserPaid || isUserAdmin}
-                  viewerUid={myProfile.uid}
-                  isViewerAdmin={isUserAdmin}
-                  onBack={() => {
-                    if (route.uid === myProfile.uid) {
-                      setRoute({ name: 'profile' });
-                    } else {
-                      setRoute({ name: 'communities' });
-                    }
-                  }}
-                  onEditOwnProfile={() => setRoute({ name: 'profile' })}
-                  onMessageOrContact={(mem) => setContactModalMember(mem)}
-                  onRequestUpgradeToPremium={() => {
-                    setPaySubmitBanner(null);
-                    setShowPremiumUpgradeModal(true);
-                  }}
-                />
+                <Suspense fallback={<LazySectionFallback label="Loading Specialist Profile..." />}>
+                  <PublicProfileView
+                    member={member}
+                    viewerIsPremium={isCurrentUserPaid || isUserAdmin}
+                    viewerUid={myProfile.uid}
+                    isViewerAdmin={isUserAdmin}
+                    onBack={() => {
+                      if (route.uid === myProfile.uid) {
+                        setRoute({ name: 'profile' });
+                      } else {
+                        setRoute({ name: 'communities' });
+                      }
+                    }}
+                    onEditOwnProfile={() => setRoute({ name: 'profile' })}
+                    onMessageOrContact={(mem) => setContactModalMember(mem)}
+                    onRequestUpgradeToPremium={() => {
+                      setPaySubmitBanner(null);
+                      setShowPremiumUpgradeModal(true);
+                    }}
+                  />
+                </Suspense>
               );
             })()}
 
@@ -7454,131 +7915,139 @@ export default function App() {
             route.name === 'trainings-highfield' ||
             route.name === 'trainings-lead-auditor-hub' ||
             route.name === 'training-detail') && (
-            <TrainingsAcademyView
-              trainings={trainings}
-              currentUser={authUser ? myProfile : null}
-              users={users}
-              certificates={certificates}
-              paymentRequests={adminAllPaymentRequests}
-              paymentGatewayConfig={liveGateway}
-              isCurrentUserPremiumActive={isCurrentUserPaid}
-              isUserPremiumActiveFn={(u) =>
-                Boolean(u && (isMemberPremiumActive(u) || u.isAdmin))
-              }
-              onSaveCourseProgress={handleSaveCourseProgress}
-              onSubmitCertificatePaymentRequest={
-                handleSubmitCertificatePaymentRequest
-              }
-              onOpenUpgradeModal={() => {
-                setPaySubmitBanner(null);
-                setShowPremiumUpgradeModal(true);
-              }}
-              onRequireSignIn={() => setShowGuestAuthModal(true)}
-              requestedSubTab={
-                route.name === 'trainings' ? route.initialSubTab : undefined
-              }
-              requestedSubTabKey={
-                route.name === 'trainings' ? route.navKey : undefined
-              }
-              onSubTabChange={(subTab) => setActiveTrainingsSubTab(subTab)}
-              customTrainings={
-                storageConfig.customTrainings ?? DEFAULT_CUSTOM_TRAININGS
-              }
-              onSubmitCustomTrainingRegistration={
-                handleSubmitCustomTrainingRegistration
-              }
-            />
+            <Suspense fallback={<LazySectionFallback label="Loading Training Academy & Courses..." />}>
+              <TrainingsAcademyView
+                trainings={trainings}
+                currentUser={authUser ? myProfile : null}
+                users={users}
+                certificates={certificates}
+                paymentRequests={adminAllPaymentRequests}
+                paymentGatewayConfig={liveGateway}
+                isCurrentUserPremiumActive={isCurrentUserPaid}
+                isUserPremiumActiveFn={(u) =>
+                  Boolean(u && (isMemberPremiumActive(u) || u.isAdmin))
+                }
+                onSaveCourseProgress={handleSaveCourseProgress}
+                onSubmitCertificatePaymentRequest={
+                  handleSubmitCertificatePaymentRequest
+                }
+                onOpenUpgradeModal={() => {
+                  setPaySubmitBanner(null);
+                  setShowPremiumUpgradeModal(true);
+                }}
+                onRequireSignIn={() => setShowGuestAuthModal(true)}
+                requestedSubTab={
+                  route.name === 'trainings' ? route.initialSubTab : undefined
+                }
+                requestedSubTabKey={
+                  route.name === 'trainings' ? route.navKey : undefined
+                }
+                onSubTabChange={(subTab) => setActiveTrainingsSubTab(subTab)}
+                customTrainings={
+                  storageConfig.customTrainings ?? DEFAULT_CUSTOM_TRAININGS
+                }
+                onSubmitCustomTrainingRegistration={
+                  handleSubmitCustomTrainingRegistration
+                }
+              />
+            </Suspense>
           )}
 
           {/* ==================== 6C. SPECIALIST TOOLS HUB (/tools) ==================== */}
           {route.name === 'tools' && (
-            <ToolsHubView
-              user={myProfile}
-              isUserPaid={isCurrentUserPaid}
-              hasExpiredPremium={hasExpiredPremium}
-              monthlyFeeRs={liveGateway.monthlyFeeRs}
-              yearlyFeeRs={liveGateway.yearlyFeeRs}
-              monthlyFeeUsd={liveGateway.monthlyFeeUsd}
-              yearlyFeeUsd={liveGateway.yearlyFeeUsd}
-              onSaveToolsData={handleSaveUserToolsData}
-              onOpenPremiumModal={() => {
-                setPaySubmitBanner(null);
-                setShowPremiumUpgradeModal(true);
-              }}
-              onRequireSignIn={() => setShowGuestAuthModal(true)}
-              onGoToProfileTools={() => {
-                setRoute({ name: 'profile' });
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              initialSection={route.initialSection || 'hub'}
-              resetTrigger={toolsResetKey}
-              onActiveSectionChange={(sec) => setActiveToolSection(sec)}
-            />
+            <Suspense fallback={<LazySectionFallback label="Loading Specialist Tools Suite..." />}>
+              <ToolsHubView
+                user={myProfile}
+                isUserPaid={isCurrentUserPaid}
+                hasExpiredPremium={hasExpiredPremium}
+                monthlyFeeRs={liveGateway.monthlyFeeRs}
+                yearlyFeeRs={liveGateway.yearlyFeeRs}
+                monthlyFeeUsd={liveGateway.monthlyFeeUsd}
+                yearlyFeeUsd={liveGateway.yearlyFeeUsd}
+                onSaveToolsData={handleSaveUserToolsData}
+                onOpenPremiumModal={() => {
+                  setPaySubmitBanner(null);
+                  setShowPremiumUpgradeModal(true);
+                }}
+                onRequireSignIn={() => setShowGuestAuthModal(true)}
+                onGoToProfileTools={() => {
+                  setRoute({ name: 'profile' });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                initialSection={route.initialSection || 'hub'}
+                resetTrigger={toolsResetKey}
+                onActiveSectionChange={(sec) => setActiveToolSection(sec)}
+              />
+            </Suspense>
           )}
 
           {/* ==================== 6D. PUBLIC QR COMPLAINT SUBMISSION FORM (?complaintOrg=<uid>) ==================== */}
           {route.name === 'complaint-form' && (
-            <PublicComplaintIntakeView
-              orgId={route.orgId}
-              onBackToPortal={() => {
-                try {
-                  const cleanUrl = `${window.location.origin}${window.location.pathname}`;
-                  window.history.replaceState({}, '', cleanUrl);
-                } catch {
-                  // Ignore history errors
-                }
-                setRoute({ name: 'home' });
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
+            <Suspense fallback={<LazySectionFallback label="Loading Complaint Intake Form..." />}>
+              <PublicComplaintIntakeView
+                orgId={route.orgId}
+                onBackToPortal={() => {
+                  try {
+                    const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+                    window.history.replaceState({}, '', cleanUrl);
+                  } catch {
+                    // Ignore history errors
+                  }
+                  setRoute({ name: 'home' });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            </Suspense>
           )}
 
           {/* ==================== 7. MY OWN PROFILE — CREATE / EDIT VIEW (/profile & /profile/edit) ==================== */}
           {route.name === 'profile' && (
-            <EditProfileView
-              profile={myProfile}
-              onChangeProfile={setMyProfile}
-              onSaveProfile={handleSaveProfileModel}
-              onUploadAvatar={handleUploadAvatarFile}
-              onUploadCv={handleUploadCvFile}
-              onDeleteCv={handleDeleteCvFile}
-              onBack={() => setRoute({ name: 'home' })}
-              onPreviewPublicProfile={() =>
-                setRoute({ name: 'community-member', uid: myProfile.uid })
-              }
-              isUploadingMedia={isUploadingMedia}
-              uploadStatusMsg={uploadStatusMsg}
-              profileSaveMsg={profileSaveMsg}
-              isUserAdmin={isUserAdmin}
-              onOpenAdmin={() => setAdminPreviewUserMode(false)}
-              onOpenPremiumModal={() => {
-                setPaySubmitBanner(null);
-                setShowPremiumUpgradeModal(true);
-              }}
-              hasSubmittedApplication={
-                myPaymentApplications.length > 0 ||
-                Boolean(
-                  myProfile.paymentStatus &&
-                    myProfile.paymentStatus !== 'none'
-                )
-              }
-              onOpenApplicationStatusModal={() => {
-                setShowApplicationStatusModal(true);
-              }}
-              onOpenLegalModal={(tab) => setLegalModalTab(tab)}
-              onDeleteOwnAccount={handleDeleteOwnAccount}
-              onOpenToolsSection={(sec) => {
-                const target = sec || 'hub';
-                setActiveToolSection(target);
-                setRoute({ name: 'tools', initialSection: target });
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              monthlyFeeRs={liveGateway.monthlyFeeRs}
-              yearlyFeeRs={liveGateway.yearlyFeeRs}
-              monthlyFeeUsd={liveGateway.monthlyFeeUsd}
-              yearlyFeeUsd={liveGateway.yearlyFeeUsd}
-              yearlyDiscountPct={liveGateway.yearlyDiscountPct}
-            />
+            <Suspense fallback={<LazySectionFallback label="Loading Profile Editor..." />}>
+              <EditProfileView
+                profile={myProfile}
+                onChangeProfile={setMyProfile}
+                onSaveProfile={handleSaveProfileModel}
+                onUploadAvatar={handleUploadAvatarFile}
+                onUploadCv={handleUploadCvFile}
+                onDeleteCv={handleDeleteCvFile}
+                onBack={() => setRoute({ name: 'home' })}
+                onPreviewPublicProfile={() =>
+                  setRoute({ name: 'community-member', uid: myProfile.uid })
+                }
+                isUploadingMedia={isUploadingMedia}
+                uploadStatusMsg={uploadStatusMsg}
+                profileSaveMsg={profileSaveMsg}
+                isUserAdmin={isUserAdmin}
+                onOpenAdmin={() => setAdminPreviewUserMode(false)}
+                onOpenPremiumModal={() => {
+                  setPaySubmitBanner(null);
+                  setShowPremiumUpgradeModal(true);
+                }}
+                hasSubmittedApplication={
+                  myPaymentApplications.length > 0 ||
+                  Boolean(
+                    myProfile.paymentStatus &&
+                      myProfile.paymentStatus !== 'none'
+                  )
+                }
+                onOpenApplicationStatusModal={() => {
+                  setShowApplicationStatusModal(true);
+                }}
+                onOpenLegalModal={(tab) => setLegalModalTab(tab)}
+                onDeleteOwnAccount={handleDeleteOwnAccount}
+                onOpenToolsSection={(sec) => {
+                  const target = sec || 'hub';
+                  setActiveToolSection(target);
+                  setRoute({ name: 'tools', initialSection: target });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                monthlyFeeRs={liveGateway.monthlyFeeRs}
+                yearlyFeeRs={liveGateway.yearlyFeeRs}
+                monthlyFeeUsd={liveGateway.monthlyFeeUsd}
+                yearlyFeeUsd={liveGateway.yearlyFeeUsd}
+                yearlyDiscountPct={liveGateway.yearlyDiscountPct}
+              />
+            </Suspense>
           )}
 
           {/* ==================== 8. ADMIN CLOUD STORAGE & RECEIPTS CONSOLE (/admin) ==================== */}
@@ -9488,57 +9957,67 @@ export default function App() {
         />
 
         {/* LEGAL, PRIVACY POLICY, TERMS, ADSENSE/ADMOB, DATA DELETION & APP CLOSURE MODAL */}
-        <LegalComplianceModal
-          isOpen={legalModalTab !== null}
-          initialTab={legalModalTab || 'privacy'}
-          onClose={() => setLegalModalTab(null)}
-          onGoToDeleteAccount={() => {
-            setRoute({ name: 'profile' });
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-          }}
-          onSignOutApp={handleSignOut}
-          monthlyFeeRs={liveGateway.monthlyFeeRs}
-          yearlyFeeRs={liveGateway.yearlyFeeRs}
-          monthlyFeeUsd={liveGateway.monthlyFeeUsd}
-          yearlyFeeUsd={liveGateway.yearlyFeeUsd}
-          yearlyDiscountPct={liveGateway.yearlyDiscountPct}
-        />
+        {legalModalTab !== null && (
+          <Suspense fallback={null}>
+            <LegalComplianceModal
+              isOpen={true}
+              initialTab={legalModalTab || 'privacy'}
+              onClose={() => setLegalModalTab(null)}
+              onGoToDeleteAccount={() => {
+                setRoute({ name: 'profile' });
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+              }}
+              onSignOutApp={handleSignOut}
+              monthlyFeeRs={liveGateway.monthlyFeeRs}
+              yearlyFeeRs={liveGateway.yearlyFeeRs}
+              monthlyFeeUsd={liveGateway.monthlyFeeUsd}
+              yearlyFeeUsd={liveGateway.yearlyFeeUsd}
+              yearlyDiscountPct={liveGateway.yearlyDiscountPct}
+            />
+          </Suspense>
+        )}
 
         {/* FLOATING SUPPORT AND HELP, ISSUE HIGHLIGHT & CUSTOM OPINION WIDGET */}
-        <SupportAgentWidget
-          user={myProfile}
-          isSignedIn={Boolean(authUser)}
-          isUserPaid={Boolean(isCurrentUserPaid && !hasExpiredPremium)}
-          routeName={route.name}
-          activeToolSection={activeToolSection}
-          myTickets={supportTickets}
-          paymentGateway={liveGateway}
-          onOpenAuthModal={() => setShowGuestAuthModal(true)}
-        />
+        <Suspense fallback={null}>
+          <SupportAgentWidget
+            user={myProfile}
+            isSignedIn={Boolean(authUser)}
+            isUserPaid={Boolean(isCurrentUserPaid && !hasExpiredPremium)}
+            routeName={route.name}
+            activeToolSection={activeToolSection}
+            myTickets={supportTickets}
+            paymentGateway={liveGateway}
+            onOpenAuthModal={() => setShowGuestAuthModal(true)}
+          />
+        </Suspense>
 
         {/* SHARED PICTURE TO JOB / SCHOLARSHIP PUBLISHER MODAL (PWA Share Target) */}
-        <ShareTargetModal
-          isOpen={showShareTargetModal}
-          initialDraft={shareTargetDraft}
-          initialSection={shareTargetInitialSection}
-          storageConfig={storageConfig}
-          isSignedIn={Boolean(authUser)}
-          isUserAdmin={Boolean(isUserAdmin)}
-          onClose={() => {
-            setShowShareTargetModal(false);
-            setShareTargetDraft(null);
-          }}
-          onOpenAuthModal={() => setShowGuestAuthModal(true)}
-          onPublish={handlePublishFlyerOpportunity}
-          onNavigateToPublished={(id, sec) => {
-            setRoute(
-              sec === 'scholarship'
-                ? { name: 'scholarship-detail', scholarshipId: id }
-                : { name: 'job-detail', jobId: id }
-            );
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
+        {showShareTargetModal && (
+          <Suspense fallback={null}>
+            <ShareTargetModal
+              isOpen={showShareTargetModal}
+              initialDraft={shareTargetDraft}
+              initialSection={shareTargetInitialSection}
+              storageConfig={storageConfig}
+              isSignedIn={Boolean(authUser)}
+              isUserAdmin={Boolean(isUserAdmin)}
+              onClose={() => {
+                setShowShareTargetModal(false);
+                setShareTargetDraft(null);
+              }}
+              onOpenAuthModal={() => setShowGuestAuthModal(true)}
+              onPublish={handlePublishFlyerOpportunity}
+              onNavigateToPublished={(id, sec) => {
+                setRoute(
+                  sec === 'scholarship'
+                    ? { name: 'scholarship-detail', scholarshipId: id }
+                    : { name: 'job-detail', jobId: id }
+                );
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </Suspense>
+        )}
 
         {/* FULLSCREEN FLYER LIGHTBOX VIEWER */}
         {flyerLightboxUrl && (

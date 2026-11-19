@@ -24,7 +24,7 @@ import {
   Trophy,
   X
 } from 'lucide-react';
-import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs, query, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { stripUndefinedDeep } from '../lib/firestoreUtils';
 import { HubUser, UserExamAttempt, UserToolsData } from '../types/hub';
@@ -279,9 +279,42 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
 
   useEffect(() => {
     let mounted = true;
+    const LEADERBOARD_CACHE_KEY = 'fsp_exam_leaderboard_cache_v1';
+    const LEADERBOARD_CACHE_TTL_MS = 10 * 60 * 1000;
+
     async function fetchRealUsersLeaderboard() {
       try {
-        const usersSnap = await getDocs(collection(db, 'users'));
+        if (typeof window !== 'undefined') {
+          const cachedRaw = window.sessionStorage.getItem(LEADERBOARD_CACHE_KEY);
+          if (cachedRaw) {
+            const parsed = JSON.parse(cachedRaw) as {
+              ts: number;
+              entries: Array<{
+                uid: string;
+                name: string;
+                role: string;
+                bestScorePct: number;
+                avgScorePct: number;
+                totalAttempts: number;
+                track: string;
+              }>;
+            };
+            if (
+              parsed &&
+              Array.isArray(parsed.entries) &&
+              Date.now() - parsed.ts < LEADERBOARD_CACHE_TTL_MS
+            ) {
+              if (mounted) {
+                setLiveLeaderboardEntries(parsed.entries);
+                setIsLoadingLeaderboard(false);
+              }
+              return;
+            }
+          }
+        }
+
+        // Bounded query (max 50 docs) instead of scanning entire users collection at 100K+ scale
+        const usersSnap = await getDocs(query(collection(db, 'users'), limit(50)));
         const entries: Array<{
           uid: string;
           name: string;
@@ -333,8 +366,19 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             b.avgScorePct - a.avgScorePct ||
             b.totalAttempts - a.totalAttempts
         );
+        const top10 = entries.slice(0, 10);
+        if (typeof window !== 'undefined') {
+          try {
+            window.sessionStorage.setItem(
+              LEADERBOARD_CACHE_KEY,
+              JSON.stringify({ ts: Date.now(), entries: top10 })
+            );
+          } catch {
+            // Ignore storage quota
+          }
+        }
         if (mounted) {
-          setLiveLeaderboardEntries(entries.slice(0, 10));
+          setLiveLeaderboardEntries(top10);
         }
       } catch {
         // Ignore offline/network leaderboard fetch error
@@ -343,6 +387,9 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
       }
     }
     fetchRealUsersLeaderboard();
+    return () => {
+      mounted = false;
+    };
   }, [savedResults.length, leaderboardOptIn]);
 
   // Countdown Timer during active 30-minute exam

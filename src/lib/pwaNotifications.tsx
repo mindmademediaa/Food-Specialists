@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { WifiOff, CheckCircle2, RefreshCw } from 'lucide-react';
-import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsData';
-import { FOOD_AUTHORITY_LIMITS } from '../data/foodSafetyReferenceData';
 
 export const OFFLINE_PACK_STORAGE_KEY = 'fsp_factory_offline_pack_v1';
 export const PUSH_ALERTS_STORAGE_KEY = 'fsp_push_alerts_enabled_v1';
@@ -48,6 +46,11 @@ export function getSavedOfflinePackMeta(): FactoryOfflinePackMeta | null {
 }
 
 export async function saveFactoryFloorOfflinePack(): Promise<FactoryOfflinePackMeta> {
+  const [{ INTERNATIONAL_TRAINING_COURSES }, { FOOD_AUTHORITY_LIMITS }] =
+    await Promise.all([
+      import('../data/internationalTrainingsData'),
+      import('../data/foodSafetyReferenceData')
+    ]);
   const savedAt = new Date().toISOString();
   const payload = {
     meta: {

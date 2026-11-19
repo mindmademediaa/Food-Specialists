@@ -20,9 +20,9 @@ import {
 import {
   getFirestore,
   initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   setLogLevel,
-  doc,
-  getDocFromServer,
   type Firestore
 } from 'firebase/firestore';
 import firebaseAppletConfig from '../../firebase-applet-config.json';
@@ -104,39 +104,37 @@ export function clearPersistedAuthUser(): void {
   }
 }
 
-// Connect explicitly to the provisioned named Firestore database using HTTP long-polling
-// to avoid WebChannel streaming 10s timeouts inside iframes / mobile proxies
+// Connect explicitly to the provisioned named Firestore database using persistent IndexedDB
+// multi-tab local cache + HTTP long-polling (cuts repeat reads & avoids WebChannel 10s timeouts)
 function createFirestoreInstance(): Firestore {
   try {
     return initializeFirestore(
       app,
       {
-        experimentalForceLongPolling: true
+        experimentalForceLongPolling: true,
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager()
+        })
       },
       firebaseConfig.firestoreDatabaseId
     );
   } catch {
-    return getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    try {
+      return initializeFirestore(
+        app,
+        {
+          experimentalForceLongPolling: true
+        },
+        firebaseConfig.firestoreDatabaseId
+      );
+    } catch {
+      return getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    }
   }
 }
 
 export const db = createFirestoreInstance();
 export const googleProvider = new GoogleAuthProvider();
-
-// Validate connection to Firestore at startup without crashing on transient offline states
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.includes('the client is offline')
-    ) {
-      console.warn('Firestore connection check: operating in offline/cached fallback mode.');
-    }
-  }
-}
-testConnection();
 
 export enum OperationType {
   CREATE = 'create',

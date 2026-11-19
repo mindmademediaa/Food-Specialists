@@ -234,55 +234,7 @@ export const PRESET_MEAL_PLANS: Record<
   ]
 };
 
-export const DEFAULT_USER_TOOLS_DATA: UserToolsData = {
-  nutrition: {
-    age: 27,
-    gender: 'male',
-    heightCm: 172,
-    weightKg: 76,
-    targetWeightKg: 68,
-    activityLevel: 'moderate',
-    goalType: 'lose',
-    waterGlassesToday: 6,
-    mealLogs: [
-      {
-        id: 'log-init-1',
-        date: new Date().toISOString().slice(0, 10),
-        mealType: 'Breakfast',
-        foodName: '2 Boiled Eggs + 1 Whole Wheat Brown Bread',
-        portion: '2 eggs + 1 slice',
-        calories: 230,
-        proteinG: 16,
-        carbsG: 14,
-        fatsG: 11
-      },
-      {
-        id: 'log-init-2',
-        date: new Date().toISOString().slice(0, 10),
-        mealType: 'Lunch',
-        foodName: 'Grilled Chicken Breast + 1 Whole Wheat Roti & Salad',
-        portion: '180g + 1 roti',
-        calories: 430,
-        proteinG: 48,
-        carbsG: 32,
-        fatsG: 10
-      }
-    ],
-    mealPlans: PRESET_MEAL_PLANS.lose,
-    weightHistory: [
-      { date: 'Week 1', weightKg: 78.5, bmi: 26.5 },
-      { date: 'Week 2', weightKg: 77.8, bmi: 26.3 },
-      { date: 'Week 3', weightKg: 76.9, bmi: 26.0 },
-      { date: 'Today', weightKg: 76.0, bmi: 25.7 }
-    ],
-    updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
-  },
-  examAttempts: [],
-  masteredInterviewIds: [],
-  bookmarkedInterviewIds: [],
-  lastActiveTool: 'nutrition',
-  updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
-};
+export { DEFAULT_USER_TOOLS_DATA } from '../lib/defaultUserToolsData';
 
 export interface ComputedNutritionMetrics {
   bmi: number;

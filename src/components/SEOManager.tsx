@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Calculator, GraduationCap, Briefcase, Globe, ShieldCheck } from 'lucide-react';
-import { ActiveToolSection } from './ToolsHubView';
-import { INTERNATIONAL_TRAINING_COURSES } from '../data/internationalTrainingsData';
+import type { ActiveToolSection } from './ToolsHubView';
+import { LIGHTWEIGHT_COURSE_CATALOG } from '../data/courseCatalogSummary';
 
 export interface SEOManagerProps {
   routeName: string;
@@ -238,7 +238,7 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
           'Verify official Food Safety, HACCP, ISO 22000, FSSC 22000 & Dietary Manager certificates live by Certificate Number, Name, or QR code without sign-in.'
       };
     } else if (routeName === 'trainings' && courseParam) {
-      const matchedCourse = INTERNATIONAL_TRAINING_COURSES.find(
+      const matchedCourse = LIGHTWEIGHT_COURSE_CATALOG.find(
         (c) =>
           c.id.toLowerCase() === courseParam.toLowerCase() ||
           c.code.toLowerCase() === courseParam.toLowerCase()
@@ -432,7 +432,7 @@ export const SEODirectoryFooter: React.FC<SEODirectoryFooterProps> = ({
             <span>13 Accredited Training Courses (05 Modules + 40 MCQs)</span>
           </h3>
           <ul className="space-y-1.5">
-            {INTERNATIONAL_TRAINING_COURSES.map((course) => (
+            {LIGHTWEIGHT_COURSE_CATALOG.map((course) => (
               <li key={course.id}>
                 <a
                   href={`?section=trainings&course=${course.id}`}

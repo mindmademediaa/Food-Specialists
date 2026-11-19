@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import {
   Activity,
   Award,
@@ -68,25 +68,77 @@ import {
   downloadExamReportPdf,
   downloadInterviewSessionReportPdf
 } from '../lib/toolsPdfGenerator';
-import { NutritionSuiteTool } from './NutritionSuiteTool';
-import { ExamSuiteTool } from './ExamSuiteTool';
-import {
-  LabFormulaCalculatorTool,
-  PearsonSquareBatchTool,
-  LabSolutionMolarityTool,
-  MoistureAshYieldTool,
-  ProductionFloorWorkersTool,
-  ENumbersInstantFinderTool,
-  JobEmailCoverLetterTool
-} from './SpecialistExtraTools';
-import { CitationReferenceGeneratorTool } from './ResearchSuiteTool';
-import {
-  NutritionLabelGeneratorTool,
-  ThermalAndWaterActivityTool,
-  QaQcTemplatesVaultTool,
-  FoodAuthorityLimitsLookupTool
-} from './IndustryFoodTools';
-import { ComplaintHandlingTool } from './ComplaintHandlingTool';
+const NutritionSuiteTool = lazy(() =>
+  import('./NutritionSuiteTool').then((m) => ({ default: m.NutritionSuiteTool }))
+);
+const ExamSuiteTool = lazy(() =>
+  import('./ExamSuiteTool').then((m) => ({ default: m.ExamSuiteTool }))
+);
+const LabFormulaCalculatorTool = lazy(() =>
+  import('./SpecialistExtraTools').then((m) => ({
+    default: m.LabFormulaCalculatorTool
+  }))
+);
+const PearsonSquareBatchTool = lazy(() =>
+  import('./SpecialistExtraTools').then((m) => ({
+    default: m.PearsonSquareBatchTool
+  }))
+);
+const LabSolutionMolarityTool = lazy(() =>
+  import('./SpecialistExtraTools').then((m) => ({
+    default: m.LabSolutionMolarityTool
+  }))
+);
+const MoistureAshYieldTool = lazy(() =>
+  import('./SpecialistExtraTools').then((m) => ({
+    default: m.MoistureAshYieldTool
+  }))
+);
+const ProductionFloorWorkersTool = lazy(() =>
+  import('./SpecialistExtraTools').then((m) => ({
+    default: m.ProductionFloorWorkersTool
+  }))
+);
+const ENumbersInstantFinderTool = lazy(() =>
+  import('./SpecialistExtraTools').then((m) => ({
+    default: m.ENumbersInstantFinderTool
+  }))
+);
+const JobEmailCoverLetterTool = lazy(() =>
+  import('./SpecialistExtraTools').then((m) => ({
+    default: m.JobEmailCoverLetterTool
+  }))
+);
+const CitationReferenceGeneratorTool = lazy(() =>
+  import('./ResearchSuiteTool').then((m) => ({
+    default: m.CitationReferenceGeneratorTool
+  }))
+);
+const NutritionLabelGeneratorTool = lazy(() =>
+  import('./IndustryFoodTools').then((m) => ({
+    default: m.NutritionLabelGeneratorTool
+  }))
+);
+const ThermalAndWaterActivityTool = lazy(() =>
+  import('./IndustryFoodTools').then((m) => ({
+    default: m.ThermalAndWaterActivityTool
+  }))
+);
+const QaQcTemplatesVaultTool = lazy(() =>
+  import('./IndustryFoodTools').then((m) => ({
+    default: m.QaQcTemplatesVaultTool
+  }))
+);
+const FoodAuthorityLimitsLookupTool = lazy(() =>
+  import('./IndustryFoodTools').then((m) => ({
+    default: m.FoodAuthorityLimitsLookupTool
+  }))
+);
+const ComplaintHandlingTool = lazy(() =>
+  import('./ComplaintHandlingTool').then((m) => ({
+    default: m.ComplaintHandlingTool
+  }))
+);
 import {
   getSavedOfflinePackMeta,
   saveFactoryFloorOfflinePack,
@@ -1358,6 +1410,19 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       )}
 
       {/* =====================================================================
+          LAZY-LOADED SPECIALIST TOOL SUITES (Split into on-demand chunks)
+         ===================================================================== */}
+      <Suspense
+        fallback={
+          <div className="bg-white border border-[#D2DEEA] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 shadow-2xs">
+            <div className="w-8 h-8 rounded-full border-3 border-[#D2DEEA] border-t-[#1673B8] animate-spin" />
+            <p className="text-xs font-extrabold text-[#1A2138]">
+              Loading Specialist Tool...
+            </p>
+          </div>
+        }
+      >
+      {/* =====================================================================
           VIEW 1: NEW COMPLETE NUTRITION TOOL SUITE (SINGLE EASY PAGE)
          ===================================================================== */}
       {activeSection === 'nutrition' && (
@@ -1541,6 +1606,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           onRequireSignIn={onRequireSignIn}
         />
       )}
+      </Suspense>
 
       {/* =====================================================================
           VIEW 11: FOOD INDUSTRY JOB INTERVIEW Q&A PREPARATION (2,000+ BANK)

@@ -12,9 +12,9 @@ import {
   X
 } from 'lucide-react';
 import {
-  INTERNATIONAL_TRAINING_COURSES,
-  InternationalTrainingCourse
-} from '../data/internationalTrainingsData';
+  LIGHTWEIGHT_COURSE_CATALOG,
+  LightweightCourseSummary
+} from '../data/courseCatalogSummary';
 import { PaymentGatewayConfig } from '../types/hub';
 import {
   useGeoCurrency,
@@ -331,11 +331,11 @@ export const FreeVsPremiumComparisonCard: React.FC<
 };
 
 interface CertificateBundleOffersCardProps {
-  courses?: InternationalTrainingCourse[];
+  courses?: LightweightCourseSummary[];
   paymentGatewayConfig: PaymentGatewayConfig;
   onSubmitBundleRequest: (params: {
     bundle: CertificateBundleOption;
-    selectedCourses: InternationalTrainingCourse[];
+    selectedCourses: LightweightCourseSummary[];
     paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Bank Transfer';
     transactionId: string;
     receiptImageUrl: string;
@@ -360,7 +360,7 @@ export const CertificateBundleOffersCard: React.FC<
 }) => {
   const geo = useGeoCurrency();
   const catalogCourses =
-    courses && courses.length > 0 ? courses : INTERNATIONAL_TRAINING_COURSES;
+    courses && courses.length > 0 ? courses : LIGHTWEIGHT_COURSE_CATALOG;
 
   const getDefaultIdsForBundle = (
     bundleId: CertificateBundleOption['id'],

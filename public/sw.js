@@ -1,4 +1,4 @@
-const CACHE_NAME = 'food-science-portal-v20261118-v9';
+const CACHE_NAME = 'food-science-portal-v20261119-v10';
 const CORE_SHELL_URLS = ['./', './index.html', './manifest.json'];
 const SHARE_TARGET_DB_NAME = 'fsp_share_target_db';
 const SHARE_TARGET_STORE_NAME = 'shared_items';

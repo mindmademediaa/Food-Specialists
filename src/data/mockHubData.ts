@@ -7,7 +7,6 @@ import {
   HubChatMessage,
   HubCommunityThread
 } from '../types/hub';
-import { INITIAL_INTERNATIONAL_TRAININGS } from './internationalTrainingsData';
 
 export function makeAvatarSvg(initials: string, bg = '#E2F5E7', text = '#14532D'): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(`
@@ -733,10 +732,6 @@ export const INITIAL_SCHOLARSHIPS: HubScholarship[] = [
     applyLink: 'https://www.ift.org/community/students/scholarships',
     isActive: true
   }
-];
-
-export const INITIAL_TRAININGS: HubTraining[] = [
-  ...INITIAL_INTERNATIONAL_TRAININGS
 ];
 
 

@@ -24,6 +24,16 @@ import {
   XCircle
 } from 'lucide-react';
 import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  where
+} from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import {
   CustomTrainingItem,
   CustomTrainingRegistration,
   DEFAULT_CUSTOM_TRAININGS,
@@ -745,6 +755,101 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     }
   };
 
+  // On-demand Firestore Certificate Verification lookup (avoids downloading all certificates/users at 100K scale)
+  const [remoteVerifiedCerts, setRemoteVerifiedCerts] = useState<HubCertificate[]>([]);
+  const [remoteVerifiedUsers, setRemoteVerifiedUsers] = useState<Record<string, HubUser>>({});
+
+  useEffect(() => {
+    const raw = verifyQuery.trim();
+    if (raw.length < 4) return;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const upper = raw.toUpperCase();
+        const lower = raw.toLowerCase();
+        const queries = [
+          getDocs(
+            query(
+              collection(db, 'certificates'),
+              where('certificateNumber', '==', upper),
+              limit(5)
+            )
+          )
+        ];
+        if (raw.includes('@')) {
+          queries.push(
+            getDocs(
+              query(
+                collection(db, 'certificates'),
+                where('recipientEmail', '==', lower),
+                limit(10)
+              )
+            )
+          );
+          if (raw !== lower) {
+            queries.push(
+              getDocs(
+                query(
+                  collection(db, 'certificates'),
+                  where('recipientEmail', '==', raw),
+                  limit(10)
+                )
+              )
+            );
+          }
+        }
+        const snaps = await Promise.allSettled(queries);
+        const foundCerts: HubCertificate[] = [];
+        const seenIds = new Set<string>();
+        for (const res of snaps) {
+          if (res.status === 'fulfilled') {
+            res.value.docs.forEach((d) => {
+              if (!seenIds.has(d.id)) {
+                seenIds.add(d.id);
+                foundCerts.push({ ...(d.data() as HubCertificate), id: d.id });
+              }
+            });
+          }
+        }
+        if (cancelled) return;
+        if (foundCerts.length > 0) {
+          setRemoteVerifiedCerts((prev) => {
+            const byId = new Map<string, HubCertificate>();
+            prev.forEach((c) => byId.set(c.id, c));
+            foundCerts.forEach((c) => byId.set(c.id, c));
+            return Array.from(byId.values());
+          });
+          // Fetch only the exact holder user doc(s) to check live active membership
+          const uidsToFetch = Array.from(
+            new Set(
+              foundCerts
+                .map((c) => c.recipientUid)
+                .filter((uid): uid is string => Boolean(uid))
+            )
+          ).slice(0, 5);
+          for (const uid of uidsToFetch) {
+            try {
+              const uSnap = await getDoc(doc(db, 'users', uid));
+              if (uSnap.exists() && !cancelled) {
+                const uData = { ...(uSnap.data() as HubUser), uid: uSnap.id };
+                setRemoteVerifiedUsers((prev) => ({ ...prev, [uid]: uData }));
+              }
+            } catch {
+              // Ignore single-doc lookup errors
+            }
+          }
+        }
+      } catch {
+        // Silent offline fallback
+      }
+    }, 320);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [verifyQuery]);
+
   // Online Certificate Verification Portal Search Results (Strict Membership Rule!)
   const verificationSearchResults = useMemo(() => {
     const q = verifyQuery.trim().toLowerCase();
@@ -768,15 +873,25 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
 
     const recordsMap = new Map<string, VerifiedRecordItem>();
 
+    // Merge locally loaded certificates + on-demand Firestore-verified certificates
+    const combinedCertsMap = new Map<string, HubCertificate>();
+    certificates.forEach((c) => combinedCertsMap.set(c.id || c.certificateNumber, c));
+    remoteVerifiedCerts.forEach((c) =>
+      combinedCertsMap.set(c.id || c.certificateNumber, c)
+    );
+    const allCertsToScan = Array.from(combinedCertsMap.values());
+
     // 1. From official certificates collection (Admin-approved & Admin Direct Issued)
-    for (const cert of certificates) {
-      const holderUser = users.find(
-        (u) =>
-          (cert.recipientUid && u.uid === cert.recipientUid) ||
-          (cert.recipientEmail &&
-            cert.recipientEmail.trim() !== '' &&
-            u.email.trim().toLowerCase() === cert.recipientEmail.trim().toLowerCase())
-      );
+    for (const cert of allCertsToScan) {
+      const holderUser =
+        (cert.recipientUid && remoteVerifiedUsers[cert.recipientUid]) ||
+        users.find(
+          (u) =>
+            (cert.recipientUid && u.uid === cert.recipientUid) ||
+            (cert.recipientEmail &&
+              cert.recipientEmail.trim() !== '' &&
+              u.email.trim().toLowerCase() === cert.recipientEmail.trim().toLowerCase())
+        );
       const isDirectByAdmin = Boolean(
         cert.issuedBy && cert.issuedBy.toLowerCase().includes('direct')
       );
@@ -902,7 +1017,14 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
         item.recipientName.toLowerCase().includes(q) ||
         item.courseTitle.toLowerCase().includes(q)
     );
-  }, [verifyQuery, certificates, users, isUserPremiumActiveFn]);
+  }, [
+    verifyQuery,
+    certificates,
+    remoteVerifiedCerts,
+    remoteVerifiedUsers,
+    users,
+    isUserPremiumActiveFn
+  ]);
 
   // Render Reusable Portrait Certificate Pattern Card
   const renderCertificatePatternCard = (

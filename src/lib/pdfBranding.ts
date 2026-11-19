@@ -1,4 +1,4 @@
-import { jsPDF } from 'jspdf';
+import type { jsPDF } from 'jspdf';
 import { FS_PORTAL_LOGO_DATA_URI } from './brandLogo';
 
 const avatarPngCache = new Map<string, string>();

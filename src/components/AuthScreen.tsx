@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import {
   Mail,
   Lock,
@@ -22,10 +22,13 @@ import {
   savePersistedAuthUser
 } from '../lib/firebase';
 import { FS_PORTAL_LOGO_DATA_URI } from '../lib/brandLogo';
-import {
-  LegalComplianceModal,
-  LegalTabType
-} from './LegalComplianceModal';
+import type { LegalTabType } from './LegalComplianceModal';
+
+const LegalComplianceModal = lazy(() =>
+  import('./LegalComplianceModal').then((m) => ({
+    default: m.LegalComplianceModal
+  }))
+);
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -618,11 +621,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         </div>
       </div>
 
-      <LegalComplianceModal
-        isOpen={legalModalTab !== null}
-        initialTab={legalModalTab || 'privacy'}
-        onClose={() => setLegalModalTab(null)}
-      />
+      {legalModalTab !== null && (
+        <Suspense fallback={null}>
+          <LegalComplianceModal
+            isOpen={true}
+            initialTab={legalModalTab || 'privacy'}
+            onClose={() => setLegalModalTab(null)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
