@@ -40,7 +40,7 @@ export default defineConfig(() => {
   const buildVersion = createBuildVersion();
 
   return {
-    base: process.env.GITHUB_ACTIONS === 'true' ? './' : '/',
+    base: '/',
     define: {
       __APP_BUILD_VERSION__: JSON.stringify(buildVersion),
     },
@@ -55,15 +55,11 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('firebase')) return 'vendor-firebase';
-              if (id.includes('lucide-react')) return 'vendor-icons';
-              if (
-                id.includes('/react/') ||
-                id.includes('/react-dom/') ||
-                id.includes('/scheduler/')
-              ) {
+              if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) {
                 return 'vendor-react';
               }
+              if (id.includes('firebase')) return 'vendor-firebase';
+              if (id.includes('lucide-react')) return 'vendor-icons';
             }
           },
         },

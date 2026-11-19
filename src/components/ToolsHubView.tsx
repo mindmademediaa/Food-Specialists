@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import { lazyWithRetry } from '../lib/lazyWithRetry';
+import { SectionErrorBoundary } from './SectionErrorBoundary';
 import {
   Activity,
   Award,
@@ -64,72 +66,68 @@ import {
   UnifiedExamQuestion,
   UnifiedInterviewQuestion
 } from '../data/questionBank2000';
-import {
-  downloadExamReportPdf,
-  downloadInterviewSessionReportPdf
-} from '../lib/toolsPdfGenerator';
-const NutritionSuiteTool = lazy(() =>
+const NutritionSuiteTool = lazyWithRetry(() =>
   import('./NutritionSuiteTool').then((m) => ({ default: m.NutritionSuiteTool }))
 );
-const ExamSuiteTool = lazy(() =>
+const ExamSuiteTool = lazyWithRetry(() =>
   import('./ExamSuiteTool').then((m) => ({ default: m.ExamSuiteTool }))
 );
-const LabFormulaCalculatorTool = lazy(() =>
+const LabFormulaCalculatorTool = lazyWithRetry(() =>
   import('./SpecialistExtraTools').then((m) => ({
     default: m.LabFormulaCalculatorTool
   }))
 );
-const PearsonSquareBatchTool = lazy(() =>
+const PearsonSquareBatchTool = lazyWithRetry(() =>
   import('./SpecialistExtraTools').then((m) => ({
     default: m.PearsonSquareBatchTool
   }))
 );
-const LabSolutionMolarityTool = lazy(() =>
+const LabSolutionMolarityTool = lazyWithRetry(() =>
   import('./SpecialistExtraTools').then((m) => ({
     default: m.LabSolutionMolarityTool
   }))
 );
-const MoistureAshYieldTool = lazy(() =>
+const MoistureAshYieldTool = lazyWithRetry(() =>
   import('./SpecialistExtraTools').then((m) => ({
     default: m.MoistureAshYieldTool
   }))
 );
-const ProductionFloorWorkersTool = lazy(() =>
+const ProductionFloorWorkersTool = lazyWithRetry(() =>
   import('./SpecialistExtraTools').then((m) => ({
     default: m.ProductionFloorWorkersTool
   }))
 );
-const ENumbersInstantFinderTool = lazy(() =>
+const ENumbersInstantFinderTool = lazyWithRetry(() =>
   import('./SpecialistExtraTools').then((m) => ({
     default: m.ENumbersInstantFinderTool
   }))
 );
-const JobEmailCoverLetterTool = lazy(() =>
+const JobEmailCoverLetterTool = lazyWithRetry(() =>
   import('./SpecialistExtraTools').then((m) => ({
     default: m.JobEmailCoverLetterTool
   }))
 );
-const CitationReferenceGeneratorTool = lazy(() =>
+const CitationReferenceGeneratorTool = lazyWithRetry(() =>
   import('./ResearchSuiteTool').then((m) => ({
     default: m.CitationReferenceGeneratorTool
   }))
 );
-const NutritionLabelGeneratorTool = lazy(() =>
+const NutritionLabelGeneratorTool = lazyWithRetry(() =>
   import('./IndustryFoodTools').then((m) => ({
     default: m.NutritionLabelGeneratorTool
   }))
 );
-const QaQcTemplatesVaultTool = lazy(() =>
+const QaQcTemplatesVaultTool = lazyWithRetry(() =>
   import('./IndustryFoodTools').then((m) => ({
     default: m.QaQcTemplatesVaultTool
   }))
 );
-const FoodAuthorityLimitsLookupTool = lazy(() =>
+const FoodAuthorityLimitsLookupTool = lazyWithRetry(() =>
   import('./IndustryFoodTools').then((m) => ({
     default: m.FoodAuthorityLimitsLookupTool
   }))
 );
-const ComplaintHandlingTool = lazy(() =>
+const ComplaintHandlingTool = lazyWithRetry(() =>
   import('./ComplaintHandlingTool').then((m) => ({
     default: m.ComplaintHandlingTool
   }))
@@ -1398,6 +1396,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       {/* =====================================================================
           LAZY-LOADED SPECIALIST TOOL SUITES (Split into on-demand chunks)
          ===================================================================== */}
+      <SectionErrorBoundary key={activeSection} sectionName="Specialist Tool">
       <Suspense
         fallback={
           <div className="bg-white border border-[#D2DEEA] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 shadow-2xs">
@@ -1581,6 +1580,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
         />
       )}
       </Suspense>
+      </SectionErrorBoundary>
 
       {/* =====================================================================
           VIEW 11: FOOD INDUSTRY JOB INTERVIEW Q&A PREPARATION (2,000+ BANK)
@@ -1615,14 +1615,17 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() =>
+                onClick={async () => {
+                  const { downloadInterviewSessionReportPdf } = await import(
+                    '../lib/toolsPdfGenerator'
+                  );
                   downloadInterviewSessionReportPdf(
                     user,
                     activeInterviewQuestions,
                     toolsData.masteredInterviewIds || [],
                     interviewBatchNumber
-                  )
-                }
+                  );
+                }}
                 className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />

@@ -1,6 +1,7 @@
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import {AppLaunchSplash} from './components/AppLaunchSplash';
+import {SectionErrorBoundary} from './components/SectionErrorBoundary';
 import './index.css';
 
 declare const __APP_BUILD_VERSION__: string;
@@ -161,6 +162,8 @@ if (typeof window !== 'undefined') {
 createRoot(document.getElementById('root')!).render(
   <>
     <AppLaunchSplash />
-    <App />
+    <SectionErrorBoundary sectionName="Food Science Portal">
+      <App />
+    </SectionErrorBoundary>
   </>
 );

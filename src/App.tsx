@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo, useRef, lazy, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense, useCallback } from 'react';
+import { lazyWithRetry } from './lib/lazyWithRetry';
+import { SectionErrorBoundary } from './components/SectionErrorBoundary';
 import {
   ArrowRight,
   Wheat,
@@ -166,51 +168,51 @@ import {
   getLocalizedCertificateFee
 } from './lib/geoCurrency';
 
-// Route & Modal Code Splitting (Keeps initial Home bundle ultra-light for 50K-100K daily users)
-const AdminControlPanel = lazy(() =>
+// Route & Modal Code Splitting (Resilient retry + cache-recovery for 50K-100K daily users)
+const AdminControlPanel = lazyWithRetry(() =>
   import('./components/AdminControlPanel').then((m) => ({
     default: m.AdminControlPanel
   }))
 );
-const TrainingsAcademyView = lazy(() =>
+const TrainingsAcademyView = lazyWithRetry(() =>
   import('./components/TrainingsAcademyView').then((m) => ({
     default: m.TrainingsAcademyView
   }))
 );
-const ToolsHubView = lazy(() =>
+const ToolsHubView = lazyWithRetry(() =>
   import('./components/ToolsHubView').then((m) => ({ default: m.ToolsHubView }))
 );
-const EditProfileView = lazy(() =>
+const EditProfileView = lazyWithRetry(() =>
   import('./components/EditProfileView').then((m) => ({
     default: m.EditProfileView
   }))
 );
-const PublicProfileView = lazy(() =>
+const PublicProfileView = lazyWithRetry(() =>
   import('./components/PublicProfileView').then((m) => ({
     default: m.PublicProfileView
   }))
 );
-const PublicComplaintIntakeView = lazy(() =>
+const PublicComplaintIntakeView = lazyWithRetry(() =>
   import('./components/PublicComplaintIntakeView').then((m) => ({
     default: m.PublicComplaintIntakeView
   }))
 );
-const LegalComplianceModal = lazy(() =>
+const LegalComplianceModal = lazyWithRetry(() =>
   import('./components/LegalComplianceModal').then((m) => ({
     default: m.LegalComplianceModal
   }))
 );
-const SupportAgentWidget = lazy(() =>
+const SupportAgentWidget = lazyWithRetry(() =>
   import('./components/SupportAgentWidget').then((m) => ({
     default: m.SupportAgentWidget
   }))
 );
-const ShareTargetModal = lazy(() =>
+const ShareTargetModal = lazyWithRetry(() =>
   import('./components/ShareTargetModal').then((m) => ({
     default: m.ShareTargetModal
   }))
 );
-const QuestionOfTheDayCard = lazy(() =>
+const QuestionOfTheDayCard = lazyWithRetry(() =>
   import('./components/QuestionOfTheDayCard').then((m) => ({
     default: m.QuestionOfTheDayCard
   }))
@@ -5206,6 +5208,7 @@ export default function App() {
   // 3. Dedicated Admin Control Panel Entry: When Admin logs in, enter AdminControlPanel directly (not as a normal user)
   if (isUserAdmin && !adminPreviewUserMode) {
     return (
+      <SectionErrorBoundary sectionName="Admin Control Panel">
       <Suspense fallback={<LazySectionFallback label="Loading Admin Control Panel..." />}>
         <AdminControlPanel
           adminEmail={authUser?.email || 'mindmademedia9@gmail.com'}
@@ -5288,6 +5291,7 @@ export default function App() {
           />
         )}
       </Suspense>
+      </SectionErrorBoundary>
     );
   }
 
@@ -7889,27 +7893,29 @@ export default function App() {
               if (!member) return null;
 
               return (
-                <Suspense fallback={<LazySectionFallback label="Loading Specialist Profile..." />}>
-                  <PublicProfileView
-                    member={member}
-                    viewerIsPremium={isCurrentUserPaid || isUserAdmin}
-                    viewerUid={myProfile.uid}
-                    isViewerAdmin={isUserAdmin}
-                    onBack={() => {
-                      if (route.uid === myProfile.uid) {
-                        setRoute({ name: 'profile' });
-                      } else {
-                        setRoute({ name: 'communities' });
-                      }
-                    }}
-                    onEditOwnProfile={() => setRoute({ name: 'profile' })}
-                    onMessageOrContact={(mem) => setContactModalMember(mem)}
-                    onRequestUpgradeToPremium={() => {
-                      setPaySubmitBanner(null);
-                      setShowPremiumUpgradeModal(true);
-                    }}
-                  />
-                </Suspense>
+                <SectionErrorBoundary sectionName="Specialist Profile">
+                  <Suspense fallback={<LazySectionFallback label="Loading Specialist Profile..." />}>
+                    <PublicProfileView
+                      member={member}
+                      viewerIsPremium={isCurrentUserPaid || isUserAdmin}
+                      viewerUid={myProfile.uid}
+                      isViewerAdmin={isUserAdmin}
+                      onBack={() => {
+                        if (route.uid === myProfile.uid) {
+                          setRoute({ name: 'profile' });
+                        } else {
+                          setRoute({ name: 'communities' });
+                        }
+                      }}
+                      onEditOwnProfile={() => setRoute({ name: 'profile' })}
+                      onMessageOrContact={(mem) => setContactModalMember(mem)}
+                      onRequestUpgradeToPremium={() => {
+                        setPaySubmitBanner(null);
+                        setShowPremiumUpgradeModal(true);
+                      }}
+                    />
+                  </Suspense>
+                </SectionErrorBoundary>
               );
             })()}
 
@@ -7918,139 +7924,147 @@ export default function App() {
             route.name === 'trainings-highfield' ||
             route.name === 'trainings-lead-auditor-hub' ||
             route.name === 'training-detail') && (
-            <Suspense fallback={<LazySectionFallback label="Loading Training Academy & Courses..." />}>
-              <TrainingsAcademyView
-                trainings={trainings}
-                currentUser={authUser ? myProfile : null}
-                users={users}
-                certificates={certificates}
-                paymentRequests={adminAllPaymentRequests}
-                paymentGatewayConfig={liveGateway}
-                isCurrentUserPremiumActive={isCurrentUserPaid}
-                isUserPremiumActiveFn={(u) =>
-                  Boolean(u && (isMemberPremiumActive(u) || u.isAdmin))
-                }
-                onSaveCourseProgress={handleSaveCourseProgress}
-                onSubmitCertificatePaymentRequest={
-                  handleSubmitCertificatePaymentRequest
-                }
-                onOpenUpgradeModal={() => {
-                  setPaySubmitBanner(null);
-                  setShowPremiumUpgradeModal(true);
-                }}
-                onRequireSignIn={() => setShowGuestAuthModal(true)}
-                requestedSubTab={
-                  route.name === 'trainings' ? route.initialSubTab : undefined
-                }
-                requestedSubTabKey={
-                  route.name === 'trainings' ? route.navKey : undefined
-                }
-                onSubTabChange={(subTab) => setActiveTrainingsSubTab(subTab)}
-                customTrainings={
-                  storageConfig.customTrainings ?? DEFAULT_CUSTOM_TRAININGS
-                }
-                onSubmitCustomTrainingRegistration={
-                  handleSubmitCustomTrainingRegistration
-                }
-              />
-            </Suspense>
+            <SectionErrorBoundary sectionName="Training Academy">
+              <Suspense fallback={<LazySectionFallback label="Loading Training Academy & Courses..." />}>
+                <TrainingsAcademyView
+                  trainings={trainings}
+                  currentUser={authUser ? myProfile : null}
+                  users={users}
+                  certificates={certificates}
+                  paymentRequests={adminAllPaymentRequests}
+                  paymentGatewayConfig={liveGateway}
+                  isCurrentUserPremiumActive={isCurrentUserPaid}
+                  isUserPremiumActiveFn={(u) =>
+                    Boolean(u && (isMemberPremiumActive(u) || u.isAdmin))
+                  }
+                  onSaveCourseProgress={handleSaveCourseProgress}
+                  onSubmitCertificatePaymentRequest={
+                    handleSubmitCertificatePaymentRequest
+                  }
+                  onOpenUpgradeModal={() => {
+                    setPaySubmitBanner(null);
+                    setShowPremiumUpgradeModal(true);
+                  }}
+                  onRequireSignIn={() => setShowGuestAuthModal(true)}
+                  requestedSubTab={
+                    route.name === 'trainings' ? route.initialSubTab : undefined
+                  }
+                  requestedSubTabKey={
+                    route.name === 'trainings' ? route.navKey : undefined
+                  }
+                  onSubTabChange={(subTab) => setActiveTrainingsSubTab(subTab)}
+                  customTrainings={
+                    storageConfig.customTrainings ?? DEFAULT_CUSTOM_TRAININGS
+                  }
+                  onSubmitCustomTrainingRegistration={
+                    handleSubmitCustomTrainingRegistration
+                  }
+                />
+              </Suspense>
+            </SectionErrorBoundary>
           )}
 
           {/* ==================== 6C. SPECIALIST TOOLS HUB (/tools) ==================== */}
           {route.name === 'tools' && (
-            <Suspense fallback={<LazySectionFallback label="Loading Specialist Tools Suite..." />}>
-              <ToolsHubView
-                user={myProfile}
-                isUserPaid={isCurrentUserPaid}
-                hasExpiredPremium={hasExpiredPremium}
-                monthlyFeeRs={liveGateway.monthlyFeeRs}
-                yearlyFeeRs={liveGateway.yearlyFeeRs}
-                monthlyFeeUsd={liveGateway.monthlyFeeUsd}
-                yearlyFeeUsd={liveGateway.yearlyFeeUsd}
-                onSaveToolsData={handleSaveUserToolsData}
-                onOpenPremiumModal={() => {
-                  setPaySubmitBanner(null);
-                  setShowPremiumUpgradeModal(true);
-                }}
-                onRequireSignIn={() => setShowGuestAuthModal(true)}
-                onGoToProfileTools={() => {
-                  setRoute({ name: 'profile' });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                initialSection={route.initialSection || 'hub'}
-                resetTrigger={toolsResetKey}
-                onActiveSectionChange={(sec) => setActiveToolSection(sec)}
-              />
-            </Suspense>
+            <SectionErrorBoundary sectionName="Specialist Tools Suite">
+              <Suspense fallback={<LazySectionFallback label="Loading Specialist Tools Suite..." />}>
+                <ToolsHubView
+                  user={myProfile}
+                  isUserPaid={isCurrentUserPaid}
+                  hasExpiredPremium={hasExpiredPremium}
+                  monthlyFeeRs={liveGateway.monthlyFeeRs}
+                  yearlyFeeRs={liveGateway.yearlyFeeRs}
+                  monthlyFeeUsd={liveGateway.monthlyFeeUsd}
+                  yearlyFeeUsd={liveGateway.yearlyFeeUsd}
+                  onSaveToolsData={handleSaveUserToolsData}
+                  onOpenPremiumModal={() => {
+                    setPaySubmitBanner(null);
+                    setShowPremiumUpgradeModal(true);
+                  }}
+                  onRequireSignIn={() => setShowGuestAuthModal(true)}
+                  onGoToProfileTools={() => {
+                    setRoute({ name: 'profile' });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  initialSection={route.initialSection || 'hub'}
+                  resetTrigger={toolsResetKey}
+                  onActiveSectionChange={(sec) => setActiveToolSection(sec)}
+                />
+              </Suspense>
+            </SectionErrorBoundary>
           )}
 
           {/* ==================== 6D. PUBLIC QR COMPLAINT SUBMISSION FORM (?complaintOrg=<uid>) ==================== */}
           {route.name === 'complaint-form' && (
-            <Suspense fallback={<LazySectionFallback label="Loading Complaint Intake Form..." />}>
-              <PublicComplaintIntakeView
-                orgId={route.orgId}
-                onBackToPortal={() => {
-                  try {
-                    const cleanUrl = `${window.location.origin}${window.location.pathname}`;
-                    window.history.replaceState({}, '', cleanUrl);
-                  } catch {
-                    // Ignore history errors
-                  }
-                  setRoute({ name: 'home' });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              />
-            </Suspense>
+            <SectionErrorBoundary sectionName="Complaint Intake Form">
+              <Suspense fallback={<LazySectionFallback label="Loading Complaint Intake Form..." />}>
+                <PublicComplaintIntakeView
+                  orgId={route.orgId}
+                  onBackToPortal={() => {
+                    try {
+                      const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+                      window.history.replaceState({}, '', cleanUrl);
+                    } catch {
+                      // Ignore history errors
+                    }
+                    setRoute({ name: 'home' });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
+              </Suspense>
+            </SectionErrorBoundary>
           )}
 
           {/* ==================== 7. MY OWN PROFILE — CREATE / EDIT VIEW (/profile & /profile/edit) ==================== */}
           {route.name === 'profile' && (
-            <Suspense fallback={<LazySectionFallback label="Loading Profile Editor..." />}>
-              <EditProfileView
-                profile={myProfile}
-                onChangeProfile={setMyProfile}
-                onSaveProfile={handleSaveProfileModel}
-                onUploadAvatar={handleUploadAvatarFile}
-                onUploadCv={handleUploadCvFile}
-                onDeleteCv={handleDeleteCvFile}
-                onBack={() => setRoute({ name: 'home' })}
-                onPreviewPublicProfile={() =>
-                  setRoute({ name: 'community-member', uid: myProfile.uid })
-                }
-                isUploadingMedia={isUploadingMedia}
-                uploadStatusMsg={uploadStatusMsg}
-                profileSaveMsg={profileSaveMsg}
-                isUserAdmin={isUserAdmin}
-                onOpenAdmin={() => setAdminPreviewUserMode(false)}
-                onOpenPremiumModal={() => {
-                  setPaySubmitBanner(null);
-                  setShowPremiumUpgradeModal(true);
-                }}
-                hasSubmittedApplication={
-                  myPaymentApplications.length > 0 ||
-                  Boolean(
-                    myProfile.paymentStatus &&
-                      myProfile.paymentStatus !== 'none'
-                  )
-                }
-                onOpenApplicationStatusModal={() => {
-                  setShowApplicationStatusModal(true);
-                }}
-                onOpenLegalModal={(tab) => setLegalModalTab(tab)}
-                onDeleteOwnAccount={handleDeleteOwnAccount}
-                onOpenToolsSection={(sec) => {
-                  const target = sec || 'hub';
-                  setActiveToolSection(target);
-                  setRoute({ name: 'tools', initialSection: target });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                monthlyFeeRs={liveGateway.monthlyFeeRs}
-                yearlyFeeRs={liveGateway.yearlyFeeRs}
-                monthlyFeeUsd={liveGateway.monthlyFeeUsd}
-                yearlyFeeUsd={liveGateway.yearlyFeeUsd}
-                yearlyDiscountPct={liveGateway.yearlyDiscountPct}
-              />
-            </Suspense>
+            <SectionErrorBoundary sectionName="Profile Section">
+              <Suspense fallback={<LazySectionFallback label="Loading Profile Editor..." />}>
+                <EditProfileView
+                  profile={myProfile}
+                  onChangeProfile={setMyProfile}
+                  onSaveProfile={handleSaveProfileModel}
+                  onUploadAvatar={handleUploadAvatarFile}
+                  onUploadCv={handleUploadCvFile}
+                  onDeleteCv={handleDeleteCvFile}
+                  onBack={() => setRoute({ name: 'home' })}
+                  onPreviewPublicProfile={() =>
+                    setRoute({ name: 'community-member', uid: myProfile.uid })
+                  }
+                  isUploadingMedia={isUploadingMedia}
+                  uploadStatusMsg={uploadStatusMsg}
+                  profileSaveMsg={profileSaveMsg}
+                  isUserAdmin={isUserAdmin}
+                  onOpenAdmin={() => setAdminPreviewUserMode(false)}
+                  onOpenPremiumModal={() => {
+                    setPaySubmitBanner(null);
+                    setShowPremiumUpgradeModal(true);
+                  }}
+                  hasSubmittedApplication={
+                    myPaymentApplications.length > 0 ||
+                    Boolean(
+                      myProfile.paymentStatus &&
+                        myProfile.paymentStatus !== 'none'
+                    )
+                  }
+                  onOpenApplicationStatusModal={() => {
+                    setShowApplicationStatusModal(true);
+                  }}
+                  onOpenLegalModal={(tab) => setLegalModalTab(tab)}
+                  onDeleteOwnAccount={handleDeleteOwnAccount}
+                  onOpenToolsSection={(sec) => {
+                    const target = sec || 'hub';
+                    setActiveToolSection(target);
+                    setRoute({ name: 'tools', initialSection: target });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  monthlyFeeRs={liveGateway.monthlyFeeRs}
+                  yearlyFeeRs={liveGateway.yearlyFeeRs}
+                  monthlyFeeUsd={liveGateway.monthlyFeeUsd}
+                  yearlyFeeUsd={liveGateway.yearlyFeeUsd}
+                  yearlyDiscountPct={liveGateway.yearlyDiscountPct}
+                />
+              </Suspense>
+            </SectionErrorBoundary>
           )}
 
           {/* ==================== 8. ADMIN CLOUD STORAGE & RECEIPTS CONSOLE (/admin) ==================== */}

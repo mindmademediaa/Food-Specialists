@@ -40,16 +40,11 @@ import {
 } from '../types/hub';
 import { makeAvatarSvg } from '../data/mockHubData';
 import { formatFileSizeLabel } from '../lib/storage';
-import { downloadProfessionalCvPdf } from '../lib/cvGenerator';
 import {
   DEFAULT_USER_TOOLS_DATA,
   EXAM_PREP_SETS,
   computeNutritionMetrics
 } from '../data/examPrepData';
-import {
-  downloadNutritionReportPdf,
-  downloadExamReportPdf
-} from '../lib/toolsPdfGenerator';
 import {
   useGeoCurrency,
   getLocalizedMembershipPricing
@@ -1738,9 +1733,12 @@ export const EditProfileView: React.FC<EditProfileViewProps> = ({
           {/* SHARP PROFESSIONAL MARKET-STANDARD PDF CV GENERATOR BUTTON */}
           <button
             type="button"
-            onClick={() =>
-              downloadProfessionalCvPdf(profile, { respectVisibility: false })
-            }
+            onClick={async () => {
+              const { downloadProfessionalCvPdf } = await import(
+                '../lib/cvGenerator'
+              );
+              downloadProfessionalCvPdf(profile, { respectVisibility: false });
+            }}
             className="w-full py-3.5 px-5 rounded-[18px] bg-[#1A2138] hover:bg-[#1673B8] text-white font-extrabold text-[14.5px] shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4 text-sky-300 shrink-0" />
