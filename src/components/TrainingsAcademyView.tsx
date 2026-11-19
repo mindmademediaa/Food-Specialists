@@ -36,16 +36,12 @@ import {
 } from '../types/hub';
 import {
   CourseExamMCQ,
-  CourseStudyModule,
-  DEFAULT_COURSE_TEMPLATE,
   INTERNATIONAL_TRAINING_COURSES,
   InternationalTrainingCourse,
   get40CourseExamQuestions
 } from '../data/internationalTrainingsData';
-import {
-  hasLegacyMcqFormat,
-  isLegacyHaccpVisualDoc
-} from '../data/coursesHaccp3And4';
+import { hasLegacyMcqFormat } from '../data/coursesHaccp3And4';
+import { buildMergedLiveCourses } from '../lib/liveCoursesMerge';
 import {
   buildDirectCertificateVerifyUrl,
   downloadOfficialCourseCertificatePdf,
@@ -350,171 +346,11 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
     }
   }, [selectedCourseId, activeSubTab, verifyQuery]);
 
-  // Build active courses from Admin-managed trainings + built-in courses, respecting all Admin edits to title, price, modules, MCQs, and visibility
-  const mergedCourses: InternationalTrainingCourse[] = useMemo(() => {
-    const hiddenIds = new Set(
-      trainings.filter((t) => t.isActive === false).map((t) => t.id)
-    );
-    const activeAdminTrainings = trainings.filter((t) => t.isActive !== false);
-    const result: InternationalTrainingCourse[] = [];
-    const seenIds = new Set<string>();
-
-    const parseLiveCourseFeeRs = (
-      tr: HubTraining,
-      fallbackRs: number
-    ): number => {
-      if (typeof tr.certificateFeeRs === 'number' && tr.certificateFeeRs > 0) {
-        return tr.certificateFeeRs;
-      }
-      if (tr.fees) {
-        const cleaned = tr.fees.replace(/,/g, '');
-        const match =
-          cleaned.match(/(?:rs\.?|pkr)\s*(\d{2,7})/i) ||
-          cleaned.match(/\b(\d{3,7})\b/);
-        if (match && match[1]) {
-          const parsed = Number(match[1]);
-          if (!Number.isNaN(parsed) && parsed > 0) {
-            return parsed;
-          }
-        }
-      }
-      return fallbackRs;
-    };
-
-    for (const customTr of activeAdminTrainings) {
-      const rawLowerTitle = customTr.title.trim().toLowerCase();
-      const isDietaryCourse =
-        customTr.id === 'mgr-food-dietary-2026' ||
-        rawLowerTitle === 'manager food & dietary' ||
-        rawLowerTitle === 'manage food and dietary' ||
-        rawLowerTitle === 'certified dietary manager';
-
-      const baseMatch = INTERNATIONAL_TRAINING_COURSES.find(
-        (b) =>
-          b.id === customTr.id ||
-          (isDietaryCourse && b.id === 'mgr-food-dietary-2026') ||
-          b.title.trim().toLowerCase() === rawLowerTitle
-      );
-      const fallbackTemplate = baseMatch || DEFAULT_COURSE_TEMPLATE;
-      const isLegacyDietaryTitle =
-        rawLowerTitle === 'manager food & dietary' ||
-        rawLowerTitle === 'manage food and dietary';
-      const normalizedCourseTitle = isLegacyDietaryTitle
-        ? 'Certified Dietary Manager'
-        : customTr.title || baseMatch?.title || 'Certified Dietary Manager';
-
-      const defaultFeeForCourse = isDietaryCourse
-        ? 8000
-        : baseMatch?.certificateFeeRs || 1000;
-      const liveCourseFeeRs = parseLiveCourseFeeRs(
-        customTr,
-        defaultFeeForCourse
-      );
-
-      const isStaleVisual = Boolean(
-        baseMatch &&
-          isLegacyHaccpVisualDoc(customTr, baseMatch.modules.length)
-      );
-
-      const mappedCustomModules: CourseStudyModule[] =
-        !isStaleVisual &&
-        customTr.customModules &&
-        customTr.customModules.length > 0
-          ? customTr.customModules.map((m, idx) => {
-              const richBaseMod = baseMatch?.modules.find(
-                (bm, bIdx) => bm.id === m.id || bIdx === idx
-              );
-              const paragraphs = (m.description || '')
-                .split(/\n+/)
-                .map((p) => p.trim())
-                .filter(Boolean);
-              if (richBaseMod) {
-                return {
-                  ...richBaseMod,
-                  id: m.id || richBaseMod.id,
-                  moduleNumber: idx + 1,
-                  title: m.subject || richBaseMod.title,
-                  overview: m.description || richBaseMod.overview,
-                  keyPrinciples:
-                    paragraphs.length > 1
-                      ? paragraphs
-                      : richBaseMod.keyPrinciples
-                };
-              }
-              return {
-                id: m.id || `mod-${idx + 1}`,
-                moduleNumber: idx + 1,
-                title: m.subject || `Module ${idx + 1}`,
-                estimatedMinutes: 30,
-                overview:
-                  m.description ||
-                  `Core curriculum for ${m.subject || `Module ${idx + 1}`}.`,
-                internationalClauses: [
-                  `${normalizedCourseTitle} — Module ${idx + 1}: ${m.subject}`
-                ],
-                keyPrinciples:
-                  paragraphs.length > 0
-                    ? paragraphs
-                    : [
-                        m.description ||
-                          `Core principles and operational requirements for ${m.subject}.`
-                      ],
-                criticalControlParameters: [
-                  {
-                    parameter: m.subject || `Module ${idx + 1}`,
-                    standardLimit: 'Full Compliance Required',
-                    correctiveProtocol:
-                      m.description ||
-                      'Review module study material and verify operational controls.'
-                  }
-                ],
-                practicalChecklist:
-                  paragraphs.length > 0
-                    ? paragraphs
-                    : [`Complete study and review of ${m.subject}`]
-              };
-            })
-          : fallbackTemplate.modules;
-
-      seenIds.add(customTr.id);
-      if (baseMatch) seenIds.add(baseMatch.id);
-
-      result.push({
-        ...fallbackTemplate,
-        id: customTr.id,
-        code:
-          (!isStaleVisual ? customTr.standardCode : undefined) ||
-          (isDietaryCourse ? 'CDM-CERT' : baseMatch?.code || 'FSC-INT'),
-        title: isStaleVisual && baseMatch ? baseMatch.title : normalizedCourseTitle,
-        accreditationStandard:
-          (!isStaleVisual ? customTr.accreditationStandard : undefined) ||
-          baseMatch?.accreditationStandard ||
-          fallbackTemplate.accreditationStandard,
-        certificateFeeRs: liveCourseFeeRs,
-        levelBadge:
-          (!isStaleVisual ? customTr.subType : undefined) ||
-          baseMatch?.levelBadge ||
-          'International Certification',
-        description:
-          (!isStaleVisual ? customTr.description : undefined) ||
-          baseMatch?.description ||
-          '',
-        modules: mappedCustomModules,
-        duration:
-          (!isStaleVisual ? customTr.duration : undefined) ||
-          baseMatch?.duration ||
-          `Self-Paced · ${mappedCustomModules.length} Modules`
-      });
-    }
-
-    for (const baseCourse of INTERNATIONAL_TRAINING_COURSES) {
-      if (!seenIds.has(baseCourse.id) && !hiddenIds.has(baseCourse.id)) {
-        result.push(baseCourse);
-      }
-    }
-
-    return result;
-  }, [trainings]);
+  // Build active courses from Admin-managed trainings + built-in courses via shared liveCoursesMerge
+  const mergedCourses: InternationalTrainingCourse[] = useMemo(
+    () => buildMergedLiveCourses(trainings),
+    [trainings]
+  );
 
   // Load user's saved courseProgress map from currentUser + localStorage fallback
   const courseProgressMap: Record<string, UserCourseProgress> = useMemo(() => {

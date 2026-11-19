@@ -370,11 +370,16 @@ export const CertificateBundleOffersCard: React.FC<
       return catalogCourses.map((c) => c.id);
     }
     const standardCourses = catalogCourses.filter(
-      (c) =>
-        c.id !== 'mgr-food-dietary-2026' &&
-        (c.certificateFeeRs || 1000) <= 1500
+      (c) => c.id !== 'mgr-food-dietary-2026'
     );
     const pool = standardCourses.length >= count ? standardCourses : catalogCourses;
+    if (bundleId === 'single-1') {
+      const preferred = [
+        'cert-2026-haccp-level-03',
+        'cert-2026-food-safety-level-03'
+      ].find((id) => catalogCourses.some((c) => c.id === id));
+      if (preferred) return [preferred];
+    }
     if (bundleId === 'bundle-3') {
       const preferred = [
         'cert-2026-haccp-level-03',
@@ -396,15 +401,23 @@ export const CertificateBundleOffersCard: React.FC<
     return pool.slice(0, count).map((c) => c.id);
   };
 
-  // Interactive per-bundle-card course selection so clicking any course (including Certified Dietary Manager) updates the bundle price live
+  // Store ONLY user-customized overrides so non-customized bundles always auto-sync live with Admin Control Panel updates
   const [cardCourseSelections, setCardCourseSelections] = useState<
     Record<string, string[]>
-  >(() => ({
-    'single-1': getDefaultIdsForBundle('single-1', 1),
-    'bundle-3': getDefaultIdsForBundle('bundle-3', 3),
-    'bundle-5': getDefaultIdsForBundle('bundle-5', 5),
-    'bundle-13': catalogCourses.map((c) => c.id)
-  }));
+  >({});
+
+  const getEffectiveIdsForBundle = (
+    bundle: CertificateBundleOption
+  ): string[] => {
+    const custom = cardCourseSelections[bundle.id];
+    if (custom && custom.length > 0) {
+      const validCustom = custom.filter((id) =>
+        catalogCourses.some((c) => c.id === id)
+      );
+      if (validCustom.length > 0) return validCustom;
+    }
+    return getDefaultIdsForBundle(bundle.id, bundle.count);
+  };
 
   const [expandedSelectorBundleId, setExpandedSelectorBundleId] = useState<
     string | null
@@ -484,13 +497,18 @@ export const CertificateBundleOffersCard: React.FC<
     setTxId('');
     setNotes('');
     setReceiptDataUrl('');
-    const currentCardIds =
-      cardCourseSelections[bundle.id] &&
-      cardCourseSelections[bundle.id].length > 0
-        ? cardCourseSelections[bundle.id]
-        : getDefaultIdsForBundle(bundle.id, bundle.count);
+    const currentCardIds = getEffectiveIdsForBundle(bundle);
     setSelectedCourseIds(currentCardIds);
-    setActiveBundleModal(bundle);
+    setActiveBundleModal(
+      bundle.id === 'bundle-13'
+        ? {
+            ...bundle,
+            count: catalogCourses.length,
+            title: `All ${catalogCourses.length} Certificates Executive Master Pass`,
+            subtitle: `All ${catalogCourses.length} Official Certificates + 1 FULL YEAR (12 Months) FREE Paid Membership!`
+          }
+        : bundle
+    );
   };
 
   const modalPricing = activeBundleModal
@@ -522,7 +540,10 @@ export const CertificateBundleOffersCard: React.FC<
       let next: string[];
       if (maxCount === 1) {
         next = [courseId];
-      } else if (maxCount < 13 && prev.length >= maxCount) {
+      } else if (
+        activeBundleModal?.id !== 'bundle-13' &&
+        prev.length >= maxCount
+      ) {
         next = [...prev.slice(1), courseId];
       } else {
         next = [...prev, courseId];
@@ -639,12 +660,17 @@ export const CertificateBundleOffersCard: React.FC<
       {/* 4 Bundle Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {CERTIFICATE_BUNDLE_OPTIONS.map((bundle) => {
-          const currentIds =
-            cardCourseSelections[bundle.id] &&
-            cardCourseSelections[bundle.id].length > 0
-              ? cardCourseSelections[bundle.id]
-              : getDefaultIdsForBundle(bundle.id, bundle.count);
-          const livePricing = computeBundlePricing(bundle, currentIds);
+          const effectiveBundle: CertificateBundleOption =
+            bundle.id === 'bundle-13'
+              ? {
+                  ...bundle,
+                  count: catalogCourses.length,
+                  title: `All ${catalogCourses.length} Certificates Executive Master Pass`,
+                  subtitle: `All ${catalogCourses.length} Official Certificates + 1 FULL YEAR (12 Months) FREE Paid Membership!`
+                }
+              : bundle;
+          const currentIds = getEffectiveIdsForBundle(effectiveBundle);
+          const livePricing = computeBundlePricing(effectiveBundle, currentIds);
           const isSelectorOpen = expandedSelectorBundleId === bundle.id;
 
           return (
@@ -659,7 +685,7 @@ export const CertificateBundleOffersCard: React.FC<
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between gap-2 text-[11px] font-extrabold">
                   <span className="text-[#1673B8]">
-                    {bundle.count === 1
+                    {effectiveBundle.count === 1
                       ? '1 Certificate'
                       : `${livePricing.selectedCourses.length} Certificates (${livePricing.discountPct}% OFF)`}
                   </span>
@@ -671,7 +697,7 @@ export const CertificateBundleOffersCard: React.FC<
                 </div>
 
                 <h3 className="text-sm sm:text-base font-black text-[#0C182D] leading-snug">
-                  {bundle.title}
+                  {effectiveBundle.title}
                 </h3>
 
                 {/* Live Price with Crossed-Out Actual Fee & 25% Discount */}
@@ -692,7 +718,7 @@ export const CertificateBundleOffersCard: React.FC<
                 </div>
 
                 <p className="text-[11.5px] text-slate-600 leading-relaxed">
-                  {bundle.subtitle}
+                  {effectiveBundle.subtitle}
                 </p>
 
                 {/* Selected Courses Summary & Interactive Course Picker Toggle */}

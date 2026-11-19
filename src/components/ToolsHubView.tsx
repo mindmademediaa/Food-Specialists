@@ -239,13 +239,33 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   const handleCopyToolDeepLink = async () => {
     if (typeof window === 'undefined') return;
     const shareUrl = `${window.location.origin}${window.location.pathname}?section=tools&tool=${activeSection}`;
+    const formattedToolName = String(activeSection)
+      .replace(/[-_]+/g, ' ')
+      .replace(/\b\w/g, (ch) => ch.toUpperCase());
+    const shareTitle = `${formattedToolName} Tool — Food Science Portal`;
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareTitle,
+          url: shareUrl
+        });
+        return;
+      } catch (err) {
+        if ((err as { name?: string })?.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
     try {
       await navigator.clipboard.writeText(shareUrl);
     } catch {
       // Fallback handled by showing link in banner
     }
     setCopiedToolLink(true);
-    setSaveBanner(`Shareable deep link copied: ${shareUrl}`);
+    setSaveBanner(`Share link copied: ${shareUrl}`);
     setTimeout(() => {
       setCopiedToolLink(false);
       setSaveBanner(null);
@@ -949,16 +969,16 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
         </div>
       )}
 
-      {/* BACK BUTTON + SHAREABLE DEEP LINK WHEN INSIDE A SPECIFIC TOOL (STICKY WHILE SCROLLING) */}
+      {/* BACK BUTTON + STATIONARY TOP-RIGHT SHARE BUTTON AT START OF EVERY TOOL */}
       {activeSection !== 'hub' && (
-        <div className="sticky top-16 z-30 flex flex-wrap items-center justify-between gap-2 py-1">
+        <div className="flex items-center justify-between gap-2 pb-1">
           <button
             type="button"
             onClick={() => {
               setActiveSection('hub');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="px-4 py-2 rounded-xl bg-white/95 backdrop-blur-md hover:bg-[#EBF4FC] border border-[#1673B8]/40 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-md cursor-pointer transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#1673B8]/40 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors shrink-0"
           >
             <span>← Back to All Tools</span>
           </button>
@@ -966,17 +986,18 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
           <button
             type="button"
             onClick={handleCopyToolDeepLink}
-            className="px-3.5 py-2 rounded-xl bg-white/95 backdrop-blur-md hover:bg-[#EBF4FC] border border-[#1673B8]/40 text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-md cursor-pointer transition-colors"
+            aria-label="Share this tool"
+            className="ml-auto px-3.5 py-2 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#1673B8]/40 text-[#1673B8] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors shrink-0"
           >
             {copiedToolLink ? (
               <>
                 <Check className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Link Copied!</span>
+                <span>Copied!</span>
               </>
             ) : (
               <>
                 <Share2 className="w-3.5 h-3.5" />
-                <span>Copy Shareable Tool Link</span>
+                <span>Share</span>
               </>
             )}
           </button>

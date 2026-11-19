@@ -115,6 +115,10 @@ import {
 } from './data/mockHubData';
 import { INTERNATIONAL_TRAINING_COURSES } from './data/internationalTrainingsData';
 import {
+  buildMergedLiveCourses,
+  parseLiveCourseFeeRs
+} from './lib/liveCoursesMerge';
+import {
   hasLegacyMcqFormat,
   isLegacyHaccpVisualDoc
 } from './data/coursesHaccp3And4';
@@ -657,6 +661,10 @@ export default function App() {
     INITIAL_SCHOLARSHIPS
   );
   const [trainings, setTrainings] = useState<HubTraining[]>(INITIAL_TRAININGS);
+  const mergedLiveCourses = useMemo(
+    () => buildMergedLiveCourses(trainings),
+    [trainings]
+  );
   const [certificates, setCertificates] = useState<HubCertificate[]>([]);
   const [paymentRequests, setPaymentRequests] = useState<HubPaymentRequest[]>(
     []
@@ -5704,8 +5712,8 @@ export default function App() {
                       Trainings &amp; Certificate Portal
                     </p>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
-                      {trainings.length > 0
-                        ? `${trainings.length} Accredited Courses • ${certificates.length} Verified Certificates Issued`
+                      {mergedLiveCourses.length > 0
+                        ? `${mergedLiveCourses.length} Accredited Courses • ${certificates.length} Verified Certificates Issued`
                         : `Study Food Safety modules & verify ${certificates.length} official QR certificates`}
                     </p>
                   </div>
@@ -5873,6 +5881,7 @@ export default function App() {
 
               {/* CERTIFICATE BUNDLE OFFERS SECTION */}
               <CertificateBundleOffersCard
+                courses={mergedLiveCourses}
                 paymentGatewayConfig={liveGateway}
                 isGuest={!authUser}
                 onRequireSignIn={() => setShowGuestAuthModal(true)}
@@ -7178,15 +7187,21 @@ export default function App() {
                             </div>
                             <div className="text-xs text-gray-500">
                               {t.duration} •{' '}
-                              {geo.isPakistan
-                                ? t.fees
-                                : `Free Study & Exam · ${
-                                    getLocalizedCertificateFee(
-                                      t.certificateFeeRs || 1000,
-                                      liveGateway,
-                                      geo
-                                    ).formattedWithUsdHint
-                                  } Certificate`}
+                              {(() => {
+                                const liveFeeRs = parseLiveCourseFeeRs(
+                                  t,
+                                  t.id === 'mgr-food-dietary-2026' ? 8000 : 1000
+                                );
+                                return geo.isPakistan
+                                  ? `Free Study & Exam · Rs. ${liveFeeRs.toLocaleString()} Certificate`
+                                  : `Free Study & Exam · ${
+                                      getLocalizedCertificateFee(
+                                        liveFeeRs,
+                                        liveGateway,
+                                        geo
+                                      ).formattedWithUsdHint
+                                    } Certificate`;
+                              })()}
                             </div>
                           </div>
                           <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
