@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Award,
   BarChart3,
@@ -133,12 +133,14 @@ interface AdminControlPanelProps {
     category: string,
     flyerImageUrl?: string
   ) => Promise<void>;
+  onUpdateJob?: (job: HubJob) => Promise<void>;
   onDeleteJob: (job: HubJob) => Promise<void>;
   onQuickPasteScholarship: (
     rawText: string,
     fundingType: 'Fellowships' | 'International' | 'Grants',
     flyerImageUrl?: string
   ) => Promise<void>;
+  onUpdateScholarship?: (sch: HubScholarship) => Promise<void>;
   onDeleteScholarship: (sch: HubScholarship) => Promise<void>;
   onOpenShareFlyerModal?: (initialSection: 'job' | 'scholarship') => void;
   onSaveTraining: (training: HubTraining) => Promise<void>;
@@ -148,6 +150,7 @@ interface AdminControlPanelProps {
   onDeleteCertificate?: (certId: string) => Promise<void>;
   onChangeStorageConfig: (cfg: CloudStorageConfig) => void;
   onSaveStorageConfig: (e: React.FormEvent) => Promise<void>;
+  onSaveManualRevenueEntries?: (entries: ManualRevenueEntry[]) => Promise<void>;
   onSaveCustomTrainingsList?: (list: CustomTrainingItem[]) => Promise<void>;
   customTrainingRegistrations?: CustomTrainingRegistration[];
   onUpdateCustomTrainingRegistrationStatus?: (
@@ -186,8 +189,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onDeleteUser,
   onAdminSaveCommunityUser,
   onQuickPasteJob,
+  onUpdateJob,
   onDeleteJob,
   onQuickPasteScholarship,
+  onUpdateScholarship,
   onDeleteScholarship,
   onOpenShareFlyerModal,
   onSaveTraining,
@@ -197,6 +202,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onDeleteCertificate,
   onChangeStorageConfig,
   onSaveStorageConfig,
+  onSaveManualRevenueEntries,
   onSaveCustomTrainingsList,
   customTrainingRegistrations = [],
   onUpdateCustomTrainingRegistrationStatus,
@@ -212,8 +218,40 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   onDeleteSupportTicket
 }) => {
   const geo = useGeoCurrency();
-  const [activeTab, setActiveTab] = useState<AdminSectionTab>('menu');
+  const [activeTab, setActiveTab] = useState<AdminSectionTab>(() => {
+    if (typeof window === 'undefined') return 'menu';
+    try {
+      const saved = window.localStorage.getItem('fsp_admin_active_tab');
+      const allowed: AdminSectionTab[] = [
+        'menu',
+        'overview',
+        'revenue',
+        'users',
+        'jobs',
+        'scholarships',
+        'certificates',
+        'trainings',
+        'payments',
+        'support',
+        'social',
+        'flyer',
+        'storage'
+      ];
+      if (saved && allowed.includes(saved as AdminSectionTab)) {
+        return saved as AdminSectionTab;
+      }
+    } catch {}
+    return 'menu';
+  });
   const [copiedDispatchMsg, setCopiedDispatchMsg] = useState(false);
+
+  // Persist active Admin tab across app switches & reloads + sync Back button cleanly
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('fsp_admin_active_tab', activeTab);
+    } catch {}
+  }, [activeTab]);
 
   // Support Tickets, Admin Chat Requests & Custom Opinions State
   const [supportFilter, setSupportFilter] = useState<
@@ -487,8 +525,15 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     }
   };
 
-  // 1-Box Job Paste & Dynamic/Custom Tag State
-  const [jobPasteText, setJobPasteText] = useState('');
+  // 1-Box Job Paste & Dynamic/Custom Tag State (draft persisted across app switching)
+  const [jobPasteText, setJobPasteText] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      return window.localStorage.getItem('fsp_admin_job_draft') || '';
+    } catch {
+      return '';
+    }
+  });
   const [jobCategory, setJobCategory] = useState<string>('Quality & Safety');
   const [customJobTagInput, setCustomJobTagInput] = useState<string>('');
   const [customCreatedJobTags, setCustomCreatedJobTags] = useState<string[]>([
@@ -505,6 +550,52 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
   const [isPostingJob, setIsPostingJob] = useState(false);
   const [jobFlyerPreview, setJobFlyerPreview] = useState<string>('');
   const [schFlyerPreview, setSchFlyerPreview] = useState<string>('');
+
+  // Admin Edit Posted Job State
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
+  const [editJobTitle, setEditJobTitle] = useState('');
+  const [editJobCompany, setEditJobCompany] = useState('');
+  const [editJobCategory, setEditJobCategory] = useState('');
+  const [editJobCountry, setEditJobCountry] = useState('');
+  const [editJobLocation, setEditJobLocation] = useState('');
+  const [editJobExp, setEditJobExp] = useState('');
+  const [editJobExpiry, setEditJobExpiry] = useState('');
+  const [editJobEmail, setEditJobEmail] = useState('');
+  const [editJobLink, setEditJobLink] = useState('');
+  const [editJobDesc, setEditJobDesc] = useState('');
+  const [editJobReq, setEditJobReq] = useState('');
+  const [editJobFlyer, setEditJobFlyer] = useState('');
+  const [isSavingJobEdit, setIsSavingJobEdit] = useState(false);
+
+  // Admin Edit Posted Scholarship State
+  const [editingSchId, setEditingSchId] = useState<string | null>(null);
+  const [editSchTitle, setEditSchTitle] = useState('');
+  const [editSchOrg, setEditSchOrg] = useState('');
+  const [editSchFunding, setEditSchFunding] = useState<
+    'Fellowships' | 'International' | 'Grants'
+  >('International');
+  const [editSchCountry, setEditSchCountry] = useState('');
+  const [editSchDegree, setEditSchDegree] = useState('');
+  const [editSchDeadline, setEditSchDeadline] = useState('');
+  const [editSchEmail, setEditSchEmail] = useState('');
+  const [editSchLink, setEditSchLink] = useState('');
+  const [editSchDesc, setEditSchDesc] = useState('');
+  const [editSchEligibility, setEditSchEligibility] = useState('');
+  const [editSchFlyer, setEditSchFlyer] = useState('');
+  const [isSavingSchEdit, setIsSavingSchEdit] = useState(false);
+
+  // Revenue Ledger Inline Delete Confirmation State
+  const [confirmDeleteRevId, setConfirmDeleteRevId] = useState<string | null>(
+    null
+  );
+  const [deletingRevId, setDeletingRevId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('fsp_admin_job_draft', jobPasteText);
+    } catch {}
+  }, [jobPasteText]);
 
   // Auto-calculate 25% OFF on Yearly Fee when Admin changes Monthly Fee
   const [autoApply25PctYearly, setAutoApply25PctYearly] =
@@ -567,12 +658,128 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     return Array.from(new Set(base.filter(Boolean)));
   }, [customCreatedJobTags, autoDetectedJobTitleTag, jobs]);
 
-  // 1-Box Scholarship Paste State
-  const [schPasteText, setSchPasteText] = useState('');
+  // 1-Box Scholarship Paste State (draft persisted across app switching)
+  const [schPasteText, setSchPasteText] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      return window.localStorage.getItem('fsp_admin_sch_draft') || '';
+    } catch {
+      return '';
+    }
+  });
   const [schCategory, setSchCategory] = useState<
     'Fellowships' | 'International' | 'Grants'
   >('Fellowships');
   const [schFilterCat, setSchFilterCat] = useState<string>('All');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('fsp_admin_sch_draft', schPasteText);
+    } catch {}
+  }, [schPasteText]);
+
+  const startEditingJob = (job: HubJob) => {
+    setEditingJobId(job.id);
+    setEditJobTitle(job.title || '');
+    setEditJobCompany(job.company || '');
+    setEditJobCategory(job.category || job.specialization || 'Quality & Safety');
+    setEditJobCountry(job.country || 'Pakistan');
+    setEditJobLocation(job.location || job.country || '');
+    setEditJobExp(job.experienceRequired || '');
+    setEditJobExpiry(job.expiryAt || '2026-12-31');
+    setEditJobEmail(job.hrEmail || '');
+    setEditJobLink(job.applyLink && job.applyLink !== '#' ? job.applyLink : '');
+    setEditJobDesc(job.description || '');
+    setEditJobReq(job.requirements || '');
+    setEditJobFlyer(job.flyerImageUrl || '');
+  };
+
+  const handleSaveEditedJob = async (job: HubJob) => {
+    if (!onUpdateJob || !editJobTitle.trim()) return;
+    setIsSavingJobEdit(true);
+    try {
+      await onUpdateJob({
+        ...job,
+        title: editJobTitle.trim(),
+        company: editJobCompany.trim() || job.company,
+        category: editJobCategory.trim() || job.category,
+        specialization: editJobCategory.trim() || job.specialization,
+        country: editJobCountry.trim() || job.country,
+        location: editJobLocation.trim() || job.location,
+        experienceRequired: editJobExp.trim() || job.experienceRequired,
+        expiryAt: editJobExpiry.trim() || job.expiryAt,
+        hrEmail: editJobEmail.trim(),
+        applyLink: editJobLink.trim() || '#',
+        description: editJobDesc.trim(),
+        requirements: editJobReq.trim(),
+        flyerImageUrl: editJobFlyer
+      });
+      setEditingJobId(null);
+    } finally {
+      setIsSavingJobEdit(false);
+    }
+  };
+
+  const startEditingScholarship = (sch: HubScholarship) => {
+    setEditingSchId(sch.id);
+    setEditSchTitle(sch.title || '');
+    setEditSchOrg(sch.organization || '');
+    setEditSchFunding(
+      sch.fundingType === 'Fellowships' ||
+        sch.fundingType === 'Grants' ||
+        sch.fundingType === 'International'
+        ? sch.fundingType
+        : 'International'
+    );
+    setEditSchCountry(sch.country || 'International');
+    setEditSchDegree(sch.degreeLevel || 'BS / MS / PhD');
+    setEditSchDeadline(sch.deadline || '');
+    setEditSchEmail(sch.hrEmail || '');
+    setEditSchLink(sch.applyLink && sch.applyLink !== '#' ? sch.applyLink : '');
+    setEditSchDesc(sch.description || '');
+    setEditSchEligibility(sch.eligibility || '');
+    setEditSchFlyer(sch.flyerImageUrl || '');
+  };
+
+  const handleSaveEditedScholarship = async (sch: HubScholarship) => {
+    if (!onUpdateScholarship || !editSchTitle.trim()) return;
+    setIsSavingSchEdit(true);
+    try {
+      await onUpdateScholarship({
+        ...sch,
+        title: editSchTitle.trim(),
+        organization: editSchOrg.trim() || sch.organization,
+        fundingType: editSchFunding,
+        country: editSchCountry.trim() || sch.country,
+        degreeLevel: editSchDegree.trim() || sch.degreeLevel,
+        deadline: editSchDeadline.trim() || sch.deadline,
+        hrEmail: editSchEmail.trim(),
+        applyLink: editSchLink.trim() || '#',
+        description: editSchDesc.trim(),
+        eligibility: editSchEligibility.trim(),
+        flyerImageUrl: editSchFlyer
+      });
+      setEditingSchId(null);
+    } finally {
+      setIsSavingSchEdit(false);
+    }
+  };
+
+  const handleEditFlyerUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    target: 'job' | 'scholarship'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const { dataUrl } = await compressImageFile(file, 960, 0.78);
+      if (target === 'job') setEditJobFlyer(dataUrl);
+      else setEditSchFlyer(dataUrl);
+    } catch {
+      onSetBanner('Could not process flyer image. Please try another JPG/PNG.');
+    }
+  };
   const [isPostingSch, setIsPostingSch] = useState(false);
 
   // Header 3-Dots Menu State
@@ -1161,7 +1368,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
     );
   };
 
-  const handleAddManualRevenueEntry = (e: React.FormEvent) => {
+  const handleAddManualRevenueEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!revUserName.trim() || !revItemTitle.trim()) {
       onSetBanner('Please enter User Name and Item/Course Title.');
@@ -1183,29 +1390,59 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
       newEntry,
       ...(storageConfig.manualRevenueEntries || [])
     ];
-    onChangeStorageConfig({
-      ...storageConfig,
-      manualRevenueEntries: nextManual
-    });
+    if (onSaveManualRevenueEntries) {
+      await onSaveManualRevenueEntries(nextManual);
+      onSetBanner(
+        `Added & saved Rs. ${newEntry.amountRs.toLocaleString()} from "${newEntry.userName}" to Revenue Ledger!`
+      );
+    } else {
+      onChangeStorageConfig({
+        ...storageConfig,
+        manualRevenueEntries: nextManual
+      });
+      onSetBanner(
+        `Added Rs. ${newEntry.amountRs.toLocaleString()} from "${newEntry.userName}" to Revenue Ledger! Click "Save Revenue Ledger to Cloud" to persist.`
+      );
+    }
     setRevUserName('');
     setRevUserEmail('');
     setRevUserPhone('');
     setRevItemTitle('');
     setRevTxId('');
-    onSetBanner(
-      `Added Rs. ${newEntry.amountRs.toLocaleString()} from "${newEntry.userName}" to Revenue Ledger! Click "Save Revenue Ledger to Cloud" to persist.`
-    );
   };
 
-  const handleDeleteManualRevenueEntry = (entryId: string) => {
+  const handleDeleteManualRevenueEntry = async (entryId: string) => {
     const nextManual = (storageConfig.manualRevenueEntries || []).filter(
       (e) => e.id !== entryId
     );
-    onChangeStorageConfig({
-      ...storageConfig,
-      manualRevenueEntries: nextManual
-    });
-    onSetBanner('Manual revenue entry removed. Click "Save Revenue Ledger to Cloud" to persist.');
+    if (onSaveManualRevenueEntries) {
+      await onSaveManualRevenueEntries(nextManual);
+      onSetBanner('Revenue entry permanently deleted from Revenue Ledger.');
+    } else {
+      onChangeStorageConfig({
+        ...storageConfig,
+        manualRevenueEntries: nextManual
+      });
+      onSetBanner('Manual revenue entry removed. Click "Save Revenue Ledger to Cloud" to persist.');
+    }
+  };
+
+  const handleDeleteRevenueLedgerEntry = async (item: ManualRevenueEntry) => {
+    setDeletingRevId(item.id);
+    try {
+      if (item.id.startsWith('rev-manual-')) {
+        await handleDeleteManualRevenueEntry(item.id);
+      } else if (item.id.startsWith('rev-req-')) {
+        const realReqId = item.id.replace(/^rev-req-/, '');
+        await onDeletePaymentRequest(realReqId);
+        onSetBanner(
+          `Deleted "${item.userName}" (Rs. ${(Number(item.amountRs) || 0).toLocaleString()}) from Revenue Ledger.`
+        );
+      }
+      setConfirmDeleteRevId(null);
+    } finally {
+      setDeletingRevId(null);
+    }
   };
 
   // Custom Scrolling Ad Banner List & Handlers
@@ -2165,7 +2402,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     {
                       id: 'overview' as AdminSectionTab,
                       title: '1. Front Page, Ad Banner & Pages Control',
-                      desc: 'Edit front page hero, custom scrolling ad banners, WhatsApp share links & analytics',
+                      desc: 'Edit front page hero, custom scrolling ad banners & live platform analytics',
                       badge: `${currentAdBanners.filter((a) => a.isActive !== false).length} Active Ads`,
                       icon: BarChart3
                     },
@@ -3213,23 +3450,6 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
-                          onClick={() =>
-                            shareToWhatsAppGroupOrChannel(
-                              ad.title || ad.headline || 'Training Announcement',
-                              ad.subtitle ||
-                                ad.subtext ||
-                                'Special Training & Certification Announcement on Food Science Portal.',
-                              ad.ctaLink || ad.linkUrl || '?page=trainings'
-                            )
-                          }
-                          className="px-2.5 py-1 rounded-lg bg-[#25D366] hover:bg-[#1EBE5B] text-white text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
-                          title="Share this Ad Announcement to WhatsApp Group/Channel"
-                        >
-                          <Share2 className="w-3 h-3" />
-                          <span>WhatsApp</span>
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => {
                             setEditingAdId(ad.id);
                             setAdBadgeInput(ad.badgeText || 'UPCOMING TRAINING');
@@ -3347,100 +3567,6 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </button>
               </div>
             </form>
-
-            {/* WEBSITE PAGES & TOOLS WHATSAPP GROUP / CHANNEL SHARE CENTER */}
-            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10.5px] font-extrabold uppercase tracking-wider">
-                    WhatsApp Group &amp; Channel Broadcast Center
-                  </span>
-                  <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138] mt-1">
-                    Share Any Website Page, Tool, or Certification Portal to Your WhatsApp Group / Channel
-                  </h3>
-                  <p className="text-xs text-[#4A5568]">
-                    Click <strong>Share to WhatsApp</strong> on any page below to send a formatted announcement with its direct custom URL to your WhatsApp Group or Channel.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                {[
-                  {
-                    title: 'Trainings & Certification Academy',
-                    desc: '13 International Food Safety, HACCP, ISO 22000 & Certified Dietary Manager courses with Free Study & Exam.',
-                    path: '?page=trainings'
-                  },
-                  {
-                    title: 'Official Certificate Verification Portal',
-                    desc: 'Verify any Food Science Portal credential online via Certificate ID or QR Code.',
-                    path: '?page=verify-certificate'
-                  },
-                  {
-                    title: 'Global Food Science Jobs Board',
-                    desc: 'Latest QA/QC, Food Safety, R&D Lab & Production vacancies.',
-                    path: '?page=jobs'
-                  },
-                  {
-                    title: 'International Scholarships & Fellowships',
-                    desc: 'Fully funded MSc, PhD & research grants in Food Science & Nutrition.',
-                    path: '?page=scholarships'
-                  },
-                  {
-                    title: '18+ Food Science & Lab Calculators',
-                    desc: 'HACCP Matrix, Nutrition Facts, F0 Thermal Lethality, Sensory & Pearson Square tools.',
-                    path: '?page=tools'
-                  },
-                  {
-                    title: 'Food Specialists Community Directory',
-                    desc: 'Connect with verified Food Technologists, Auditors, and QA/QC Managers.',
-                    path: '?page=community'
-                  }
-                ].map((pg) => (
-                  <div
-                    key={pg.path}
-                    className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex flex-col justify-between gap-2.5"
-                  >
-                    <div>
-                      <div className="text-xs font-extrabold text-[#1A2138]">
-                        {pg.title}
-                      </div>
-                      <p className="text-[11px] text-[#4A5568] mt-0.5 line-clamp-2">
-                        {pg.desc}
-                      </p>
-                      <div className="text-[10px] font-mono font-bold text-[#1673B8] mt-1">
-                        URL: {pg.path}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          shareToWhatsAppGroupOrChannel(
-                            pg.title,
-                            pg.desc,
-                            pg.path
-                          )
-                        }
-                        className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-[11px] font-extrabold inline-flex items-center justify-center gap-1 cursor-pointer"
-                      >
-                        <Share2 className="w-3.5 h-3.5" />
-                        <span>Share to WhatsApp</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          copyWhatsAppShareText(pg.title, pg.desc, pg.path)
-                        }
-                        className="py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#EBF4FC] text-[#105E9A] border border-[#D2DEEA] text-[11px] font-extrabold cursor-pointer"
-                      >
-                        Copy Post
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
@@ -3448,44 +3574,44 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             TAB 1B: DEDICATED REVENUE LEDGER & DOWNLOADABLE RECORDS (revenue)
            ===================================================================== */}
         {activeTab === 'revenue' && (
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5 min-w-0">
             {/* TOP REVENUE SUMMARY KPI CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div className="bg-gradient-to-br from-[#1A2138] to-[#1673B8] text-white rounded-2xl p-5 shadow-sm space-y-1">
-                <div className="flex items-center justify-between text-xs font-bold text-sky-200 uppercase tracking-wider">
-                  <span>Total Revenue Generated</span>
-                  <DollarSign className="w-4 h-4 text-amber-300" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-gradient-to-br from-[#1A2138] to-[#1673B8] text-white rounded-2xl p-4 sm:p-5 shadow-sm space-y-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs font-bold text-sky-200 uppercase tracking-wider">
+                  <span className="truncate">Total Revenue Generated</span>
+                  <DollarSign className="w-4 h-4 text-amber-300 shrink-0" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black">
+                <div className="text-2xl sm:text-3xl font-black break-words">
                   Rs. {revenueSummary.totalRevenueRs.toLocaleString()}
                 </div>
-                <div className="text-[11px] text-sky-100 font-semibold">
+                <div className="text-[11px] text-sky-100 font-semibold leading-snug">
                   Across {revenueSummary.totalTransactions} Verified Payments (Subscriptions + Certificates)
                 </div>
               </div>
 
-              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-5 shadow-xs space-y-1">
-                <div className="flex items-center justify-between text-xs font-bold text-[#4A5568] uppercase tracking-wider">
-                  <span>Subscription Revenue</span>
-                  <Crown className="w-4 h-4 text-[#D97706]" />
+              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 sm:p-5 shadow-xs space-y-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs font-bold text-[#4A5568] uppercase tracking-wider">
+                  <span className="truncate">Subscription Revenue</span>
+                  <Crown className="w-4 h-4 text-[#D97706] shrink-0" />
                 </div>
-                <div className="text-2xl font-black text-[#1A2138]">
+                <div className="text-xl sm:text-2xl font-black text-[#1A2138] break-words">
                   Rs. {revenueSummary.subscriptionRevenueRs.toLocaleString()}
                 </div>
-                <div className="text-[11px] font-bold text-[#1673B8]">
+                <div className="text-[11px] font-bold text-[#1673B8] leading-snug">
                   {revenueSummary.subscriptionCount} Paid Membership Subscriptions
                 </div>
               </div>
 
-              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-5 shadow-xs space-y-1">
-                <div className="flex items-center justify-between text-xs font-bold text-[#4A5568] uppercase tracking-wider">
-                  <span>Certificates &amp; Bundles Revenue</span>
-                  <Award className="w-4 h-4 text-emerald-600" />
+              <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 sm:p-5 shadow-xs space-y-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs font-bold text-[#4A5568] uppercase tracking-wider">
+                  <span className="truncate">Certificates &amp; Bundles</span>
+                  <Award className="w-4 h-4 text-emerald-600 shrink-0" />
                 </div>
-                <div className="text-2xl font-black text-[#1A2138]">
+                <div className="text-xl sm:text-2xl font-black text-[#1A2138] break-words">
                   Rs. {revenueSummary.certificateRevenueRs.toLocaleString()}
                 </div>
-                <div className="text-[11px] font-bold text-emerald-700">
+                <div className="text-[11px] font-bold text-emerald-700 leading-snug">
                   {revenueSummary.certificateCount} Verified Certificates &amp; Bundles
                 </div>
               </div>
@@ -3494,32 +3620,32 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             {/* RECORD DIRECT / MANUAL REVENUE ENTRY FORM */}
             <form
               onSubmit={handleAddManualRevenueEntry}
-              className="bg-white border-2 border-[#1673B8] rounded-[24px] p-5 shadow-xs space-y-3.5"
+              className="bg-white border-2 border-[#1673B8] rounded-[22px] sm:rounded-[24px] p-3.5 sm:p-5 shadow-xs space-y-3.5 min-w-0 overflow-hidden"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold uppercase tracking-wider">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#D2DEEA] pb-3">
+                <div className="min-w-0">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold uppercase tracking-wider">
                     Add Direct Payment Record
                   </span>
-                  <h3 className="text-base font-extrabold text-[#1A2138] mt-1">
+                  <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138] mt-1 leading-snug break-words">
                     Record Direct WhatsApp / Bank Payment into Revenue Ledger
                   </h3>
-                  <p className="text-xs text-[#4A5568]">
+                  <p className="text-xs text-[#4A5568] leading-relaxed mt-0.5 break-words">
                     All approved Payment Slips are recorded automatically below. You can also log any direct WhatsApp or offline payment here.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={(e) => onSaveStorageConfig(e as unknown as React.FormEvent)}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-4 h-4 shrink-0" />
                   <span>Save Revenue Ledger to Cloud</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                <div className="min-w-0">
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     User Full Name *
                   </label>
@@ -3532,7 +3658,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     User Email / Phone
                   </label>
@@ -3544,7 +3670,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     Revenue Type
                   </label>
@@ -3565,7 +3691,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     <option value="subscription">Paid Membership Subscription</option>
                   </select>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     Amount Received (PKR) *
                   </label>
@@ -3581,7 +3707,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
-                <div className="sm:col-span-5">
+                <div className="sm:col-span-5 min-w-0">
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     Course / Bundle / Subscription Title *
                   </label>
@@ -3590,11 +3716,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     required
                     value={revItemTitle}
                     onChange={(e) => setRevItemTitle(e.target.value)}
-                    placeholder="e.g., Certified Dietary Manager (Rs. 8,000) / 1-Year Membership"
+                    placeholder="e.g., Certified Dietary Manager / 1-Year Membership"
                     className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
                   />
                 </div>
-                <div className="sm:col-span-3">
+                <div className="sm:col-span-3 min-w-0">
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     Payment Method
                   </label>
@@ -3606,7 +3732,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                   />
                 </div>
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-2 min-w-0">
                   <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
                     Transaction ID (TID)
                   </label>
@@ -3618,10 +3744,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-mono font-bold text-[#1A2138]"
                   />
                 </div>
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-2 min-w-0">
                   <button
                     type="submit"
-                    className="w-full py-2 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer"
+                    className="w-full py-2.5 px-3 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold cursor-pointer"
                   >
                     + Add Record
                   </button>
@@ -3629,41 +3755,41 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
             </form>
 
-            {/* COMPLETE REVENUE RECORDS TABLE + CSV DOWNLOAD */}
-            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#D2DEEA] pb-3">
-                <div>
-                  <h2 className="text-lg font-extrabold text-[#1A2138] flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-[#1673B8]" />
-                    <span>
+            {/* COMPLETE REVENUE RECORDS TABLE (DESKTOP) + RESPONSIVE CARDS (MOBILE) + CSV DOWNLOAD */}
+            <div className="bg-white border border-[#D2DEEA] rounded-[22px] sm:rounded-[24px] p-3.5 sm:p-5 shadow-xs space-y-4 min-w-0 overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#D2DEEA] pb-3">
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138] flex items-center gap-2 leading-snug">
+                    <DollarSign className="w-5 h-5 text-[#1673B8] shrink-0" />
+                    <span className="break-words">
                       Verified Revenue Ledger ({filteredRevenueLedger.length} Records)
                     </span>
                   </h2>
-                  <p className="text-xs text-[#4A5568]">
-                    Complete record of who paid, how much was received, for which subscription or certificate, and total revenue generated.
+                  <p className="text-xs text-[#4A5568] leading-relaxed mt-0.5 break-words">
+                    Complete record of user payments, total revenue generated, and direct Delete controls to remove any record from the ledger.
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={handleDownloadRevenueCsv}
-                    className="px-4 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <Download className="w-4 h-4" />
-                    <span>Download Revenue Record (.CSV / Excel)</span>
+                    <Download className="w-4 h-4 shrink-0" />
+                    <span>Download CSV / Excel</span>
                   </button>
                 </div>
               </div>
 
               {/* Filter & Search Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {(
                     [
                       {
                         id: 'all',
-                        label: `All Revenue (${revenueLedger.length})`
+                        label: `All (${revenueLedger.length})`
                       },
                       {
                         id: 'subscription',
@@ -3671,7 +3797,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       },
                       {
                         id: 'certificate',
-                        label: `Certificates & Bundles (${revenueSummary.certificateCount})`
+                        label: `Certificates (${revenueSummary.certificateCount})`
                       }
                     ] as const
                   ).map((tab) => (
@@ -3679,7 +3805,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       key={tab.id}
                       type="button"
                       onClick={() => setRevFilterType(tab.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-extrabold cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-extrabold cursor-pointer ${
                         revFilterType === tab.id
                           ? 'bg-[#1673B8] text-white'
                           : 'bg-[#F0F6FC] text-[#1A2138] border border-[#D2DEEA]'
@@ -3703,44 +3829,39 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
 
               {filteredRevenueLedger.length === 0 ? (
-                <div className="p-6 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-center text-xs font-semibold text-[#4A5568]">
+                <div className="p-5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-center text-xs font-semibold text-[#4A5568] leading-relaxed">
                   No verified revenue records match the current filter yet. When you Accept a user&apos;s Membership or Certificate payment slip (or add a record above), it is automatically logged here.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-[#D2DEEA]">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="bg-[#1A2138] text-white uppercase text-[10.5px] tracking-wider">
-                        <th className="py-3 px-3.5 font-extrabold">Date</th>
-                        <th className="py-3 px-3.5 font-extrabold">User / Payer</th>
-                        <th className="py-3 px-3.5 font-extrabold">Type</th>
-                        <th className="py-3 px-3.5 font-extrabold">Subscription / Certificate Details</th>
-                        <th className="py-3 px-3.5 font-extrabold">Method &amp; TID</th>
-                        <th className="py-3 px-3.5 font-extrabold text-right">Amount (PKR)</th>
-                        <th className="py-3 px-3.5 font-extrabold text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#D2DEEA] bg-white">
-                      {filteredRevenueLedger.map((item) => {
-                        const isManual = item.id.startsWith('rev-manual-');
-                        return (
-                          <tr key={item.id} className="hover:bg-[#F0F6FC]/70">
-                            <td className="py-2.5 px-3.5 font-semibold text-slate-600 whitespace-nowrap">
-                              {(item.recordedAt || '').replace('T', ' ').slice(0, 16)}
-                            </td>
-                            <td className="py-2.5 px-3.5">
-                              <div className="font-extrabold text-[#1A2138]">
+                <>
+                  {/* MOBILE-FRIENDLY CARD VIEW (NO TEXT OVERFLOW / MARGIN BREAKS) */}
+                  <div className="md:hidden space-y-2.5">
+                    {filteredRevenueLedger.map((item) => {
+                      const isManual = item.id.startsWith('rev-manual-');
+                      const isConfirming = confirmDeleteRevId === item.id;
+                      const isDeleting = deletingRevId === item.id;
+                      return (
+                        <div
+                          key={item.id}
+                          className="p-3.5 rounded-2xl bg-[#F8FBFF] border border-[#D2DEEA] space-y-2 min-w-0"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-extrabold text-[#1A2138] break-words">
                                 {item.userName}
                               </div>
                               {item.userEmail && (
-                                <div className="text-[11px] text-slate-500">
+                                <div className="text-[11px] text-slate-500 break-all">
                                   {item.userEmail}
                                 </div>
                               )}
-                            </td>
-                            <td className="py-2.5 px-3.5">
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="text-sm font-black text-emerald-700 whitespace-nowrap">
+                                Rs. {(Number(item.amountRs) || 0).toLocaleString()}
+                              </div>
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase ${
                                   item.category === 'subscription'
                                     ? 'bg-amber-100 text-amber-900'
                                     : 'bg-[#EBF4FC] text-[#105E9A]'
@@ -3748,61 +3869,199 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                               >
                                 {item.category}
                               </span>
-                            </td>
-                            <td className="py-2.5 px-3.5 font-bold text-[#1A2138]">
-                              {item.itemTitle}
-                            </td>
-                            <td className="py-2.5 px-3.5">
-                              <div className="font-semibold text-[#1A2138]">
+                            </div>
+                          </div>
+
+                          <div className="text-xs font-bold text-[#1A2138] leading-snug break-words">
+                            {item.itemTitle}
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-slate-600 pt-1 border-t border-[#D2DEEA]/70">
+                            <div className="min-w-0 break-words">
+                              <span className="font-semibold text-[#1A2138]">
                                 {item.paymentMethod}
-                              </div>
-                              <div className="font-mono text-[10.5px] text-[#1673B8]">
+                              </span>{' '}
+                              •{' '}
+                              <span className="font-mono text-[#1673B8] break-all">
                                 TID: {item.transactionId}
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-3.5 text-right font-black text-emerald-700 whitespace-nowrap">
-                              Rs. {(Number(item.amountRs) || 0).toLocaleString()}
-                            </td>
-                            <td className="py-2.5 px-3.5 text-right">
-                              {isManual ? (
+                              </span>
+                            </div>
+                            <span className="text-[10.5px] text-slate-500 whitespace-nowrap">
+                              {(item.recordedAt || '').replace('T', ' ').slice(0, 16)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <span className="text-[10.5px] font-bold text-emerald-700">
+                              {isManual ? 'Manual Entry' : 'Verified User Slip'}
+                            </span>
+                            {isConfirming ? (
+                              <div className="flex items-center gap-1.5">
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    handleDeleteManualRevenueEntry(item.id)
-                                  }
-                                  className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[10.5px] font-extrabold cursor-pointer"
+                                  disabled={isDeleting}
+                                  onClick={() => void handleDeleteRevenueLedgerEntry(item)}
+                                  className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[11px] font-extrabold cursor-pointer disabled:opacity-50"
                                 >
-                                  Remove
+                                  {isDeleting ? 'Deleting...' : 'Confirm Delete'}
                                 </button>
-                              ) : (
-                                <span className="text-[10.5px] font-bold text-emerald-700">
-                                  Verified Slip
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmDeleteRevId(null)}
+                                  className="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteRevId(item.id)}
+                                className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Delete</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <div className="p-3.5 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] flex items-center justify-between gap-2">
+                      <span className="text-xs font-black text-[#1A2138] uppercase">
+                        Total ({filteredRevenueLedger.length})
+                      </span>
+                      <span className="text-sm font-black text-[#1673B8] whitespace-nowrap">
+                        Rs.{' '}
+                        {filteredRevenueLedger
+                          .reduce(
+                            (sum, r) => sum + (Number(r.amountRs) || 0),
+                            0
+                          )
+                          .toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* DESKTOP TABLE VIEW */}
+                  <div className="hidden md:block overflow-x-auto rounded-2xl border border-[#D2DEEA]">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-[#1A2138] text-white uppercase text-[10.5px] tracking-wider">
+                          <th className="py-3 px-3.5 font-extrabold">Date</th>
+                          <th className="py-3 px-3.5 font-extrabold">User / Payer</th>
+                          <th className="py-3 px-3.5 font-extrabold">Type</th>
+                          <th className="py-3 px-3.5 font-extrabold">Subscription / Certificate Details</th>
+                          <th className="py-3 px-3.5 font-extrabold">Method &amp; TID</th>
+                          <th className="py-3 px-3.5 font-extrabold text-right">Amount (PKR)</th>
+                          <th className="py-3 px-3.5 font-extrabold text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#D2DEEA] bg-white">
+                        {filteredRevenueLedger.map((item) => {
+                          const isManual = item.id.startsWith('rev-manual-');
+                          const isConfirming = confirmDeleteRevId === item.id;
+                          const isDeleting = deletingRevId === item.id;
+                          return (
+                            <tr key={item.id} className="hover:bg-[#F0F6FC]/70">
+                              <td className="py-2.5 px-3.5 font-semibold text-slate-600 whitespace-nowrap">
+                                {(item.recordedAt || '').replace('T', ' ').slice(0, 16)}
+                              </td>
+                              <td className="py-2.5 px-3.5">
+                                <div className="font-extrabold text-[#1A2138]">
+                                  {item.userName}
+                                </div>
+                                {item.userEmail && (
+                                  <div className="text-[11px] text-slate-500 break-all">
+                                    {item.userEmail}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3.5">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                    item.category === 'subscription'
+                                      ? 'bg-amber-100 text-amber-900'
+                                      : 'bg-[#EBF4FC] text-[#105E9A]'
+                                  }`}
+                                >
+                                  {item.category}
                                 </span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-[#F0F6FC] border-t-2 border-[#1673B8] font-black text-xs text-[#1A2138]">
-                        <td colSpan={5} className="py-3 px-3.5 text-right uppercase">
-                          Total Revenue Shown ({filteredRevenueLedger.length} Payments):
-                        </td>
-                        <td className="py-3 px-3.5 text-right text-sm text-[#1673B8] whitespace-nowrap">
-                          Rs.{' '}
-                          {filteredRevenueLedger
-                            .reduce(
-                              (sum, r) => sum + (Number(r.amountRs) || 0),
-                              0
-                            )
-                            .toLocaleString()}
-                        </td>
-                        <td />
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
+                              </td>
+                              <td className="py-2.5 px-3.5 font-bold text-[#1A2138]">
+                                {item.itemTitle}
+                                <div className="text-[10px] font-semibold text-emerald-700 mt-0.5">
+                                  {isManual ? 'Manual Entry' : 'Verified Slip'}
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3.5">
+                                <div className="font-semibold text-[#1A2138]">
+                                  {item.paymentMethod}
+                                </div>
+                                <div className="font-mono text-[10.5px] text-[#1673B8] break-all">
+                                  TID: {item.transactionId}
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3.5 text-right font-black text-emerald-700 whitespace-nowrap">
+                                Rs. {(Number(item.amountRs) || 0).toLocaleString()}
+                              </td>
+                              <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                                {isConfirming ? (
+                                  <div className="inline-flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      disabled={isDeleting}
+                                      onClick={() =>
+                                        void handleDeleteRevenueLedgerEntry(item)
+                                      }
+                                      className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10.5px] font-extrabold cursor-pointer disabled:opacity-50"
+                                    >
+                                      {isDeleting ? '...' : 'Confirm'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmDeleteRevId(null)}
+                                      className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-bold cursor-pointer"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmDeleteRevId(item.id)}
+                                    className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    <span>Delete</span>
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-[#F0F6FC] border-t-2 border-[#1673B8] font-black text-xs text-[#1A2138]">
+                          <td colSpan={5} className="py-3 px-3.5 text-right uppercase">
+                            Total Revenue Shown ({filteredRevenueLedger.length} Payments):
+                          </td>
+                          <td className="py-3 px-3.5 text-right text-sm text-[#1673B8] whitespace-nowrap">
+                            Rs.{' '}
+                            {filteredRevenueLedger
+                              .reduce(
+                                (sum, r) => sum + (Number(r.amountRs) || 0),
+                                0
+                              )
+                              .toLocaleString()}
+                          </td>
+                          <td />
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -4677,45 +4936,43 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             TAB 3: 1-BOX SMART PASTE JOBS MANAGER (jobs)
            ===================================================================== */}
         {activeTab === 'jobs' && (
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5 min-w-0">
             {/* 1-BOX JOB PASTE FORM */}
             <form
               onSubmit={handleSubmitQuickJob}
-              className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-4"
+              className="bg-white border-2 border-[#1673B8] rounded-[22px] sm:rounded-[26px] p-3.5 sm:p-5 shadow-sm space-y-4 min-w-0 overflow-hidden"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#D2DEEA] pb-3">
+                <div className="min-w-0">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
                     Simple 1-Box Job Publisher
                   </span>
-                  <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
+                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138] mt-1 leading-snug break-words">
                     Paste Full Job Post &amp; Select Category
                   </h2>
-                  <p className="text-xs text-[#4A5568] font-medium">
-                    No separate fields needed! Paste text OR attach a job flyer
-                    picture below, choose category, and publish with today&apos;s
-                    date ({todayFormatted}).
+                  <p className="text-xs text-[#4A5568] font-medium leading-relaxed mt-0.5 break-words">
+                    Paste full job text (any apply link automatically becomes a clickable &quot;Apply Now&quot; button for users) OR attach a job flyer picture below. Date: {todayFormatted}.
                   </p>
                 </div>
                 {onOpenShareFlyerModal && (
                   <button
                     type="button"
                     onClick={() => onOpenShareFlyerModal('job')}
-                    className="px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
+                    className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0"
                   >
-                    <ImageIcon className="w-4 h-4 text-sky-300" />
+                    <ImageIcon className="w-4 h-4 text-sky-300 shrink-0" />
                     <span>Post from Picture / Flyer (AI Read)</span>
                   </button>
                 )}
               </div>
 
-              {/* STEP 1: DYNAMIC JOB TAGS (Auto-Create from Job Title OR Create Custom Tag OR Pick Tag) */}
-              <div className="space-y-3 p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <label className="block text-xs font-extrabold text-[#1A2138]">
-                    1. Job Tag / Category (Auto-Created from Job Title or Create Custom Tag):
+              {/* STEP 1: DYNAMIC JOB TAGS */}
+              <div className="space-y-3 p-3 sm:p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="block text-xs font-extrabold text-[#1A2138] leading-snug break-words">
+                    1. Job Tag / Category (Auto-Created or Custom):
                   </label>
-                  <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#105E9A] cursor-pointer select-none">
+                  <label className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#105E9A] cursor-pointer select-none shrink-0">
                     <input
                       type="checkbox"
                       checked={useAutoTitleTag}
@@ -4734,10 +4991,10 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
 
                 {/* Live Auto-Detected Job Title Tag Preview */}
                 {autoDetectedJobTitleTag && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#EBF4FC] border border-[#1673B8]/40 text-xs">
-                    <div className="font-bold text-[#1A2138]">
-                      Auto-Detected Tag from Job Title:{' '}
-                      <span className="px-2 py-0.5 rounded-lg bg-[#1673B8] text-white font-extrabold">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#EBF4FC] border border-[#1673B8]/40 text-xs min-w-0">
+                    <div className="font-bold text-[#1A2138] break-words">
+                      Auto-Detected Tag:{' '}
+                      <span className="inline-block px-2 py-0.5 rounded-lg bg-[#1673B8] text-white font-extrabold break-words">
                         {autoDetectedJobTitleTag}
                       </span>
                     </div>
@@ -4748,7 +5005,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         setCustomJobTagInput('');
                         setJobCategory(autoDetectedJobTitleTag);
                       }}
-                      className="text-[11px] font-extrabold text-[#105E9A] underline cursor-pointer"
+                      className="text-[11px] font-extrabold text-[#105E9A] underline cursor-pointer shrink-0"
                     >
                       {useAutoTitleTag && !customJobTagInput.trim()
                         ? 'Active ✓'
@@ -4769,8 +5026,8 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         setJobCategory(e.target.value.trim());
                       }
                     }}
-                    placeholder="Or type / create any new custom tag (e.g. Dairy QA, Regulatory Affairs, Supply Chain)..."
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                    placeholder="Or create custom tag (e.g. Dairy QA, Supply Chain)..."
+                    className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                   />
                   <button
                     type="button"
@@ -4792,17 +5049,16 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </button>
                 </div>
 
-                {/* Selectable Tag Pills (Existing + Custom + Auto-Detected) */}
+                {/* Selectable Tag Pills */}
                 <div className="space-y-1">
-                  <span className="block text-[10.5px] font-bold text-[#4A5568]">
-                    Or click any tag below (Selected:{' '}
+                  <span className="block text-[10.5px] font-bold text-[#4A5568] break-words">
+                    Selected Tag:{' '}
                     <strong className="text-[#1673B8]">
                       {customJobTagInput.trim() ||
                         (useAutoTitleTag && autoDetectedJobTitleTag
                           ? autoDetectedJobTitleTag
                           : jobCategory)}
                     </strong>
-                    ):
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {allAvailableJobTags.map((cat) => {
@@ -4821,7 +5077,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                             setCustomJobTagInput('');
                             setJobCategory(cat);
                           }}
-                          className={`py-1.5 px-3 rounded-xl text-xs font-extrabold border cursor-pointer transition-all ${
+                          className={`py-1.5 px-2.5 rounded-xl text-[11px] sm:text-xs font-extrabold border cursor-pointer transition-all break-words max-w-full ${
                             isSelected
                               ? 'bg-[#1673B8] text-white border-[#1673B8] shadow-xs'
                               : 'bg-white text-[#1A2138] border-[#D2DEEA] hover:bg-[#EBF4FC]'
@@ -4836,13 +5092,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
 
               {/* STEP 2: SINGLE BOX TO PASTE FULL JOB */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-extrabold text-[#1A2138]">
-                    2. Paste Complete Job Announcement Here (1st line becomes
-                    Headline &amp; Auto-Creates Tag):
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] leading-snug">
+                    2. Paste Complete Job Announcement (Include Apply Link if any):
                   </label>
-                  <span className="text-[11px] font-bold text-[#1673B8]">
+                  <span className="text-[11px] font-bold text-[#1673B8] shrink-0">
                     Auto-Date: {todayFormatted}
                   </span>
                 </div>
@@ -4860,13 +5115,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       }
                     }
                   }}
-                  placeholder={`Paste the full job post here...\nExample:\nQA / Food Safety Officer — Engro Foods (Lahore, Pakistan)\nRequirement: BS Food Science & Technology, 2+ Years HACCP / ISO 22000 experience.\nSend CV to: careers@company.com or WhatsApp +92 300 1234567`}
-                  className="w-full p-4 rounded-2xl bg-[#F0F6FC] border-[1.5px] border-[#94B8D7] focus:border-[#1673B8] focus:bg-white text-xs sm:text-sm font-medium text-[#1A2138] leading-relaxed focus:outline-none"
+                  placeholder={`Paste the full job post here...\nExample:\nQA / Food Safety Officer — Engro Foods (Lahore, Pakistan)\nRequirement: BS Food Science & Technology, 2+ Years HACCP / ISO 22000.\nApply Link: https://careers.company.com/apply\nEmail: careers@company.com`}
+                  className="w-full p-3 sm:p-4 rounded-2xl bg-[#F0F6FC] border-[1.5px] border-[#94B8D7] focus:border-[#1673B8] focus:bg-white text-xs sm:text-sm font-medium text-[#1A2138] leading-relaxed focus:outline-none"
                 />
               </div>
 
               {/* OPTIONAL FLYER IMAGE UPLOAD */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA]">
                 <div className="flex items-center gap-2.5 min-w-0">
                   {jobFlyerPreview ? (
                     <img
@@ -4879,15 +5134,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       <ImageIcon className="w-5 h-5" />
                     </div>
                   )}
-                  <div className="min-w-0">
-                    <div className="text-xs font-extrabold text-[#1A2138]">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-extrabold text-[#1A2138] break-words">
                       {jobFlyerPreview
                         ? 'Job Picture Attached ✓'
                         : 'Attach Job Flyer Picture (Optional)'}
                     </div>
-                    <div className="text-[11px] text-[#4A5568] truncate">
-                      Upload a job poster from gallery or share directly from
-                      WhatsApp to the app
+                    <div className="text-[11px] text-[#4A5568] leading-snug break-words">
+                      Upload a job poster from gallery or share from WhatsApp
                     </div>
                   </div>
                 </div>
@@ -4917,32 +5171,31 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               <button
                 type="submit"
                 disabled={isPostingJob || (!jobPasteText.trim() && !jobFlyerPreview)}
-                className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+                className="w-full py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 text-center leading-snug cursor-pointer transition-colors shadow-sm"
               >
-                <Plus className="w-4 h-4 stroke-[2.5]" />
-                <span>
+                <Plus className="w-4 h-4 stroke-[2.5] shrink-0" />
+                <span className="break-words">
                   {isPostingJob
                     ? 'Sharing Job to Live App...'
-                    : `Share Job with Tag "${
+                    : `Share Job ("${
                         customJobTagInput.trim() ||
                         (useAutoTitleTag && autoDetectedJobTitleTag
                           ? autoDetectedJobTitleTag
                           : jobCategory)
-                      }" (${todayFormatted})`}
+                      }") • ${todayFormatted}`}
                 </span>
               </button>
             </form>
 
-            {/* MANAGE / REMOVE EXISTING JOBS */}
-            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
-                <div>
-                  <h3 className="text-base font-extrabold text-[#1A2138]">
+            {/* MANAGE / EDIT / REMOVE EXISTING JOBS */}
+            <div className="bg-white border border-[#D2DEEA] rounded-[22px] sm:rounded-[24px] p-3.5 sm:p-5 shadow-xs space-y-4 min-w-0 overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#D2DEEA] pb-3">
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
                     Live Posted Jobs ({filteredAdminJobs.length})
                   </h3>
-                  <p className="text-xs text-[#4A5568]">
-                    Click Remove on any job to delete it immediately from the
-                    frontend app.
+                  <p className="text-xs text-[#4A5568] leading-snug">
+                    Edit any posted job details or Apply Link, share to WhatsApp, or remove immediately.
                   </p>
                 </div>
 
@@ -4960,7 +5213,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       key={c}
                       type="button"
                       onClick={() => setJobFilterCat(c)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
                         jobFilterCat === c
                           ? 'bg-[#1673B8] text-white'
                           : 'bg-[#EBF4FC] text-[#1A2138]'
@@ -4977,70 +5230,274 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   No jobs in this category. Paste a job above to publish one!
                 </p>
               ) : (
-                <div className="space-y-2.5">
-                  {filteredAdminJobs.map((job) => (
-                    <div
-                      key={job.id}
-                      className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start justify-between gap-3"
-                    >
-                      <div className="flex items-start gap-3 min-w-0">
-                        {job.flyerImageUrl && (
-                          <img
-                            src={job.flyerImageUrl}
-                            alt={job.title}
-                            className="w-12 h-12 rounded-xl object-cover border border-[#D2DEEA] shrink-0"
-                          />
-                        )}
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
-                              {job.category || job.specialization}
-                            </span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10.5px] font-bold">
-                              Posted: {job.postedAt || todayFormatted}
-                            </span>
-                            {job.country && (
-                              <span className="text-[11px] font-bold text-[#1673B8]">
-                                • {job.country}
-                              </span>
+                <div className="space-y-3">
+                  {filteredAdminJobs.map((job) => {
+                    const isEditingThis = editingJobId === job.id;
+                    const hasApplyLink = Boolean(
+                      (job.applyLink && job.applyLink !== '#') ||
+                        /(?:https?:\/\/|www\.)[^\s<>'")]+/i.test(
+                          job.description || ''
+                        )
+                    );
+                    return (
+                      <div
+                        key={job.id}
+                        className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3 min-w-0"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                            {job.flyerImageUrl && (
+                              <img
+                                src={job.flyerImageUrl}
+                                alt={job.title}
+                                className="w-12 h-12 rounded-xl object-cover border border-[#D2DEEA] shrink-0"
+                              />
                             )}
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded-full bg-[#EBF4FC] border border-[#BBD6EE] text-[#105E9A] text-[10px] font-extrabold">
+                                  {job.category || job.specialization}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10px] font-bold">
+                                  {job.postedAt || todayFormatted}
+                                </span>
+                                {job.country && (
+                                  <span className="text-[10.5px] font-bold text-[#1673B8]">
+                                    • {job.country}
+                                  </span>
+                                )}
+                                {hasApplyLink && (
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
+                                    Apply Button ✓
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug break-words">
+                                {job.title}
+                              </h4>
+                              <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line break-words">
+                                {job.description}
+                              </p>
+                            </div>
                           </div>
-                          <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug">
-                            {job.title}
-                          </h4>
-                          <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line">
-                            {job.description}
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            shareToWhatsAppGroupOrChannel(
-                              `New Job Opening: ${job.title}`,
-                              `${job.category || 'Food Science & QA/QC'} (${job.country || 'Global'})\n${(job.description || '').slice(0, 180)}...`,
-                              '?page=jobs'
-                            )
-                          }
-                          className="px-3 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
-                          title="Share Job to WhatsApp Group / Channel"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteJob(job)}
-                          className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Remove</span>
-                        </button>
+                          <div className="flex flex-wrap items-center gap-1.5 shrink-0 pt-1 sm:pt-0">
+                            {onUpdateJob && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  isEditingThis
+                                    ? setEditingJobId(null)
+                                    : startEditingJob(job)
+                                }
+                                className="px-2.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>{isEditingThis ? 'Close' : 'Edit'}</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                shareToWhatsAppGroupOrChannel(
+                                  `New Job Opening: ${job.title}`,
+                                  `${job.category || 'Food Science & QA/QC'} (${job.country || 'Global'})\n${(job.description || '').slice(0, 180)}...`,
+                                  '?page=jobs'
+                                )
+                              }
+                              className="px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              title="Share Job to WhatsApp Group / Channel"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                              <span>WhatsApp</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDeleteJob(job)}
+                              className="px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Remove</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* INLINE ADMIN JOB EDITOR */}
+                        {isEditingThis && (
+                          <div className="p-3.5 rounded-2xl bg-white border-2 border-[#1673B8] space-y-3">
+                            <div className="flex items-center justify-between gap-2 border-b border-[#D2DEEA] pb-2">
+                              <span className="text-xs font-extrabold text-[#105E9A]">
+                                Edit Posted Job Details &amp; Apply Link
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setEditingJobId(null)}
+                                className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Job Title *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editJobTitle}
+                                  onChange={(e) => setEditJobTitle(e.target.value)}
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Company / Employer
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editJobCompany}
+                                  onChange={(e) => setEditJobCompany(e.target.value)}
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Category / Tag
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editJobCategory}
+                                  onChange={(e) => setEditJobCategory(e.target.value)}
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Country
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editJobCountry}
+                                  onChange={(e) => setEditJobCountry(e.target.value)}
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Location / City
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editJobLocation}
+                                  onChange={(e) => setEditJobLocation(e.target.value)}
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Experience &amp; Deadline
+                                </label>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  <input
+                                    type="text"
+                                    value={editJobExp}
+                                    onChange={(e) => setEditJobExp(e.target.value)}
+                                    placeholder="2+ Years"
+                                    className="w-full px-2.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={editJobExpiry}
+                                    onChange={(e) => setEditJobExpiry(e.target.value)}
+                                    placeholder="YYYY-MM-DD"
+                                    className="w-full px-2.5 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  HR Contact Email
+                                </label>
+                                <input
+                                  type="email"
+                                  value={editJobEmail}
+                                  onChange={(e) => setEditJobEmail(e.target.value)}
+                                  placeholder="hr@company.com"
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Apply Link URL (Creates Clickable &quot;Apply Now&quot; Button)
+                                </label>
+                                <input
+                                  type="url"
+                                  value={editJobLink}
+                                  onChange={(e) => setEditJobLink(e.target.value)}
+                                  placeholder="https://careers.company.com/apply"
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                Full Job Description
+                              </label>
+                              <textarea
+                                rows={4}
+                                value={editJobDesc}
+                                onChange={(e) => setEditJobDesc(e.target.value)}
+                                className="w-full p-3 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-medium text-[#1A2138] leading-relaxed"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                Requirements / Notes
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={editJobReq}
+                                onChange={(e) => setEditJobReq(e.target.value)}
+                                className="w-full p-3 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-medium text-[#1A2138] leading-relaxed"
+                              />
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                              <div className="flex items-center gap-2">
+                                <label className="px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-[#105E9A] text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer">
+                                  <Upload className="w-3.5 h-3.5" />
+                                  <span>{editJobFlyer ? 'Change Flyer Pic' : 'Attach Flyer Pic'}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => void handleEditFlyerUpload(e, 'job')}
+                                    className="hidden"
+                                  />
+                                </label>
+                                {editJobFlyer && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditJobFlyer('')}
+                                    className="px-2.5 py-1.5 rounded-xl bg-red-50 text-red-700 text-xs font-bold cursor-pointer"
+                                  >
+                                    Remove Pic
+                                  </button>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                disabled={isSavingJobEdit || !editJobTitle.trim()}
+                                onClick={() => void handleSaveEditedJob(job)}
+                                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Check className="w-4 h-4" />
+                                <span>{isSavingJobEdit ? 'Saving...' : 'Save Job Changes'}</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -5051,33 +5508,31 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             TAB 4: 1-BOX SMART PASTE SCHOLARSHIPS MANAGER (scholarships)
            ===================================================================== */}
         {activeTab === 'scholarships' && (
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5 min-w-0">
             {/* 1-BOX SCHOLARSHIP PASTE FORM */}
             <form
               onSubmit={handleSubmitQuickScholarship}
-              className="bg-white border-2 border-[#1673B8] rounded-[26px] p-5 shadow-sm space-y-4"
+              className="bg-white border-2 border-[#1673B8] rounded-[22px] sm:rounded-[26px] p-3.5 sm:p-5 shadow-sm space-y-4 min-w-0 overflow-hidden"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#D2DEEA] pb-3">
+                <div className="min-w-0">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
                     Simple 1-Box Scholarship Publisher
                   </span>
-                  <h2 className="text-lg font-extrabold text-[#1A2138] mt-1">
+                  <h2 className="text-base sm:text-lg font-extrabold text-[#1A2138] mt-1 leading-snug break-words">
                     Paste Full Scholarship Post &amp; Select Category
                   </h2>
-                  <p className="text-xs text-[#4A5568] font-medium">
-                    Choose category, paste text OR attach a scholarship poster
-                    below, and publish immediately with today&apos;s date (
-                    {todayFormatted}).
+                  <p className="text-xs text-[#4A5568] font-medium leading-relaxed mt-0.5 break-words">
+                    Paste full scholarship text (any link automatically becomes a clickable &quot;Apply Now&quot; button for users) OR attach a poster below. Date: {todayFormatted}.
                   </p>
                 </div>
                 {onOpenShareFlyerModal && (
                   <button
                     type="button"
                     onClick={() => onOpenShareFlyerModal('scholarship')}
-                    className="px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
+                    className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-[#1A2138] hover:bg-[#1673B8] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0"
                   >
-                    <ImageIcon className="w-4 h-4 text-sky-300" />
+                    <ImageIcon className="w-4 h-4 text-sky-300 shrink-0" />
                     <span>Post from Picture / Flyer (AI Read)</span>
                   </button>
                 )}
@@ -5095,7 +5550,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         key={cat}
                         type="button"
                         onClick={() => setSchCategory(cat)}
-                        className={`py-2.5 px-3 rounded-xl text-xs font-extrabold border cursor-pointer transition-all ${
+                        className={`py-2.5 px-2 sm:px-3 rounded-xl text-[11px] sm:text-xs font-extrabold border cursor-pointer transition-all truncate ${
                           schCategory === cat
                             ? 'bg-[#1673B8] text-white border-[#1673B8] shadow-xs'
                             : 'bg-[#F0F6FC] text-[#1A2138] border-[#D2DEEA] hover:bg-[#EBF4FC]'
@@ -5109,13 +5564,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               </div>
 
               {/* STEP 2: SINGLE BOX TO PASTE FULL SCHOLARSHIP */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-extrabold text-[#1A2138]">
-                    2. Paste Complete Scholarship Details Here (1st line becomes
-                    Headline):
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <label className="block text-xs font-extrabold text-[#1A2138] leading-snug">
+                    2. Paste Complete Scholarship Details (Include Apply Link if any):
                   </label>
-                  <span className="text-[11px] font-bold text-[#1673B8]">
+                  <span className="text-[11px] font-bold text-[#1673B8] shrink-0">
                     Auto-Date: {todayFormatted}
                   </span>
                 </div>
@@ -5125,12 +5579,12 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   value={schPasteText}
                   onChange={(e) => setSchPasteText(e.target.value)}
                   placeholder={`Paste the full scholarship details here...\nExample:\nErasmus Mundus MSc Food Innovation Scholarship (Europe)\nFully funded fellowship for BS Food Science & Technology graduates.\nApply online at: https://example.org or email admissions@university.edu`}
-                  className="w-full p-4 rounded-2xl bg-[#F0F6FC] border-[1.5px] border-[#94B8D7] focus:border-[#1673B8] focus:bg-white text-xs sm:text-sm font-medium text-[#1A2138] leading-relaxed focus:outline-none"
+                  className="w-full p-3 sm:p-4 rounded-2xl bg-[#F0F6FC] border-[1.5px] border-[#94B8D7] focus:border-[#1673B8] focus:bg-white text-xs sm:text-sm font-medium text-[#1A2138] leading-relaxed focus:outline-none"
                 />
               </div>
 
               {/* OPTIONAL SCHOLARSHIP FLYER UPLOAD */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-[#F8FAFC] border border-[#D2DEEA]">
                 <div className="flex items-center gap-2.5 min-w-0">
                   {schFlyerPreview ? (
                     <img
@@ -5143,15 +5597,14 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       <ImageIcon className="w-5 h-5" />
                     </div>
                   )}
-                  <div className="min-w-0">
-                    <div className="text-xs font-extrabold text-[#1A2138]">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-extrabold text-[#1A2138] break-words">
                       {schFlyerPreview
                         ? 'Scholarship Poster Attached ✓'
                         : 'Attach Scholarship Poster Picture (Optional)'}
                     </div>
-                    <div className="text-[11px] text-[#4A5568] truncate">
-                      Upload a flyer from gallery or share directly from
-                      WhatsApp to the app
+                    <div className="text-[11px] text-[#4A5568] leading-snug break-words">
+                      Upload a flyer from gallery or share from WhatsApp
                     </div>
                   </div>
                 </div>
@@ -5185,27 +5638,26 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 disabled={
                   isPostingSch || (!schPasteText.trim() && !schFlyerPreview)
                 }
-                className="w-full py-3.5 px-5 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+                className="w-full py-3 px-4 rounded-2xl bg-[#1673B8] hover:bg-[#105E9A] disabled:opacity-50 text-white text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 text-center leading-snug cursor-pointer transition-colors shadow-sm"
               >
-                <Plus className="w-4 h-4 stroke-[2.5]" />
-                <span>
+                <Plus className="w-4 h-4 stroke-[2.5] shrink-0" />
+                <span className="break-words">
                   {isPostingSch
                     ? 'Sharing Scholarship to Live App...'
-                    : `Share Scholarship in "${schCategory}" (${todayFormatted})`}
+                    : `Share Scholarship in "${schCategory}" • ${todayFormatted}`}
                 </span>
               </button>
             </form>
 
-            {/* MANAGE / REMOVE EXISTING SCHOLARSHIPS */}
-            <div className="bg-white border border-[#D2DEEA] rounded-[24px] p-5 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
-                <div>
-                  <h3 className="text-base font-extrabold text-[#1A2138]">
+            {/* MANAGE / EDIT / REMOVE EXISTING SCHOLARSHIPS */}
+            <div className="bg-white border border-[#D2DEEA] rounded-[22px] sm:rounded-[24px] p-3.5 sm:p-5 shadow-xs space-y-4 min-w-0 overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#D2DEEA] pb-3">
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
                     Live Posted Scholarships ({filteredAdminScholarships.length})
                   </h3>
-                  <p className="text-xs text-[#4A5568]">
-                    Click Remove on any scholarship to delete it immediately
-                    from the frontend app, or Share directly to WhatsApp.
+                  <p className="text-xs text-[#4A5568] leading-snug">
+                    Edit any posted scholarship details or Apply Link, share to WhatsApp, or remove immediately.
                   </p>
                 </div>
 
@@ -5216,7 +5668,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                         key={c}
                         type="button"
                         onClick={() => setSchFilterCat(c)}
-                        className={`px-3 py-1 rounded-full text-xs font-bold cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
                           schFilterCat === c
                             ? 'bg-[#1673B8] text-white'
                             : 'bg-[#EBF4FC] text-[#1A2138]'
@@ -5235,70 +5687,278 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   publish one!
                 </p>
               ) : (
-                <div className="space-y-2.5">
-                  {filteredAdminScholarships.map((sch) => (
-                    <div
-                      key={sch.id}
-                      className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] flex items-start justify-between gap-3"
-                    >
-                      <div className="flex items-start gap-3 min-w-0">
-                        {sch.flyerImageUrl && (
-                          <img
-                            src={sch.flyerImageUrl}
-                            alt={sch.title}
-                            className="w-12 h-12 rounded-xl object-cover border border-[#D2DEEA] shrink-0"
-                          />
-                        )}
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="px-2.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[10.5px] font-extrabold">
-                              {sch.fundingType}
-                            </span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10.5px] font-bold">
-                              Date: {sch.deadline || todayFormatted}
-                            </span>
-                            {sch.country && (
-                              <span className="text-[11px] font-bold text-[#1673B8]">
-                                • {sch.country}
-                              </span>
+                <div className="space-y-3">
+                  {filteredAdminScholarships.map((sch) => {
+                    const isEditingThis = editingSchId === sch.id;
+                    const hasApplyLink = Boolean(
+                      (sch.applyLink && sch.applyLink !== '#') ||
+                        /(?:https?:\/\/|www\.)[^\s<>'")]+/i.test(
+                          sch.description || ''
+                        )
+                    );
+                    return (
+                      <div
+                        key={sch.id}
+                        className="p-3.5 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] space-y-3 min-w-0"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                            {sch.flyerImageUrl && (
+                              <img
+                                src={sch.flyerImageUrl}
+                                alt={sch.title}
+                                className="w-12 h-12 rounded-xl object-cover border border-[#D2DEEA] shrink-0"
+                              />
                             )}
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded-full bg-[#EBF4FC] border border-[#BBD6EE] text-[#105E9A] text-[10px] font-extrabold">
+                                  {sch.fundingType}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full bg-white border border-[#D2DEEA] text-[#4A5568] text-[10px] font-bold">
+                                  {sch.deadline || todayFormatted}
+                                </span>
+                                {sch.country && (
+                                  <span className="text-[10.5px] font-bold text-[#1673B8]">
+                                    • {sch.country}
+                                  </span>
+                                )}
+                                {hasApplyLink && (
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
+                                    Apply Button ✓
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug break-words">
+                                {sch.title}
+                              </h4>
+                              <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line break-words">
+                                {sch.description}
+                              </p>
+                            </div>
                           </div>
-                          <h4 className="text-sm font-extrabold text-[#1A2138] leading-snug">
-                            {sch.title}
-                          </h4>
-                          <p className="text-xs text-[#4A5568] line-clamp-2 whitespace-pre-line">
-                            {sch.description}
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            shareToWhatsAppGroupOrChannel(
-                              `Scholarship Opportunity: ${sch.title}`,
-                              `${sch.fundingType} (${sch.country || 'International'})\n${(sch.description || '').slice(0, 180)}...`,
-                              '?page=scholarships'
-                            )
-                          }
-                          className="px-3 py-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
-                          title="Share Scholarship to WhatsApp Group / Channel"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteScholarship(sch)}
-                          className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Remove</span>
-                        </button>
+                          <div className="flex flex-wrap items-center gap-1.5 shrink-0 pt-1 sm:pt-0">
+                            {onUpdateScholarship && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  isEditingThis
+                                    ? setEditingSchId(null)
+                                    : startEditingScholarship(sch)
+                                }
+                                className="px-2.5 py-1.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>{isEditingThis ? 'Close' : 'Edit'}</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                shareToWhatsAppGroupOrChannel(
+                                  `Scholarship Opportunity: ${sch.title}`,
+                                  `${sch.fundingType} (${sch.country || 'International'})\n${(sch.description || '').slice(0, 180)}...`,
+                                  '?page=scholarships'
+                                )
+                              }
+                              className="px-2.5 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#1EBE5B] text-white text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              title="Share Scholarship to WhatsApp Group / Channel"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                              <span>WhatsApp</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDeleteScholarship(sch)}
+                              className="px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Remove</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* INLINE ADMIN SCHOLARSHIP EDITOR */}
+                        {isEditingThis && (
+                          <div className="p-3.5 rounded-2xl bg-white border-2 border-[#1673B8] space-y-3">
+                            <div className="flex items-center justify-between gap-2 border-b border-[#D2DEEA] pb-2">
+                              <span className="text-xs font-extrabold text-[#105E9A]">
+                                Edit Posted Scholarship Details &amp; Apply Link
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setEditingSchId(null)}
+                                className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Scholarship Title *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editSchTitle}
+                                  onChange={(e) => setEditSchTitle(e.target.value)}
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  University / Organization
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editSchOrg}
+                                  onChange={(e) => setEditSchOrg(e.target.value)}
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Funding Category
+                                </label>
+                                <select
+                                  value={editSchFunding}
+                                  onChange={(e) =>
+                                    setEditSchFunding(
+                                      e.target.value as
+                                        | 'Fellowships'
+                                        | 'International'
+                                        | 'Grants'
+                                    )
+                                  }
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-bold text-[#1A2138]"
+                                >
+                                  <option value="Fellowships">Fellowships</option>
+                                  <option value="International">International</option>
+                                  <option value="Grants">Grants</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Host Country
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editSchCountry}
+                                  onChange={(e) => setEditSchCountry(e.target.value)}
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Degree Level
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editSchDegree}
+                                  onChange={(e) => setEditSchDegree(e.target.value)}
+                                  placeholder="BS / MS / PhD"
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Deadline Date
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editSchDeadline}
+                                  onChange={(e) => setEditSchDeadline(e.target.value)}
+                                  placeholder="YYYY-MM-DD"
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Admissions Contact Email
+                                </label>
+                                <input
+                                  type="email"
+                                  value={editSchEmail}
+                                  onChange={(e) => setEditSchEmail(e.target.value)}
+                                  placeholder="admissions@university.edu"
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                  Official Apply Link URL (Creates &quot;Apply Now&quot; Button)
+                                </label>
+                                <input
+                                  type="url"
+                                  value={editSchLink}
+                                  onChange={(e) => setEditSchLink(e.target.value)}
+                                  placeholder="https://scholarship-portal.org/apply"
+                                  className="w-full px-3 py-2 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                Full Scholarship Description
+                              </label>
+                              <textarea
+                                rows={4}
+                                value={editSchDesc}
+                                onChange={(e) => setEditSchDesc(e.target.value)}
+                                className="w-full p-3 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-medium text-[#1A2138] leading-relaxed"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-extrabold text-[#1A2138] mb-1">
+                                Eligibility Criteria
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={editSchEligibility}
+                                onChange={(e) => setEditSchEligibility(e.target.value)}
+                                className="w-full p-3 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-medium text-[#1A2138] leading-relaxed"
+                              />
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                              <div className="flex items-center gap-2">
+                                <label className="px-3 py-1.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-[#105E9A] text-xs font-extrabold inline-flex items-center gap-1 cursor-pointer">
+                                  <Upload className="w-3.5 h-3.5" />
+                                  <span>{editSchFlyer ? 'Change Poster Pic' : 'Attach Poster Pic'}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) =>
+                                      void handleEditFlyerUpload(e, 'scholarship')
+                                    }
+                                    className="hidden"
+                                  />
+                                </label>
+                                {editSchFlyer && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditSchFlyer('')}
+                                    className="px-2.5 py-1.5 rounded-xl bg-red-50 text-red-700 text-xs font-bold cursor-pointer"
+                                  >
+                                    Remove Pic
+                                  </button>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                disabled={isSavingSchEdit || !editSchTitle.trim()}
+                                onClick={() => void handleSaveEditedScholarship(sch)}
+                                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Check className="w-4 h-4" />
+                                <span>{isSavingSchEdit ? 'Saving...' : 'Save Scholarship Changes'}</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -8330,89 +8990,52 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
         </div>
       </main>
 
-      {/* CONSTANT BOTTOM FOOTER IN ADMIN CONTROL PANEL */}
-      <footer className="shrink-0 z-40 bg-white border-t border-[#D2DEEA] px-4 py-2 shadow-[0_-6px_24px_rgba(22,115,184,0.08)]">
-        <div className="max-w-5xl mx-auto flex items-center justify-center gap-1.5 text-center">
-          <div className="flex items-center gap-3 text-[11px] font-bold text-[#1A2138]">
-            <button
-              type="button"
-              onClick={() => setActiveTab('overview')}
-              className={`cursor-pointer ${
-                activeTab === 'overview' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
-              }`}
-            >
-              Dashboard
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => setActiveTab('users')}
-              className={`cursor-pointer ${
-                activeTab === 'users' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
-              }`}
-            >
-              Users ({stats.totalUsers})
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => setActiveTab('jobs')}
-              className={`cursor-pointer ${
-                activeTab === 'jobs' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
-              }`}
-            >
-              Jobs ({jobs.length})
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => setActiveTab('scholarships')}
-              className={`cursor-pointer ${
-                activeTab === 'scholarships' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
-              }`}
-            >
-              Scholarships ({scholarships.length})
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => setActiveTab('payments')}
-              className={`cursor-pointer ${
-                activeTab === 'payments' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
-              }`}
-            >
-              Payments
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => setActiveTab('support')}
-              className={`cursor-pointer ${
-                activeTab === 'support' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
-              }`}
-            >
-              Support ({supportTickets.filter((t) => t.status !== 'resolved').length})
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => setActiveTab('social')}
-              className={`cursor-pointer ${
-                activeTab === 'social' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
-              }`}
-            >
-              Social Share
-            </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => setActiveTab('flyer')}
-              className={`cursor-pointer ${
-                activeTab === 'flyer' ? 'text-[#1673B8] underline' : 'text-[#4A5568]'
-              }`}
-            >
-              Launch Flyer
-            </button>
+      {/* CONSTANT BOTTOM FOOTER IN ADMIN CONTROL PANEL (RESPONSIVE HORIZONTAL SCROLL BAR ON MOBILE) */}
+      <footer className="shrink-0 z-40 bg-white border-t border-[#D2DEEA] shadow-[0_-6px_24px_rgba(22,115,184,0.08)]">
+        <div className="max-w-5xl mx-auto overflow-x-auto px-2.5 py-2">
+          <div className="flex items-center justify-start sm:justify-center gap-1.5 w-max mx-auto">
+            {(
+              [
+                { id: 'menu' as AdminSectionTab, label: 'Menu' },
+                { id: 'overview' as AdminSectionTab, label: 'Dashboard' },
+                { id: 'revenue' as AdminSectionTab, label: 'Revenue' },
+                {
+                  id: 'users' as AdminSectionTab,
+                  label: `Users (${stats.totalUsers})`
+                },
+                {
+                  id: 'jobs' as AdminSectionTab,
+                  label: `Jobs (${jobs.length})`
+                },
+                {
+                  id: 'scholarships' as AdminSectionTab,
+                  label: `Scholarships (${scholarships.length})`
+                },
+                { id: 'payments' as AdminSectionTab, label: 'Payments' },
+                {
+                  id: 'support' as AdminSectionTab,
+                  label: `Support (${supportTickets.filter((t) => t.status !== 'resolved').length})`
+                },
+                { id: 'social' as AdminSectionTab, label: 'Social Share' },
+                { id: 'flyer' as AdminSectionTab, label: 'Launch Flyer' }
+              ]
+            ).map((navItem) => {
+              const isActive = activeTab === navItem.id;
+              return (
+                <button
+                  key={navItem.id}
+                  type="button"
+                  onClick={() => setActiveTab(navItem.id)}
+                  className={`whitespace-nowrap shrink-0 px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-colors cursor-pointer ${
+                    isActive
+                      ? 'bg-[#1673B8] text-white shadow-xs'
+                      : 'bg-[#F0F6FC] hover:bg-[#EBF4FC] text-[#1A2138] border border-[#D2DEEA]'
+                  }`}
+                >
+                  {navItem.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </footer>

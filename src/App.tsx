@@ -94,6 +94,7 @@ import {
   HubPaymentRequest,
   HubCertificate,
   CloudStorageConfig,
+  ManualRevenueEntry,
   CustomTrainingItem,
   CustomTrainingRegistration,
   DEFAULT_CUSTOM_TRAININGS,
@@ -467,25 +468,87 @@ const buildSanitizedPublicUser = (fullProfile: HubUser): HubUser => {
   };
 };
 
+const FSP_NAV_STATE_KEY = 'fsp_saved_nav_state_v1';
+
+interface SavedNavSnapshot {
+  route?: RouteView;
+  activeToolSection?: string;
+  activeTrainingsSubTab?:
+    | 'catalog'
+    | 'custom-trainings'
+    | 'my-certificates'
+    | 'verify-portal';
+  adminPreviewUserMode?: boolean;
+  updatedAt?: number;
+}
+
+const hasExplicitDeepLinkQuery = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  return Boolean(
+    params.get('section') ||
+      params.get('tool') ||
+      params.get('verify') ||
+      params.get('cert') ||
+      params.get('tab') ||
+      params.get('page') ||
+      params.get('course') ||
+      params.get('complaintOrg') ||
+      params.get('q') ||
+      params.get('share-target')
+  );
+};
+
+const loadSavedNavSnapshot = (): SavedNavSnapshot | null => {
+  if (typeof window === 'undefined' || hasExplicitDeepLinkQuery()) return null;
+  try {
+    const raw = window.localStorage.getItem(FSP_NAV_STATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedNavSnapshot;
+    if (!parsed || typeof parsed !== 'object') return null;
+    // Keep saved state valid for up to 7 days
+    if (parsed.updatedAt && Date.now() - parsed.updatedAt > 7 * 86400000) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const extractSafeApplyUrl = (
+  ...sources: Array<string | undefined | null>
+): string => {
+  for (const rawSource of sources) {
+    if (!rawSource || typeof rawSource !== 'string') continue;
+    const trimmed = rawSource.trim();
+    if (!trimmed || trimmed === '#') continue;
+    const match = trimmed.match(
+      /(?:https?:\/\/|www\.)[^\s<>'")]+/i
+    );
+    if (!match?.[0]) continue;
+    let candidate = match[0].replace(/[.,;!?)\]]+$/, '');
+    if (/^www\./i.test(candidate)) {
+      candidate = `https://${candidate}`;
+    }
+    try {
+      const parsed = new URL(candidate);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return parsed.href;
+      }
+    } catch {
+      // Ignore malformed URLs
+    }
+  }
+  return '';
+};
+
 export default function App() {
-  // 2.2-second (2200ms) Startup / Reload / Logout Splash Screen with FS Portal Logo
-  const [showSplashLogo, setShowSplashLogo] = useState<boolean>(true);
-
-  useEffect(() => {
-    if (!showSplashLogo) return;
-    const splashTimer = setTimeout(() => {
-      setShowSplashLogo(false);
-    }, 2200);
-    return () => clearTimeout(splashTimer);
-  }, [showSplashLogo]);
-
-  // Firebase Authentication State (Persisted across tab switches & reloads)
+  // Firebase Authentication State (Persisted across tab switches & reloads — render immediately without splash blocker)
   const [authUser, setAuthUser] = useState<User | null>(
     () => auth.currentUser || loadPersistedAuthUser()
   );
-  const [authLoading, setAuthLoading] = useState<boolean>(
-    () => !(auth.currentUser || loadPersistedAuthUser())
-  );
+  const [, setAuthLoading] = useState<boolean>(false);
 
   const [showGuestAuthModal, setShowGuestAuthModal] = useState<boolean>(false);
   const [showShareTargetModal, setShowShareTargetModal] =
@@ -519,12 +582,16 @@ export default function App() {
       if (tabParam === 'my-certificates') {
         return 'my-certificates';
       }
+      const saved = loadSavedNavSnapshot();
+      if (saved?.activeTrainingsSubTab) {
+        return saved.activeTrainingsSubTab;
+      }
     }
     return 'catalog';
   });
   const [trainingsNavKey, setTrainingsNavKey] = useState<number>(0);
 
-  // Navigation & Route Stack (supports SEO query parameters: ?section=tools&tool=..., ?section=trainings&course=..., ?verify=...)
+  // Navigation & Route Stack (supports SEO query parameters & restores last active screen on app reopen)
   const [route, setRoute] = useState<RouteView>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -568,6 +635,14 @@ export default function App() {
       if (section === 'scholarships') return { name: 'scholarships' };
       if (section === 'communities') return { name: 'communities' };
       if (section === 'search' || params.get('q')) return { name: 'search' };
+
+      const saved = loadSavedNavSnapshot();
+      if (saved?.route && typeof saved.route.name === 'string') {
+        const hasAuth = Boolean(auth.currentUser || loadPersistedAuthUser());
+        if (saved.route.name !== 'profile' || hasAuth) {
+          return saved.route;
+        }
+      }
     }
     return { name: 'home' };
   });
@@ -617,11 +692,14 @@ export default function App() {
   );
   const [savedScholarshipIds, setSavedScholarshipIds] = useState<string[]>([]);
 
-  // Active Tool Section inside ToolsHubView (initialized from ?tool= URL param for SEO deep-linking)
+  // Active Tool Section inside ToolsHubView (initialized from ?tool= URL param or restored from last session)
   const [activeToolSection, setActiveToolSection] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      return params.get('tool') || 'hub';
+      const urlTool = params.get('tool');
+      if (urlTool) return urlTool;
+      const saved = loadSavedNavSnapshot();
+      if (saved?.activeToolSection) return saved.activeToolSection;
     }
     return 'hub';
   });
@@ -718,7 +796,7 @@ export default function App() {
     useState<AdminDispatchConfirmationPayload | null>(null);
   const knownJobIdsRef = useRef<Set<string> | null>(null);
   const knownScholarshipIdsRef = useRef<Set<string> | null>(null);
-  // When Admin logs in, land directly in the dedicated Admin Control Panel unless opening a ?verify= QR certificate link
+  // When Admin logs in, land in the last active mode (Admin Control Panel or User App Preview)
   const [adminPreviewUserMode, setAdminPreviewUserMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -733,9 +811,78 @@ export default function App() {
       ) {
         return true;
       }
+      const saved = loadSavedNavSnapshot();
+      if (typeof saved?.adminPreviewUserMode === 'boolean') {
+        return saved.adminPreviewUserMode;
+      }
     }
     return false;
   });
+
+  // Persist active navigation state & sync lightweight History stack so mobile Back & app switching resume seamlessly
+  const isPoppingHistoryRef = useRef<boolean>(false);
+  const hasSeededHistoryRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const snapshot: SavedNavSnapshot = {
+        route,
+        activeToolSection,
+        activeTrainingsSubTab,
+        adminPreviewUserMode,
+        updatedAt: Date.now()
+      };
+      window.localStorage.setItem(FSP_NAV_STATE_KEY, JSON.stringify(snapshot));
+    } catch {
+      // Ignore storage quota / private mode errors
+    }
+
+    if (isPoppingHistoryRef.current) {
+      isPoppingHistoryRef.current = false;
+      return;
+    }
+
+    const statePayload = {
+      fspNav: true,
+      route,
+      activeToolSection,
+      activeTrainingsSubTab,
+      adminPreviewUserMode
+    };
+    try {
+      if (!hasSeededHistoryRef.current) {
+        hasSeededHistoryRef.current = true;
+        window.history.replaceState(statePayload, '');
+      } else {
+        window.history.pushState(statePayload, '');
+      }
+    } catch {
+      // Ignore restricted history API environments
+    }
+  }, [route, activeToolSection, activeTrainingsSubTab, adminPreviewUserMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = (event: PopStateEvent) => {
+      const st = event.state;
+      if (st && st.fspNav && st.route) {
+        isPoppingHistoryRef.current = true;
+        setRoute(st.route as RouteView);
+        if (typeof st.activeToolSection === 'string') {
+          setActiveToolSection(st.activeToolSection);
+        }
+        if (st.activeTrainingsSubTab) {
+          setActiveTrainingsSubTab(st.activeTrainingsSubTab);
+        }
+        if (typeof st.adminPreviewUserMode === 'boolean') {
+          setAdminPreviewUserMode(st.adminPreviewUserMode);
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Admin Quick Add Job / Scholarship State
   const [adminOppType, setAdminOppType] = useState<'job' | 'scholarship'>(
@@ -1019,9 +1166,12 @@ export default function App() {
   const [legalModalTab, setLegalModalTab] = useState<LegalTabType | null>(null);
 
   const handleSignOut = async () => {
-    setShowSplashLogo(true);
     clearPersistedAuthUser();
     setAuthUser(null);
+    try {
+      window.localStorage.removeItem(FSP_NAV_STATE_KEY);
+      window.localStorage.removeItem('fsp_admin_active_tab');
+    } catch {}
     try {
       await signOut(auth);
       setRoute({ name: 'home' });
@@ -3703,7 +3853,7 @@ export default function App() {
         /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
       )?.[0] || '';
     const detectedLink =
-      cleanText.match(/https?:\/\/[^\s)]+/)?.[0]?.slice(0, 480) || '#';
+      extractSafeApplyUrl(cleanText).slice(0, 480) || '#';
 
     const todayStr = new Date().toISOString().slice(0, 10);
     const id = `job-${Date.now()}`;
@@ -3742,6 +3892,61 @@ export default function App() {
       console.error('Failed to publish job:', err);
       setAdminStatusBanner(
         'Error publishing job to Firestore. Verify admin login & image size, then retry.'
+      );
+    }
+  };
+
+  const handleUpdateJob = async (updatedJob: HubJob) => {
+    const safeLink =
+      extractSafeApplyUrl(
+        updatedJob.applyLink,
+        updatedJob.description,
+        updatedJob.requirements
+      ).slice(0, 480) || '#';
+    const cleanJob: HubJob = stripUndefinedDeep({
+      ...updatedJob,
+      id: updatedJob.id,
+      title: (updatedJob.title || 'Food Specialist Opportunity')
+        .trim()
+        .slice(0, 180),
+      company: (updatedJob.company || 'Verified Food Industry Employer')
+        .trim()
+        .slice(0, 180),
+      location: (updatedJob.location || updatedJob.country || 'Pakistan')
+        .trim()
+        .slice(0, 180),
+      country: (updatedJob.country || 'Pakistan').trim().slice(0, 100),
+      category: (updatedJob.category || updatedJob.specialization || 'Quality & Safety')
+        .trim()
+        .slice(0, 80),
+      specialization: (updatedJob.category || updatedJob.specialization || 'Quality & Safety')
+        .trim()
+        .slice(0, 80),
+      experienceRequired: (updatedJob.experienceRequired || 'See Job Post')
+        .trim()
+        .slice(0, 100),
+      description: (updatedJob.description || '').trim().slice(0, 7800),
+      requirements: (updatedJob.requirements || '').trim().slice(0, 7800),
+      hrEmail: (updatedJob.hrEmail || '').trim().slice(0, 190),
+      applyLink: safeLink,
+      expiryAt: (updatedJob.expiryAt || '2026-12-31').trim().slice(0, 60),
+      isActive: updatedJob.isActive !== false,
+      ...(updatedJob.flyerImageUrl
+        ? { flyerImageUrl: updatedJob.flyerImageUrl.slice(0, 449000) }
+        : { flyerImageUrl: '' })
+    });
+
+    try {
+      await setDoc(doc(db, 'jobs', cleanJob.id), cleanJob, { merge: true });
+      setJobs((prev) =>
+        prev.map((j) => (j.id === cleanJob.id ? cleanJob : j))
+      );
+      setAdminStatusBanner(`Updated job "${cleanJob.title}" — Live on app now!`);
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch (err) {
+      console.error('Failed to update job:', err);
+      setAdminStatusBanner(
+        'Could not update job in Firestore. Verify admin login & image size, then retry.'
       );
     }
   };
@@ -3819,7 +4024,7 @@ export default function App() {
         /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
       )?.[0] || '';
     const detectedLink =
-      cleanText.match(/https?:\/\/[^\s)]+/)?.[0]?.slice(0, 480) || '#';
+      extractSafeApplyUrl(cleanText).slice(0, 480) || '#';
 
     const todayStr = new Date().toISOString().slice(0, 10);
     const id = `sch-${Date.now()}`;
@@ -3945,11 +4150,66 @@ export default function App() {
     return { id, section: 'job' };
   };
 
+  const handleUpdateScholarship = async (updatedSch: HubScholarship) => {
+    const safeLink =
+      extractSafeApplyUrl(
+        updatedSch.applyLink,
+        updatedSch.description,
+        updatedSch.eligibility
+      ).slice(0, 480) || '#';
+    const cleanSch: HubScholarship = stripUndefinedDeep({
+      ...updatedSch,
+      id: updatedSch.id,
+      title: (updatedSch.title || 'Food Science & Technology Scholarship')
+        .trim()
+        .slice(0, 220),
+      organization: (
+        updatedSch.organization || 'Global Food Science Scholarship'
+      )
+        .trim()
+        .slice(0, 220),
+      country: (updatedSch.country || 'International').trim().slice(0, 100),
+      fundingType: updatedSch.fundingType || 'International',
+      degreeLevel: (updatedSch.degreeLevel || 'BS / MS / PhD')
+        .trim()
+        .slice(0, 100),
+      deadline: (updatedSch.deadline || new Date().toISOString().slice(0, 10))
+        .trim()
+        .slice(0, 60),
+      description: (updatedSch.description || '').trim().slice(0, 7800),
+      eligibility: (updatedSch.eligibility || '').trim().slice(0, 7800),
+      hrEmail: (updatedSch.hrEmail || '').trim().slice(0, 190),
+      applyLink: safeLink,
+      isActive: updatedSch.isActive !== false,
+      ...(updatedSch.flyerImageUrl
+        ? { flyerImageUrl: updatedSch.flyerImageUrl.slice(0, 449000) }
+        : { flyerImageUrl: '' })
+    });
+
+    try {
+      await setDoc(doc(db, 'scholarships', cleanSch.id), cleanSch, {
+        merge: true
+      });
+      setScholarships((prev) =>
+        prev.map((s) => (s.id === cleanSch.id ? cleanSch : s))
+      );
+      setAdminStatusBanner(
+        `Updated scholarship "${cleanSch.title}" — Live on app now!`
+      );
+      setTimeout(() => setAdminStatusBanner(null), 4000);
+    } catch (err) {
+      console.error('Failed to update scholarship:', err);
+      setAdminStatusBanner(
+        'Could not update scholarship in Firestore. Verify admin login & retry.'
+      );
+    }
+  };
+
   const handleDeleteScholarship = async (sch: HubScholarship) => {
     try {
       await setDoc(
         doc(db, 'scholarships', sch.id),
-        { ...sch, isActive: false },
+        stripUndefinedDeep({ ...sch, isActive: false }),
         { merge: true }
       );
       setScholarships((prev) => prev.filter((s) => s.id !== sch.id));
@@ -4235,6 +4495,44 @@ export default function App() {
     }
   };
 
+  const handleSaveManualRevenueEntries = async (
+    nextEntries: ManualRevenueEntry[]
+  ) => {
+    const cleanEntries = nextEntries.slice(0, 500).map((entry) =>
+      stripUndefinedDeep({
+        ...entry,
+        id: (entry.id || `rev-manual-${Date.now()}`).slice(0, 120),
+        userName: (entry.userName || 'Member').trim().slice(0, 160),
+        userEmail: (entry.userEmail || '').trim().slice(0, 180),
+        userPhone: (entry.userPhone || '').trim().slice(0, 60),
+        itemTitle: (entry.itemTitle || 'Payment Record').trim().slice(0, 220),
+        amountRs: Math.max(0, Number(entry.amountRs) || 0),
+        paymentMethod: (entry.paymentMethod || 'Direct Transfer')
+          .trim()
+          .slice(0, 120),
+        transactionId: (entry.transactionId || 'DIRECT').trim().slice(0, 120),
+        recordedAt: (entry.recordedAt || new Date().toISOString()).slice(0, 64)
+      })
+    );
+    const updatedCfg: CloudStorageConfig = stripUndefinedDeep({
+      ...storageConfig,
+      provider:
+        storageConfig.provider === 'smart-firestore'
+          ? ('smart-firestore' as const)
+          : ('cloudinary' as const),
+      manualRevenueEntries: cleanEntries,
+      updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
+    });
+    setStorageConfig(updatedCfg);
+    try {
+      await setDoc(doc(db, 'settings', 'storageConfig'), updatedCfg, {
+        merge: true
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'settings/storageConfig');
+    }
+  };
+
   const handleSaveCustomTrainingsList = async (
     nextList: CustomTrainingItem[]
   ) => {
@@ -4468,57 +4766,7 @@ export default function App() {
 
   const userInitial = firstName.charAt(0).toUpperCase() || 'G';
 
-  // 0. 2.2-Second Startup / Reload / Logout Splash Screen with Food Science Portal Logo
-  if (showSplashLogo) {
-    return (
-      <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-fade-in">
-        <div className="flex flex-col items-center gap-4 text-center max-w-md">
-          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white p-1.5 shadow-[0_12px_40px_rgba(26,33,56,0.12)] border border-[#D2DEEA] flex items-center justify-center overflow-hidden">
-            <img
-              src={FS_PORTAL_LOGO_DATA_URI}
-              alt="Food Science Portal"
-              className="w-full h-full object-contain select-none"
-            />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-black text-[#0C182D] tracking-tight">
-              Food Science <span className="text-[#1673B8]">Portal</span>
-            </h1>
-            <p className="text-xs sm:text-sm font-bold text-[#1673B8] leading-relaxed px-2">
-              The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 1. While checking Firebase Auth state on page load, show a clean loading screen
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#F0F6FC] flex flex-col items-center justify-center p-4">
-        <div className="bg-white border-[1.5px] border-[#BBD6EE] rounded-[28px] px-8 py-7 shadow-lg flex flex-col items-center gap-3 text-center max-w-sm w-full">
-          <div className="w-24 h-24 rounded-2xl bg-white p-1 border border-[#D2DEEA] shadow-xs flex items-center justify-center overflow-hidden">
-            <img
-              src={FS_PORTAL_LOGO_DATA_URI}
-              alt="Food Science Portal"
-              className="w-full h-full object-contain select-none"
-            />
-          </div>
-          <h2 className="text-base font-black text-[#0C182D]">
-            Food Science <span className="text-[#1673B8]">Portal</span>
-          </h2>
-          <p className="text-xs font-bold text-[#1673B8] leading-relaxed">
-            The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Public SEO Mode & Instant QR Certificate Verification:
-  // 2. Public Website Mode:
-  // Unauthenticated visitors and Googlebot can browse Home, Tools, Trainings, Certificate Verification (?verify=), Jobs, Scholarships & Communities publicly.
+  // Public Website Mode: Render immediately without splash or auth blocking screen.
   // AuthScreen is shown only when the user clicks Sign In / Profile or attempts a Paid/Registration-required action.
   if (!authUser) {
     if (showGuestAuthModal || route.name === 'profile') {
@@ -4563,8 +4811,10 @@ export default function App() {
           onDeleteUser={handleDeleteUser}
           onAdminSaveCommunityUser={handleAdminSaveCommunityUser}
           onQuickPasteJob={handleQuickPasteJob}
+          onUpdateJob={handleUpdateJob}
           onDeleteJob={handleDeleteJob}
           onQuickPasteScholarship={handleQuickPasteScholarship}
+          onUpdateScholarship={handleUpdateScholarship}
           onDeleteScholarship={handleDeleteScholarship}
           onOpenShareFlyerModal={(sec) => {
             setShareTargetInitialSection(sec);
@@ -4578,6 +4828,7 @@ export default function App() {
           onDeleteCertificate={handleDeleteDirectCertificate}
           onChangeStorageConfig={setStorageConfig}
           onSaveStorageConfig={handleSaveStorageConfig}
+          onSaveManualRevenueEntries={handleSaveManualRevenueEntries}
           onSaveCustomTrainingsList={handleSaveCustomTrainingsList}
           customTrainingRegistrations={customTrainingRegistrations}
           onUpdateCustomTrainingRegistrationStatus={
@@ -5812,10 +6063,11 @@ export default function App() {
                 )?.[0] ||
                 '';
 
-              const detectedLink =
-                job.applyLink && !job.applyLink.includes('#')
-                  ? job.applyLink
-                  : job.description?.match(/https?:\/\/[^\s]+/)?.[0] || '';
+              const detectedLink = extractSafeApplyUrl(
+                job.applyLink,
+                job.description,
+                job.requirements
+              );
 
               const emailSubject =
                 job.emailSubject || `Application for ${job.title} — ${job.company}`;
@@ -5978,11 +6230,32 @@ export default function App() {
                       </p>
                     </div>
 
-                    {/* Contact Details Box */}
-                    {(detectedEmail || detectedPhone) && (
+                    {/* Contact Details & Official Apply Link Box */}
+                    {(detectedEmail || detectedPhone || detectedLink) && (
                       <div className="bg-white rounded-2xl p-3 border border-[#D2DEEA] space-y-2 text-xs">
-                        {detectedEmail && (
+                        {detectedLink && (
                           <div>
+                            <span className="text-[11px] font-bold uppercase text-gray-400 block">
+                              Official Online Application Link
+                            </span>
+                            <a
+                              href={detectedLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-extrabold text-[#1673B8] hover:underline break-all text-[13px] inline-flex items-center gap-1"
+                            >
+                              <span>{detectedLink}</span>
+                              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                            </a>
+                          </div>
+                        )}
+
+                        {detectedEmail && (
+                          <div
+                            className={
+                              detectedLink ? 'border-t border-[#D2DEEA] pt-2' : ''
+                            }
+                          >
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
                               Employer HR Contact Email
                             </span>
@@ -5995,7 +6268,9 @@ export default function App() {
                         {detectedPhone && (
                           <div
                             className={
-                              detectedEmail ? 'border-t border-[#D2DEEA] pt-2' : ''
+                              detectedEmail || detectedLink
+                                ? 'border-t border-[#D2DEEA] pt-2'
+                                : ''
                             }
                           >
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
@@ -6022,6 +6297,18 @@ export default function App() {
 
                     {/* Dynamic Action Buttons */}
                     <div className="space-y-2 pt-1">
+                      {detectedLink && (
+                        <a
+                          href={detectedLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+                        >
+                          <ExternalLink className="w-4 h-4 stroke-[2.5] shrink-0" />
+                          <span>Apply Now (Open Official Application Link)</span>
+                        </a>
+                      )}
+
                       {detectedEmail && (
                         <button
                           type="button"
@@ -6353,10 +6640,11 @@ export default function App() {
                 )?.[0] ||
                 '';
 
-              const detectedLink =
-                sch.applyLink && !sch.applyLink.includes('#')
-                  ? sch.applyLink
-                  : sch.description?.match(/https?:\/\/[^\s]+/)?.[0] || '';
+              const detectedLink = extractSafeApplyUrl(
+                sch.applyLink,
+                sch.description,
+                sch.eligibility
+              );
 
               const emailSubject =
                 sch.emailSubject ||
@@ -6507,11 +6795,32 @@ export default function App() {
                       </p>
                     </div>
 
-                    {/* Contact & Email Details Box */}
-                    {(detectedEmail || detectedPhone) && (
+                    {/* Contact & Official Apply Link Details Box */}
+                    {(detectedEmail || detectedPhone || detectedLink) && (
                       <div className="bg-white rounded-2xl p-3 border border-[#D2DEEA] space-y-2 text-xs">
-                        {detectedEmail && (
+                        {detectedLink && (
                           <div>
+                            <span className="text-[11px] font-bold uppercase text-gray-400 block">
+                              Official Scholarship Application Portal
+                            </span>
+                            <a
+                              href={detectedLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-extrabold text-[#1673B8] hover:underline break-all text-[13px] inline-flex items-center gap-1"
+                            >
+                              <span>{detectedLink}</span>
+                              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                            </a>
+                          </div>
+                        )}
+
+                        {detectedEmail && (
+                          <div
+                            className={
+                              detectedLink ? 'border-t border-[#D2DEEA] pt-2' : ''
+                            }
+                          >
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
                               Admissions / Coordinator Email
                             </span>
@@ -6524,7 +6833,9 @@ export default function App() {
                         {detectedPhone && (
                           <div
                             className={
-                              detectedEmail ? 'border-t border-[#D2DEEA] pt-2' : ''
+                              detectedEmail || detectedLink
+                                ? 'border-t border-[#D2DEEA] pt-2'
+                                : ''
                             }
                           >
                             <span className="text-[11px] font-bold uppercase text-gray-400 block">
@@ -6551,6 +6862,18 @@ export default function App() {
 
                     {/* Dynamic Action Buttons */}
                     <div className="space-y-2 pt-1">
+                      {detectedLink && (
+                        <a
+                          href={detectedLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+                        >
+                          <ExternalLink className="w-4 h-4 stroke-[2.5] shrink-0" />
+                          <span>Apply Now (Open Official Scholarship Link)</span>
+                        </a>
+                      )}
+
                       {detectedEmail && (
                         <button
                           type="button"

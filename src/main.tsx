@@ -2,7 +2,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-const APP_BUILD_VERSION = 'fsp-2026-11-18-v7';
+const APP_BUILD_VERSION = 'fsp-2026-11-18-v8';
 
 declare global {
   interface Window {

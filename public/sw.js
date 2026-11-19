@@ -1,4 +1,4 @@
-const CACHE_NAME = 'food-science-portal-v20261118-v7';
+const CACHE_NAME = 'food-science-portal-v20261118-v8';
 const CORE_SHELL_URLS = ['./', './index.html', './manifest.json'];
 const SHARE_TARGET_DB_NAME = 'fsp_share_target_db';
 const SHARE_TARGET_STORE_NAME = 'shared_items';
@@ -184,25 +184,64 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const cloned = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, cloned).catch(() => {});
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() =>
-        caches.match(event.request).then((cached) => {
-          if (cached) return cached;
-          if (event.request.mode === 'navigate') {
-            return caches.match('./index.html') || caches.match('./');
+  // Cache-First for immutable hashed bundles & static icons/images/fonts for instant launch
+  const isStaticAsset =
+    url.pathname.startsWith('/assets/') ||
+    /\.(?:js|css|png|jpg|jpeg|webp|svg|ico|woff2?|ttf)$/i.test(url.pathname);
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const cloned = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, cloned).catch(() => {});
+            });
           }
-          return Response.error();
+          return networkResponse;
+        });
+      })
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for HTML navigations & manifest so installed PWA opens immediately while refreshing in background
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('/index.html')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) =>
+        cache.match('./index.html').then((cachedHtml) => {
+          const networkPromise = fetch(event.request)
+            .then((networkResponse) => {
+              if (networkResponse && networkResponse.status === 200) {
+                cache.put('./index.html', networkResponse.clone()).catch(() => {});
+              }
+              return networkResponse;
+            })
+            .catch(() => cachedHtml || cache.match('./') || Response.error());
+          return cachedHtml || networkPromise;
         })
       )
+    );
+    return;
+  }
+
+  // Default: Stale-While-Revalidate for other same-origin GETs
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const cloned = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, cloned).catch(() => {});
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => cached || Response.error());
+      return cached || fetchPromise;
+    })
   );
 });
