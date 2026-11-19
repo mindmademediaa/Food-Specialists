@@ -1,8 +1,9 @@
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
+import {AppLaunchSplash} from './components/AppLaunchSplash';
 import './index.css';
 
-const APP_BUILD_VERSION = 'fsp-2026-11-18-v8';
+const APP_BUILD_VERSION = 'fsp-2026-11-19-v13';
 
 declare global {
   interface Window {
@@ -62,4 +63,9 @@ if (typeof window !== 'undefined') {
   }
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(
+  <>
+    <AppLaunchSplash />
+    <App />
+  </>
+);
