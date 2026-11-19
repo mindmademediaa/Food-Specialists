@@ -4,937 +4,7 @@ import {
   InternationalTrainingCourse
 } from './internationalTrainingsData';
 
-export const MANAGER_FOOD_DIETARY_MODULES: CourseStudyModule[] = [
-  // =========================================================================
-  // MODULE 1: ROLE OF CERTIFIED DIETARY MANAGER, KITCHEN SETUP & STAFF MANAGEMENT
-  // =========================================================================
-  {
-    id: 'mfd-mod-1',
-    moduleNumber: 1,
-    title: 'Role of Certified Dietary Manager, Kitchen Layout & Staff Management',
-    estimatedMinutes: 45,
-    overview:
-      'Simple, step-by-step presentation on what a Certified Dietary Manager does every day, how to organize a hospital or institutional kitchen, how one-way kitchen flow works, and how to manage kitchen and service staff.',
-    internationalClauses: [
-      'Hospital & Institutional Dietary Department Standard Operating Procedures',
-      'Basic Food Safety & Hygiene Principles (Codex / ISO 22000)'
-    ],
-    keyPrinciples: [
-      'The Certified Dietary Manager oversees all daily food operations: planning menus, ordering supplies, supervising cooking, checking patient diet trays, and maintaining kitchen cleanliness.',
-      'A safe kitchen follows a "One-Way Flow" (Receiving → Storage → Preparation → Cooking → Tray Assembly → Dispatch) so raw food never touches cooked food.',
-      'The Certified Dietary Manager works closely with Clinical Dietitians (who prescribe special patient diets) and Ward Nurses (who update patient admissions, discharges, and NPO status).',
-      'Proper staff management includes shift scheduling, daily uniform/hygiene checks, annual medical fitness certificates, and keeping sick staff away from food handling.'
-    ],
-    criticalControlParameters: [
-      {
-        parameter: 'One-Way Kitchen Flow (Dirty to Clean Separation)',
-        standardLimit: 'Raw food, cooked food, and dirty dishes must never cross paths',
-        correctiveProtocol: 'Separate raw prep tables from cooked tray assembly and use dedicated trolleys.'
-      },
-      {
-        parameter: 'Staff Illness & Fitness to Work Rule',
-        standardLimit: 'Zero staff with vomiting, diarrhea, fever, or open skin cuts allowed in kitchen',
-        correctiveProtocol: 'Send sick food handlers on medical leave and allow return only after 48 hours symptom-free.'
-      }
-    ],
-    practicalChecklist: [
-      'Conduct a 10-minute morning briefing with chefs, diet aides, and servers before breakfast service.',
-      'Check staff uniforms, hairnets, clean aprons, trimmed nails, and handwashing before work starts.',
-      'Coordinate with Ward Nurses and Clinical Dietitians for new patient admissions and diet changes.'
-    ],
-    presentationSlides: [
-      {
-        slideNumber: 1,
-        title: 'Who is a Certified Dietary Manager?',
-        subtitle: 'Understanding Your Core Role & Daily Responsibilities',
-        bulletPoints: [
-          'The Certified Dietary Manager is the head of the food and nutrition service department in a hospital, clinic, university, corporate facility, or catering unit.',
-          'Your main goal is to serve safe, nutritious, hot, and tasty meals on time to patients, staff, and visitors.',
-          'You manage two sides of the department: (1) Kitchen Production & Service, and (2) Clinical Patient Tray Accuracy.',
-          'You control the department budget, food purchasing, store inventory, kitchen hygiene, and staff duty rosters.'
-        ],
-        keyTakeaway:
-          'A successful Certified Dietary Manager ensures the right meal reaches the right person, at the right temperature, at the right time, every single day.',
-        practicalExample:
-          'In a 200-bed hospital, you oversee breakfast, lunch, evening tea, and dinner for patients as well as the staff cafeteria.'
-      },
-      {
-        slideNumber: 2,
-        title: 'Department Structure & Key Team Members',
-        subtitle: 'How the Dietary Team Works Together',
-        bulletPoints: [
-          'Certified Dietary Manager: Overall head responsible for operations, quality, budget, and compliance.',
-          'Clinical Dietitians / Nutritionists: Assess patients and prescribe therapeutic diets (Diabetic, Renal, Low-Salt, Soft/Pureed).',
-          'Executive Chef & Cooks: Prepare regular meals and therapeutic patient meals according to standardized recipes.',
-          'Diet Aides & Tray Line Servers: Assemble patient trays using printed diet tickets and deliver meals to wards.',
-          'Storekeeper & Stewards (Dishwashers): Manage raw material stock and keep kitchen equipment and dishes clean.'
-        ],
-        keyTakeaway:
-          'The Dietitian decides WHAT diet a patient needs; the Certified Dietary Manager ensures it is COOKED and DELIVERED accurately.'
-      },
-      {
-        slideNumber: 3,
-        title: 'Coordination with Doctors, Dietitians & Ward Nurses',
-        subtitle: 'Preventing Diet Errors Through Clear Communication',
-        bulletPoints: [
-          'Before every meal (Breakfast, Lunch, Dinner), the dietary office receives an updated Diet Sheet / Ward Census from nursing stations.',
-          'New Admissions & Discharges: Update the meal count immediately so no patient is missed and no extra food is wasted.',
-          'Diet Changes: If a doctor changes a patient from "Regular Diet" to "NPO (Nil Per Os / Nothing by Mouth)" for surgery, remove their tray immediately.',
-          'Hold Trays: If a patient is away for X-ray or dialysis, hold their meal safely and serve a fresh hot tray when they return.'
-        ],
-        keyTakeaway:
-          'Always verify the updated Ward Diet Sheet before starting the patient tray assembly line.'
-      },
-      {
-        slideNumber: 4,
-        title: 'Main Sections of a Food & Dietary Kitchen',
-        subtitle: 'How a Professional Kitchen is Divided into Zones',
-        bulletPoints: [
-          '1. Receiving Area: Where daily vegetables, meat, dairy, and dry groceries are weighed and checked.',
-          '2. Storage Area: Divided into Dry Store, Chiller Room (+1°C to +4°C), and Freezer (-18°C).',
-          '3. Pre-Preparation Area: Separate sinks and tables for washing vegetables and cutting raw meat/poultry.',
-          '4. Hot Cooking Section: Stoves, ovens, steamers, and soup kettles for regular and diet cooking.',
-          '5. Tray Assembly & Dispatch Area: Clean zone where patient trays are plated, checked, and loaded into meal carts.',
-          '6. Dishwashing (Scullery) & Waste Area: Separate return zone for washing dirty trays and disposing of waste.'
-        ],
-        keyTakeaway:
-          'Never mix raw meat preparation, clean patient tray assembly, and dirty dishwashing in the same space.'
-      },
-      {
-        slideNumber: 5,
-        title: 'The "One-Way Flow" Rule in the Kitchen',
-        subtitle: 'Stopping Cross-Contamination by Design',
-        bulletPoints: [
-          'Food should move in ONE forward direction only: From Receiving → Store → Prep → Cooking → Serving → Dispatch.',
-          'This is called the "One-Way Flow" or "Dirty-to-Clean Flow".',
-          'Raw food and unwashed vegetables must never pass through the area where cooked meals and salads are plated.',
-          'Dirty plates and leftover trays returning from hospital wards must enter directly into the Dishwashing Area through a separate return door or window.'
-        ],
-        keyTakeaway:
-          'One-Way Flow means raw food moves forward into cooked food, and dirty dishes never cross the clean food path.'
-      },
-      {
-        slideNumber: 6,
-        title: 'Kitchen Lighting, Ventilation & Floor Standards',
-        subtitle: 'Basic Facility Requirements Every Manager Must Check',
-        bulletPoints: [
-          'Floors & Walls: Must be smooth, non-slip, washable tiles or epoxy with rounded corners and covered floor drains.',
-          'Ventilation & Exhaust Hoods: Cooking stoves must have working exhaust hoods with grease filters cleaned weekly to remove heat, smoke, and steam.',
-          'Lighting: Bright, clear lighting (especially over food prep and tray-checking tables) with shatterproof covers over all bulbs/tubes.',
-          'Handwashing Stations: Dedicated handwash basins at the kitchen entrance and inside prep areas—stocked with liquid soap, warm water, and paper towels.'
-        ],
-        keyTakeaway:
-          'A well-lit, well-ventilated kitchen with dry, non-slip floors prevents both food contamination and staff accidents.'
-      },
-      {
-        slideNumber: 7,
-        title: 'Staff Shift Scheduling & Duty Rosters',
-        subtitle: 'Managing 7-Day Kitchen Operations Smoothly',
-        bulletPoints: [
-          'Hospital and institutional kitchens operate 365 days a year, from early morning (5:30 AM) until night (9:30 PM).',
-          'Divide staff into clear shifts: Morning Shift (Breakfast & Lunch prep), Afternoon Shift (Lunch service & Dinner cooking), and Relief/Off-Day Staff.',
-          'Because the kitchen runs 7 days a week while each worker works 5 or 6 days, always keep trained relief staff (~1.4 staff per daily position) to cover weekly offs and sick leave.',
-          'Post the weekly duty roster clearly on the notice board at least 3 days in advance.'
-        ],
-        keyTakeaway:
-          'Cross-train your cooks and diet aides so that if one person is absent, another trained team member can cover the station smoothly.'
-      },
-      {
-        slideNumber: 8,
-        title: 'Staff Personal Hygiene & Uniform Standards',
-        subtitle: 'Daily Grooming Rules for All Food Handlers',
-        bulletPoints: [
-          'Clean Uniform: Every staff member must wear a clean kitchen uniform, apron, non-slip closed shoes, and a hairnet/cap that covers 100% of hair (plus beard cover if applicable).',
-          'Nails & Jewelry: Fingernails must be short, clean, and unvarnished. Wristwatches, rings, bracelets, and dangling earrings are strictly prohibited in food areas.',
-          'Handwashing Rule: Wash hands for 20 seconds with soap and warm water before starting work, after touching raw meat, after using the washroom, and after touching face or bins.',
-          'Glove Use: Disposable gloves must be changed between tasks; wearing gloves never replaces proper handwashing.'
-        ],
-        keyTakeaway:
-          'Inspect staff hands, nails, hairnets, and uniforms every morning before they touch any food or utensil.'
-      },
-      {
-        slideNumber: 9,
-        title: 'Staff Medical Fitness & Illness Reporting',
-        subtitle: 'Protecting Patients & Diners from Foodborne Infections',
-        bulletPoints: [
-          'Every kitchen employee must have a valid Pre-Employment and Annual Medical Fitness Certificate (including Typhoid vaccination, Hepatitis A screening, and stool/blood check).',
-          'Mandatory Illness Reporting: Staff must immediately inform the Manager if they have diarrhea, vomiting, fever, jaundice, sore throat, or infected cuts/boils on hands.',
-          '48-Hour Exclusion Rule: Any staff member with vomiting or diarrhea must be removed from food handling immediately and may only return after being 100% symptom-free for at least 48 hours.',
-          'Small Cuts: Any minor clean cut on a finger must be covered with a bright Blue Waterproof Detectable Bandage AND a disposable glove.'
-        ],
-        keyTakeaway:
-          'Never allow a sick cook or server with vomiting or diarrhea to work in the kitchen—keep them off food duty until 48 hours symptom-free.'
-      },
-      {
-        slideNumber: 10,
-        title: 'The Manager’s Daily Morning Routine',
-        subtitle: 'Your 5-Step Daily Success Habits',
-        bulletPoints: [
-          'Step 1 (Morning Walk-Around): Check chiller/freezer temperatures, kitchen cleanliness, and receiving dock readiness.',
-          'Step 2 (Staff Briefing — 10 Mins): Check attendance, uniforms, today’s menu, patient count, and VIP/special functions.',
-          'Step 3 (Clinical Diet Check): Review special diet counts (Diabetic, Renal, Soft, NPO, Allergies) with the Dietitian/Supervisor.',
-          'Step 4 (Pre-Service Tasting & Temp Check): Taste meals for salt/quality and verify hot/cold temperatures 20 minutes before service.',
-          'Step 5 (End-of-Day Review): Check food wastage, leftover cooling logs, cleaning sign-offs, and next day’s store requisition.'
-        ],
-        keyTakeaway:
-          'A 10-minute morning briefing and a daily kitchen walkthrough prevent 90% of operational mistakes.'
-      }
-    ]
-  },
-
-  // =========================================================================
-  // MODULE 2: PATIENT DIETS, MENU PLANNING & TRAY SERVICE MANAGEMENT
-  // =========================================================================
-  {
-    id: 'mfd-mod-2',
-    moduleNumber: 2,
-    title: 'Patient Diets, Menu Planning & Tray Service Management',
-    estimatedMinutes: 50,
-    overview:
-      'Simple presentation on hospital and institutional menu planning, understanding regular and therapeutic diets (Diabetic, Low-Salt/Cardiac, Renal, Soft/Pureed, Allergies), checking patient tray tickets, and delivering meals safely to wards.',
-    internationalClauses: [
-      'Hospital Therapeutic Diet Manual & Patient Safety Guidelines',
-      'IDDSI Texture-Modified Diet Basics & Two-Patient-Identifier Rule'
-    ],
-    keyPrinciples: [
-      'Hospital menus are divided into Regular Diets (for patients with no dietary restrictions) and Therapeutic Diets (modified in sugar, salt, fat, protein, or texture as part of medical treatment).',
-      'Common therapeutic diets include Diabetic (controlled carbs, no added sugar), Cardiac/Low-Sodium (low salt, low saturated fat), Renal (controlled potassium, phosphorus, sodium, and fluids), and Texture-Modified (Liquid, Pureed, Minced, Soft).',
-      'Every patient tray must have a printed Diet Ticket / Tray Card showing Patient Name, MRN/ID Number, Ward/Bed, Diet Type, and Allergies.',
-      'Before handing a tray to a patient at the bedside, staff must verify Two Patient Identifiers (Patient Full Name + Medical Record Number/Date of Birth) against the patient wristband.'
-    ],
-    criticalControlParameters: [
-      {
-        parameter: 'Bedside Patient Identification Check',
-        standardLimit: 'Verify 2 Unique Patient Identifiers (Full Name + MRN/DOB) on tray card and wristband',
-        correctiveProtocol: 'Never deliver a tray by checking room or bed number alone, as patients often change beds.'
-      },
-      {
-        parameter: 'Tube Feeding (Enteral Formula) Hygiene & Hang Time',
-        standardLimit: 'Prepare in a sanitized area; reconstituted powdered formula max bedside hang time ≤ 4 hours',
-        correctiveProtocol: 'Label every feed with Patient Name, Time Prepared, and Expiry Time; discard after 4 hours.'
-      }
-    ],
-    practicalChecklist: [
-      'Inspect 100% of therapeutic and allergy trays at the end of the tray line before loading into ward carts.',
-      'Confirm that NPO (Nothing by Mouth) patients never receive food or water trays.',
-      'Verify that hot meals leave the kitchen at ≥ 63°C and cold items at ≤ 5°C in insulated or heated carts.'
-    ],
-    presentationSlides: [
-      {
-        slideNumber: 1,
-        title: 'Menu Planning for Hospitals & Institutions',
-        subtitle: 'How to Design a Balanced Cyclic Menu',
-        bulletPoints: [
-          'What is a Cyclic Menu? A planned menu that rotates every 7 days, 14 days, or 28 days so patients and staff do not get bored with repeating dishes.',
-          'Nutritional Balance: Every main meal should include a Protein source (chicken, fish, meat, lentils, eggs), Complex Carbohydrate (chapati, rice, oats, potato), Vegetables, and Dairy/Fruit.',
-          'One Base Recipe, Multiple Diets: Plan menus so the main dish (e.g., grilled chicken & vegetables) can easily be adapted into Low-Salt, Diabetic, and Soft/Pureed versions before adding heavy spices or salt.',
-          'Seasonal & Budget Friendly: Use fresh, in-season fruits and vegetables for better taste and lower cost.'
-        ],
-        keyTakeaway:
-          'A smart cyclic menu allows cooks to prepare regular and therapeutic diets from the same fresh ingredients with consistent quality.'
-      },
-      {
-        slideNumber: 2,
-        title: 'Progression of Hospital Diets (Liquid to Regular)',
-        subtitle: 'Understanding Transitional Diets After Surgery or Illness',
-        bulletPoints: [
-          '1. NPO (Nil Per Os — Nothing by Mouth): Patient must NOT be given any food, water, or juice (usually before surgery or certain tests).',
-          '2. Clear Liquid Diet: Transparent liquids that leave no residue—clear broth, apple juice without pulp, plain jelly/gelatin, weak tea (used right after surgery).',
-          '3. Full Liquid Diet: All liquids plus milk, strained cream soups, thin custard, yogurt, and plain pudding.',
-          '4. Soft / Mechanical Soft Diet: Tender, easily chewed foods with low fiber and mild seasoning (khichdi, mashed potatoes, minced chicken, soft-cooked vegetables).',
-          '5. Regular (Normal) Diet: Complete balanced meal for patients with no special restrictions.'
-        ],
-        keyTakeaway:
-          'Never send any food or water tray to an NPO patient—giving food before anesthesia can be life-threatening.'
-      },
-      {
-        slideNumber: 3,
-        title: 'Diabetic & Heart-Healthy (Cardiac) Diets',
-        subtitle: 'Managing Sugar, Carbohydrates, Salt & Fat',
-        bulletPoints: [
-          'Diabetic Diet (Controlled Carbohydrate):',
-          '• Avoid all refined sugars, regular sweets, honey, sugary juices, and soft drinks.',
-          '• Serve controlled portions of high-fiber whole grains (whole-wheat chapati, brown rice, oats), lean protein, and non-starchy vegetables.',
-          '• Provide timed meals and evening snacks so blood sugar matches insulin/medication.',
-          'Cardiac / Low-Sodium (Low-Salt) Diet:',
-          '• Restrict salt (sodium) to under 1,500–2,000 mg/day; avoid pickles, papad, canned soups, salty snacks, and salted butter.',
-          '• Use lemon, garlic, ginger, and fresh herbs for flavor, and cook with minimal heart-healthy oil (olive/canola).'
-        ],
-        keyTakeaway:
-          'Diabetic trays need consistent carbs and zero added sugar; Cardiac trays need low salt and low saturated fat.'
-      },
-      {
-        slideNumber: 4,
-        title: 'Renal (Kidney) & High-Protein Healing Diets',
-        subtitle: 'Special Care for Kidney Patients & Post-Surgery Recovery',
-        bulletPoints: [
-          'Renal (Kidney Disease) Diet:',
-          '• Kidneys cannot easily filter excess Sodium (Salt), Potassium, Phosphorus, and Fluids.',
-          '• Avoid high-potassium foods like bananas, oranges, coconut water, spinach, and tomatoes (potatoes must be peeled, diced, soaked, and boiled in excess water to remove potassium).',
-          '• NEVER use commercial "Low-Sodium Salt Substitutes" on Renal trays because they contain Potassium Chloride, which is dangerous for kidney patients!',
-          'High-Protein / High-Calorie Diet:',
-          '• Given to burn patients, trauma/post-surgery patients, and malnourished patients (extra eggs, chicken, fish, paneer, milkshakes, and protein supplements).'
-        ],
-        keyTakeaway:
-          'Never use potassium-based salt substitutes for Renal patients, and always follow the Dietitian’s exact protein and fluid limits.'
-      },
-      {
-        slideNumber: 5,
-        title: 'Swallowing Difficulty (Dysphagia) & IDDSI Texture Levels',
-        subtitle: 'Safe Food & Drink Textures for Stroke and Elderly Patients',
-        bulletPoints: [
-          'Patients after a stroke or neurological illness often have Dysphagia (difficulty swallowing) and can choke or inhale thin water into their lungs.',
-          'We use the simple IDDSI (0 to 7) Texture Scale:',
-          '• Drinks (Levels 0 to 4): Level 0 = Thin Water; Level 1 = Slightly Thick; Level 2 = Mildly Thick; Level 3 = Moderately Thick; Level 4 = Extremely Thick.',
-          '• Foods (Levels 3 to 7): Level 4 = Smooth Pureed (no lumps, holds shape on spoon); Level 5 = Minced & Moist (tiny 4mm pieces); Level 6 = Soft & Bite-Sized (1.5cm tender pieces); Level 7 = Regular.',
-          'Quick Kitchen Test: For Level 4 Pureed food, it should sit on a fork without dripping through the prongs and slide off a spoon smoothly without sticking.'
-        ],
-        keyTakeaway:
-          'Never serve thin liquids, dry crumbly bread, nuts, or foods with mixed lumps to a patient on a Pureed (Level 4) dysphagia diet.'
-      },
-      {
-        slideNumber: 6,
-        title: 'Managing Food Allergies & Gluten-Free Trays',
-        subtitle: 'Protecting Allergic & Celiac Patients in the Kitchen',
-        bulletPoints: [
-          'Major Food Allergens: Milk/Dairy, Eggs, Peanuts, Tree Nuts, Wheat/Gluten, Soy, Fish, Shellfish, and Sesame.',
-          'Even a tiny trace of an allergen on a knife, chopping board, or cooking pan can trigger a severe life-threatening reaction (Anaphylaxis).',
-          'Gluten-Free Diet (for Celiac Disease): Strictly avoid wheat, barley, rye, regular bread/chapati, pasta, and regular soy sauce; use rice, corn, millet, potatoes, and certified gluten-free flour.',
-          'Kitchen Rule: Prepare allergy meals in a separate clean zone using dedicated PURPLE-colored cutting boards, knives, and utensils after washing hands and changing gloves.'
-        ],
-        keyTakeaway:
-          'Sanitizer spray kills bacteria, NOT food allergens! You must wash equipment with soap and hot water and use dedicated Purple utensils for allergy trays.'
-      },
-      {
-        slideNumber: 7,
-        title: 'Tube Feeding (Enteral Nutrition) & Infant Formula Room',
-        subtitle: 'Safe Preparation for ICU & Pediatric Patients',
-        bulletPoints: [
-          'Patients in ICU who cannot eat by mouth receive liquid nutrition through a feeding tube (Nasogastric / PEG tube).',
-          'Clean Preparation Room: Tube feeds and infant formulas must be prepared in a dedicated, sanitized room using boiled/sterile water and sterilized blenders/bottles.',
-          'Clear Labeling: Every bottle/bag must be labeled with Patient Name, MRN, Ward/Bed, Formula Name, Date & Time Prepared, and Expiry Time.',
-          'Maximum Hang Time Rule: Powdered or kitchen-blended feeds can hang at room temperature at the bedside for a MAXIMUM of 4 hours (Ready-to-Hang sterile hospital bags can hang 24 hours).'
-        ],
-        keyTakeaway:
-          'Never keep reconstituted powdered or blenderized tube feeds at room temperature for more than 4 hours.'
-      },
-      {
-        slideNumber: 8,
-        title: 'The Patient Tray Assembly Line (Belt System)',
-        subtitle: 'How to Assemble 100% Accurate Patient Trays',
-        bulletPoints: [
-          'Step 1 (Tray Ticket Starter): Place the printed Patient Diet Ticket on the tray along with the correct color tray mat and cutlery.',
-          'Step 2 (Cold Station): Place salads, yogurt, fruit, or cold desserts (kept at ≤ 5°C).',
-          'Step 3 (Hot Station): Portion soup, rice/chapati, dal/vegetables, and main protein using standardized scoops (kept hot at ≥ 63°C) and cover immediately with an insulated dome lid.',
-          'Step 4 (Final Check by Supervisor/Dietitian): Before the tray enters the cart, the checker compares every item on the tray against the printed Diet Ticket.'
-        ],
-        keyTakeaway:
-          'Every single patient tray must be checked against its printed Diet Ticket by a Supervisor or Dietitian before leaving the kitchen.'
-      },
-      {
-        slideNumber: 9,
-        title: 'Safe Delivery to Wards & The "Two-Identifier" Rule',
-        subtitle: 'Delivering the Right Tray to the Right Patient at the Right Temperature',
-        bulletPoints: [
-          'Enclosed Meal Trolleys: Transport patient trays in clean, covered, heated/insulated meal carts so hot food stays ≥ 63°C and cold food stays ≤ 5°C.',
-          'Timely Service: Deliver trays from kitchen to patient bedside within 20–30 minutes of plating.',
-          'The JCI Two-Patient-Identifier Rule: Never deliver a tray just by looking at the Room or Bed Number (patients often get shifted to another bed!).',
-          'Always verify TWO identifiers before placing the tray: (1) Patient Full Name, and (2) Medical Record Number (MRN) or Date of Birth—matching the Tray Ticket with the Patient’s Wristband.'
-        ],
-        keyTakeaway:
-          'Always match Patient Full Name + MRN/Date of Birth on the Tray Card with the patient’s wristband—never rely on bed number alone.'
-      },
-      {
-        slideNumber: 10,
-        title: 'Infectious Isolation Trays & Patient Feedback',
-        subtitle: 'Handling Isolation Wards & Improving Patient Satisfaction',
-        bulletPoints: [
-          'Isolation Ward Patients (e.g., TB, COVID-19, Contact Isolation): Serve meals in single-use disposable food-grade containers so contaminated trays do not return to the main kitchen, or sanitize reusable ware at ≥ 82°C.',
-          'Protected Mealtimes: Coordinate with nursing so non-urgent rounds do not interrupt patients while they are eating hot food.',
-          'Checking Plate Waste: Notice if a patient leaves more than 50% of their meal uneaten and inform the Dietitian so a preferred or fortified alternative can be offered.',
-          'Daily Patient Rounds: Visit a sample of patients daily to ask about food taste, temperature, cleanliness, and staff courtesy.'
-        ],
-        keyTakeaway:
-          'Checking patient satisfaction and plate waste daily helps patients recover faster and improves your department’s rating.'
-      }
-    ]
-  },
-
-  // =========================================================================
-  // MODULE 3: PURCHASING, RECEIVING, STORE MANAGEMENT & COST CONTROL
-  // =========================================================================
-  {
-    id: 'mfd-mod-3',
-    moduleNumber: 3,
-    title: 'Food Purchasing, Receiving, Store Management & Cost Control',
-    estimatedMinutes: 45,
-    overview:
-      'Simple presentation on how to buy food from approved vendors, check deliveries at the receiving dock, organize dry stores, chillers, and freezers using FIFO/FEFO, use standardized recipes, and control food cost and wastage.',
-    internationalClauses: [
-      'Receiving & Cold-Chain Inspection Standards',
-      'FIFO / FEFO Store Management & Kitchen Cost Control'
-    ],
-    keyPrinciples: [
-      'Purchase food only from approved, licensed suppliers and inspect every delivery at the receiving dock for temperature, expiry date, packaging integrity, and weight.',
-      'Follow FEFO (First Expired, First Out) and FIFO (First In, First Out) in all stores, keeping items at least 15 cm (6 inches) off the floor.',
-      'Inside chillers, store Ready-to-Eat/Cooked foods on the TOP shelves and Raw Meat/Poultry on the BOTTOM shelves to prevent drip contamination.',
-      'Control kitchen food cost through Standardized Recipes, fixed portion scoops, butcher yield checks, and daily food waste tracking.'
-    ],
-    criticalControlParameters: [
-      {
-        parameter: 'Receiving Temperatures for Chilled & Frozen Foods',
-        standardLimit: 'Chilled Meat/Dairy ≤ +4°C (+5°C max); Fresh Fish ≤ +2°C on ice; Frozen Food ≤ -18°C',
-        correctiveProtocol: 'Reject any warm, thawed, dented/swollen, expired, or pest-damaged delivery at the gate.'
-      },
-      {
-        parameter: 'Chiller Vertical Shelf Storage Hierarchy',
-        standardLimit: 'Top: Ready-to-Eat/Cooked → Middle: Whole Fish/Meat → Bottom: Raw Poultry',
-        correctiveProtocol: 'Immediately move any raw meat found above cooked or ready-to-eat items to the bottom shelf.'
-      }
-    ],
-    practicalChecklist: [
-      'Check and record delivery truck temperature, product temperature, and expiry dates for every incoming shipment.',
-      'Ensure all opened or prepared items in the chiller have a Date Label (Item Name, Date Opened/Prepared, Use-By Date).',
-      'Compare daily meal count against store requisitions and monitor plate/kitchen wastage.'
-    ],
-    presentationSlides: [
-      {
-        slideNumber: 1,
-        title: 'Smart Food Purchasing & Approved Suppliers',
-        subtitle: 'Buying Safe, High-Quality Ingredients at the Right Price',
-        bulletPoints: [
-          'Approved Supplier List: Only buy meat, poultry, dairy, cooking oil, and dry goods from licensed, food-authority-approved suppliers.',
-          'Purchase Specifications: Clearly write down quality standards for every item (e.g., Grade-A eggs with clean shells, boneless chicken breast chilled at ≤ 4°C, Halal certification).',
-          'Order Based on Menu & Census: Calculate order quantities based on the upcoming menu cycle, expected patient/staff meal count, and current store balance.',
-          'Avoid Over-Ordering Perishables: Order fresh vegetables, milk, bread, and meat frequently so ingredients stay fresh and spoilage is minimized.'
-        ],
-        keyTakeaway:
-          'Good food quality starts at purchasing—never buy unbranded, loose, or unlicensed food ingredients.'
-      },
-      {
-        slideNumber: 2,
-        title: 'Receiving Dock Inspection (Checking Deliveries)',
-        subtitle: 'What to Check Before Signing Any Supplier Invoice',
-        bulletPoints: [
-          '1. Delivery Vehicle Check: Is the truck clean, free from pests/chemicals, and is the refrigeration unit working?',
-          '2. Temperature Check (Using a Sanitized Probe):',
-          '   • Chilled Meat, Poultry & Dairy: Must be ≤ +4°C (max +5°C).',
-          '   • Fresh Fish: Must be ≤ +2°C packed in clean crushed ice.',
-          '   • Frozen Foods: Must be rock-solid at ≤ -18°C with no signs of thawing or ice crystals.',
-          '3. Packaging & Expiry Check: Check Manufacture Date, Expiry Date, Halal logo, and weight.',
-          '4. When to REJECT: Reject any warm chilled food, thawed frozen food, swollen/dented cans, broken seals, or expired items on the spot.'
-        ],
-        keyTakeaway:
-          'If a delivery fails temperature or quality checks at the receiving gate, reject it immediately and log a Supplier Rejection Note.'
-      },
-      {
-        slideNumber: 3,
-        title: 'Dry Store Management & The 15 cm Floor Rule',
-        subtitle: 'Keeping Grains, Pulses, Spices, Oils & Cans Safe',
-        bulletPoints: [
-          'Temperature & Humidity: Keep the Dry Store cool, dry, and well-ventilated (+15°C to +25°C, relative humidity < 60%).',
-          'Off-the-Floor Rule: Store all food sacks, cartons, and cans on washable racks or plastic pallets at least 15 cm (6 inches) off the floor and 5 cm away from walls.',
-          'No Cardboard or Gunny Sacks in Kitchen: Transfer opened flour, rice, sugar, and pulses into clean, food-grade plastic or stainless-steel bins with tight lids and clear labels.',
-          'Keep Chemicals Separate: Cleaning chemicals, phenyl, bleach, and insecticides must NEVER be kept in the food store—lock them in a separate Chemical Store.'
-        ],
-        keyTakeaway:
-          'Keep all food at least 6 inches (15 cm) off the floor, in lidded labeled bins, and keep cleaning chemicals in a separate locked cupboard.'
-      },
-      {
-        slideNumber: 4,
-        title: 'FIFO & FEFO Stock Rotation Rules',
-        subtitle: 'Preventing Expired Stock & Financial Loss',
-        bulletPoints: [
-          'FEFO (First Expired, First Out): Items with the earliest Expiry Date are placed in the front of the shelf so they are used first.',
-          'FIFO (First In, First Out): For fresh produce without printed expiry dates, the older delivery goes in front and the new delivery goes behind it.',
-          'Date Labeling of Opened Items: Once a tin, sauce bottle, or bulk pack is opened or transferred to a container, stick a label showing: Item Name, Date Opened, and Use-By Date.',
-          'Monthly Expiry Check: Inspect the store every week and remove any item approaching expiry before it goes bad.'
-        ],
-        keyTakeaway:
-          'Place new stock BEHIND old stock so the earliest-expiring items (FEFO) are always used first.'
-      },
-      {
-        slideNumber: 5,
-        title: 'Chiller & Freezer Organization (Top-to-Bottom Rule)',
-        subtitle: 'Where to Place Food Inside Refrigerators',
-        bulletPoints: [
-          'Chiller Temperature: Maintain between +1°C and +4°C. Freezer Temperature: Maintain at ≤ -18°C.',
-          'Ideally, use separate refrigerators for Raw Meat and Cooked/Ready-to-Eat foods.',
-          'If sharing a single walk-in chiller, strictly follow the Top-to-Bottom Shelf Rule so raw juices never drip onto cooked food:',
-          '  • TOP Shelf: Ready-to-Eat (RTE) Foods, Cooked Meals, Dairy, Salads & Desserts.',
-          '  • MIDDLE Shelf: Whole Raw Fish & Whole Cuts of Beef/Mutton.',
-          '  • BOTTOM Shelf: Raw Minced Meat & Raw Poultry (Chicken/Turkey) in deep trays.',
-          'Cover & Label Everything: Every tray in the chiller must be covered with food-grade lids/wrap and date-labeled (max 72 hours for cooked chilled items).'
-        ],
-        keyTakeaway:
-          'In any refrigerator: Cooked & Ready-to-Eat foods go on the TOP shelf; Raw Chicken & Meat always go on the BOTTOM shelf.'
-      },
-      {
-        slideNumber: 6,
-        title: 'Standardized Recipes & Portion Control',
-        subtitle: 'Ensuring Consistent Taste, Nutrition & Cost Every Day',
-        bulletPoints: [
-          'What is a Standardized Recipe? A tested written recipe card that specifies exact ingredient weights, cooking method, cooking time/temperature, total yield, and exact portion size.',
-          'Why Standardized Recipes Matter in Dietary Operations:',
-          '  1. Every patient gets the exact calories, protein, and low-salt/diabetic profile prescribed by the Dietitian.',
-          '  2. The dish tastes the same regardless of which cook is on duty.',
-          '  3. You know the exact ingredient cost per plate.',
-          'Portion Control Tools: Use standard ladles, weighing scales, and numbered portion scoops on the tray line (e.g., #8 scoop = ½ cup / 120 mL; #16 scoop = ¼ cup / 60 mL).'
-        ],
-        keyTakeaway:
-          'Standardized recipes + portion scoops guarantee consistent nutrition for patients and predictable food cost for management.'
-      },
-      {
-        slideNumber: 7,
-        title: 'Understanding Butcher Yield (AP vs. EP Weight)',
-        subtitle: 'How Peeling, Trimming & Boning Affect Your Ordering',
-        bulletPoints: [
-          'AP (As-Purchased Weight): The weight of raw food as you buy it from the supplier (with peel, bone, skin, or fat).',
-          'EP (Edible Portion Weight): The actual usable weight left after peeling, trimming, or deboning.',
-          'Simple Example: You buy 10 kg of raw potatoes (AP). After peeling, 2 kg of peel is removed, leaving 8 kg of peeled potatoes (EP). Your Yield is 80%.',
-          'Manager’s Ordering Rule: If your recipe needs 8 kg of peeled potatoes and the yield is 80%, you must requisition 10 kg (8 ÷ 0.80 = 10 kg) from the store.'
-        ],
-        keyTakeaway:
-          'Always check trimming and peeling loss in the prep room so cooks do not throw away usable meat or vegetables.'
-      },
-      {
-        slideNumber: 8,
-        title: 'Daily Store Issue & Kitchen Production Planning',
-        subtitle: 'Matching Store Requisitions to Actual Meal Counts',
-        bulletPoints: [
-          'Production Sheet: Every afternoon, prepare the next day’s Kitchen Production Sheet based on expected patient census and cafeteria sales.',
-          'Store Requisition Slip: Ingredients should only leave the Dry Store or Freezer against a signed Store Requisition Slip approved by the Chef/Manager.',
-          'Preventing Over-Production: Cooking 250 meals when only 180 patients are admitted creates massive food waste and budget loss.',
-          'Batch Cooking for Cafeteria: For staff/visitor cafeterias, cook fresh batches in stages during peak hours rather than cooking everything at once.'
-        ],
-        keyTakeaway:
-          'No ingredient should leave the store without a signed requisition linked to the daily production count.'
-      },
-      {
-        slideNumber: 9,
-        title: 'Simple Food Cost & Cost Per Patient Day (CPPD)',
-        subtitle: 'How a Manager Tracks the Departmental Budget',
-        bulletPoints: [
-          'Total Food Cost Used = (Opening Store Stock + Monthly Purchases) − Closing Store Stock.',
-          'Food Cost Per Patient Day (CPPD): Divide Total Patient Food Cost by the Total Inpatient Bed-Days for the month.',
-          '  • Example: If monthly patient food cost is Rs. 1,200,000 for 4,000 patient days, your CPPD is Rs. 300 per patient per day.',
-          'Food Cost % (For Paid Cafeteria): (Food Cost ÷ Cafeteria Sales) × 100. Typical target in institutional/commercial catering is 30% to 38%.'
-        ],
-        keyTakeaway:
-          'Track your Cost Per Patient Day (CPPD) and Cafeteria Food Cost % every month to keep your department within budget.'
-      },
-      {
-        slideNumber: 10,
-        title: 'Controlling Kitchen Waste & Pilferage',
-        subtitle: 'Where Money Leaks in a Kitchen & How to Stop It',
-        bulletPoints: [
-          '5 Main Causes of High Food Cost:',
-          '  1. Short-weight or poor quality accepted at the receiving gate.',
-          '  2. Spoilage in chillers/dry store due to ignoring FIFO/FEFO.',
-          '  3. Over-trimming meat/vegetables or burning batches during cooking.',
-          '  4. Over-portioning on the tray line (not using standard scoops/ladles).',
-          '  5. Unauthorized staff eating or pilferage (theft).',
-          'Solution: Keep stores locked, weigh all deliveries, enforce portion scoops, and maintain a Daily Food Wastage Log.'
-        ],
-        keyTakeaway:
-          'What gets measured gets controlled—weigh and record kitchen waste daily to cut food costs by 10% to 15%.'
-      }
-    ]
-  },
-
-  // =========================================================================
-  // MODULE 4: KITCHEN HYGIENE, FOOD SAFETY (HACCP), CLEANING & DISHWASHING
-  // =========================================================================
-  {
-    id: 'mfd-mod-4',
-    moduleNumber: 4,
-    title: 'Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing',
-    estimatedMinutes: 45,
-    overview:
-      'Simple presentation on the Temperature Danger Zone, safe thawing, cooking, cooling, reheating, and holding temperatures, color-coded chopping boards, 6-step kitchen cleaning, dishwashing standards, and pest control.',
-    internationalClauses: [
-      'HACCP Safe Time-Temperature Rules for Catering',
-      'Color-Coded Hygiene, 6-Step Sanitization & Pest Control Standards'
-    ],
-    keyPrinciples: [
-      'Keep food out of the Temperature Danger Zone (+5°C to +60°C): cold food at ≤ +5°C, hot food at ≥ +63°C, core cooking at ≥ +75°C, and reheating at ≥ +75°C.',
-      'Prevent cross-contamination by using international color-coded chopping boards and knives (Red = Raw Meat, Yellow = Cooked Meat, Blue = Raw Fish, Green = Washed Salad/Fruit, Brown = Root Veg, White = Bakery/Dairy, Purple = Allergen-Free).',
-      'Clean and sanitize food-contact surfaces using the 6-Step Method: Scrape → Pre-Rinse → Detergent Wash → Water Rinse → Sanitize → Air Dry.',
-      'Sanitize dishes thermally in a dishwasher with a final rinse of ≥ +82°C or chemically in a 3-compartment sink (50–100 ppm chlorine or 200–400 ppm quat).'
-    ],
-    criticalControlParameters: [
-      {
-        parameter: 'Core Cooking, Hot Holding & Rapid Cooling Temperatures',
-        standardLimit: 'Cook ≥ +75°C; Hot Hold ≥ +63°C; Cold Hold ≤ +5°C; Cool from +60°C to +20°C in ≤ 2h and to ≤ +4°C in ≤ 4h',
-        correctiveProtocol: 'Continue cooking if < 75°C; reheat once to ≥ 75°C or discard if held in Danger Zone > 2 hours.'
-      },
-      {
-        parameter: 'Dishwasher Final Sanitizing Rinse Temperature',
-        standardLimit: 'Final Rinse Manifold ≥ +82°C (achieving ≥ +71°C on plate surface)',
-        correctiveProtocol: 'Check daily with thermal test strips; if below 82°C, use 3-sink chemical sanitization until repaired.'
-      }
-    ],
-    practicalChecklist: [
-      'Probe and record core temperatures of all cooked meats, soups, and sauces before service.',
-      'Check chiller and freezer temperature logs twice daily (Morning & Evening).',
-      'Verify dishwasher final rinse temperature (≥ 82°C) or 3-sink sanitizer concentration with test strips.'
-    ],
-    presentationSlides: [
-      {
-        slideNumber: 1,
-        title: 'Understanding Food Safety Hazards (Simple HACCP)',
-        subtitle: 'The 4 Types of Hazards You Must Prevent in the Kitchen',
-        bulletPoints: [
-          '1. Biological Hazards (Germs): Bacteria (Salmonella, E. coli, Listeria) and viruses (Norovirus) from raw meat, unwashed hands, dirty water, or temperature abuse.',
-          '2. Chemical Hazards: Dishwashing soap, bleach, or pest spray accidentally getting into food.',
-          '3. Physical Hazards (Foreign Objects): Hair, staples, glass shards, metal wire from scrubbers, stones in rice/lentils, or bone splinters.',
-          '4. Allergen Hazards: Traces of peanuts, milk, egg, or wheat getting into an allergic patient’s meal.',
-          'Strictly ban glass bottles, wooden tables, and metal wire-bristle scrubbers inside the cooking area.'
-        ],
-        keyTakeaway:
-          'HACCP simply means identifying where Biological, Chemical, Physical, or Allergen hazards can happen and controlling them before food is served.'
-      },
-      {
-        slideNumber: 2,
-        title: 'The Temperature Danger Zone (+5°C to +60°C)',
-        subtitle: 'The Golden Rule of Kitchen Temperature Control',
-        bulletPoints: [
-          'Bacteria multiply fastest between +5°C and +60°C—this is called the Temperature Danger Zone (TDZ).',
-          'At room temperature (+30°C to +37°C), bacteria double every 20 minutes!',
-          'To keep food safe, follow the Golden Rule: "Keep Cold Food COLD (≤ +5°C) and Keep Hot Food HOT (≥ +63°C)."',
-          'The 2-Hour / 4-Hour Rule: Never leave cooked meat, rice, dairy, or cut salads sitting at room temperature for more than 2 hours during prep or service.'
-        ],
-        keyTakeaway:
-          'Never leave high-risk foods sitting between +5°C and +60°C—keep cold items at ≤ +5°C and hot items at ≥ +63°C.'
-      },
-      {
-        slideNumber: 3,
-        title: 'Safe Thawing (Defrosting) of Frozen Meat & Poultry',
-        subtitle: '4 Safe Ways to Defrost Food Without Growing Bacteria',
-        bulletPoints: [
-          'NEVER thaw frozen chicken, meat, or fish on a kitchen counter at room temperature or in warm water!',
-          'Approved Safe Thawing Methods:',
-          '  1. In the Thawing Chiller (Best Method): Place frozen meat in a covered drip tray on the bottom shelf of a chiller at ≤ +4°C for 24 hours.',
-          '  2. Under Cold Running Potable Water: Submerged in sealed packaging under running water at ≤ +21°C for no more than 2 hours.',
-          '  3. In a Microwave: Only if the food will be cooked immediately right after thawing.',
-          '  4. Cook from Frozen: For small items like frozen vegetables or burger patties.',
-          'Once thawed, never refreeze raw meat—cook it within 24 hours.'
-        ],
-        keyTakeaway:
-          'Plan ahead and thaw frozen meat on the bottom shelf of the chiller (≤ +4°C)—never at room temperature.'
-      },
-      {
-        slideNumber: 4,
-        title: 'Safe Cooking & Hot-Holding Temperatures',
-        subtitle: 'Exact Thermometer Numbers Every Cook Must Know',
-        bulletPoints: [
-          'Always check the thickest center part of meat/poultry using a clean, alcohol-wiped digital probe thermometer:',
-          '• Poultry (Chicken/Turkey), Minced Meat & Stuffed Dishes: Cook to ≥ +75°C core temperature.',
-          '• Whole Cuts of Beef, Mutton, Lamb & Fish: Cook to ≥ +70°C (or ≥ +63°C for 2 mins).',
-          '• Hot Holding (Bain-Marie & Patient Meal Carts): Keep all cooked hot foods at ≥ +63°C until served.',
-          '• Cold Holding (Salads, Yogurt, Cut Fruit, Sandwiches): Keep chilled at ≤ +5°C.'
-        ],
-        keyTakeaway:
-          'Cook to ≥ +75°C, Hot-Hold at ≥ +63°C, and Cold-Hold at ≤ +5°C—and write the readings on the daily temperature log.'
-      },
-      {
-        slideNumber: 5,
-        title: 'Safe Cooling & Reheating of Cooked Food',
-        subtitle: 'Preventing Food Poisoning from Slow-Cooled Rice, Dal & Gravies',
-        bulletPoints: [
-          'Never put a huge hot pot of curry, soup, or rice straight into the refrigerator (it warms up the fridge and cools too slowly in the center).',
-          'How to Cool Hot Food Safely:',
-          '  • Divide large batches into shallow stainless-steel pans (less than 5–10 cm deep) or use a Blast Chiller / ice-water bath.',
-          '  • Cool from +60°C down to +20°C within 2 hours, and from +20°C down to ≤ +4°C within the next 4 hours (or ≤ 90 minutes in a Blast Chiller).',
-          'How to Reheat Safely:',
-          '  • Reheat chilled food rapidly to ≥ +75°C core temperature and reheat ONLY ONCE. Discard any leftover reheated food.'
-        ],
-        keyTakeaway:
-          'Cool cooked food quickly in shallow pans (to ≤ +4°C) and reheat only once to ≥ +75°C.'
-      },
-      {
-        slideNumber: 6,
-        title: 'Color-Coded Chopping Boards & Knives',
-        subtitle: 'Stopping Cross-Contamination Between Raw and Ready-to-Eat Foods',
-        bulletPoints: [
-          'Use separate color-coded chopping boards, knives, and tongs for each food group:',
-          '• RED: Raw Meat & Poultry',
-          '• BLUE: Raw Fish & Seafood',
-          '• YELLOW: Cooked Meat & Poultry',
-          '• GREEN: Washed Salads & Fresh Fruits',
-          '• BROWN: Unwashed Root Vegetables (Potatoes, Carrots, Onions)',
-          '• WHITE: Bakery, Bread & Dairy (Cheese/Butter)',
-          '• PURPLE: Allergen-Free & Special Diet Meals'
-        ],
-        keyTakeaway:
-          'Post a Color-Coding Chart on the kitchen wall and replace any deeply scratched or cracked chopping boards immediately.'
-      },
-      {
-        slideNumber: 7,
-        title: 'Washing Fresh Vegetables, Salads & Fruits',
-        subtitle: 'How to Sanitize Raw Produce That Will Not Be Cooked',
-        bulletPoints: [
-          'Raw salads (lettuce, cucumber, tomatoes) and fresh fruits are eaten without cooking, so washing in plain water alone is not enough to kill surface germs.',
-          '3-Step Produce Washing Procedure:',
-          '  1. Remove outer damaged leaves and wash thoroughly in running potable water to remove mud, soil, and insects.',
-          '  2. Dip in a food-grade Vegetable Sanitizing Solution (50 to 100 ppm Chlorine / Sodium Dichloroisocyanurate tablet) for 5 minutes (check with chlorine test strips).',
-          '  3. Rinse thoroughly with clean potable drinking water, drain in a sanitized colander, and store at ≤ +4°C.'
-        ],
-        keyTakeaway:
-          'Always wash raw salad vegetables in a dedicated vegetable sink using 50–100 ppm food-grade chlorine solution followed by a clean water rinse.'
-      },
-      {
-        slideNumber: 8,
-        title: 'The 6-Step Kitchen Cleaning & Sanitization Method',
-        subtitle: 'Cleaning Removes Dirt; Sanitization Kills Germs',
-        bulletPoints: [
-          'Remember: Chemical sanitizer does NOT work on a greasy or dirty table! You must clean with soap first, then sanitize.',
-          'The 6 Simple Steps for Tables, Slicers & Utensils:',
-          '  1. Pre-Scrape: Remove leftover food scraps into the bin.',
-          '  2. Pre-Rinse: Rinse with warm water.',
-          '  3. Detergent Wash: Scrub with warm water (+45°C–+55°C) and food-safe detergent to remove grease.',
-          '  4. Rinse: Rinse off all soap with clean water.',
-          '  5. Sanitize: Apply approved food-contact sanitizer (e.g., 200 ppm Quat or 100 ppm Chlorine) for the required contact time.',
-          '  6. Air Dry: Let surfaces and utensils air-dry naturally (never wipe with dirty cloth dusters!).'
-        ],
-        keyTakeaway:
-          'Ban dirty cloth dusters in the kitchen—use 6-step cleaning + sanitization and allow utensils to air-dry.'
-      },
-      {
-        slideNumber: 9,
-        title: 'Dishwashing Machine & 3-Sink Pot Washing Standards',
-        subtitle: 'Making Sure Patient Trays, Plates & Pots Are 100% Germ-Free',
-        bulletPoints: [
-          'Automatic High-Temperature Dishwasher:',
-          '  • Wash Tank Temperature: +55°C to +65°C with detergent.',
-          '  • Final Sanitizing Rinse Temperature: ≥ +82°C (achieving ≥ +71°C on the plate surface to kill bacteria and viruses).',
-          '  • Verify daily by placing a Thermal Test Strip on a tray passing through the machine.',
-          'Manual 3-Compartment Sink (For Pots, Pans & Utensils):',
-          '  • Sink 1: Hot Detergent Wash (+45°C to +50°C).',
-          '  • Sink 2: Clean Warm Water Rinse.',
-          '  • Sink 3: Chemical Sanitizer Soak (50–100 ppm Chlorine or 200–400 ppm Quat for 30–60 seconds) or Hot Water ≥ +77°C, then Air-Dry on racks.'
-        ],
-        keyTakeaway:
-          'Dishwasher final rinse must reach ≥ +82°C, and 3-compartment sinks must follow Wash → Rinse → Sanitize → Air-Dry.'
-      },
-      {
-        slideNumber: 10,
-        title: 'Pest Control & Kitchen Waste Management',
-        subtitle: 'Keeping Cockroaches, Flies & Rodents Out of the Kitchen',
-        bulletPoints: [
-          'Pest Prevention Rules:',
-          '  • Keep all external doors closed with rubber bottom seals (zero gaps > 3 mm) and air curtains, and fit fine mesh screens on windows.',
-          '  • Install UV Electric Fly Killers (with sticky glue boards, NOT zappers that scatter insect parts) away from open food tables.',
-          '  • Never use toxic loose rat poison inside food prep rooms—use a licensed pest control company with mapped traps.',
-          'Kitchen Garbage Rules:',
-          '  • Use foot-operated (pedal) bins lined with heavy plastic bags so staff never touch bin lids by hand.',
-          '  • Empty kitchen bins whenever 75% full and at the end of every shift into a closed, washable external garbage room.'
-        ],
-        keyTakeaway:
-          'Use foot-pedal covered bins, seal all wall/door gaps, and empty kitchen waste after every meal service.'
-      }
-    ]
-  },
-
-  // =========================================================================
-  // MODULE 5: QUALITY CHECKS, 72-HOUR FOOD SAMPLES, EMERGENCIES & AUDITS
-  // =========================================================================
-  {
-    id: 'mfd-mod-5',
-    moduleNumber: 5,
-    title: 'Quality Checks, 72-Hour Food Samples, Emergency Planning & Audits',
-    estimatedMinutes: 45,
-    overview:
-      'Simple presentation on daily pre-service food tasting, keeping a 72-hour reference food sample bank, what to do if a food complaint or outbreak happens, maintaining a 72-hour emergency food and water backup, and passing hospital/food authority inspections.',
-    internationalClauses: [
-      '72-Hour Reference Food Sample Bank & Outbreak Investigation Protocol',
-      'JCI / Hospital 72-Hour Emergency Disaster Reserve & Inspection Readiness'
-    ],
-    keyPrinciples: [
-      'Before every meal service, the Chef and Dietary Supervisor must check food appearance, taste, texture, and temperature, and collect a 150 g reference sample of every cooked dish.',
-      'Reference food samples must be labeled and locked in a dedicated chiller (+1°C to +4°C) for at least 72 hours (3 days) as proof of food safety.',
-      'Every hospital dietary department must keep a 72-hour (3-day) Emergency Disaster Stock of ready-to-eat/dry food, tube feeds, disposable plates, and drinking water (≥ 3 Liters per person per day).',
-      'Maintain clean, honest, real-time daily logs (Receiving, Chiller Temps, Cooking/Tray Temps, Cleaning, and Staff Health) to pass Food Authority, ISO 22000, and JCI inspections.'
-    ],
-    criticalControlParameters: [
-      {
-        parameter: '72-Hour Reference Food Sample Retention',
-        standardLimit: '150 g sample of every served dish collected in sterile container, labeled, and kept at +1°C to +4°C for 72 hours',
-        correctiveProtocol: 'Audit the sample chiller every evening to confirm Breakfast, Lunch, and Dinner samples are stored.'
-      },
-      {
-        parameter: '72-Hour Hospital Emergency Food & Water Reserve',
-        standardLimit: 'Minimum 3 full days (72 hours) of shelf-stable food, enteral feeds, disposables, and ≥ 3 L/person/day water',
-        correctiveProtocol: 'Check emergency stock monthly and rotate items into daily kitchen use before they expire (FEFO).'
-      }
-    ],
-    practicalChecklist: [
-      'Complete the Pre-Service Food Tasting, Temperature & Tray Accuracy Log before Breakfast, Lunch, and Dinner.',
-      'Verify that 150 g labeled samples of all dishes from the last 72 hours are locked in the Reference Sample Chiller.',
-      'Conduct a weekly Manager Self-Inspection Walkthrough and check the 72-hour emergency food and water reserve monthly.'
-    ],
-    presentationSlides: [
-      {
-        slideNumber: 1,
-        title: 'Pre-Service Food Tasting & Sensory Check',
-        subtitle: 'Checking Every Dish 20 Minutes Before Meal Service',
-        bulletPoints: [
-          'Never allow a meal to go to patients or the cafeteria without tasting and inspecting it first!',
-          '20 minutes before Breakfast, Lunch, and Dinner, the Chef and Dietary Supervisor conduct a Pre-Service Check:',
-          '  1. Appearance & Color: Does the dish look fresh, appetizing, and properly garnished?',
-          '  2. Taste & Seasoning: Is the regular dish well-seasoned, and is the Low-Salt/Diabetic dish truly salt/sugar-controlled?',
-          '  3. Texture Check: Is the meat tender, and do Pureed/Soft diets pass the spoon/fork texture check?',
-          '  4. Temperature Check: Are hot items ≥ +63°C and cold items ≤ +5°C?',
-          'Always use a clean tasting spoon (never dip the same spoon twice!).'
-        ],
-        keyTakeaway:
-          'A 5-minute pre-service tasting and temperature check catches under-seasoned, over-salted, or lukewarm food before it ever reaches a patient.'
-      },
-      {
-        slideNumber: 2,
-        title: 'The 72-Hour Reference Food Sample Bank',
-        subtitle: 'Your Legal & Medical Proof of Food Safety',
-        bulletPoints: [
-          'What is a Reference Food Sample Bank? Keeping a small sample of every meal served so it can be lab-tested if anyone claims food poisoning.',
-          'How to Collect Samples Properly:',
-          '  • Collect at least 150 g to 200 g of every dish (soup, main course, rice, vegetable, dessert) at the time of service using a sanitized spoon.',
-          '  • Place in a clean, sterile, tightly sealed container or zip-lock sample bag.',
-          '  • Label clearly: Dish Name, Date, Meal (Breakfast/Lunch/Dinner), and Supervisor Initials.',
-          '  • Store in a dedicated, locked chiller at +1°C to +4°C (do NOT freeze) for 72 hours (3 full days), then discard after 72 hours.'
-        ],
-        keyTakeaway:
-          'Always keep ≥ 150 g of every served meal at +1°C to +4°C for 72 hours—it protects your department during any complaint or investigation.'
-      },
-      {
-        slideNumber: 3,
-        title: 'What to Do If a Food Complaint or Illness Occurs',
-        subtitle: 'Step-by-Step Manager Action Plan for Suspected Food Poisoning',
-        bulletPoints: [
-          'If 2 or more patients or staff report vomiting or diarrhea after a meal, take immediate calm action:',
-          'Step 1 (Stop & Quarantine): Immediately stop serving the suspected food item and put all remaining batches on "Quarantine Hold" in the chiller.',
-          'Step 2 (Lock the Sample Bank): Secure the 72-Hour Reference Food Samples from the past 3 days so they can be sent to an accredited microbiology lab.',
-          'Step 3 (Notify Management): Inform the Hospital Medical Director / Infection Control Team immediately.',
-          'Step 4 (Check Kitchen Logs & Staff): Review cooking/cooling temperature logs for that dish and check if any kitchen staff member had stomach illness or skin cuts.'
-        ],
-        keyTakeaway:
-          'In any suspected food incident: Stop serving the item, lock the 72-hour food samples, inform Infection Control, and check temperature/staff logs.'
-      },
-      {
-        slideNumber: 4,
-        title: 'Handling Foreign Object Complaints (Hair, Stone, Plastic)',
-        subtitle: 'How to Investigate & Prevent Physical Contamination',
-        bulletPoints: [
-          'If a patient or diner finds a hair, insect, stone, or piece of plastic in their food:',
-          '1. Apologize immediately, remove the tray politely, and provide a fresh replacement meal at once.',
-          '2. Save the foreign object in a small labeled bag so you can identify where it came from.',
-          '3. Find the Root Cause (5-Why Check):',
-          '   • Hair in food → Enforce proper hairnet & beard cover wearing.',
-          '   • Stone in dal/rice → Improve dry cleaning/picking and washing on a stainless-steel sorting table under bright light.',
-          '   • Plastic shred → Ban tearing packaging with teeth or knives; use clean kitchen scissors and throw away plastic corners immediately.'
-        ],
-        keyTakeaway:
-          'Never argue with a patient or customer over a food complaint—replace the meal immediately, preserve the evidence, and fix the root cause.'
-      },
-      {
-        slideNumber: 5,
-        title: '4-Hour Traceability & Recall Readiness',
-        subtitle: 'Tracing Any Ingredient Back to Its Supplier',
-        bulletPoints: [
-          'What is Traceability? Being able to trace which supplier batch of chicken, milk, or oil was used in a specific day’s meal.',
-          'How to Maintain Simple Traceability:',
-          '  • Record Batch/Lot Numbers and Expiry Dates on the Daily Receiving Log.',
-          '  • Keep supplier delivery invoices and Certificates of Analysis (COA) organized by date.',
-          '  • Record which batch was issued from the store on the Daily Kitchen Production Sheet.',
-          'If a supplier or Food Authority recalls a contaminated batch of milk or spice, you should be able to locate and isolate every pack in your store within 2 to 4 hours.'
-        ],
-        keyTakeaway:
-          'Recording batch numbers at receiving and store issue allows you to isolate any recalled ingredient in under 4 hours.'
-      },
-      {
-        slideNumber: 6,
-        title: '72-Hour Hospital Emergency Disaster Food & Water Plan',
-        subtitle: 'Being Ready for Floods, Strikes, Road Blocks & Disasters',
-        bulletPoints: [
-          'Hospitals cannot stop feeding patients during natural disasters, city lockdowns, or supply breakdowns.',
-          'Every Hospital Dietary Department must maintain an on-site 72-Hour (3-Day) Emergency Reserve:',
-          '  • Shelf-Stable Food: Ready-to-eat meals, UHT milk, biscuits, oats, canned beans/tuna, porridge, and diabetic/low-salt options for 100% of patients and on-duty staff.',
-          '  • Tube Feeds: 3-day stock of Ready-to-Hang enteral nutrition formulas.',
-          '  • Potable Drinking Water: At least 3 Liters per person per day for 3 days.',
-          '  • Disposable Tableware: 3-day stock of disposable plates, cups, and spoons in case dishwashing water is cut off.'
-        ],
-        keyTakeaway:
-          'Keep a 72-hour emergency stock of dry/shelf-stable food, tube feeds, disposable plates, and drinking water—and rotate it before expiry.'
-      },
-      {
-        slideNumber: 7,
-        title: 'Handling Power Outages & Water Supply Failures',
-        subtitle: 'Immediate Kitchen Contingency Actions',
-        bulletPoints: [
-          'What to Do During a Power Outage (If Generator Fails):',
-          '  • Keep all Chiller and Freezer doors CLOSED! A closed walk-in freezer keeps food frozen for 24–48 hours; a closed chiller stays cold for 4 hours.',
-          '  • Check food core temperatures when power returns: if chilled food stayed ≤ +5°C (or ≤ +8°C for < 2 hours), it is safe; if above +8°C for > 2 hours, discard it.',
-          'What to Do During a Water Supply Contamination / Boil-Water Alert:',
-          '  • Turn off plumbed ice machines and water dispensers immediately and throw away existing ice.',
-          '  • Use bottled water or water boiled at a rolling boil for ≥ 1 minute for all cooking, drinking, and beverage prep, and switch to disposable plates.'
-        ],
-        keyTakeaway:
-          'During power cuts, keep fridge/freezer doors shut; during water contamination alerts, shut off ice machines and use bottled/boiled water + disposable plates.'
-      },
-      {
-        slideNumber: 8,
-        title: 'Key Performance Indicators (KPIs) for a Dietary Manager',
-        subtitle: 'How Hospital Management Measures Your Department’s Success',
-        bulletPoints: [
-          'Track these 6 simple Monthly KPIs on a 1-page dashboard:',
-          '1. Patient Tray Accuracy %: Target ≥ 99% (Zero wrong allergy or NPO trays).',
-          '2. On-Time Ward Delivery %: Target ≥ 98% of wards served within the scheduled 30-minute meal window.',
-          '3. Bedside Food Temperature Pass %: Hot food ≥ +63°C and Cold food ≤ +5°C.',
-          '4. Patient Satisfaction Score: Target ≥ 85%–90% positive feedback on daily ward rounds.',
-          '5. Plate Waste %: Target < 15% uneaten food returned on trays.',
-          '6. Cost Per Patient Day (CPPD): Staying within the approved monthly food budget.'
-        ],
-        keyTakeaway:
-          'Presenting a simple monthly KPI report (Tray Accuracy, On-Time Delivery, Temps, Satisfaction & Cost) proves your leadership to top management.'
-      },
-      {
-        slideNumber: 9,
-        title: 'Essential Daily Records & Logbooks (Audit Readiness)',
-        subtitle: 'The 7 Files Every Manager Must Keep Up to Date',
-        bulletPoints: [
-          'In food safety and hospital inspections, the rule is: "If it is not written down, it did not happen."',
-          'Keep these 7 simple daily logs in a clean folder at the Manager’s Desk:',
-          '  1. Goods Receiving & Supplier Temperature Log',
-          '  2. Chiller, Freezer & Dry Store Twice-Daily Temperature Log',
-          '  3. Cooking, Cooling, Reheating & Patient Tray Temperature Log',
-          '  4. 72-Hour Reference Food Sample Log',
-          '  5. Daily Kitchen Cleaning & Dishwasher Temperature (≥ 82°C) Log',
-          '  6. Staff Medical Fitness, Training & Daily Hygiene Check Log',
-          '  7. Pest Control Service Reports & Thermometer Calibration Log',
-          'Never allow staff to pre-fill ("fake") tomorrow’s temperature readings in advance!'
-        ],
-        keyTakeaway:
-          'Review and sign your kitchen’s daily temperature and cleaning logs at the end of every day—and never tolerate pre-filled logs.'
-      },
-      {
-        slideNumber: 10,
-        title: 'Passing Food Authority, ISO 22000 & JCI Inspections',
-        subtitle: 'Final Summary Checklist for the Certified Dietary Manager',
-        bulletPoints: [
-          'When an external inspector (Food Authority, Healthcare Commission, JCI, or ISO 22000 Auditor) visits your kitchen, they check 5 main things:',
-          '  1. Staff Hygiene & Medical Certificates: Clean uniforms, hairnets, handwashing, and valid medical cards.',
-          '  2. Store & Chiller Discipline: No expired items, FEFO labels on opened containers, raw meat on bottom shelves, and working thermometers.',
-          '  3. Kitchen Cleanliness & Pest Control: Clean exhaust hoods, covered pedal bins, color-coded chopping boards, and zero pests.',
-          '  4. Patient Safety: Accurate diet tickets, Purple allergy utensils, 4-hour tube feed labels, and Two-Identifier bedside checks.',
-          '  5. Honest Documentation: Up-to-date logs and a locked 72-hour food sample chiller.'
-        ],
-        keyTakeaway:
-          'Congratulations on completing all 5 Modules! You are now ready to take the 40-MCQ Final Exam (60% passing score = 24/40 correct).'
-      }
-    ]
-  }
-];
-
-export interface ManagerDietaryExamMcq {
+export interface ManagerDietaryExamQuestion {
   id: string;
   question: string;
   options: [string, string, string, string];
@@ -943,575 +13,2194 @@ export interface ManagerDietaryExamMcq {
   moduleRef: string;
 }
 
-export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamMcq[] = [
-  // MODULE 1: ROLE OF CERTIFIED DIETARY MANAGER, KITCHEN LAYOUT & STAFF MANAGEMENT (8 MCQs)
+export const MANAGER_FOOD_DIETARY_MODULES: CourseStudyModule[] = [
+  // =========================================================================
+  // MODULE 1
+  // =========================================================================
   {
-    id: 'mfd-q1',
-    question: 'What is the main responsibility of a Certified Dietary Manager in a hospital or catering facility?',
-    options: [
-      'Prescribing surgical operations for patients',
-      'Managing kitchen production, patient diet tray accuracy, food safety, budget, and dietary staff',
-      'Repairing hospital X-ray machines',
-      'Working only at the hospital reception desk'
+    id: 'cdm-v-mod-1',
+    moduleNumber: 1,
+    title: 'Scope of Practice, Leadership Role & Interdisciplinary Clinical Care Team',
+    estimatedMinutes: 30,
+    overview:
+      'Master the executive scope of practice of a Certified Dietary Manager (CDM), understand clinical vs operational boundaries with Registered Dietitians and Physicians, and run daily interdisciplinary shift briefings.',
+    internationalClauses: [
+      'ANFP Certified Dietary Manager (CDM, CFPP) Scope of Practice',
+      'JCI Hospital Patient-Centered Care & Nutrition Standards (COP.4)'
     ],
-    correctIndex: 1,
-    explanation:
-      'The Certified Dietary Manager oversees all kitchen operations, patient meal accuracy, food safety, store control, budget, and staff scheduling.',
-    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
-  },
-  {
-    id: 'mfd-q2',
-    question: 'Who is responsible for assessing a patient’s clinical nutrition status and prescribing their special therapeutic diet?',
-    options: [
-      'The Kitchen Dishwasher',
-      'The Doctor and Clinical Dietitian / Nutritionist',
-      'The Storekeeper',
-      'The Delivery Truck Driver'
+    keyPrinciples: [
+      'The Certified Dietary Manager leads hospital and institutional foodservice operations: menu execution, therapeutic diet accuracy, food safety/HACCP, procurement, budgeting, and team leadership.',
+      'Clinical Dietitians (RD/RDN) perform medical nutrition assessments and prescribe therapeutic diet modifications; the CDM ensures every prescribed meal is cooked, portioned, verified, and delivered safely on time.'
     ],
-    correctIndex: 1,
-    explanation:
-      'Doctors and Clinical Dietitians prescribe the patient’s diet, while the Certified Dietary Manager ensures the kitchen prepares and delivers it accurately.',
-    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
-  },
-  {
-    id: 'mfd-q3',
-    question: 'What does the "One-Way Flow" rule in a professional kitchen mean?',
-    options: [
-      'Food moves forward in one direction from Receiving → Store → Prep → Cooking → Serving so raw food and dirty dishes never cross cooked food',
-      'All staff must enter and exit through the dishwashing window',
-      'Raw meat and cooked salads should be cut on the same table',
-      'Delivery trucks should drive inside the cooking area'
+    criticalControlParameters: [
+      {
+        parameter: 'Ward Diet Census Synchronization',
+        standardLimit: '100% live reconciliation of Admissions, Discharges, Transfers & NPO orders ≥ 30 mins before every meal service',
+        correctiveProtocol: 'Halt tray release for any unverified bed change; confirm verbally and digitally with the Ward Charge Nurse before dispatch.'
+      }
     ],
-    correctIndex: 0,
-    explanation:
-      'One-Way Flow prevents cross-contamination by ensuring raw ingredients move smoothly toward cooked dispatch without crossing dirty dish returns.',
-    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
-  },
-  {
-    id: 'mfd-q4',
-    question: 'Why must all light bulbs and tube lights inside a kitchen have shatterproof covers?',
-    options: [
-      'To make the kitchen darker',
-      'To prevent broken glass shards from falling into open food if a bulb breaks',
-      'To keep insects warm',
-      'To save electricity'
+    practicalChecklist: [
+      'Lead a structured 10-minute morning huddle reviewing ward census, therapeutic specials, allergens, and staffing assignments.',
+      'Reconcile new NPO (Nil Per Os) and Hold-Tray requests immediately with nursing stations before tray-line startup.'
     ],
-    correctIndex: 1,
-    explanation:
-      'Shatterproof light covers protect food from physical glass contamination if a light tube or bulb shatters.',
-    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
-  },
-  {
-    id: 'mfd-q5',
-    question: 'Which of the following is mandatory for every food handler before starting work in the kitchen?',
-    options: [
-      'Wearing rings, a wristwatch, and strong perfume',
-      'Wearing a clean uniform, apron, non-slip closed shoes, hairnet covering all hair, and washing hands with soap',
-      'Keeping long painted fingernails',
-      'Working in casual street clothes'
-    ],
-    correctIndex: 1,
-    explanation:
-      'Clean uniforms, hairnets, short clean nails, zero jewelry, and thorough handwashing are basic personal hygiene rules for all kitchen staff.',
-    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
-  },
-  {
-    id: 'mfd-q6',
-    question: 'If a kitchen cook reports having acute vomiting and diarrhea in the morning, what must the Certified Dietary Manager do?',
-    options: [
-      'Let the cook prepare cold salads while wearing gloves',
-      'Immediately remove the cook from food handling and allow return only after they are 100% symptom-free for at least 48 hours',
-      'Tell the cook to drink tea and continue cooking',
-      'Assign the cook to serve patient trays on the ward'
-    ],
-    correctIndex: 1,
-    explanation:
-      'Staff with vomiting or diarrhea can spread dangerous viruses and bacteria to patients; they must be excluded from food handling until 48 hours symptom-free.',
-    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
-  },
-  {
-    id: 'mfd-q7',
-    question: 'How should a small, clean cut on a food handler’s finger be protected while working?',
-    options: [
-      'Leave it uncovered so air can dry it',
-      'Cover it with a bright Blue Waterproof Detectable Bandage AND wear a disposable glove over it',
-      'Wrap it with a piece of newspaper',
-      'Apply cooking oil on it'
-    ],
-    correctIndex: 1,
-    explanation:
-      'A bright blue waterproof bandage covered by a disposable glove prevents wound bacteria from contaminating food and is easily visible if it ever slips.',
-    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
-  },
-  {
-    id: 'mfd-q8',
-    question: 'Why should the Certified Dietary Manager conduct a 10-minute morning briefing with kitchen staff every day?',
-    options: [
-      'To check staff uniforms/hygiene, review today’s menu and patient diet counts, and assign clear daily duties',
-      'To cancel breakfast service',
-      'To lock the kitchen doors',
-      'Briefings are only needed once a year'
-    ],
-    correctIndex: 0,
-    explanation:
-      'A daily 10-minute morning briefing aligns the team on hygiene, patient diet counts, special requirements, and menu quality.',
-    moduleRef: 'Module 1: Role of Certified Dietary Manager, Kitchen Layout & Staff Management'
-  },
-
-  // MODULE 2: PATIENT DIETS, MENU PLANNING & TRAY SERVICE MANAGEMENT (8 MCQs)
-  {
-    id: 'mfd-q9',
-    question: 'What does a medical order of "NPO (Nil Per Os)" on a patient’s diet sheet mean?',
-    options: [
-      'Give the patient extra spicy food',
-      'Nothing by Mouth — do NOT send any food, water, or juice tray to the patient',
-      'Serve only high-protein meat',
-      'Serve double portions of dessert'
-    ],
-    correctIndex: 1,
-    explanation:
-      'NPO means "Nothing by Mouth" (usually before surgery or medical procedures). Sending food or liquid to an NPO patient is a serious safety error.',
-    moduleRef: 'Module 2: Patient Diets, Menu Planning & Tray Service Management'
-  },
-  {
-    id: 'mfd-q10',
-    question: 'Which foods are allowed on a "Clear Liquid Diet" right after surgery?',
-    options: [
-      'Transparent liquids such as clear broth, strained apple juice without pulp, and plain gelatin/jelly',
-      'Whole milk, thick mango shake, and chapati',
-      'Fried chicken and French fries',
-      'Boiled eggs and cheese sandwiches'
-    ],
-    correctIndex: 0,
-    explanation:
-      'A Clear Liquid Diet includes only transparent liquids that leave no digestive residue, such as clear soup broth, pulp-free apple juice, and plain jelly.',
-    moduleRef: 'Module 2: Patient Diets, Menu Planning & Tray Service Management'
-  },
-  {
-    id: 'mfd-q11',
-    question: 'What is the main rule when preparing a "Diabetic Diet" tray for a hospital patient?',
-    options: [
-      'Serve sugary soft drinks, honey, and sweet mithai with every meal',
-      'Eliminate added sugars/sweets and serve controlled portions of complex carbohydrates (whole-wheat chapati/oats), lean protein, and vegetables on time',
-      'Serve only plain salt water',
-      'Skip dinner completely'
-    ],
-    correctIndex: 1,
-    explanation:
-      'Diabetic diets require zero refined sugars and consistent, measured portions of complex carbohydrates and protein served at regular meal times.',
-    moduleRef: 'Module 2: Patient Diets, Menu Planning & Tray Service Management'
-  },
-  {
-    id: 'mfd-q12',
-    question: 'Which nutrients must be carefully restricted in a "Renal (Kidney Disease) Diet"?',
-    options: [
-      'Sodium (Salt), Potassium, Phosphorus, and excess Fluids (as prescribed by the Dietitian)',
-      'Clean air and sunlight',
-      'All carbohydrates',
-      'Vitamin C only'
-    ],
-    correctIndex: 0,
-    explanation:
-      'Patients with kidney disease cannot easily excrete excess sodium, potassium, phosphorus, and fluid, so these are carefully controlled.',
-    moduleRef: 'Module 2: Patient Diets, Menu Planning & Tray Service Management'
-  },
-  {
-    id: 'mfd-q13',
-    question: 'Why must cooks NEVER use commercial "Low-Sodium Salt Substitutes" on a Renal (Kidney) patient’s meal?',
-    options: [
-      'Because salt substitutes are too sweet',
-      'Because salt substitutes contain Potassium Chloride, which can cause dangerously high potassium levels in kidney patients',
-      'Because salt substitutes change the color of rice',
-      'Because salt substitutes are only for children'
-    ],
-    correctIndex: 1,
-    explanation:
-      'Commercial salt substitutes replace sodium with potassium chloride, which can cause life-threatening high blood potassium (hyperkalemia) in renal patients.',
-    moduleRef: 'Module 2: Patient Diets, Menu Planning & Tray Service Management'
-  },
-  {
-    id: 'mfd-q14',
-    question: 'Under the IDDSI Dysphagia scale for patients with swallowing difficulty, what is "Level 4 — Pureed" food?',
-    options: [
-      'Hard nuts and crispy biscuits',
-      'Smooth, lump-free pureed food that holds its shape on a spoon and does not drip through fork prongs',
-      'Thin water and clear tea',
-      'Large 3 cm chunks of roasted meat'
-    ],
-    correctIndex: 1,
-    explanation:
-      'IDDSI Level 4 (Pureed) is smooth and lump-free, requires no chewing, sits on a fork without dripping through, and slides off a spoon cleanly.',
-    moduleRef: 'Module 2: Patient Diets, Menu Planning & Tray Service Management'
-  },
-  {
-    id: 'mfd-q15',
-    question: 'What is the maximum time a reconstituted powdered or kitchen-blended Tube Feed (Enteral Formula) can hang at room temperature at a patient’s bedside?',
-    options: [
-      'Maximum 4 hours',
-      '24 hours',
-      '48 hours',
-      '3 days'
-    ],
-    correctIndex: 0,
-    explanation:
-      'To prevent rapid bacterial growth at room temperature, reconstituted powdered or blenderized tube feeds have a strict maximum hang time of 4 hours.',
-    moduleRef: 'Module 2: Patient Diets, Menu Planning & Tray Service Management'
-  },
-  {
-    id: 'mfd-q16',
-    question: 'When delivering a meal tray to a patient at the bedside, how must the dietary server verify patient identity?',
-    options: [
-      'By checking only the room number on the door',
-      'By matching TWO Patient Identifiers (Patient Full Name + Medical Record Number / Date of Birth) on the Tray Ticket against the patient’s wristband',
-      'By asking another patient in the hallway',
-      'By guessing based on the patient’s age'
-    ],
-    correctIndex: 1,
-    explanation:
-      'Because patients often change beds, JCI patient safety rules require checking two unique identifiers (Full Name + MRN/DOB) against the patient’s wristband.',
-    moduleRef: 'Module 2: Patient Diets, Menu Planning & Tray Service Management'
+    quickCheck: {
+      question: 'How do the professional responsibilities of a Clinical Dietitian (RD) and a Certified Dietary Manager (CDM) complement each other in a hospital?',
+      options: [
+        'The CDM prescribes intravenous TPN formulas while the Dietitian supervises kitchen dishwashing and store inventory',
+        'The Clinical Dietitian assesses nutrition risk and prescribes therapeutic diet targets, while the CDM manages kitchen operations, food safety, staff, budget, and accurate meal delivery',
+        'Both roles are identical and either person may independently change a physician’s NPO surgical order',
+        'The CDM only manages the staff cafeteria and has no responsibility for patient therapeutic tray accuracy'
+      ],
+      correctIndex: 1,
+      explanation: 'Clinical Dietitians handle clinical nutrition assessment and Medical Nutrition Therapy (MNT); Certified Dietary Managers lead foodservice production, HACCP, staffing, budgets, and accurate execution of every therapeutic tray.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Course Architecture & Certified Dietary Manager Mastery Blueprint',
+        subtitle: 'Interactive Professional CDM Curriculum — Food Science Portal',
+        calloutBanner: {
+          label: 'Hospital & Institutional Leadership Blueprint',
+          text: 'Engineered for Certified Dietary Managers, Hospital Foodservice Directors, Clinical Kitchen Supervisors, Nutritionists, and Catering Managers — combining clinical therapeutic diet execution, IDDSI dysphagia controls, hospital SOPs, 12 controlled dietary documents, interactive drills, and financial KPI mastery.',
+          tone: 'blue'
+        },
+        visualIllustration: 'cdm-care-team',
+        bulletPoints: [
+          'Structured across 15 progressive interactive modules covering Clinical Care Coordination, Therapeutic Diets, IDDSI Textures, Hospital HACCP, Tray-Line QA, Financial PPD Control, and Accreditation Readiness.',
+          'Includes 12 authentic Hospital Controlled Document Templates (CDM-DOC-01 to CDM-DOC-12), interactive SOP tabs, Germometer, Risk Matrix, and Classification Drills.',
+          'Assessment Goal: Study all 15 interactive modules and score ≥ 60% (≥ 75% Distinction) on the 40-MCQ Final Examination.'
+        ],
+        keyTakeaway:
+          'A Certified Dietary Manager bridges clinical medicine and culinary operations so the right diet reaches the right patient safely at every meal.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Scope of Practice: CDM vs Clinical Dietitian vs Ward Nursing',
+        subtitle: 'Preventing Clinical Errors Through Clear Role Boundaries',
+        twoColumns: {
+          leftTitle: 'Certified Dietary Manager (CDM) Mandate',
+          leftTone: 'blue',
+          leftItems: [
+            'Translate prescribed diet manuals into cycle menus and standardized recipes',
+            'Direct kitchen operations, tray assembly line, thermal transport & sanitation',
+            'Manage food purchasing, FIFO/FEFO inventory, PPD food cost & labor rosters',
+            'Screen routine food preferences, allergies & intake; escalate high nutrition risk to RD'
+          ],
+          rightTitle: 'Clinical Dietitian (RD) & Physician Mandate',
+          rightTone: 'emerald',
+          rightItems: [
+            'Physician writes legal medical diet order (Diabetic, Renal, IDDSI, NPO)',
+            'Clinical Dietitian performs comprehensive MNT assessment & calculates tube feeds',
+            'Dietitian approves hospital diet manual and complex clinical nutrient modifications',
+            'Ward Nurse verifies dual patient ID at bedside, assists feeding & records % eaten'
+          ]
+        },
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-01',
+          version: 'Rev 2.0',
+          codexStepLabel: 'Daily Clinical Operations Control',
+          docTitle: 'Daily Dietary Shift Huddle & Ward Census Sign-Off Sheet',
+          purpose: 'Synchronizes kitchen production with live nursing census, NPO surgical holds, and high-risk patient allergen alerts prior to breakfast, lunch, and dinner tray lines.',
+          fields: [
+            { label: 'Hospital / Unit', value: 'Tertiary Care Dietary Dept (250 Beds)' },
+            { label: 'Meal Service Period', value: 'Lunch Service (Tray Line Start: 11:30 AM)' },
+            { label: 'Total Active Patients', value: '218 Active · 14 NPO · 6 Hold Trays' },
+            { label: 'Shift Lead / CDM', value: 'Certified Dietary Manager on Duty' }
+          ],
+          tablePreview: {
+            headers: ['Ward', 'Regular', 'Diabetic / Cardiac', 'Renal / Low-K', 'IDDSI L4–L6', 'NPO / Allergen Flags'],
+            rows: [
+              ['ICU / CCU', '4', '12', '5', '6 (Pureed/Soft)', '4 NPO · Bed 104: Peanut Allergy'],
+              ['Medical Ward A', '26', '28', '9', '11', '3 NPO · Bed 212: Celiac (GF)'],
+              ['Surgical Ward B', '31', '14', '2', '8 (Liquid/Soft)', '7 NPO (Pre-Op) · 3 Hold Trays']
+            ]
+          },
+          signOffLine: 'CDM Signature & Time ________ | Charge Nurse Census Confirm ________'
+        },
+        bulletPoints: [
+          'Never alter a therapeutic diet restriction independently without documented physician or Clinical Dietitian authorization.',
+          'When a patient reports chewing difficulty, weight loss, or <50% meal consumption for 3 consecutive days, submit an immediate Clinical Dietitian Referral.'
+        ],
+        keyTakeaway:
+          'Clear scope boundaries and pre-meal census reconciliation eliminate NPO breaches and therapeutic diet mix-ups.'
+      }
+    ]
   },
 
-  // MODULE 3: FOOD PURCHASING, RECEIVING, STORE MANAGEMENT & COST CONTROL (8 MCQs)
+  // =========================================================================
+  // MODULE 2
+  // =========================================================================
   {
-    id: 'mfd-q17',
-    question: 'What is the maximum safe receiving temperature for chilled fresh meat, poultry, and dairy at the kitchen receiving dock?',
-    options: [
-      '≤ +4°C (maximum +5°C)',
-      '+20°C',
-      '+35°C',
-      '+50°C'
+    id: 'cdm-v-mod-2',
+    moduleNumber: 2,
+    title: 'Hospital Kitchen Architecture, One-Way Flow & Ergonomic Zone Control',
+    estimatedMinutes: 30,
+    overview:
+      'Design and audit a hygienic hospital dietary facility using strict Dirty-to-Clean one-way workflow, multi-stream therapeutic segregation, air-pressure zoning, and ergonomic equipment placement.',
+    internationalClauses: [
+      'Codex CXC 1-1969 Hygienic Facility Design',
+      'ISO/TS 22002-2 Catering & Institutional Kitchen Zoning'
     ],
-    correctIndex: 0,
-    explanation:
-      'Chilled high-risk foods such as meat, poultry, and dairy must arrive cold at ≤ +4°C (max +5°C) to prevent bacterial growth.',
-    moduleRef: 'Module 3: Food Purchasing, Receiving, Store Management & Cost Control'
-  },
-  {
-    id: 'mfd-q18',
-    question: 'At what temperature must frozen food deliveries arrive, and what should you do if frozen meat arrives soft and leaking water?',
-    options: [
-      'Arrive at ≤ -18°C; if it arrives thawed/soft, REJECT the delivery immediately',
-      'Arrive at +10°C; refreeze it without checking',
-      'Arrive at room temperature; wash it with soap',
-      'Accept all deliveries without checking temperature'
+    keyPrinciples: [
+      'A compliant hospital kitchen enforces strict One-Way Forward Flow (Receiving → Storage → Pre-Prep → Hot/Diet Cooking → Tray Assembly → Ward Dispatch) with a physically isolated Scullery return route.',
+      'Positive air pressure in the clean tray-assembly zone, washable coved floor-to-wall junctions, shatterproof ≥500 lux lighting, and dedicated handwash basins prevent environmental contamination.'
     ],
-    correctIndex: 0,
-    explanation:
-      'Frozen foods must arrive rock-solid at ≤ -18°C. Thawed or refrozen deliveries indicate cold-chain failure and must be rejected at the gate.',
-    moduleRef: 'Module 3: Food Purchasing, Receiving, Store Management & Cost Control'
-  },
-  {
-    id: 'mfd-q19',
-    question: 'In a Dry Food Store, how high off the floor must food sacks, cartons, and containers be stored on racks or pallets?',
-    options: [
-      'Directly on the wet floor',
-      'At least 15 cm (6 inches) off the floor and away from walls',
-      'On top of cleaning chemical bottles',
-      'Outside in the open parking lot'
+    criticalControlParameters: [
+      {
+        parameter: 'Facility Zoning & Environmental Separation',
+        standardLimit: 'Zero cross-traffic between raw preparation, clean tray plating, and soiled ward-cart scullery return',
+        correctiveProtocol: 'Re-route carts immediately, sanitize affected clean-zone surfaces, and retrain floor stewards on directional signage.'
+      }
     ],
-    correctIndex: 1,
-    explanation:
-      'Storing food at least 15 cm (6 inches) off the floor allows easy floor cleaning, prevents dampness, and helps spot any pest activity.',
-    moduleRef: 'Module 3: Food Purchasing, Receiving, Store Management & Cost Control'
-  },
-  {
-    id: 'mfd-q20',
-    question: 'What does the store management rule "FEFO" stand for?',
-    options: [
-      'First Expired, First Out (use items with the earliest expiry date first)',
-      'Forever Keep Food Open',
-      'Freeze Everything For October',
-      'First Empty, First Order'
+    practicalChecklist: [
+      'Walk the kitchen floor weekly from Receiving Bay to Scullery verifying zero back-tracking of raw ingredients or dirty trays.',
+      'Check shatterproof light covers, insect-screen mesh integrity, floor drain traps, and handwash station supplies every shift.'
     ],
-    correctIndex: 0,
-    explanation:
-      'FEFO means First Expired, First Out—placing stock with the closest expiry date in front so it is used before newer stock.',
-    moduleRef: 'Module 3: Food Purchasing, Receiving, Store Management & Cost Control'
-  },
-  {
-    id: 'mfd-q21',
-    question: 'Inside a walk-in refrigerator (chiller), where must Raw Chicken/Meat and Cooked/Ready-to-Eat foods be placed?',
-    options: [
-      'Raw chicken on the top shelf and cooked food on the bottom shelf',
-      'Cooked & Ready-to-Eat foods on the TOP shelves, and Raw Meat/Poultry on the BOTTOM shelves',
-      'Mixed together in the same uncovered tray',
-      'On the chiller floor next to the drain'
-    ],
-    correctIndex: 1,
-    explanation:
-      'Keeping Ready-to-Eat foods on the top shelves and Raw Poultry/Meat on the bottom shelves ensures raw blood or juices can never drip onto cooked meals.',
-    moduleRef: 'Module 3: Food Purchasing, Receiving, Store Management & Cost Control'
-  },
-  {
-    id: 'mfd-q22',
-    question: 'Why does a Certified Dietary Manager enforce "Standardized Recipes" and numbered portion scoops in the kitchen?',
-    options: [
-      'To ensure every dish has consistent taste, accurate patient nutrition, and controlled food cost per portion',
-      'To make cooking slower and harder',
-      'So cooks can guess salt and oil amounts every day',
-      'To increase food wastage'
-    ],
-    correctIndex: 0,
-    explanation:
-      'Standardized recipes and portion scoops ensure every meal has the exact same taste, nutritional value, and predictable portion cost.',
-    moduleRef: 'Module 3: Food Purchasing, Receiving, Store Management & Cost Control'
-  },
-  {
-    id: 'mfd-q23',
-    question: 'If you buy 10 kg of raw potatoes (As-Purchased / AP) and after peeling you get 8 kg of peeled potatoes (Edible Portion / EP), what is the Yield Percentage?',
-    options: [
-      '80% Yield [(8 kg ÷ 10 kg) × 100]',
-      '20% Yield',
-      '100% Yield',
-      '50% Yield'
-    ],
-    correctIndex: 0,
-    explanation:
-      'Yield % = (Edible Portion Weight ÷ As-Purchased Weight) × 100 = (8 ÷ 10) × 100 = 80%.',
-    moduleRef: 'Module 3: Food Purchasing, Receiving, Store Management & Cost Control'
-  },
-  {
-    id: 'mfd-q24',
-    question: 'If your hospital dietary department spent Rs. 900,000 on patient food in a month and served 3,000 Inpatient Bed-Days, what is your Food Cost Per Patient Day (CPPD)?',
-    options: [
-      'Rs. 300 per patient day (900,000 ÷ 3,000)',
-      'Rs. 3,000 per patient day',
-      'Rs. 30 per patient day',
-      'Rs. 90,000 per patient day'
-    ],
-    correctIndex: 0,
-    explanation:
-      'Food Cost Per Patient Day (CPPD) = Total Monthly Patient Food Cost (Rs. 900,000) ÷ Total Inpatient Bed-Days (3,000) = Rs. 300 per patient day.',
-    moduleRef: 'Module 3: Food Purchasing, Receiving, Store Management & Cost Control'
+    quickCheck: {
+      question: 'Why must returning soiled meal trolleys from hospital wards enter directly into an isolated Dishwashing (Scullery) zone rather than passing through the Tray Assembly area?',
+      options: [
+        'To reduce the walking distance for kitchen chefs during lunch preparation',
+        'To prevent infectious ward pathogens, used utensils, and food waste from cross-contaminating clean plated patient meals',
+        'Because soiled trolleys are too heavy for standard kitchen floor tiles',
+        'To allow ward nurses to wash patient dishes before returning trolleys'
+      ],
+      correctIndex: 1,
+      explanation: 'Hospital trays returning from patient wards may carry clinical pathogens; an isolated soiled-return route preserves strict One-Way (Dirty-to-Clean) hygienic separation.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'The 6 Functional Zones of a Hospital Dietary Kitchen',
+        subtitle: 'Engineering Cross-Contamination Out of Daily Operations',
+        visualIllustration: 'cdm-kitchen-zones',
+        flowDiagramData: {
+          title: 'Hospital Multi-Stream Meal Workflow (Regular + Therapeutic Convergence)',
+          isMultiStream: true,
+          mainSteps: [
+            { step: 'Zone 1: Receiving Bay Gatekeeping', note: 'Verify COA, weight, pest-free truck, ≤5°C chilled / ≤-18°C frozen' },
+            { step: 'Zone 2: Segregated Dry, Chilled & Frozen Stores', note: 'FIFO/FEFO tagging · 15 cm off floor · raw bottom shelf' },
+            { step: 'Zone 3: Color-Coded Pre-Preparation', note: 'Dedicated raw meat, produce & allergen-free benches' },
+            { step: 'Zone 4: Hot Bulk & Therapeutic Cooking', note: 'Validated core lethality ≥75°C (probe verified)', isCcp: true },
+            { step: 'Zone 5: Clean Tray Assembly & Ticket Audit', note: 'Hot hold ≥63°C · Cold ≤5°C · Dual-ID & NPO check', isCcp: true },
+            { step: 'Ward Thermal Dispatch → Isolated Zone 6 Scullery', note: 'Deliver ≤30 min; soiled carts return via separate scullery door' }
+          ],
+          secondarySteps: [
+            { step: 'Therapeutic & IDDSI Puree Station', note: 'Dedicated salt-free / allergen-free kettles & IDDSI flow check', joinAtIndex: 4 },
+            { step: 'Cold Desserts, Oral Shakes & Salads', note: 'Chilled ≤5°C RTE plating line', joinAtIndex: 4 }
+          ]
+        },
+        bulletPoints: [
+          'Physical Barriers: Where full walls are unavailable, enforce color-coded floor zoning, dedicated equipment, and time-separated sanitization.',
+          'Dedicated Handwash Basins: Must be hands-free (elbow/knee/sensor), stocked with warm water, liquid antibacterial soap, paper towels, and pedal bin — never used for vegetable washing.'
+        ],
+        keyTakeaway:
+          'Facility flow design is your strongest silent supervisor — when clean and dirty paths never cross, outbreaks plummet.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Structural Hygiene, Ventilation, Lighting & Equipment Audit',
+        subtitle: 'Building & Utility Specifications Every CDM Inspects',
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-02',
+          version: 'Rev 1.8',
+          codexStepLabel: 'Facility & GMP Inspection',
+          docTitle: 'Weekly Hospital Kitchen Structural & Equipment Hygiene Audit',
+          purpose: 'Documents preventive facility checks across flooring, drainage, hood ventilation, lighting, water filtration, and cooking equipment prior to regulatory or JCI rounds.',
+          fields: [
+            { label: 'Lighting Standard', value: '≥ 500 Lux Prep/Tray Line (Shatterproof Sleeves)' },
+            { label: 'Floor & Coving', value: 'Anti-slip epoxy/tile · Coved wall junctions' },
+            { label: 'Exhaust & HVAC', value: 'Degreased baffle filters · Positive clean-zone airflow' },
+            { label: 'Potable Water Check', value: 'Free Chlorine 0.2–0.5 ppm · Monthly Micro Test' }
+          ],
+          tablePreview: {
+            headers: ['Facility Area', 'Inspection Criterion', 'Status', 'Corrective Action & Target Date'],
+            rows: [
+              ['Main Prep Zone', 'Hands-free sink operational, soap & paper stocked', 'PASS', 'None required'],
+              ['Exhaust Canopy', 'Baffle filters free of grease drip over stoves', 'PASS', 'Scheduled deep-clean every Sunday'],
+              ['Chiller #2 Door', 'Magnetic door gasket intact; zero ice buildup', 'ACTION', 'Engineering WO #442 raised — seal replacement 24h']
+            ]
+          },
+          signOffLine: 'CDM Inspector ________ | Hospital Engineering Lead ________'
+        },
+        bulletPoints: [
+          'Preventive Maintenance (PM): Maintain a live equipment asset register covering combi-ovens, blast chillers, dishmachines, and insulated meal trolleys.',
+          'Food-Grade Lubricants (NSF H1): Confirm hospital maintenance engineers exclusively use food-grade H1 lubricants on mixers, slicers, and conveyor belts.'
+        ],
+        keyTakeaway:
+          'A preventive engineering schedule avoids mid-service chiller failures, gasket leaks, and structural pest entry points.'
+      }
+    ]
   },
 
-  // MODULE 4: KITCHEN HYGIENE, SAFE TEMPERATURES (HACCP), CLEANING & DISHWASHING (8 MCQs)
+  // =========================================================================
+  // MODULE 3
+  // =========================================================================
   {
-    id: 'mfd-q25',
-    question: 'What is the "Temperature Danger Zone (TDZ)" in which food poisoning bacteria multiply rapidly?',
-    options: [
-      'Between +5°C and +60°C',
-      'Below -18°C',
-      'Above +100°C',
-      'Between 0°C and +2°C'
+    id: 'cdm-v-mod-3',
+    moduleNumber: 3,
+    title: 'Essential Nutrition Science, Macronutrients, Hydration & Patient Screening',
+    estimatedMinutes: 35,
+    overview:
+      'Apply core human nutrition principles to menu design, calculate patient calorie and protein delivery, monitor hydration needs, and execute first-line nutrition risk screening for timely RD escalation.',
+    internationalClauses: [
+      'WHO / DRI Clinical Energy & Protein Guidelines',
+      'MST / MUST Hospital Malnutrition Screening Protocols'
     ],
-    correctIndex: 0,
-    explanation:
-      'Bacteria grow rapidly between +5°C and +60°C. Cold food must be kept at ≤ +5°C and hot food at ≥ +63°C.',
-    moduleRef: 'Module 4: Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing'
+    keyPrinciples: [
+      'Macronutrients supply energy (Carbohydrates 4 kcal/g, Protein 4 kcal/g, Fat 9 kcal/g), while vitamins, minerals, fiber, and water drive immunity, healing, and electrolyte homeostasis.',
+      'Hospital malnutrition increases length of stay and infection risk; CDMs track meal consumption percentages and screen weight/appetite changes to trigger prompt Clinical Dietitian referrals.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Low Intake Escalation Trigger',
+        standardLimit: 'Any hospitalized patient consuming < 50% of meals for 3 consecutive days (or experiencing unintentional weight loss)',
+        correctiveProtocol: 'Document intake log, interview patient on food preferences/chewing issues, and submit immediate Clinical Dietitian Referral.'
+      }
+    ],
+    practicalChecklist: [
+      'Verify daily hospital menus deliver balanced energy (1,800–2,200 kcal standard) and adequate high-biological-value protein.',
+      'Review ward meal-intake sheets and ensure hydration rounds supply ≥ 1.5–2.0 L fluids daily (unless fluid-restricted).'
+    ],
+    quickCheck: {
+      question: 'A post-surgical patient eats only 25% of breakfast, lunch, and dinner for 3 consecutive days and reports loss of appetite. What is the Certified Dietary Manager’s correct action?',
+      options: [
+        'Reduce the patient’s portion size permanently to save food cost',
+        'Document the low intake, check patient food preferences/texture tolerance, and submit an immediate referral to the Clinical Dietitian',
+        'Prescribe high-dose intravenous antibiotics and discharge the patient',
+        'Wait 14 days to see if appetite returns naturally before recording anything'
+      ],
+      correctIndex: 1,
+      explanation: 'Intake below 50% for 3 consecutive days is a clinical malnutrition red flag requiring documented preference review and prompt escalation to the Clinical Dietitian.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Macronutrients, Micronutrients & Hospital Energy Density',
+        subtitle: 'Translating Nutritional Science Into Healing Patient Meals',
+        tableBlock: {
+          caption: 'Clinical Nutrition Quick-Reference for Hospital Menu Planning',
+          headers: ['Nutrient Group', 'Energy / Role', 'Key Hospital Food Sources', 'Clinical Care Considerations'],
+          rows: [
+            ['Carbohydrates', '4 kcal/g · Primary brain & muscle fuel', 'Whole grains, oats, brown rice, legumes, fruits', 'Control portion & glycemic index for Diabetic diets (45–60 g/meal)'],
+            ['Proteins', '4 kcal/g · Tissue repair, immunity & enzymes', 'Eggs, poultry, fish, lean meat, lentils, Greek yogurt', 'Increase to 1.2–1.5 g/kg for wounds, burns, sepsis & post-op healing'],
+            ['Fats (Lipids)', '9 kcal/g · Concentrated energy & Vitamins A,D,E,K', 'Olive/canola oil, fatty fish, nuts, avocado', 'Limit saturated (<7% kcal) & zero trans fats for Cardiac patients'],
+            ['Key Micronutrients', '0 kcal · Immunity, bone & wound healing', 'Vitamin C (citrus), Zinc (meat/seeds), Iron, Vit D, Ca', 'Protect water-soluble Vitamins B & C by steaming rather than over-boiling'],
+            ['Fluids & Electrolytes', 'Hydration, renal balance & circulation', 'Potable water, broths, milk, herbal tea, oral shakes', 'Standard ~30 mL/kg/day; strictly measure for CHF & Dialysis fluid restrictions']
+          ]
+        },
+        bulletPoints: [
+          'Nutrient Retention in Bulk Cooking: Cook vegetables in small batches using steam/convection ovens to preserve Vitamin C, folate, color, and texture.',
+          'Food-First Fortification: Enrich soups, mashed potatoes, and porridge with skim milk powder, egg whites, or olive oil to boost calories/protein for frail elderly patients without increasing plate volume.'
+        ],
+        keyTakeaway:
+          'Every tray is clinical therapy — cooking methods directly determine whether patients absorb healing protein and vitamins.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Nutrition Risk Screening, Malnutrition Red Flags & Intake Tracking',
+        subtitle: 'Partnering With Nursing & Dietitians to Stop Hospital Malnutrition',
+        twoColumns: {
+          leftTitle: 'Malnutrition Red Flags (Refer to RD)',
+          leftTone: 'rose',
+          leftItems: [
+            'Unintentional weight loss ≥ 5% in 1 month or ≥ 10% in 6 months',
+            'Oral intake < 50% of prescribed meals for ≥ 3 consecutive days',
+            'Chewing pain, ill-fitting dentures, coughing on liquids, or nausea',
+            'Stage 2–4 pressure ulcers, severe burns, dialysis, or oncology cachexia'
+          ],
+          rightTitle: 'CDM Frontline Nutritional Support Actions',
+          rightTone: 'emerald',
+          rightItems: [
+            'Conduct friendly patient meal-satisfaction & preference interviews within 24–48h of admission',
+            'Honor cultural, religious (Halal/Vegetarian), and personal dislikes promptly',
+            'Provide prescribed mid-morning / evening high-protein snacks & oral supplements (ONS)',
+            'Track ward-level calorie/plate-waste trends and share with the Nutrition Committee'
+          ]
+        },
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-03',
+          version: 'Rev 1.4',
+          codexStepLabel: 'Clinical Nutrition Screening',
+          docTitle: 'Patient Nutrition Preference, Intake & RD Referral Log',
+          purpose: 'Captures admission food preferences, allergen verifications, 3-day meal intake %, and timely referrals to Clinical Dietitians.',
+          fields: [
+            { label: 'Screening Tool Used', value: 'Malnutrition Screening Tool (MST Score 0–5)' },
+            { label: 'Referral Threshold', value: 'MST ≥ 2 or Intake < 50% × 3 Days' },
+            { label: 'Allergen Cross-Check', value: 'Verified against EMR & Wristband' },
+            { label: 'Completed By', value: 'Certified Dietary Manager / Diet Tech' }
+          ],
+          tablePreview: {
+            headers: ['Patient / Bed', 'Diet Order', '3-Day Avg Intake', 'MST Score / Trigger', 'CDM Action Taken'],
+            rows: [
+              ['Bed 304 (M, 72y)', 'Cardiac Low-Na', '85%', '0 (Low Risk)', 'Honored preference: grilled fish over chicken'],
+              ['Bed 311 (F, 64y)', 'High-Protein Soft', '35%', '3 (High Risk)', 'Immediate RD Referral sent; added chilled ONS shake'],
+              ['Bed 318 (M, 55y)', 'Renal Low-K+', '75%', '1 (Monitor)', 'Confirmed potassium-leached vegetables on ticket']
+            ]
+          },
+          signOffLine: 'CDM Signature ________ | Clinical Dietitian Received ________'
+        },
+        bulletPoints: [
+          'Always verify patient food allergies against both the Electronic Medical Record (EMR) and bedside wristband.',
+          'Escalate MST scores ≥ 2 or 3-day intake < 50% immediately so Clinical Dietitians can initiate oral nutrition support.'
+        ],
+        keyTakeaway:
+          'Nutrition screening turns dietary staff into an early-warning shield against hospital-acquired malnutrition.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 4
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-4',
+    moduleNumber: 4,
+    title: 'Clinical Therapeutic Diets & Medical Nutrition Execution',
+    estimatedMinutes: 40,
+    overview:
+      'Execute every major hospital therapeutic diet accurately — including Diabetic, Renal, Cardiac, Hepatic, Post-Operative, Neutropenic, and Allergen-Free orders — without kitchen cross-contact or nutrient errors.',
+    internationalClauses: [
+      'Academy of Nutrition & Dietetics (AND) Nutrition Care Manual',
+      'Hospital Therapeutic Diet Formulary Standards'
+    ],
+    keyPrinciples: [
+      'A therapeutic diet modifies nutrients, calories, fluids, or food safety rules to treat medical disease; serving an unapproved condiment or wrong salt packet can destabilize a critically ill patient.',
+      'Therapeutic recipes must be prepared with measured seasonings (e.g., herbs/lemon instead of salt/MSG for cardiac/renal trays) and clearly coded on printed meal tickets.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Therapeutic Diet & Condiment Restriction Accuracy',
+        standardLimit: '0% unauthorized sugar, salt sachets, high-potassium foods, or raw items on restricted clinical trays',
+        correctiveProtocol: 'Pull the tray before cart loading, re-plate using verified therapeutic items, log Near-Miss / Variance Report, and coach tray-line server.'
+      }
+    ],
+    practicalChecklist: [
+      'Verify salt packets are strictly removed from Cardiac/Low-Sodium and Renal trays, and sugar packets removed from Diabetic trays.',
+      'Confirm Neutropenic/Oncology trays contain zero raw salads, unpeeled fresh fruit, unpasteurized dairy, or pepper packets.'
+    ],
+    quickCheck: {
+      question: 'Which food combination is UNSAFE and must NEVER be placed on a Renal (Chronic Kidney Disease / Low-Potassium, Low-Sodium) patient tray?',
+      options: [
+        'Steamed white rice, herb-seasoned skinless chicken breast, and peeled apple slices',
+        'Banana, tomato soup, potato fries, orange juice, and salted packaged pickles',
+        'Egg-white omelet, white toast with unsalted butter, and cranberry juice',
+        'Boiled pasta with olive oil, garlic, and low-potassium cabbage'
+      ],
+      correctIndex: 1,
+      explanation: 'Bananas, tomatoes, un-leached potatoes, and orange juice are very high in Potassium (risking fatal cardiac arrhythmia in renal failure), and salted pickles are excessive in Sodium.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'The 6 Core Hospital Therapeutic Diets',
+        subtitle: 'Clinical Rationale, Allowed Foods & Strictly Prohibited Items',
+        visualIllustration: 'cdm-therapeutic-diets',
+        tableBlock: {
+          caption: 'Hospital Therapeutic Diet Execution Matrix',
+          headers: ['Therapeutic Diet', 'Target Clinical Limits', 'Recommended Kitchen Swaps', 'Strictly Avoid / Red Flags'],
+          rows: [
+            ['Diabetic (Carb-Controlled)', 'Consistent 45–60 g carbs/meal; zero simple sugars', 'Wholewheat chapati/oats, steamed veg, lean grilled protein, sugar-free jelly', 'Sweetened juices, white sugar sachets, syrups, pastries, sweet desserts'],
+            ['Renal (Low Na+, K+, PO4)', 'Na <2,000 mg · K+ <2,000 mg · PO4 <800–1,000 mg', 'White rice, egg whites, peeled apples, grapes, double-boiled/leached veg', 'Bananas, oranges, tomatoes, potatoes, dark colas, dairy excess, salt substitutes (KCl!)'],
+            ['Cardiac (Low-Na / Low-Fat)', 'Na ≤1,500–2,000 mg/day · Saturated fat <7%', 'Garlic, lemon, black pepper, herbs, baked fish, olive/canola oil', 'Table salt packets, soy sauce, stock cubes, processed deli meats, deep-fried food'],
+            ['Clear vs Full Liquid', 'Post-op / GI rest progression', 'Clear: strained broth, apple juice, tea, gelatin · Full: milk, strained cream soup, yogurt', 'Clear liquid must NEVER contain milk, pulp, seeds, or opaque solids'],
+            ['Neutropenic (Immunocompromised)', 'Minimal microbial load for chemotherapy/transplant', 'Well-done meat ≥75°C, UHT milk, canned fruit, individually sealed condiments', 'Raw salads, raw sprouts, soft unpasteurized cheese, deli cold cuts, raw honey']
+          ]
+        },
+        calloutBanner: {
+          label: 'Critical Clinical Safety Alert — Potassium Chloride Salt Substitutes',
+          text: 'NEVER give commercial "Lo-Salt" or potassium-chloride salt substitutes to Renal patients! They replace sodium with potassium and can trigger life-threatening hyperkalemia.',
+          tone: 'rose'
+        },
+        bulletPoints: [
+          'Double-check every tray ticket for hidden sodium (stock cubes, soy sauce, pickles) on Cardiac/Renal orders and simple sugars on Diabetic orders.',
+          'Potassium leaching (peeling, dicing, soaking, and double-boiling root vegetables in fresh water) significantly lowers potassium content for CKD meals.'
+        ],
+        keyTakeaway:
+          'Therapeutic diet accuracy is clinical medication delivered on a plate — verify every condiment, beverage, and side dish.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Managing Allergens, Celiac (Gluten-Free) & Cultural Diets',
+        subtitle: 'Dedicated Purple-Zone Equipment & Controlled Diet Census',
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-04',
+          version: 'Rev 2.1',
+          codexStepLabel: 'Therapeutic Production Control',
+          docTitle: 'Daily Therapeutic & Allergen-Safe Diet Master Census Sheet',
+          purpose: 'Translates live EMR physician diet orders into exact batch counts for the Diet Cook and Allergen-Free station before cooking begins.',
+          fields: [
+            { label: 'Diet Manual Version', value: 'Hospital Clinical Diet Manual 2026' },
+            { label: 'Allergen Kit Used', value: 'Dedicated Purple Boards, Knives & Pans' },
+            { label: 'Diet Cook Assigned', value: 'Senior Therapeutic Chef' },
+            { label: 'Pre-Service Tasting', value: 'Verified by CDM (Salt/Texture/Temp)' }
+          ],
+          tablePreview: {
+            headers: ['Diet Category', 'Batch Count', 'Key Modification Rule', 'Ticket Color / Tag'],
+            rows: [
+              ['Diabetic 1800 kcal', '42 Trays', 'No sugar/honey; 1 measured starch portion', 'Blue Diabetic Band'],
+              ['Renal Low-K+ / Low-Na', '14 Trays', 'Zero salt, zero tomato/potato; leached carrots', 'Yellow Renal Band'],
+              ['Neutropenic (Oncology)', '9 Trays', 'Cooked ≥75°C; sealed UHT milk; zero raw garnish', 'Green Sterile Seal'],
+              ['Celiac / Nut-Free', '3 Trays', 'Purple station first-run; double-checked ingredient labels', 'RED ALLERGEN FLAG']
+            ]
+          },
+          signOffLine: 'Therapeutic Chef ________ | Certified Dietary Manager ________'
+        },
+        bulletPoints: [
+          'Always prepare Allergen-Free and Celiac (Gluten-Free) meals FIRST on freshly sanitized surfaces using dedicated purple-handled tools, cover immediately, and label with patient full name & bed number.',
+          'Check every composite ingredient label (sauces, gravy thickeners, spice blends) for hidden wheat, milk, soy, egg, peanut, tree nuts, fish, shellfish, or sesame.'
+        ],
+        keyTakeaway:
+          'Dedicated purple utensils, label reading, and color-coded meal tickets stop fatal allergen and therapeutic errors.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 5
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-5',
+    moduleNumber: 5,
+    title: 'Texture-Modified Diets, Dysphagia Safety & The IDDSI Framework',
+    estimatedMinutes: 35,
+    overview:
+      'Prevent choking and silent aspiration pneumonia by standardizing dysphagia foods and thickened liquids using the global IDDSI (Levels 0–7) framework and bedside Fork Drip, Spoon Tilt, and Syringe Flow tests.',
+    internationalClauses: [
+      'IDDSI Global Framework v2.0 (Levels 0–7)',
+      'Speech-Language Pathologist (SLP) Dysphagia Safety Standards'
+    ],
+    keyPrinciples: [
+      'Dysphagia (swallowing impairment in stroke, elderly, ICU, and neurological patients) can cause fatal choking or aspiration pneumonia if food lumps are too big or liquids are too thin.',
+      'The CDM enforces standardized IDDSI testing (10 mL Syringe Flow Test for drinks; Fork Drip, Fork Pressure & Spoon Tilt Tests for foods) before every meal service.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'IDDSI Texture & Viscosity Verification',
+        standardLimit: '100% compliance with prescribed IDDSI Level (e.g., Level 4 Pureed: zero lumps, passes Spoon Tilt; Level 5 Minced: ≤4 mm particle size)',
+        correctiveProtocol: 'Re-blend, strain, or adjust food-grade thickener to specification; never serve mixed thin-liquid + solid foods (e.g., watery soup with chunks) to dysphagia patients.'
+      }
+    ],
+    practicalChecklist: [
+      'Keep a laminated IDDSI testing chart, 10 mL slip-tip syringes, and metal testing forks at the Diet Cooking station.',
+      'Verify ice cream, gelatin, and soup do not melt into thin Level 0 liquid in the mouth for patients ordered Thickened Liquids.'
+    ],
+    quickCheck: {
+      question: 'A stroke patient is prescribed an IDDSI Level 4 (Pureed) diet with Level 2 (Mildly Thick) drinks. Which item is DANGEROUS and must be removed from their tray immediately?',
+      options: [
+        'Smooth pureed chicken that holds shape on a spoon and slides cleanly off when tilted',
+        'A cup of vanilla ice cream and a bowl of thin clear broth with diced vegetable chunks',
+        'Smooth pureed sweet potato with no lumps or liquid separation',
+        'Pre-thickened apple juice verified at 6 mL remaining on a 10-second IDDSI syringe flow test'
+      ],
+      correctIndex: 1,
+      explanation: 'Ice cream melts into Level 0 thin liquid inside the mouth, and broth with vegetable chunks is a dangerous dual-consistency food that causes rapid aspiration.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Understanding the Global IDDSI Dysphagia Scale (Levels 0–7)',
+        subtitle: 'Eliminating Ambiguous Labels Like "Soft" or "Semi-Solid"',
+        visualIllustration: 'cdm-iddsi-levels',
+        calloutBanner: {
+          label: 'Zero-Aspiration Kitchen Rule: Avoid Dual-Consistency & Melting Foods',
+          text: 'Patients on Thickened Liquids (Levels 1–4) must NEVER receive ice cream, jelly/gelatin, watermelon, or cereal swimming in thin milk — these melt or separate into thin liquid in the throat and enter the lungs!',
+          tone: 'amber'
+        },
+        bulletPoints: [
+          'Why IDDSI Replaced Old Terms: Words like "soft diet" meant different things in every kitchen; IDDSI gives exact measurable particle sizes (4 mm for Level 5, 1.5 cm for Level 6) and objective tests.',
+          'Dignity & Presentation: Use food molds, piping bags, and vibrant natural colors for Level 4 pureed meals so patients enjoy eating and avoid malnutrition.'
+        ],
+        keyTakeaway:
+          'Standardized IDDSI testing transforms dysphagia meal prep from guesswork into measurable life-saving precision.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Objective IDDSI Kitchen Testing Methods & Verification Log',
+        subtitle: 'Syringe Flow Test, Fork Drip Test, Fork Pressure & Spoon Tilt',
+        tableBlock: {
+          caption: 'Mandatory IDDSI Pre-Service Verification Tests',
+          headers: ['IDDSI Test Method', 'Used For', 'How to Perform on the Line', 'Pass Criterion'],
+          rows: [
+            ['10 mL Syringe Flow Test', 'Drinks (Levels 0–3)', 'Fill 10 mL slip-tip syringe to 10 mL mark; release nozzle for exactly 10 seconds', 'L0: 0 mL · L1: 1–4 mL · L2: 4–8 mL · L3: >8 mL left'],
+            ['Fork Drip Test', 'Level 3 & Level 4', 'Scoop food onto fork tines and observe drip behavior', 'L4 Pureed sits in a mound above fork; does not continuously drip through'],
+            ['Spoon Tilt Test', 'Level 4 Pureed & L5', 'Hold sample on teaspoon, tilt sideways and flick gently', 'Holds shape on spoon, slides off cleanly with almost no sticky residue'],
+            ['Fork Pressure Test', 'Level 5 (4 mm) & L6 (1.5 cm)', 'Press side/tines of fork until thumbnail blanches white', 'Sample squashes easily and does not spring back; fits 4 mm / 1.5 cm size rule']
+          ]
+        },
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-05',
+          version: 'Rev 1.5',
+          codexStepLabel: 'Dysphagia Safety CCP Log',
+          docTitle: 'Pre-Service IDDSI Texture & Thickened Fluid Verification Log',
+          purpose: 'Verifies that every batch of pureed, minced-moist, soft bite-sized food and thickened liquid meets IDDSI standards at actual serving temperature.',
+          fields: [
+            { label: 'Service Shift', value: 'Lunch & Dinner Dysphagia Line' },
+            { label: 'Testing Tools', value: '10 mL BD Syringe · Standard 4 mm Fork · Teaspoon' },
+            { label: 'Temperature Check', value: 'Tested at Serving Temp (≥ 63°C Hot / ≤ 5°C Cold)' },
+            { label: 'Verified By', value: 'Diet Chef & Certified Dietary Manager' }
+          ],
+          tablePreview: {
+            headers: ['Menu Item', 'Target IDDSI', 'Test Performed', 'Result', 'Sign-Off'],
+            rows: [
+              ['Pureed Roast Chicken & Gravy', 'Level 4 Pureed', 'Fork Drip + Spoon Tilt', 'PASS (Cohesive, zero lumps)', 'CDM ✓'],
+              ['Minced Spinach & Lentils', 'Level 5 Minced', '4 mm Slot + Fork Pressure', 'PASS (No liquid separation)', 'CDM ✓'],
+              ['Thickened Orange Drink', 'Level 2 Mildly Thick', '10 mL Syringe (10 sec)', '6.2 mL left — PASS', 'CDM ✓']
+            ]
+          },
+          signOffLine: 'Diet Chef ________ | CDM Pre-Release Approval ________'
+        },
+        bulletPoints: [
+          'Perform both the 10 mL Syringe Flow Test (for drinks) and Fork Drip / Spoon Tilt tests (for pureed/minced meals) before opening the tray line.',
+          'Document every batch test on CDM-DOC-05 and re-check viscosity whenever hot thickened soups sit longer than 20 minutes.'
+        ],
+        keyTakeaway:
+          'Always test IDDSI consistency at actual serving temperature — starches thicken as they cool and thin out if reheated.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 6
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-6',
+    moduleNumber: 6,
+    title: 'Hospital Food Safety Hazards, Microbiology & Vulnerable (YOPI) Patients',
+    estimatedMinutes: 35,
+    overview:
+      'Protect immunologically vulnerable hospital populations (Young, Old, Pregnant, Immunocompromised — YOPI) by mastering the 4 hazard classes, bacterial growth kinetics on the interactive Germometer, and high-risk hospital food controls.',
+    internationalClauses: [
+      'Codex Alimentarius CXC 1-1969 Hazard Control',
+      'WHO Five Keys to Safer Food in Healthcare Settings'
+    ],
+    keyPrinciples: [
+      'Hospital patients belong to the highest-risk YOPI demographic: low infectious doses of Listeria, Salmonella, E. coli, or Norovirus that cause mild upset in healthy adults can be fatal in hospitalized patients.',
+      'Controlling FATTOM factors — especially keeping perishable food out of the 5°C–63°C Temperature Danger Zone — prevents logarithmic bacterial multiplication and spore germination.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Hospital Danger Zone & Core Lethality Control',
+        standardLimit: 'Cold ≤ 5°C · Hot ≥ 63°C · Poultry/Minced/Reheated Core ≥ 75°C',
+        correctiveProtocol: 'Discard any high-risk hospital meal exposed between 5°C and 63°C for > 2 hours (stricter hospital YOPI limit).'
+      }
+    ],
+    practicalChecklist: [
+      'Enforce zero bare-hand contact with ready-to-eat (RTE) patient salads, fruits, sandwiches, and bread.',
+      'Verify chilled desserts, oral nutrition shakes, and cooked rice are rapidly chilled and never left on ward counters.'
+    ],
+    quickCheck: {
+      question: 'Why are Listeria monocytogenes and Salmonella uniquely dangerous in a hospital dietary department compared to a standard public restaurant?',
+      options: [
+        'Hospital kitchens operate at higher humidity than restaurants',
+        'Hospital patients are predominantly YOPI (Young, Old, Pregnant, Immunocompromised), where even low pathogen levels can cause sepsis, meningitis, or fatality',
+        'Listeria only grows inside stainless steel hospital trolleys',
+        'Antibiotics in hospitals make food bacteria immune to 75°C cooking'
+      ],
+      correctIndex: 1,
+      explanation: 'YOPI patients have weakened immune defenses, making zero-tolerance pathogen prevention, chilled ≤4°C control (Listeria grows slowly even in cold!), and ≥75°C cooking essential.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'The Four Food Safety Hazards in Hospital Kitchens',
+        subtitle: 'Interactive Classification of Clinical Dietary Contamination Risks',
+        visualIllustration: 'four-hazards',
+        bulletPoints: [
+          'Microbiological: Salmonella (poultry/eggs), Listeria monocytogenes (chilled RTE foods, soft cheese — grows even at 4°C!), Bacillus cereus (warm rice), Clostridium perfringens (slow-cooled stews), Norovirus (sick food handlers).',
+          'Physical: Broken ceramic plate chips, metal scourer strands, bone splinters in fish/poultry, staples from grocery cartons.',
+          'Chemical: Quaternary sanitizer spray landing on patient trays, dishmachine detergent residue, unapproved pest sprays.',
+          'Allergenic: Cross-contact of peanuts, milk, egg, gluten, soy, or sesame onto allergen-restricted patient trays.'
+        ],
+        classifierDrill: [
+          {
+            item: 'Stainless steel wire bristle from a worn kitchen pot scourer found in pureed soup',
+            category: 'Physical',
+            reason: 'Hard metallic foreign object posing severe internal laceration or choking hazard to a patient.'
+          },
+          {
+            item: 'Listeria monocytogenes multiplying on pre-sliced chilled turkey stored at 7°C for 5 days',
+            category: 'Microbiological',
+            reason: 'Cold-tolerant pathogenic bacterium capable of causing fatal sepsis in elderly or pregnant patients.'
+          },
+          {
+            item: 'Alkaline oven degreaser overspray contaminating uncovered patient dessert bowls',
+            category: 'Chemical',
+            reason: 'Corrosive cleaning chemical entering ready-to-eat patient food.'
+          },
+          {
+            item: 'Trace walnut oil transferred via an unwashed ladle onto a nut-allergic pediatric tray',
+            category: 'Allergenic',
+            reason: 'Tree nut proteins can trigger life-threatening anaphylactic shock even in trace amounts.'
+          }
+        ],
+        keyTakeaway:
+          'Never use steel wool scourers in hospital kitchens, store chemicals locked away from food, and segregate all allergens.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Bacterial Spores, Danger Zone & Interactive Hospital Germometer',
+        subtitle: 'Click Every Temperature Stop (-18°C to 100°C) to Master Thermal Control',
+        visualIllustration: 'microbe-spore',
+        germometerInteractive: true,
+        highLowRiskDrill: [
+          {
+            food: 'Cooked chicken biryani held in a disconnected ward cart at 42°C for 3 hours',
+            risk: 'High-Risk',
+            reason: 'High protein & moisture held at peak Danger Zone allows Bacillus cereus & Clostridium perfringens spore outgrowth.'
+          },
+          {
+            food: 'Unopened UHT tetra-pack milk stored in dry store at 20°C',
+            risk: 'Low-Risk',
+            reason: 'Commercially sterile aseptic packaging prevents microbial growth until opened.'
+          },
+          {
+            food: 'Freshly pureed custard dessert for geriatric ward held unchilled on counter',
+            risk: 'High-Risk',
+            reason: 'Dairy protein, neutral pH, high moisture, and zero downstream cooking step.'
+          },
+          {
+            food: 'Individually sealed packets of dry salted crackers for clear-liquid transition',
+            risk: 'Low-Risk',
+            reason: 'Very low water activity (Aw < 0.50) prevents bacterial multiplication.'
+          }
+        ],
+        bulletPoints: [
+          'Click each stop on the interactive Germometer above to compare Freezing (-18°C), Chilled (1°C–5°C), Peak Danger Zone (37°C), Hot Hold (≥ 63°C), and Cooking Lethality (≥ 75°C).',
+          'Classify each hospital food item above — ready-to-eat high-protein, high-moisture dishes require strict cold/hot thermal control.'
+        ],
+        keyTakeaway:
+          'In hospital foodservice, keep cold food ≤ 4°C (limit ≤ 5°C), hot food ≥ 63°C, and discard time-temperature abused items after 2 hours.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 7
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-7',
+    moduleNumber: 7,
+    title: 'Hospital Dietary SOPs & Prerequisite Hygiene Programmes (PRPs)',
+    estimatedMinutes: 35,
+    overview:
+      'Execute rock-solid Prerequisite Programmes on the hospital kitchen floor through 5 interactive Standard Operating Procedures: Hand Hygiene & 48-Hour Illness Exclusion, Color-Coded Boards, Commercial Dishmachine Sanitizing, Pest Control, and Allergen/NPO Controls.',
+    internationalClauses: [
+      'Codex GHP Prerequisite Programmes',
+      'WHO Hand Hygiene & Hospital Infection Prevention (IPC)'
+    ],
+    keyPrinciples: [
+      'Prerequisite SOPs eliminate baseline environmental contamination before a single patient meal is cooked.',
+      'Every kitchen staff member must know exact sanitizer concentrations (e.g., 50–100 ppm chlorine or 200 ppm quat), dishmachine final rinse temperature (≥ 82°C), and the mandatory 48-hour symptom-free return rule after GI illness.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Commercial Dishmachine Sanitizing Rinse',
+        standardLimit: 'Wash tank 55°C–65°C · Thermal Sanitizing Final Rinse ≥ 82°C (or validated 50–100 ppm chlorine chemical rinse)',
+        correctiveProtocol: 'Stop warewashing immediately if rinse gauge drops < 82°C; switch to validated 3-sink wash-rinse-sanitize manual SOP and call Engineering.'
+      }
+    ],
+    practicalChecklist: [
+      'Inspect every food handler’s nails, hairnet/beard snood, clean uniform, zero jewelry, and health status at shift start.',
+      'Check dishmachine wash/rinse gauges and chemical sanitizer test strips at the start of every meal shift.'
+    ],
+    quickCheck: {
+      question: 'What is the minimum required thermal sanitizing final rinse temperature in a commercial hospital dishmachine to kill foodborne pathogens on patient trays?',
+      options: [
+        '45°C',
+        '60°C',
+        '82°C (180°F)',
+        '37°C'
+      ],
+      correctIndex: 2,
+      explanation: 'High-temperature commercial dishmachines must maintain a final sanitizing rinse of at least 82°C (180°F) so plate surface temperature reaches ≥ 71°C for effective thermal sanitization.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Prerequisite Hygiene Programmes: Foundation of Hospital Food Safety',
+        subtitle: 'Interactive Floor SOPs — Click Each Protocol Tab Below',
+        visualIllustration: 'prp-foundation',
+        prpProceduresBlock: [
+          {
+            prpCode: 'CDM-SOP-01',
+            prpName: 'Hand Hygiene, PPE & 48-Hour Illness Rule',
+            objective: 'Prevent Norovirus, Staphylococcus, and enteric pathogen transfer from food handlers to vulnerable patients.',
+            steps: [
+              'Remove watches, rings, and nail polish; cover hair/beard completely with hairnets and wear clean department-issued uniform & apron.',
+              'Wash hands for ≥ 20 seconds using warm water and liquid antibacterial soap before entering kitchen, after restroom use, after touching raw meat, trash, or face, and before putting on gloves.',
+              'Cover minor clean cuts with a bright BLUE waterproof detectable plaster PLUS a disposable food-grade glove.',
+              'Exclude any staff reporting vomiting, diarrhea, jaundice, fever with sore throat, or infected skin lesions immediately — permit return ONLY after 48 hours completely symptom-free and medical clearance.'
+            ],
+            verificationRecord: 'Daily Staff Hygiene & Fitness-to-Work Sign-In Log (checked by CDM every morning).'
+          },
+          {
+            prpCode: 'CDM-SOP-02',
+            prpName: 'Color-Coded Cutting Boards & Utensil Segregation',
+            objective: 'Eliminate raw-to-cooked and allergen cross-contamination during meal preparation.',
+            steps: [
+              'RED: Raw red meat · YELLOW: Raw poultry · BLUE: Raw fish/seafood.',
+              'GREEN: Raw fruits & washed salads · BROWN: Unwashed root vegetables.',
+              'WHITE: Bakery, dairy & ready-to-eat cooked items · PURPLE: Dedicated Allergen-Free / Celiac (Gluten-Free) preparation ONLY.',
+              'Wash, rinse, sanitize (200 ppm quat or 100 ppm chlorine), and air-dry boards vertically on slotted racks after each batch; discard deeply scored boards.'
+            ],
+            verificationRecord: 'Pre-Operational Sanitation Verification Checklist & Monthly Board Replacement Audit.'
+          },
+          {
+            prpCode: 'CDM-SOP-03',
+            prpName: 'Commercial Dishmachine & 3-Sink Manual Sanitizing',
+            objective: 'Guarantee every returning patient plate, lid, and utensil is sanitized free of hospital pathogens.',
+            steps: [
+              'Scrape food waste into pedal-operated bins and pre-rinse soiled dishes in the isolated Zone 6 Scullery.',
+              'Verify commercial dishmachine Wash Tank = 55°C–65°C and Final Thermal Sanitizing Rinse ≥ 82°C (if chemical machine, verify 50–100 ppm chlorine with test strip).',
+              'If machine fails, execute 3-Compartment Sink SOP: Sink 1 Wash (detergent ≥ 45°C) → Sink 2 Clean Rinse → Sink 3 Sanitize (50–100 ppm chlorine ≥ 1 min or 200 ppm quat) → Air Dry ONLY (never towel-dry!).',
+              'Store sanitized trays inverted on clean mobile racks protected from splashes.'
+            ],
+            verificationRecord: 'Shift Dishmachine Temperature & Sanitizer Strip Log (logged 3× daily).'
+          },
+          {
+            prpCode: 'CDM-SOP-04',
+            prpName: 'Integrated Pest Management (IPM) & Waste Control',
+            objective: 'Maintain a 100% pest-free hospital kitchen without risking toxic pesticide contamination.',
+            steps: [
+              'Seal door sweeps (< 3 mm gap), fit intact mesh flyscreens on windows, and install UV shatterproof electric fly killers AWAY from open food prep.',
+              'Line waste bins with heavy-duty bags, keep foot-pedal lids closed, and empty whenever 75% full via the external waste corridor.',
+              'Allow only licensed IPM contractors to service numbered external bait stations and internal non-toxic glue traps; maintain SDS sheets in the CDM binder.',
+              'Inspect incoming cardboard produce crates outside Zone 2 and transfer dry items into sealed food-grade containers.'
+            ],
+            verificationRecord: 'Monthly Licensed Pest Control Trend Report & Sighting Action Log.'
+          },
+          {
+            prpCode: 'CDM-SOP-05',
+            prpName: 'Allergen Isolation & NPO Rapid-Pull Protocol',
+            objective: 'Zero patient anaphylaxis events and zero surgical cancellations caused by NPO tray errors.',
+            steps: [
+              'Highlight every patient allergy and NPO status in bold red on the Ward Diet Sheet and tray ticket.',
+              'Cook and plate allergen-free meals FIRST using Purple tools; seal tray with tamper-evident allergen sticker before regular line starts.',
+              'Upon receiving a phone or EMR "NPO" update from a ward nurse, immediately pull the tray from the line or call the cart runner via radio/phone BEFORE bedside delivery.',
+              'Verify every late/new admission meal ticket against the EMR before releasing from the kitchen.'
+            ],
+            verificationRecord: 'Daily Allergen & NPO Verification Register signed by Tray-Line Checker.'
+          }
+        ],
+        bulletPoints: [
+          'Inspect all five interactive Hospital SOP tabs above — covering Hand Hygiene & 48h Illness Exclusion, Color-Coded Boards, Commercial Dishmachine ≥ 82°C Rinse, IPM, and Allergen/NPO Pulls.',
+          'Post waterproof SOP quick-reference charts directly at handwash sinks, prep tables, and the dishmachine control panel.'
+        ],
+        keyTakeaway:
+          'Written SOPs only protect patients when checked live on the floor every single shift with objective gauges and test strips.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 8
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-8',
+    moduleNumber: 8,
+    title: 'Cycle Menu Planning, Standardized Recipes & Portion Control Engineering',
+    estimatedMinutes: 35,
+    overview:
+      'Design nutritionally balanced 14-day or 28-day hospital cycle menus, write ironclad Standardized Recipes with exact Edible Portion (EP) yields, and enforce calibrated scoops and ladles for consistent patient nutrition and food cost.',
+    internationalClauses: [
+      'Institutional Cycle Menu Engineering Best Practices',
+      'Standardized Portion & Nutrient Consistency Standards'
+    ],
+    keyPrinciples: [
+      'A 14-day or 28-day Cycle Menu prevents patient menu fatigue, streamlines seasonal purchasing, stabilizes food cost, and simplifies staff training.',
+      'Standardized Recipes ensure every chef produces the exact same taste, calorie/sodium content, portion yield, and cost per serving — regardless of who is on shift.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Portion Size & Nutrient Accuracy',
+        standardLimit: '± 5% tolerance on standardized scoop/ladle weight across all therapeutic and regular servings',
+        correctiveProtocol: 'Re-calibrate tray-line serving utensils before startup; audit 3 random plated portions per meal on a digital scale.'
+      }
+    ],
+    practicalChecklist: [
+      'Post laminated Standardized Recipe Cards and a Scoop/Ladle Portion Chart directly at the cooking and tray assembly stations.',
+      'Check seasonal ingredient availability and cultural/religious preferences (Halal, local favorites) before locking each quarterly cycle menu.'
+    ],
+    quickCheck: {
+      question: 'If a hospital recipe uses a #8 portion scoop (disher) to serve mashed potatoes on Diabetic patient trays, approximately how much volume does one level #8 scoop hold?',
+      options: [
+        '1 cup (240 mL)',
+        '1/2 cup (4 fl oz / ~120 mL)',
+        '1 tablespoon (15 mL)',
+        '2 cups (480 mL)'
+      ],
+      correctIndex: 1,
+      explanation: 'Scoop numbers equal the number of scoops per quart (32 fl oz): 32 ÷ 8 = 4 fl oz = 1/2 cup (~120 mL), ensuring exact carbohydrate consistency for Diabetic patients.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Cycle Menu Architecture & Portion Utensil Calibration',
+        subtitle: 'Balancing Patient Enjoyment, Clinical Accuracy & Kitchen Efficiency',
+        twoColumns: {
+          leftTitle: 'Cycle Menu Design Principles (14–28 Days)',
+          leftTone: 'blue',
+          leftItems: [
+            'Matches average hospital stay (long-term care uses 28-day; acute care uses 7–14 day cycles)',
+            'Balances color, texture, flavor, cooking method & equipment load (avoid overloading ovens)',
+            'Adapts seamlessly from one "Master Regular Menu" into Diabetic, Renal, Cardiac & IDDSI extensions',
+            'Incorporates seasonal produce to maximize freshness and keep PPD food cost predictable'
+          ],
+          rightTitle: 'Why Standardized Recipes Are Mandatory',
+          rightTone: 'emerald',
+          rightItems: [
+            'Guarantees identical Sodium, Potassium, Carbohydrate & Protein values per serving',
+            'Eliminates chef guesswork — new cooks deliver consistent hospital quality on Day 1',
+            'Prevents over-production waste and mid-service food run-outs (exact batch scaling)',
+            'Locks in accurate Food Cost per portion for monthly hospital budgeting'
+          ]
+        },
+        tableBlock: {
+          caption: 'Essential Hospital Portion Control Scoops (Dishers) & Ladles Guide',
+          headers: ['Utensil Size', 'Exact Volume (fl oz / mL)', 'Cup Equivalent', 'Typical Hospital Application'],
+          rows: [
+            ['#6 Scoop', '5.3 fl oz (~160 mL)', '2/3 Cup', 'Main starch (rice/pasta) for High-Calorie / Regular'],
+            ['#8 Scoop', '4.0 fl oz (~120 mL)', '1/2 Cup', 'Diabetic measured rice, mashed potato, pureed entrée'],
+            ['#10 Scoop', '3.2 fl oz (~95 mL)', '2/5 Cup', 'Standard cooked vegetables, hot cereal, custard'],
+            ['#12 Scoop', '2.7 fl oz (~80 mL)', '1/3 Cup', 'Soft fruit, side salad, pudding desserts'],
+            ['#16 Scoop', '2.0 fl oz (~60 mL)', '1/4 Cup', 'Pureed side veg, thick sauce, renal restricted sides'],
+            ['4 oz / 6 oz Ladle', '120 mL / 180 mL', '1/2 – 3/4 Cup', 'Measured soups, dals, broths & gravies']
+          ]
+        },
+        bulletPoints: [
+          'Adapt one Master Cycle Menu cleanly across Regular, Diabetic, Cardiac, Renal, and IDDSI extensions to simplify kitchen prep and ordering.',
+          'Use calibrated numbered scoops (#6, #8, #10, #12, #16) and oz ladles on every tray-line shift to lock in exact calories and food cost.'
+        ],
+        keyTakeaway:
+          'Scoop Number = Scoops per 32 fl oz Quart (#8 = 1/2 cup; #16 = 1/4 cup) — the easiest way to guarantee therapeutic nutrient consistency.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Hospital Standardized Recipe & Yield Engineering Card',
+        subtitle: 'Integrating HACCP CCPs, Allergens & Cost Into One Master Card',
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-06',
+          version: 'Rev 3.0',
+          codexStepLabel: 'Production Standardization',
+          docTitle: 'Standardized Hospital Recipe Card (50 Portions — Diabetic & Cardiac Friendly)',
+          purpose: 'Controls exact ingredient weights (AP vs EP), allergen flags, cooking CCP lethality limit, serving utensil, nutrient profile, and cost per serving.',
+          fields: [
+            { label: 'Recipe Name & Yield', value: 'Herb-Steamed Lemon Chicken (50 × 100 g Cooked)' },
+            { label: 'Serving Utensil', value: 'Calibrated 100 g Tongs + 2 oz Low-Na Jus Ladle' },
+            { label: 'CCP Cooking Limit', value: 'Internal Core ≥ 75°C for 15 sec (Probe Thickest Piece)' },
+            { label: 'Nutrition / Allergens', value: '165 kcal · 28 g Protein · 140 mg Na · Allergens: NONE' }
+          ],
+          tablePreview: {
+            headers: ['Ingredient', 'As Purchased (AP)', 'Edible Portion (EP)', 'Prep / Scaling Note'],
+            rows: [
+              ['Skinless Chicken Breast', '6.25 kg', '5.00 kg (80% yield)', 'Trim fat; cut uniform 125 g raw fillets'],
+              ['Fresh Lemon Juice & Herbs', '450 mL', '450 mL (100%)', 'Zero table salt; rosemary, thyme & garlic'],
+              ['Olive Oil (Cold-Pressed)', '200 mL', '200 mL (100%)', 'Light brush before combi-steam roast at 165°C']
+            ]
+          },
+          signOffLine: 'Executive Chef ________ | Clinical Dietitian & CDM Approved ________'
+        },
+        bulletPoints: [
+          'Scaling Factor Formula: Factor = Desired Portions ÷ Original Recipe Yield. Multiply every ingredient weight by the exact Factor (always weigh dry/meat items in grams/kg rather than volume cups!).',
+          'As Purchased (AP) vs Edible Portion (EP): If spinach has 75% yield and you need 6 kg EP, order AP = 6 ÷ 0.75 = 8.0 kg.'
+        ],
+        keyTakeaway:
+          'Weighing ingredients and applying AP/EP yield factors prevents both clinical shortage and budget overruns.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 9
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-9',
+    moduleNumber: 9,
+    title: 'Ethical Procurement, Receiving Gatekeeper & FIFO/FEFO Inventory Control',
+    estimatedMinutes: 30,
+    overview:
+      'Protect hospital food quality and budgets from the loading bay inward using written purchase specifications, Approved Supplier Lists, strict receiving temperature rejection rules, and FIFO/FEFO Par-Level store management.',
+    internationalClauses: [
+      'ISO 22000 Supplier Evaluation & Purchasing Controls',
+      'Hospital Ethical Procurement & Cold-Chain Receiving SOP'
+    ],
+    keyPrinciples: [
+      'Food safety and cost control begin at the Receiving Bay: once you sign an invoice for warm meat or short-weight produce, the hospital inherits the hazard and the financial loss.',
+      'Strict FIFO (First-In, First-Out) and FEFO (First-Expired, First-Out) stock rotation, Par-Level reordering, and vertical chiller zoning eliminate spoilage and cross-contamination.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Cold-Chain Receiving Temperature Gatekeeper',
+        standardLimit: 'Chilled foods ≤ 5°C (Target ≤ 4°C) · Frozen foods ≤ -18°C (rock solid, zero thaw crystals) · Intact packaging & valid expiry',
+        correctiveProtocol: 'REJECT warm, thawed, dented/swollen canned, pest-infested, or short-dated deliveries immediately; issue Supplier Non-Conformance Report and do not sign invoice.'
+      }
+    ],
+    practicalChecklist: [
+      'Never sign a supplier delivery invoice before physically weighing items on a calibrated receiving scale and probing chilled/frozen temperatures.',
+      'Audit chiller vertical shelving daily: Ready-to-Eat on TOP, raw vegetables in MIDDLE, raw meat/poultry in leak-proof trays on BOTTOM.'
+    ],
+    quickCheck: {
+      question: 'A supplier delivers 40 kg of fresh chilled chicken breasts for tomorrow’s hospital lunch. Your calibrated digital probe reads +9.5°C between packs. What must you do?',
+      options: [
+        'Accept the chicken and immediately cook it at 85°C to save time',
+        'Accept it at a 20% discount and put it in the deep freezer immediately',
+        'Reject the delivery immediately at the receiving bay, record a Supplier Non-Conformance Report, and source from an approved backup vendor',
+        'Wash the chicken with hot water and store it on the top shelf of the chiller'
+      ],
+      correctIndex: 2,
+      explanation: 'Chilled poultry above 5°C has already entered the bacterial Danger Zone; it must be rejected at receiving to protect vulnerable hospital patients.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Approved Supplier Gatekeeping & Receiving Bay Controls',
+        subtitle: 'Stopping Unsafe or Short-Weight Stock Before It Enters Your Hospital',
+        visualIllustration: 'approved-supplier',
+        bulletPoints: [
+          'Written Purchase Specifications: Define exact grade, cut weight, fat %, Halal certification, packaging size, minimum remaining shelf-life, and delivery temperature for every item.',
+          'Ethical Procurement: Obtain competitive bids from Approved Suppliers only; enforce zero conflict-of-interest/kickback policies and verify Invoice vs Purchase Order vs Physical Delivery (3-Way Match).',
+          'Immediate Rejection Criteria: Chilled > 5°C, thawed/refrozen crystals, swollen/rusty/seam-dented cans (Botulism risk!), expired dates, broken seals, or dirty delivery trucks.'
+        ],
+        keyTakeaway:
+          'Your signature on the delivery note is a legal and clinical certification that the food is safe, complete, and correctly priced.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Store Zoning, FIFO/FEFO Rotation & Par-Level Control',
+        subtitle: 'Maximizing Shelf-Life While Maintaining Zero Spoilage',
+        visualIllustration: 'cdm-inventory-fifo',
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-07',
+          version: 'Rev 2.0',
+          codexStepLabel: 'Receiving & Store Control',
+          docTitle: 'Daily Cold-Chain Receiving & Supplier Non-Conformance Log',
+          purpose: 'Records delivery weights, probed temperatures, supplier batch/lot codes (for 4-hour traceability), and immediate rejections.',
+          fields: [
+            { label: 'Receiving Scale Check', value: 'Calibrated ± 10 g Weekly' },
+            { label: 'Probe Thermometer ID', value: 'DIG-REC-01 (Ice-Point 0.0°C Verified)' },
+            { label: 'Chiller Limit / Freezer', value: '≤ 5°C Chilled · ≤ -18°C Frozen' },
+            { label: 'Storekeeper / Receiver', value: 'Authorized Dietary Storekeeper' }
+          ],
+          tablePreview: {
+            headers: ['Time / Vendor', 'Item & Batch Lot #', 'Temp (°C)', 'Expiry / Spec', 'Accept / Reject'],
+            rows: [
+              ['07:15 · Al-Noor Poultry', 'Fresh Chicken Breast · LOT-P982', '+3.2°C', 'Intact · Halal Cert OK', 'ACCEPTED'],
+              ['07:40 · FreshDairy Co.', 'Pasteurized Milk · LOT-D441', '+7.8°C', 'Above 5°C Limit!', 'REJECTED — NCR #19'],
+              ['08:05 · MedFoods Dry', 'UHT Oral Shakes · LOT-U112', 'Ambient 21°C', 'Exp Nov 2027 · Sealed', 'ACCEPTED']
+            ]
+          },
+          signOffLine: 'Storekeeper ________ | CDM Daily Audit Sign-Off ________'
+        },
+        bulletPoints: [
+          'Par-Level System: Set a Minimum Par (reorder trigger) and Maximum Par (storage cap) for every item so you never run out during emergencies or tie up hospital cash in rotting excess stock.',
+          'Physical Inventory Security: Keep high-value items (meat, cooking oil, dry milk, oral nutrition supplements) locked with signed Daily Store Issue Requisition slips.'
+        ],
+        keyTakeaway:
+          'FEFO rotation, vertical cold-store zoning, and signed store requisitions cut food pilferage and spoilage dramatically.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 10
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-10',
+    moduleNumber: 10,
+    title: 'Bulk Production, Batch Cooking, Rapid Blast-Chilling & Thermal Control',
+    estimatedMinutes: 35,
+    overview:
+      'Control thermal Critical Control Points across both Cook-Serve and Cook-Chill hospital kitchens: safe thawing, batch cooking lethality, 2-stage rapid blast-chilling, calibrated probe checks, and safe reheating.',
+    internationalClauses: [
+      'Codex Thermal Processing & Rapid Cooling Standards',
+      'Hospital Cook-Chill / Cook-Serve HACCP Controls'
+    ],
+    keyPrinciples: [
+      'Batch cooking in smaller staggered trays preserves vitamins, flavor, and hot-holding temperatures far better than cooking all hospital meals 3 hours ahead of service.',
+      'When cooling bulk cooked food (e.g., soups, gravies, cook-chill batches), pass rapidly through the Danger Zone using blast chillers or shallow pans + ice-water baths (60°C → 21°C in ≤ 2h, then 21°C → ≤ 5°C within 4 more hours; or 63°C → ≤ 5°C within 90 min in Cook-Chill).'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Core Cooking, Rapid Cooling & Reheating Limits',
+        standardLimit: 'Cook ≥ 75°C · Reheat ≥ 75°C (once only) · Blast-Chill to ≤ 5°C within 90 mins (2-stage max 6h total)',
+        correctiveProtocol: 'Continue heating until core reaches ≥ 75°C; if cooling fails time limits, discard batch immediately — reheating will NOT destroy heat-stable toxins!'
+      }
+    ],
+    practicalChecklist: [
+      'Calibrate kitchen digital probe thermometers weekly using Ice-Point (0°C ± 0.5°C) and Boiling-Water (100°C ± 0.5°C) verification.',
+      'Sanitize thermometer probes with alcohol wipes BEFORE and AFTER every single dish check.'
+    ],
+    quickCheck: {
+      question: 'A 25-liter deep stockpot of cooked chicken soup was left on the counter overnight to cool and reads 28°C the next morning. What must the Certified Dietary Manager order?',
+      options: [
+        'Boil it vigorously at 100°C for 10 minutes so it becomes safe for patients',
+        'Move it into the blast chiller immediately and serve it for dinner',
+        'Discard the entire batch immediately and log a Corrective Action because surviving bacterial spores may have produced heat-stable toxins',
+        'Serve it only to the staff cafeteria and make a fresh batch for hospital patients'
+      ],
+      correctIndex: 2,
+      explanation: 'Slow overnight cooling allows Clostridium perfringens / Bacillus cereus spores to germinate and Staphylococcus aureus to form heat-stable toxins that boiling CANNOT destroy.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Cook-Serve vs Cook-Chill Hospital Production & Safe Thawing',
+        subtitle: 'Controlling Every Thermal Step From Defrost to Ward Dispatch',
+        flowDiagramData: {
+          title: 'Hospital Thermal Production CCP Map (Cook-Serve & Cook-Chill)',
+          isMultiStream: false,
+          mainSteps: [
+            { step: 'Safe Thawing (Bottom-Shelf Thaw Chiller ≤ 4°C)', note: 'Never counter-thaw! Drip pans under sealed meat · Use within 24h' },
+            { step: 'Staggered Batch Preparation & Seasoning', note: 'Minimize ambient exposure (< 30 min on prep bench)' },
+            { step: 'Thermal Cooking Lethality (Core ≥ 75°C)', note: 'Probe thickest thermal center of every batch; log time & temp', isCcp: true },
+            { step: 'Path A (Cook-Serve): Hot Hold ≥ 63°C OR Path B (Cook-Chill): Blast Chill ≤ 5°C in 90 min', note: 'Shallow pans (< 5 cm depth) for rapid cooling; label date & batch', isCcp: true },
+            { step: 'Reheating (Cook-Chill Only — Core ≥ 75°C Once Only)', note: 'Retherm carts / combi-ovens; never reheat in bain-marie warmers!', isCcp: true }
+          ]
+        },
+        bulletPoints: [
+          'Batch Cooking Advantage: Cooking vegetables and proteins in rolling 15-minute waves keeps vitamin loss low, texture crisp, and temperatures safely ≥ 63°C.',
+          'Never Reheat in Hot-Holders: Bain-maries and soup warmers heat too slowly, holding food in the Danger Zone for hours — always reheat rapidly on stoves or combi-ovens to ≥ 75°C before transfer.'
+        ],
+        keyTakeaway:
+          'Fast cooking, fast blast-chilling, and zero slow warming break the bacterial growth cycle completely.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Probe Thermometer Calibration & CCP Temperature Log',
+        subtitle: 'Objective Proof of Thermal Safety for Every Hospital Meal',
+        visualIllustration: 'thermometer-calibration',
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-08',
+          version: 'Rev 2.2',
+          codexStepLabel: 'Thermal Processing CCP Record',
+          docTitle: 'Daily Cooking, Hot-Hold & Rapid Cooling CCP Temperature Log',
+          purpose: 'Provides legal, time-stamped thermal verification for every regular and therapeutic dish served across all hospital wards.',
+          fields: [
+            { label: 'Cooking / Reheating CCP', value: 'Core ≥ 75°C (Sanitized Digital Probe)' },
+            { label: 'Hot-Hold / Cold-Hold CCP', value: 'Hot ≥ 63°C · Cold ≤ 5°C' },
+            { label: 'Probe Calibration Status', value: 'Ice Slurry 0.0°C Verified (Tolerance ± 0.5°C)' },
+            { label: 'Deviation Authority', value: 'Head Chef & Certified Dietary Manager' }
+          ],
+          tablePreview: {
+            headers: ['Dish / Batch', 'Cook Core (°C)', 'Hot Hold (11:30)', 'Blast Chill (90m)', 'Action / Status'],
+            rows: [
+              ['Herb Chicken (Diabetic/Reg)', '79.4°C', '71.0°C', 'N/A (Cook-Serve)', 'PASS ✓'],
+              ['Pureed Lentil Soup (IDDSI L4)', '84.2°C', '73.5°C', 'N/A (Cook-Serve)', 'PASS ✓'],
+              ['Custard Dessert (Cook-Chill)', '76.8°C', 'N/A', '3.8°C in 75 min', 'PASS ✓']
+            ]
+          },
+          signOffLine: 'Shift Cook ________ | Certified Dietary Manager Verification ________'
+        },
+        bulletPoints: [
+          'Verify digital probe thermometers weekly in an agitated ice-water slurry (0.0°C ± 0.5°C) and boiling water (100.0°C ± 0.5°C).',
+          'Sanitize thermometer stems with alcohol wipes before probing every dish to prevent cross-contamination between raw and cooked trays.'
+        ],
+        keyTakeaway:
+          'An uncalibrated thermometer produces false confidence — verify ice-point 0°C weekly and record real-time readings honestly.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 11
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-11',
+    moduleNumber: 11,
+    title: 'Patient Tray Line Operations, Meal Ticket Auditing & Zero-Error Delivery',
+    estimatedMinutes: 35,
+    overview:
+      'Run a high-precision hospital patient tray assembly line using Pre-Service Test Trays, the 4-Gate Tray Accuracy Checker, insulated thermal trolleys, and seamless late-tray / hold-tray coordination with wards.',
+    internationalClauses: [
+      'JCI IPSG.1 Dual Patient Identification Standard',
+      'Hospital Tray-Line Quality & Thermal Delivery SOP'
+    ],
+    keyPrinciples: [
+      'The Tray-Line Checker (Starter + Final Auditor) is the final safety firewall before meals reach patients — checking Patient Name + Bed/MRN, Diet Order, Allergen/NPO flag, Portion, Appearance, and Temperature.',
+      'Always plate and audit a "Test Tray" 15 minutes before line startup to taste every dish (regular + therapeutic), probe hot/cold temperatures, and verify IDDSI texture.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Patient Tray Accuracy & Ward Delivery Time',
+        standardLimit: '≥ 98% tray accuracy (0% allergen/NPO/therapeutic errors) · Hot food ≥ 63°C & Cold ≤ 5°C at bedside · Delivery ≤ 30 mins from plating',
+        correctiveProtocol: 'Intercept and replace any defective tray immediately; investigate root cause of recurring ticket or plating errors during post-meal debrief.'
+      }
+    ],
+    practicalChecklist: [
+      'Taste and temperature-probe a full Test Tray (including salt-free therapeutic & IDDSI pureed items) 15 minutes before every meal.',
+      'Pre-heat insulated thermal bases/pellet warmers and pre-chill cold-cart compartments before loading patient trays.'
+    ],
+    quickCheck: {
+      question: 'Why must the Certified Dietary Manager (or Shift Supervisor) assemble and taste a "Test Tray" 15 minutes before launching the patient tray line?',
+      options: [
+        'To ensure kitchen staff get to eat before patients',
+        'To verify dish flavor, therapeutic seasoning (salt-free/sugar-free), IDDSI texture, visual presentation, and hot/cold serving temperatures before any patient is served',
+        'To reduce leftover food in the pots',
+        'Because hospital policy prohibits tasting food during cooking'
+      ],
+      correctIndex: 1,
+      explanation: 'A pre-service Test Tray catches burnt, over-salted, wrong-texture, or lukewarm dishes BEFORE 200+ patient trays are plated and dispatched.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'The 4-Gate Patient Tray Accuracy System & Floor SOPs',
+        subtitle: 'Delivering Zero-Error Therapeutic Trays Within 30 Minutes',
+        visualIllustration: 'cdm-tray-accuracy',
+        prpProceduresBlock: [
+          {
+            prpCode: 'TRAY-SOP-01',
+            prpName: 'Pre-Line Setup & 15-Minute Test Tray Approval',
+            objective: 'Verify temperature, taste, therapeutic compliance, and equipment readiness before tray assembly starts.',
+            steps: [
+              'Pre-heat hot bain-marie wells (water ≥ 85°C), pellet plate heaters, and insulated thermal carts 30 minutes prior to service.',
+              'Reconcile final Ward Census updates (new admissions, discharges, diet upgrades, NPO orders) and print sorted tray tickets.',
+              'Assemble 1 Regular + 1 Therapeutic/IDDSI Test Tray: taste with clean disposable spoons, probe hot items (≥ 68°C at line so ≥ 63°C at bedside) and cold items (≤ 4°C).',
+              'Log Test Tray Approval — do NOT open the tray line until every defective dish is corrected.'
+            ],
+            verificationRecord: 'Daily Pre-Service Test Tray Taste & Temperature Log (CDM-DOC-09).'
+          },
+          {
+            prpCode: 'TRAY-SOP-02',
+            prpName: 'Tray-Line Station Flow & Final Checker Audit',
+            objective: 'Ensure 100% alignment between the printed diet ticket and every item placed on the patient tray.',
+            steps: [
+              'Station 1 (Starter): Places clean tray mat, correct diet ticket, cutlery, and verifies NPO/Allergen red banners.',
+              'Stations 2–4 (Cold / Hot / Beverage): Plate exact standardized portions using calibrated scoops/ladles; cover hot plates immediately with thermal domes.',
+              'Final Checker (End of Line): Performs 100% visual & ticket audit — verifies Name + MRN/Bed, Diet Type, IDDSI texture, Allergen exclusion, condiment restrictions (no salt on cardiac, no sugar on diabetic), and clean plate rims.',
+              'Load completed trays into ward-labeled closed thermal carts immediately to lock in heat.'
+            ],
+            verificationRecord: 'Random 10-Tray Accuracy Audit Log (Target ≥ 98% overall · 100% Clinical Safety).'
+          },
+          {
+            prpCode: 'TRAY-SOP-03',
+            prpName: 'Bedside Verification, Hold Trays & Late Admissions',
+            objective: 'Guarantee safe bedside handoff and fresh hot meals for patients returning from diagnostics or dialysis.',
+            steps: [
+              'Deliver closed carts to wards within 30 minutes of plating; coordinate with ward nurse for isolation-room precautions (disposable ware if required by IPC).',
+              'Verify TWO Patient Identifiers (Full Name + Medical Record Number / Bed) before placing tray at bedside — NEVER rely on room number alone!',
+              'For patients away at X-ray/MRI/Dialysis, do NOT leave meals cooling on bedside tables — hold fresh portion in kitchen and deliver hot upon nursing call.',
+              'Collect soiled trays within 60–90 minutes using dedicated soiled return trolleys routed directly to Zone 6 Scullery.'
+            ],
+            verificationRecord: 'Ward Dispatch Time Log & Late/Hold Tray Fulfillment Register.'
+          }
+        ],
+        bulletPoints: [
+          'Use the 4-Gate Verification Protocol (Dual Patient ID, Diet & Allergen Match, Portion/Visual Inspection, and Thermal Delivery ≤ 30 min) on every single meal service.',
+          'Click through TRAY-SOP-01 to TRAY-SOP-03 above to review Test Tray approval, Final Checker sign-off, and Hold-Tray procedures.'
+        ],
+        keyTakeaway:
+          'Never leave a patient meal sitting on an empty bed — Hold Trays protect food safety and patient dignity.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Controlled Tray Accuracy & Test-Tray Sign-Off Record',
+        subtitle: 'Measuring Excellence at Every Breakfast, Lunch & Dinner',
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-09',
+          version: 'Rev 2.0',
+          codexStepLabel: 'Tray-Line QA Audit',
+          docTitle: 'Daily Test-Tray & Patient Tray Accuracy Audit Sheet',
+          purpose: 'Tracks pre-service thermal/taste approval and random post-assembly tray audits to sustain ≥ 98% tray accuracy and zero clinical diet errors.',
+          fields: [
+            { label: 'Meal Audited', value: 'Lunch Service · 218 Trays Dispatched' },
+            { label: 'Line Start / End Time', value: '11:30 AM – 12:08 PM (38 Minutes)' },
+            { label: 'Bedside Test Temp (Last Tray)', value: 'Hot Entrée 66.2°C · Cold Salad 3.9°C' },
+            { label: 'Tray Accuracy Score', value: '19/20 Audited Perfect (95% → Minor: Missing Napkin)' }
+          ],
+          tablePreview: {
+            headers: ['Audit Metric', 'Target', 'Actual Reading', 'Corrective Action'],
+            rows: [
+              ['Therapeutic / Allergen Match', '100%', '100% (20/20)', 'Compliant — zero clinical variance'],
+              ['IDDSI Texture Match', '100%', '100% (4/4)', 'Fork & Spoon Tilt passed'],
+              ['Hot / Cold Bedside Temp', '≥ 63°C / ≤ 5°C', '66.2°C / 3.9°C', 'Thermal domes pre-heated properly'],
+              ['Missing Non-Food Item', '0 Errors', '1 Missing Napkin', 'Reminded Starter Station #1 at debrief']
+            ]
+          },
+          signOffLine: 'Tray-Line Checker ________ | Certified Dietary Manager ________'
+        },
+        bulletPoints: [
+          'Audit at least 10–20 random completed patient trays per meal against printed diet tickets and track both Clinical Safety (100% target) and Overall Accuracy (≥ 98%).',
+          'Debrief any minor tray variance immediately with station staff before the next meal shift.'
+        ],
+        keyTakeaway:
+          'Measure the temperature of the LAST tray delivered to the farthest ward — if it arrives ≥ 63°C, your thermal chain works.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 12
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-12',
+    moduleNumber: 12,
+    title: 'Foodservice Budgeting, Food Cost Control, Yield % & Plate Waste Reduction',
+    estimatedMinutes: 35,
+    overview:
+      'Master the financial engine of a Certified Dietary Manager: calculate Food Cost %, Patient-Per-Day (PPD) meal cost, Inventory Turnover, AP/EP Yield %, and Plate Waste % to run a high-quality, fiscally disciplined department.',
+    internationalClauses: [
+      'Healthcare Foodservice Financial Accounting KPIs',
+      'Sustainable Hospital Plate-Waste Reduction Standards'
+    ],
+    keyPrinciples: [
+      'Hospital administrators evaluate a CDM on both Clinical Safety AND Financial Stewardship — especially Patient-Per-Day (PPD) Food Cost, Labor Productivity (Meals per Labor Hour), and Plate Waste %.',
+      'Reducing patient plate waste below 15% simultaneously improves clinical nutrition absorption AND saves thousands of dollars/rupees every month.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Monthly Food Cost & Patient Plate Waste Threshold',
+        standardLimit: 'Food Cost within ± 3% of approved monthly PPD budget · Patient Plate Waste < 15%',
+        correctiveProtocol: 'Conduct immediate menu popularity review, audit store pilferage/spoilage logs, re-verify portion scoops, and recalibrate batch forecasting.'
+      }
+    ],
+    practicalChecklist: [
+      'Calculate weekly Patient-Per-Day (PPD) food cost and compare actual spend against budget before month-end.',
+      'Run a monthly Plate Waste Audit across wards to identify unpopular dishes or oversized portions.'
+    ],
+    quickCheck: {
+      question: 'A hospital dietary department spent Rs. 450,000 on raw food during a 30-day month with an average of 150 active inpatients per day (4,500 patient-days). What is the Patient-Per-Day (PPD) food cost?',
+      options: [
+        'Rs. 3,000 per patient-day',
+        'Rs. 100 per patient-day',
+        'Rs. 150 per patient-day',
+        'Rs. 450 per patient-day'
+      ],
+      correctIndex: 1,
+      explanation: 'PPD Food Cost = Total Monthly Food Cost ÷ Total Patient-Days = Rs. 450,000 ÷ (150 patients × 30 days = 4,500) = Rs. 100 per patient-day.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Essential Certified Dietary Manager Financial Formulas',
+        subtitle: 'Turning Kitchen Numbers Into Executive Boardroom Clarity',
+        tableBlock: {
+          caption: 'Core Financial & Operational Formulas Every CDM Must Master',
+          headers: ['KPI Metric', 'Exact Formula', 'Worked Hospital Example', 'Benchmark Target'],
+          rows: [
+            ['Cost of Food Used', 'Opening Inventory + Purchases − Closing Inventory', '100k + 420k − 70k = 450k', 'Reconcile monthly'],
+            ['Food Cost % (Cafeteria)', '(Cost of Food Used ÷ Total Food Sales) × 100', '(180k ÷ 600k) × 100 = 30%', '28% – 35%'],
+            ['Patient-Per-Day (PPD) Cost', 'Total Patient Food Cost ÷ Total Patient-Days', '450,000 ÷ 4,500 = Rs. 100/day', 'Within ± 3% of budget'],
+            ['Edible Yield %', '(Edible Cooked Weight ÷ As-Purchased Weight) × 100', '(4.0 kg ÷ 5.0 kg) × 100 = 80%', 'Track meat & produce'],
+            ['Plate Waste %', '(Weight of Uneaten Food ÷ Weight Served) × 100', '(12 kg ÷ 100 kg) × 100 = 12%', '< 15% Hospital Best Practice'],
+            ['Meals Per Labor Hour (MPLH)', 'Total Meal Equivalents ÷ Total Paid Labor Hours', '600 meals ÷ 120 hrs = 5.0 MPLH', '3.5 – 5.5 (Acute Care)']
+          ]
+        },
+        twoColumns: {
+          leftTitle: 'Top Causes of Hidden Cost Overruns',
+          leftTone: 'rose',
+          leftItems: [
+            'Over-production cooking without consulting live ward census',
+            'Unstandardized portion scooping ("free-pouring" meat & gravies)',
+            'Poor FIFO/FEFO rotation causing expired dairy & rotting produce',
+            'Unlocked dry stores, missing receiving scales & unlogged cafeteria staff meals'
+          ],
+          rightTitle: 'Smart Cost Control Without Cutting Quality',
+          rightTone: 'emerald',
+          rightItems: [
+            'Enforce calibrated scoops, daily requisition slips & locked high-value stores',
+            'Shift menus toward seasonal regional vegetables and competitive supplier bids',
+            'Reduce plate waste by interviewing patients on taste, temp & portion sizes',
+            'Cross-train kitchen staff to balance peak tray-line labor hours efficiently'
+          ]
+        },
+        bulletPoints: [
+          'Master Cost of Food Used (Opening + Purchases − Closing) and Patient-Per-Day (PPD) Cost so budget variances are spotted weekly instead of after month-end.',
+          'Track Plate Waste % alongside PPD cost — high plate waste means wasted money AND undernourished patients.'
+        ],
+        keyTakeaway:
+          'Never slash nutritional quality to cut costs — eliminate spoilage, over-portioning, and plate waste instead.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Monthly PPD Financial & Plate Waste Executive Dashboard',
+        subtitle: 'Controlled Management Reporting to Hospital Administration',
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-10',
+          version: 'Rev 1.6',
+          codexStepLabel: 'Financial & Waste Governance',
+          docTitle: 'Monthly Patient-Per-Day (PPD) Food Cost & Plate Waste Report',
+          purpose: 'Summarizes monthly raw food expenditure, inventory turnover, patient-days served, and ward plate waste for Hospital Finance & Administration.',
+          fields: [
+            { label: 'Reporting Period', value: 'Monthly Operating Summary (30 Days)' },
+            { label: 'Total Patient-Days', value: '6,420 Patient-Days (Avg 214 Beds)' },
+            { label: 'Inventory Turnover Rate', value: '3.2× / Month (Target 2.5–4.0×)' },
+            { label: 'Overall Plate Waste %', value: '11.4% (Target < 15% — ON TARGET)' }
+          ],
+          tablePreview: {
+            headers: ['Cost Category', 'Monthly Budget', 'Actual Spend', 'Variance & CDM Commentary'],
+            rows: [
+              ['Patient Raw Food (PPD)', 'Rs. 1,926,000', 'Rs. 1,881,000', '-2.3% Favorable (seasonal veg savings)'],
+              ['Oral Nutrition Supplements', 'Rs. 240,000', 'Rs. 254,000', '+5.8% (higher ICU oncology census)'],
+              ['Disposables & Sanitation', 'Rs. 165,000', 'Rs. 161,000', '-2.4% Favorable (auto-dosing chemicals)'],
+              ['Cafeteria Revenue Offset', 'Rs. 750,000', 'Rs. 812,000', '+8.3% Revenue growth (new healthy combos)']
+            ]
+          },
+          signOffLine: 'Certified Dietary Manager ________ | Hospital Finance Director ________'
+        },
+        bulletPoints: [
+          'Explain every positive or negative budget variance clearly using census shifts (e.g., ICU oncology ONS demand) and seasonal market rates.',
+          'Maintain healthy Inventory Turnover (2.5× to 4.0× per month) so food stays fresh and cash is not trapped in overstocked storerooms.'
+        ],
+        keyTakeaway:
+          'A CDM who presents clear PPD variances and plate-waste solutions earns strong leadership trust and capital equipment budgets.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 13
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-13',
+    moduleNumber: 13,
+    title: 'Human Resource Management, Shift Rostering, Training & Workplace Safety',
+    estimatedMinutes: 30,
+    overview:
+      'Build a loyal, high-performing hospital dietary team through fair shift rostering, structured onboarding and annual food-safety competency tracking, progressive coaching, and kitchen occupational safety (ergonomics, burns, slips, chemicals).',
+    internationalClauses: [
+      'ISO 45001 Kitchen Occupational Health & Safety',
+      'Food Handler Medical Screening & Competency Standards'
+    ],
+    keyPrinciples: [
+      'A hospital dietary department operates 365 days a year across early morning, afternoon, and relief shifts — fair rotating rosters, clear job descriptions, and cross-training prevent burnout and turnover.',
+      'Every food handler must hold an up-to-date Medical Fitness Certificate (typhoid/hepatitis/stool & chest screening per local Food Authority) and documented annual HACCP & Therapeutic Diet training.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Staff Medical Fitness & Induction Compliance',
+        standardLimit: '100% of active kitchen staff hold valid Medical Fitness Certificates & completed Day-1 Food Hygiene Induction before handling food',
+        correctiveProtocol: 'Reassign any staff member with an expired medical certificate to non-food duties until renewed lab clearance is filed.'
+      }
+    ],
+    practicalChecklist: [
+      'Audit the Staff Medical Fitness & Training Matrix monthly to catch expiring certificates 30 days ahead.',
+      'Verify anti-slip safety shoes, cut-resistant gloves for slicers, Class K/F fire extinguisher, first-aid kit, and Chemical SDS binder are in place.'
+    ],
+    quickCheck: {
+      question: 'A newly hired diet aide arrives for their first shift during a busy lunch rush. What MUST the Certified Dietary Manager ensure BEFORE assigning them to assemble patient trays?',
+      options: [
+        'Let them learn by trial and error on the diabetic tray line and train them next month',
+        'Verify valid medical clearance, clean PPE/hairnet, handwashing competency, and provide structured induction on diet tickets, allergens, and NPO safety',
+        'Ask them to wash pots without gloves for the first week',
+        'Only give them the written handbook to read at home after the shift'
+      ],
+      correctIndex: 1,
+      explanation: 'Untrained or medically unscreened staff on a hospital tray line create immediate clinical and foodborne risks; Day-1 hygiene and safety induction is mandatory.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Dietary Department Staffing, Shift Rosters & Progressive Leadership',
+        subtitle: 'Coaching Excellence While Preventing Kitchen Injuries',
+        tableBlock: {
+          caption: 'Sample 200-Bed Hospital Dietary Shift Roster Architecture',
+          headers: ['Shift Window', 'Core Operational Responsibilities', 'Key Roles On Duty', 'Handover Protocol'],
+          rows: [
+            ['Morning Shift (05:30 – 13:30)', 'Receiving bay, Breakfast & Lunch production, Tray Line, Mid-morning ONS', 'CDM, Head Chef, Diet Cook, Storekeeper, 6 Tray Aides, 3 Stewards', '13:15 Written Census & Chiller Temp Handover'],
+            ['Evening Shift (12:30 – 20:30)', 'Evening tea/snacks, Dinner production, Tray Line, Deep Scullery & Sanitation', 'Shift Supervisor, Evening Chef, Diet Cook, 5 Tray Aides, 3 Stewards', '20:15 End-of-Day Lockup, Gas Shutoff & Prep List'],
+            ['Relief / Staggered Pool', 'Covers weekly days off, annual leave & high-census surges without overtime', 'Cross-trained Relief Cook & Relief Diet Aides', 'Published 14 days in advance']
+          ]
+        },
+        twoColumns: {
+          leftTitle: 'Progressive Coaching & Discipline Ladder',
+          leftTone: 'blue',
+          leftItems: [
+            'Step 1: Private Coaching & Retraining (fix skill gaps respectfully)',
+            'Step 2: Documented Verbal Warning with clear 14-day expectation',
+            'Step 3: Written Warning signed with HR for repeated SOP breaches',
+            'Immediate Suspension: Intentional food tampering, falsifying CCP logs, or working while hiding severe GI illness'
+          ],
+          rightTitle: 'Kitchen Occupational Health & Safety (OH&S)',
+          rightTone: 'amber',
+          rightItems: [
+            'Slips & Falls: Mandatory oil-resistant anti-slip shoes + immediate spill mop + wet-floor cones',
+            'Burns & Steam: Dry heat-resistant oven mitts (wet cloths conduct steam burns!), open combi-oven doors standing back',
+            'Cuts & Machinery: Unplug slicers before cleaning; use cut-resistant mesh gloves on blades',
+            'Chemicals & Fire: Never mix Bleach + Acid/Ammonia (toxic chlorine gas!); keep Class K/F extinguisher & fire blanket accessible'
+          ]
+        },
+        bulletPoints: [
+          'Publish fair rotating shift rosters at least 14 days in advance with structured written shift handovers between Morning and Evening teams.',
+          'Verify Class K/F kitchen fire extinguishers, fire blankets, cut-resistant gloves, and Chemical Safety Data Sheets (SDS) during monthly safety rounds.'
+        ],
+        keyTakeaway:
+          'Praise staff publicly, coach mistakes privately, and treat kitchen safety (burns, slips, chemicals) with the same urgency as food safety.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Food Handler Medical Fitness & Competency Tracking Matrix',
+        subtitle: 'Audit-Ready HR Documentation for Food Authorities & JCI',
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-11',
+          version: 'Rev 1.9',
+          codexStepLabel: 'HR & Competency Compliance',
+          docTitle: 'Dietary Staff Medical Fitness & Annual Training Matrix',
+          purpose: 'Ensures 100% of kitchen and tray-line personnel maintain active health screening and verified competency in HACCP, Allergens, and IDDSI.',
+          fields: [
+            { label: 'Total Active Staff', value: '26 Full-Time Equivalents (FTEs)' },
+            { label: 'Medical Screening Cycle', value: 'Every 6–12 Months (Per Local Food Authority)' },
+            { label: 'Mandatory Annual Modules', value: 'Hand Hygiene · HACCP · Allergens · IDDSI · Fire' },
+            { label: 'Compliance Target', value: '100% Valid Certificates (Zero Expired)' }
+          ],
+          tablePreview: {
+            headers: ['Staff Name & Role', 'Medical Cert Expiry', 'HACCP / Hygiene', 'IDDSI & Allergen', 'Status'],
+            rows: [
+              ['Ahmed R. (Diet Chef)', 'Aug 2027', 'Completed (92%)', 'Verified Practical ✓', 'COMPLIANT'],
+              ['Sana K. (Tray Checker)', 'May 2027', 'Completed (95%)', 'Verified Practical ✓', 'COMPLIANT'],
+              ['Bilal M. (Steward)', 'Expires in 18 Days', 'Completed (84%)', 'N/A (Scullery)', 'RENEWAL SCHEDULED']
+            ]
+          },
+          signOffLine: 'Certified Dietary Manager ________ | Hospital HR / IPC Nurse ________'
+        },
+        bulletPoints: [
+          'Flag expiring Medical Fitness Certificates 30 days early so zero kitchen staff work with lapsed health clearance.',
+          'Keep signed Day-1 Hygiene Induction forms and practical competency evaluations on file for every active and relief employee.'
+        ],
+        keyTakeaway:
+          'Auditors always ask for two HR files first: Medical Fitness Certificates and Signed Food Hygiene Training Attendance Sheets.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 14
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-14',
+    moduleNumber: 14,
+    title: 'Quality Assurance (CQI), 72-Hour Food Samples, Traceability & Disaster Planning',
+    estimatedMinutes: 35,
+    overview:
+      'Protect hospital continuity and legal due diligence through 72-hour retained food sample protocols, 4-hour batch traceability, quantitative risk scoring, foodborne outbreak containment, and 72-hour emergency/disaster menu plans.',
+    internationalClauses: [
+      'Hospital Emergency Preparedness & 72-Hour Reserve Standards',
+      'Codex Traceability, Recall & Outbreak Investigation Protocols'
+    ],
+    keyPrinciples: [
+      'Retaining 150 g sterile samples of every cooked hospital meal item at ≤ 4°C (or frozen) for 72 hours provides objective laboratory evidence if an outbreak is ever suspected.',
+      'Every hospital dietary department must maintain a written 72-Hour Disaster Menu, potable water reserve (≥ 3 L/patient/day), and power-outage cold-chain contingency SOP.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: '72-Hour Retained Food Samples & Outbreak Traceability',
+        standardLimit: '150 g sealed labeled sample per dish retained for 72 hours at ≤ 4°C · Full supplier lot traceability within ≤ 4 hours',
+        correctiveProtocol: 'Upon any cluster of patient GI symptoms, immediately lock down retained samples for Infection Control / Lab testing, isolate implicated batches, and trace supplier lots.'
+      }
+    ],
+    practicalChecklist: [
+      'Verify the dedicated 72-Hour Food Sample Refrigerator has sterile bags, dated labels (Meal, Dish, Date, Time, Collector), and daily temperature log ≤ 4°C.',
+      'Rotate 72-hour emergency canned/UHT stock every 3–6 months using FIFO so disaster supplies never expire.'
+    ],
+    quickCheck: {
+      question: 'Three hospitalized patients report acute vomiting 4 hours after lunch. What is the Certified Dietary Manager’s FIRST priority action?',
+      options: [
+        'Immediately discard all leftover food and 72-hour samples so inspectors cannot find them',
+        'Preserve all remaining meal batches and 72-hour retained food samples untouched, notify Infection Control & Medical Director, and start 4-hour batch/lot traceability',
+        'Blame the ward nurses before checking any kitchen temperature records',
+        'Close the hospital kitchen permanently without arranging patient meals'
+      ],
+      correctIndex: 1,
+      explanation: 'Preserving 72-hour retained samples and notifying Infection Control immediately enables rapid scientific root-cause identification and protects other patients.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: '72-Hour Disaster Menus, Power Outages & Outbreak Containment',
+        subtitle: 'Keeping Hospital Patients Fed Safely When Utilities Fail',
+        visualIllustration: 'cdm-emergency-plan',
+        riskMatrixHighlight: true,
+        bulletPoints: [
+          '72-Hour Retained Sample Protocol: Using sanitized spoons, collect ≥ 150 g of every cooked regular & therapeutic dish into sterile zip-bags/containers; label Date, Meal, Dish Name, Temp & Initials; hold at ≤ 4°C for exactly 72 hours before safe disposal.',
+          'Power Outage Cold-Chain Rule: Keep chiller/freezer doors SHUT! A closed freezer stays safe ~24–48h and chiller ~4h; if chilled high-risk food climbs > 5°C for > 2–4 hours, discard — "When in doubt, throw it out!"',
+          'Boil-Water Alert: Halt ice machines, vegetable washing with tap water, and coffee brewers; immediately switch to bottled potable water, disposable ware, and no-cook shelf-stable menus.'
+        ],
+        keyTakeaway:
+          'Emergency preparedness is tested BEFORE a flood, power outage, or boil-water alert hits — never during the crisis.'
+      },
+      {
+        slideNumber: 2,
+        title: '72-Hour Food Sample & Emergency Contingency Register',
+        subtitle: 'Controlled Evidence for Infection Control & Regulatory Audits',
+        documentTemplateBlock: {
+          docCode: 'CDM-DOC-12',
+          version: 'Rev 2.1',
+          codexStepLabel: 'Traceability & Emergency Control',
+          docTitle: '72-Hour Retained Food Sample & Emergency Readiness Log',
+          purpose: 'Documents daily retention and controlled disposal of 150 g hospital meal samples alongside monthly 72-hour emergency stock rotation checks.',
+          fields: [
+            { label: 'Sample Fridge ID / Temp', value: 'FRIDGE-SMP-01 (Target 2.0°C · Limit ≤ 4°C)' },
+            { label: 'Sample Weight & Hold', value: '150 g per Dish · Retained Full 72 Hours' },
+            { label: 'Emergency Water Stock', value: '2,250 Liters Bottled (250 Beds × 3 L × 3 Days)' },
+            { label: 'Mock Recall Drill Time', value: 'Completed in 1 hr 45 mins (Limit ≤ 4 hrs)' }
+          ],
+          tablePreview: {
+            headers: ['Date / Meal', 'Dish Sampled (150 g)', 'Batch / Lot Ref', 'Collected By', '72h Disposal Date'],
+            rows: [
+              ['Mon · Lunch', 'Herb-Steamed Chicken', 'LOT-P982', 'Shift Supv ✓', 'Thu 14:00 (Logged)'],
+              ['Mon · Lunch', 'Pureed Lentil Soup (L4)', 'LOT-L204', 'Shift Supv ✓', 'Thu 14:00 (Logged)'],
+              ['Mon · Dinner', 'Baked Fish (Cardiac)', 'LOT-F519', 'Evening Supv ✓', 'Thu 20:00 (Logged)']
+            ]
+          },
+          signOffLine: 'CDM Quality Lead ________ | Hospital Infection Control Officer ________'
+        },
+        bulletPoints: [
+          'Store 150 g sterile labeled samples of every cooked regular and therapeutic dish at ≤ 4°C for a full 72 hours before documented disposal.',
+          'Run semi-annual timed mock recall drills proving supplier batch-to-ward traceability within ≤ 4 hours.'
+        ],
+        keyTakeaway:
+          'Never skip 72-hour sample collection — it is your hospital’s strongest scientific protection during any patient GI complaint.'
+      }
+    ]
+  },
+
+  // =========================================================================
+  // MODULE 15
+  // =========================================================================
+  {
+    id: 'cdm-v-mod-15',
+    moduleNumber: 15,
+    title: 'Hospital Accreditation Readiness (JCI / ISO 22000), Revision & Exam Mastery',
+    estimatedMinutes: 35,
+    overview:
+      'Connect all 14 prior modules into one executive CQI & Hospital Accreditation Audit Blueprint (JCI, ISO 22000, Provincial/National Food Authorities), test your recall of official CDM definitions, and prepare to excel on the 40-MCQ Final Examination.',
+    internationalClauses: [
+      'JCI Hospital Food & Nutrition Accreditation Standards',
+      'ISO 22000:2018 & Food Authority Inspection Readiness'
+    ],
+    keyPrinciples: [
+      'Accreditation readiness is NOT a one-week cleanup before inspectors arrive — it is daily living compliance across temperature logs, medical certificates, IDDSI verification, tray accuracy, and patient satisfaction surveys.',
+      'A Certified Dietary Manager continuously tracks 5 core KPIs (Tray Accuracy ≥ 98%, Meal Temp Compliance ≥ 63°C/≤ 5°C, Plate Waste < 15%, 72h Samples 100%, Traceability ≤ 4h) and presents monthly CQI improvements.'
+    ],
+    criticalControlParameters: [
+      {
+        parameter: 'Continuous Audit & Legal Due Diligence Readiness',
+        standardLimit: '100% real-time, honestly signed records (zero back-dated or pre-filled logs) archived for ≥ 12–24 months',
+        correctiveProtocol: 'Conduct unannounced weekly mock self-audits using the Food Authority / JCI checklist and close every CAPA finding with photographic proof.'
+      }
+    ],
+    practicalChecklist: [
+      'Maintain an indexed "Audit Ready Master Binder" containing Food License, Staff Medical Certs, Calibration Certs, Pest Reports, Water Lab Tests, and SOPs.',
+      'Complete the interactive Recall & Reveal Revision Drill below before starting the 40-MCQ Final Examination.'
+    ],
+    quickCheck: {
+      question: 'During a surprise Hospital Accreditation / Food Authority inspection, an auditor notices that next Friday’s refrigerator temperature log is already filled out with "3.5°C". What does this represent?',
+      options: [
+        'Proactive time management by an efficient kitchen supervisor',
+        'A critical compliance failure (record falsification) that destroys legal due diligence and invalidates the entire food safety system',
+        'An acceptable shortcut if the chiller is brand new',
+        'A minor cosmetic error requiring no corrective action'
+      ],
+      correctIndex: 1,
+      explanation: 'Pre-filling or back-dating food safety logs is falsification of legal records; every temperature, calibration, and cleaning check must be recorded honestly in real time.'
+    },
+    presentationSlides: [
+      {
+        slideNumber: 1,
+        title: 'Master CDM Accreditation & CQI Performance Dashboard',
+        subtitle: 'Every Hospital Benchmark Connected Across One Audit-Ready View',
+        visualIllustration: 'cdm-quality-audit',
+        tableBlock: {
+          caption: 'Master Certified Dietary Manager Audit & Operational Reference Chart',
+          headers: ['Audit Domain', 'Mandatory Standard / Limit', 'Key Controlled Document', 'Audit Verification Proof'],
+          rows: [
+            ['Clinical Coordination', 'Live Ward Census + Dual Patient ID + NPO pull', 'CDM-DOC-01 & DOC-04', 'Zero NPO/diet mix-ups; signed census'],
+            ['Dysphagia (IDDSI)', 'Levels 0–7 verified via Syringe / Fork / Spoon', 'CDM-DOC-05', 'Live IDDSI testing tools & shift log'],
+            ['Cold-Chain & Stores', 'Chilled ≤ 5°C · Frozen ≤ -18°C · FEFO · 15 cm floor', 'CDM-DOC-07', 'Calibrated probe & zero expired stock'],
+            ['Thermal CCPs', 'Cook/Reheat ≥ 75°C · Hot ≥ 63°C · Blast-Chill 90m', 'CDM-DOC-08', 'Real-time signed logs + Ice-Point 0°C'],
+            ['Tray-Line & Warewash', 'Test Tray 15m pre-line · Rinse ≥ 82°C · ≥ 98% Acc', 'CDM-DOC-09 & SOP-03', 'Bedside temp probe & dishmachine gauge'],
+            ['HR, Cost & Emergency', '100% Medical Certs · PPD ±3% · 72h Samples/Stock', 'CDM-DOC-10, 11 & 12', 'Master Audit Binder + ≤ 4h mock recall']
+          ]
+        },
+        bulletPoints: [
+          'Review all 6 Hospital Audit Domains above prior to JCI, ISO 22000, or Provincial Food Authority inspections.',
+          'Keep every temperature, dishmachine rinse, calibration, medical fitness, and 72-hour sample record signed honestly in real time.'
+        ],
+        keyTakeaway:
+          'When your daily logs are honest, your Test Trays are verified, and your staff are trained, your kitchen is audit-ready 365 days a year.'
+      },
+      {
+        slideNumber: 2,
+        title: 'Interactive Revision: Recall & Reveal Official CDM Definitions',
+        subtitle: 'Test Yourself on 10 Core Terms Before Launching the 40-MCQ Final Exam',
+        definitionMatchDrill: [
+          {
+            term: 'NPO (Nil Per Os)',
+            definition: 'A strict physician order meaning "Nothing by Mouth" (no food, water, or ice) — typically before surgery or diagnostic procedures; meal trays must be pulled immediately.'
+          },
+          {
+            term: 'IDDSI Framework (Levels 0–7)',
+            definition: 'International Dysphagia Diet Standardisation Initiative defining objective viscosity and particle-size levels (Drinks 0–4, Foods 3–7) using Syringe Flow, Fork Drip, and Spoon Tilt tests.'
+          },
+          {
+            term: 'YOPI Population',
+            definition: 'Young, Old, Pregnant, and Immunocompromised patients — the most vulnerable demographic in healthcare requiring strict zero-tolerance food safety controls.'
+          },
+          {
+            term: 'FEFO (First-Expired, First-Out)',
+            definition: 'Inventory rotation system ensuring stock with the earliest expiration/use-by date is issued and consumed first to prevent spoilage and expired ingredients.'
+          },
+          {
+            term: 'As Purchased (AP) vs Edible Portion (EP)',
+            definition: 'AP is the raw weight bought from the supplier including peel/bone/trim; EP is the usable weight remaining after trimming and cooking (Yield % = EP ÷ AP × 100).'
+          },
+          {
+            term: 'PPD (Patient-Per-Day) Food Cost',
+            definition: 'Core hospital dietary financial KPI calculated as Total Patient Food Cost divided by Total Patient-Days served during the accounting period.'
+          },
+          {
+            term: 'Plate Waste Percentage',
+            definition: 'Percentage of served patient food returned uneaten on trays — tracked below 15% to optimize both patient clinical nutrition intake and food budget.'
+          },
+          {
+            term: '72-Hour Retained Food Sample',
+            definition: 'A sealed, labeled 150 g sample of every cooked dish stored at ≤ 4°C for 72 hours for microbiological investigation if a foodborne illness outbreak occurs.'
+          },
+          {
+            term: 'Neutropenic (Low-Microbial) Diet',
+            definition: 'Specialized diet for severely immunocompromised/oncology patients excluding raw salads, unpeeled raw fruits, unpasteurized dairy, and undercooked foods.'
+          },
+          {
+            term: 'Pre-Service Test Tray',
+            definition: 'Sample regular and therapeutic tray assembled 15 minutes before meal service so the CDM verifies flavor, seasoning compliance, IDDSI texture, and temperature prior to patient dispatch.'
+          }
+        ],
+        calloutBanner: {
+          label: 'Final Exam Readiness Strategy (40 MCQs · 60% Pass · 75% Distinction)',
+          text: 'Read each hospital scenario carefully — pay close attention to exact clinical limits (75°C core, 63°C hot hold, ≤ 5°C chilled, 82°C dishmachine rinse, 48h illness exclusion, 72h food samples, 15% plate waste, 98% tray accuracy) and patient-first safety priorities.',
+          tone: 'emerald'
+        },
+        bulletPoints: [
+          'Click each hidden row in the Revision Drill above to verify your recall of all 10 high-yield Certified Dietary Manager terms.',
+          'Achieve ≥ 60% (24/40) to Pass or ≥ 75% (30/40) for Distinction on the 40-MCQ Final Examination to unlock your official QR-Verified Portrait PDF Certificate.'
+        ],
+        keyTakeaway:
+          'You have mastered all 15 Certified Dietary Manager modules — launch the 40-MCQ Final Exam below to earn your Official QR-Verified CDM Certificate!'
+      }
+    ]
+  }
+];
+
+export const MANAGER_FOOD_DIETARY_EXAM_MCQS: ManagerDietaryExamQuestion[] = [
+  {
+    id: 'cdm-q01',
+    question: 'How do the professional roles of a Clinical Dietitian (RD) and a Certified Dietary Manager (CDM) work together in a hospital?',
+    options: [
+      'The CDM writes physician drug orders while the Dietitian operates the commercial dishmachine',
+      'The Clinical Dietitian performs nutrition assessment and prescribes Medical Nutrition Therapy, while the CDM manages kitchen operations, HACCP, budgets, staffing, and accurate therapeutic meal delivery',
+      'Both roles have identical legal authority to cancel surgical NPO orders without consulting a doctor',
+      'The CDM is limited exclusively to the visitor coffee shop and has no role in patient meal quality'
+    ],
+    correctIndex: 1,
+    explanation: 'Clinical Dietitians lead clinical assessment and MNT prescriptions; Certified Dietary Managers direct foodservice operations, food safety, budgeting, staffing, and accurate patient tray execution.',
+    moduleRef: 'Module 1: Scope of Practice & Interdisciplinary Care Team'
   },
   {
-    id: 'mfd-q26',
-    question: 'What is the safest standard method to thaw (defrost) frozen chicken or meat?',
+    id: 'cdm-q02',
+    question: 'A nurse calls the dietary office 10 minutes before lunch dispatch to report that Bed 204 has been switched from "Regular Diet" to "NPO" for emergency surgery. What must the CDM do immediately?',
     options: [
-      'Leave it out on the warm kitchen table overnight',
-      'Soak it in hot water for 3 hours',
-      'Place it in a covered tray on the bottom shelf of a thawing chiller at ≤ +4°C',
-      'Put it near the cooking stove'
+      'Send the tray anyway and let the patient decide whether to eat',
+      'Replace the solid lunch with a cup of clear apple juice and broth',
+      'Immediately pull Bed 204’s tray from the line or notify the cart runner before delivery and update the Ward Census log',
+      'Wait until dinner service to update the diet sheet'
     ],
     correctIndex: 2,
-    explanation:
-      'Thawing frozen meat on the bottom shelf of a chiller at ≤ +4°C keeps the surface out of the Temperature Danger Zone so bacteria cannot multiply.',
-    moduleRef: 'Module 4: Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing'
+    explanation: 'NPO (Nil Per Os) means nothing by mouth; delivering food or drink to a pre-surgical NPO patient risks severe anesthesia aspiration and surgical cancellation.',
+    moduleRef: 'Module 1: Scope of Practice & Interdisciplinary Care Team'
   },
   {
-    id: 'mfd-q27',
-    question: 'What is the minimum safe internal core cooking temperature for poultry (chicken) and minced meat dishes, and the minimum hot-holding temperature before serving?',
+    id: 'cdm-q03',
+    question: 'What is the primary food safety purpose of enforcing a strict "One-Way Flow" (Dirty-to-Clean) layout in a hospital kitchen?',
     options: [
-      'Cook to ≥ +75°C core temperature; Hot-Hold at ≥ +63°C',
-      'Cook to +40°C; Hot-Hold at +25°C',
-      'Cook to +50°C; Hot-Hold at +30°C',
-      'Thermometers are not needed for chicken'
-    ],
-    correctIndex: 0,
-    explanation:
-      'Cooking to ≥ +75°C destroys harmful bacteria like Salmonella, and holding hot food at ≥ +63°C prevents bacterial growth during service.',
-    moduleRef: 'Module 4: Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing'
-  },
-  {
-    id: 'mfd-q28',
-    question: 'Under the international kitchen Color-Coding Chart, which color chopping board and knife must be used for (1) Raw Meat/Poultry and (2) Allergen-Free Special Diets?',
-    options: [
-      'Red for Raw Meat/Poultry; Purple for Allergen-Free Special Diets',
-      'Green for Raw Meat; Brown for Allergen-Free Diets',
-      'White for Raw Meat; Blue for Allergen-Free Diets',
-      'Yellow for Raw Meat; Red for Salads'
-    ],
-    correctIndex: 0,
-    explanation:
-      'Red is used for Raw Meat/Poultry, while Purple is dedicated to Allergen-Free meal preparation.',
-    moduleRef: 'Module 4: Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing'
-  },
-  {
-    id: 'mfd-q29',
-    question: 'How should fresh raw salad vegetables (lettuce, cucumbers, tomatoes) be washed and sanitized before chopping?',
-    options: [
-      'Wipe them with a dry cloth only',
-      'Wash in running potable water to remove soil, dip in 50–100 ppm food-grade chlorine sanitizing solution for 5 minutes, and rinse with clean potable water',
-      'Wash with dishwashing soap',
-      'Soak in boiling oil'
+      'To reduce electricity usage by placing chillers next to ovens',
+      'To ensure raw ingredients and returning soiled ward trays never cross paths with clean cooked food and plated patient trays',
+      'To allow delivery trucks to drive directly into the tray assembly zone',
+      'To eliminate the need for separate handwashing sinks'
     ],
     correctIndex: 1,
-    explanation:
-      'Because raw salads are not cooked, washing off soil followed by a 50–100 ppm food-grade chlorine dip and clean potable water rinse removes surface bacteria.',
-    moduleRef: 'Module 4: Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing'
+    explanation: 'One-Way forward flow physically separates raw receiving, prep, clean tray assembly, and returning soiled ward carts to prevent cross-contamination.',
+    moduleRef: 'Module 2: Hospital Kitchen Architecture & One-Way Flow'
   },
   {
-    id: 'mfd-q30',
-    question: 'What is the correct 6-Step sequence for cleaning and sanitizing a kitchen food preparation table?',
+    id: 'cdm-q04',
+    question: 'Which facility lighting and floor specification is standard for a hygienic hospital food preparation and tray assembly area?',
     options: [
-      '1) Pre-Scrape → 2) Pre-Rinse → 3) Detergent Wash → 4) Clean Water Rinse → 5) Apply Sanitizer → 6) Air Dry',
-      'Spray sanitizer directly over grease and wipe with a dirty towel',
-      'Rinse with cold water only once a week',
-      'Wipe with a dry newspaper'
+      'Unshielded glass bulbs and rough porous concrete flooring',
+      'Dim ambient lighting (< 100 lux) and carpeted walkways',
+      'Shatterproof-sleeved lighting (≥ 500 lux) with smooth, anti-slip, washable flooring and coved wall-to-floor junctions',
+      'Open floor trenches without drain traps to speed up hosing'
     ],
-    correctIndex: 0,
-    explanation:
-      'Grease and food dirt block sanitizers from working. You must scrape, wash with detergent, and rinse before applying chemical sanitizer and air-drying.',
-    moduleRef: 'Module 4: Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing'
+    correctIndex: 2,
+    explanation: 'Shatterproof ≥ 500 lux lighting prevents glass contamination and improves visual inspection; coved anti-slip floors prevent dirt buildup and staff slips.',
+    moduleRef: 'Module 2: Hospital Kitchen Architecture & One-Way Flow'
   },
   {
-    id: 'mfd-q31',
-    question: 'In a commercial high-temperature dishwashing machine, what must the Final Sanitizing Rinse temperature be to disinfect patient trays and plates?',
+    id: 'cdm-q05',
+    question: 'What type of lubricant must hospital maintenance engineers exclusively use on food mixers, meat slicers, and tray-line conveyors?',
     options: [
-      'At least +82°C at the rinse manifold (achieving ≥ +71°C on the plate surface)',
-      '+30°C lukewarm water',
-      '+15°C cold water',
-      '+45°C'
-    ],
-    correctIndex: 0,
-    explanation:
-      'A final rinse manifold temperature of ≥ +82°C heats the dish surface to ≥ +71°C, thermally killing bacteria and viruses.',
-    moduleRef: 'Module 4: Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing'
-  },
-  {
-    id: 'mfd-q32',
-    question: 'What type of garbage bins must be used inside food preparation areas?',
-    options: [
-      'Open uncovered baskets next to cooking pots',
-      'Foot-operated (pedal) covered bins lined with plastic bags that are emptied whenever 75% full and at the end of every shift',
-      'Cardboard boxes on the prep table',
-      'No bins are needed in a kitchen'
+      'Standard automotive motor oil',
+      'NSF H1 Food-Grade Lubricant',
+      'Industrial diesel grease',
+      'Used vegetable frying oil'
     ],
     correctIndex: 1,
-    explanation:
-      'Foot-operated covered bins keep flies away and allow kitchen staff to dispose of waste without touching bin lids with their hands.',
-    moduleRef: 'Module 4: Kitchen Hygiene, Safe Temperatures (HACCP), Cleaning & Dishwashing'
+    explanation: 'NSF H1 food-grade lubricants are non-toxic and approved for incidental food contact on kitchen processing machinery.',
+    moduleRef: 'Module 2: Hospital Kitchen Architecture & One-Way Flow'
   },
-
-  // MODULE 5: QUALITY CHECKS, 72-HOUR FOOD SAMPLES, EMERGENCY PLANNING & AUDITS (8 MCQs)
   {
-    id: 'mfd-q33',
-    question: 'When should the Chef and Dietary Supervisor perform the daily Food Tasting and Temperature Check?',
+    id: 'cdm-q06',
+    question: 'How many kilocalories (kcal) are supplied per gram by Carbohydrates, Protein, and Fat respectively?',
     options: [
-      'About 20 minutes BEFORE each meal service (Breakfast, Lunch, and Dinner) using clean tasting spoons and a calibrated probe thermometer',
-      'Two days after the food is eaten',
-      'Only once a month',
-      'Tasting is never needed in a hospital kitchen'
+      '4 kcal/g Carbohydrate, 4 kcal/g Protein, 9 kcal/g Fat',
+      '9 kcal/g Carbohydrate, 4 kcal/g Protein, 4 kcal/g Fat',
+      '2 kcal/g Carbohydrate, 6 kcal/g Protein, 12 kcal/g Fat',
+      '4 kcal/g Carbohydrate, 9 kcal/g Protein, 4 kcal/g Fat'
     ],
     correctIndex: 0,
-    explanation:
-      'Checking taste, salt level, texture, and temperature 20 minutes before service allows the team to fix any issue before trays go to wards.',
-    moduleRef: 'Module 5: Quality Checks, 72-Hour Food Samples, Emergency Planning & Audits'
+    explanation: 'Carbohydrates and Proteins each provide 4 kcal/g, whereas Fats provide concentrated energy at 9 kcal/g.',
+    moduleRef: 'Module 3: Essential Nutrition Science & Screening'
   },
   {
-    id: 'mfd-q34',
-    question: 'How much food must be saved in the "Reference Food Sample Bank", at what temperature, and for how long?',
+    id: 'cdm-q07',
+    question: 'A hospitalized geriatric patient eats less than 50% of their meals for 3 consecutive days and mentions difficulty chewing. What is the CDM’s mandatory action?',
     options: [
-      'At least 150 g of every served dish in a sterile labeled container, kept in a locked chiller at +1°C to +4°C for 72 hours (3 days)',
-      '5 g kept on the office desk for 2 hours',
-      '1 kg kept in the hot oven for 1 week',
-      'Only take a photo of the menu on a phone'
-    ],
-    correctIndex: 0,
-    explanation:
-      'Retaining ≥ 150 g of every served meal at +1°C to +4°C for 72 hours provides official laboratory evidence if any foodborne illness complaint arises.',
-    moduleRef: 'Module 5: Quality Checks, 72-Hour Food Samples, Emergency Planning & Audits'
-  },
-  {
-    id: 'mfd-q35',
-    question: 'If three patients complain of vomiting shortly after eating lunch, what is the FIRST action the Certified Dietary Manager must take?',
-    options: [
-      'Throw away the reference food samples and delete the temperature logs',
-      'Immediately stop serving the suspected dish, quarantine remaining batches, lock the 72-hour Reference Food Samples, and inform Hospital Infection Control / Medical Director',
-      'Ignore the complaint until next week',
-      'Serve the remaining food to kitchen staff'
+      'Serve half portions permanently to cut plate waste',
+      'Document the low intake, interview the patient on preferences/denture comfort, and submit an immediate Clinical Dietitian Referral',
+      'Ignore the observation until the patient requests a doctor',
+      'Switch the patient to an unprescribed clear liquid diet independently'
     ],
     correctIndex: 1,
-    explanation:
-      'Immediate containment (stopping service, quarantining stock, locking the 72-hour reference samples, and alerting Infection Control) protects patients and preserves lab evidence.',
-    moduleRef: 'Module 5: Quality Checks, 72-Hour Food Samples, Emergency Planning & Audits'
+    explanation: 'Consuming < 50% of meals for 3 consecutive days is a key hospital malnutrition trigger requiring documented intake review and prompt RD escalation.',
+    moduleRef: 'Module 3: Essential Nutrition Science & Screening'
   },
   {
-    id: 'mfd-q36',
-    question: 'Under hospital accreditation standards (such as JCI), how many days of Emergency Disaster Food and Drinking Water reserve must the Dietary Department keep on-site?',
+    id: 'cdm-q08',
+    question: 'Which cooking practice best preserves water-soluble vitamins (Vitamin C and B-complex) and natural color in hospital vegetables?',
     options: [
-      'At least 72 hours (3 full days) of shelf-stable food, tube feeds, disposable plates, and drinking water (≥ 3 Liters per person per day)',
-      'Only 2 hours of tea and biscuits',
-      'No emergency stock is needed in a hospital',
-      'Only frozen raw chicken'
-    ],
-    correctIndex: 0,
-    explanation:
-      'Hospitals must maintain a minimum 72-hour (3-day) self-sufficient emergency reserve of shelf-stable food, tube feeds, disposables, and drinking water.',
-    moduleRef: 'Module 5: Quality Checks, 72-Hour Food Samples, Emergency Planning & Audits'
-  },
-  {
-    id: 'mfd-q37',
-    question: 'What should kitchen staff do immediately if there is a sudden power outage and backup power is delayed?',
-    options: [
-      'Open all chiller and freezer doors wide to let air in',
-      'Keep all chiller and freezer doors tightly CLOSED to preserve cold air, and check core food temperatures when power returns',
-      'Move frozen meat into the hot kitchen',
-      'Turn on all exhaust fans'
+      'Boiling vegetables in large pots of water for 60 minutes and holding for 3 hours',
+      'Steaming or batch-cooking in small staggered quantities just prior to tray assembly',
+      'Adding baking soda to boiling water to brighten green vegetables',
+      'Reheating leftover vegetables three times across consecutive shifts'
     ],
     correctIndex: 1,
-    explanation:
-      'Keeping chiller and freezer doors closed traps cold air inside, keeping freezers safe for 24–48 hours and chillers cold for up to 4 hours.',
-    moduleRef: 'Module 5: Quality Checks, 72-Hour Food Samples, Emergency Planning & Audits'
+    explanation: 'Small-batch steaming minimizes water leaching and prolonged heat destruction of Vitamin C and folate.',
+    moduleRef: 'Module 3: Essential Nutrition Science & Screening'
   },
   {
-    id: 'mfd-q38',
-    question: 'If the hospital experiences a "Boil-Water Alert" or water supply contamination, what must the Certified Dietary Manager do?',
+    id: 'cdm-q09',
+    question: 'Which condiment or ingredient is DANGEROUS and must NEVER be offered to a Renal (Chronic Kidney Disease) patient as a salt alternative?',
     options: [
-      'Keep using tap water and ice machines as normal',
-      'Turn off plumbed ice machines and water dispensers, discard existing ice, use bottled or boiled water (boiled ≥ 1 minute), and use disposable plates/cups',
-      'Wash salads in untreated water',
-      'Add salt to tap water'
+      'Fresh lemon juice and dried rosemary',
+      'Garlic powder (salt-free) and black pepper',
+      'Commercial Potassium Chloride ("Lo-Salt") salt substitute',
+      'Fresh chopped parsley and white vinegar'
+    ],
+    correctIndex: 2,
+    explanation: 'Commercial salt substitutes replace sodium with potassium chloride, which can cause fatal hyperkalemia and cardiac arrest in renal patients.',
+    moduleRef: 'Module 4: Clinical Therapeutic Diets'
+  },
+  {
+    id: 'cdm-q10',
+    question: 'Which meal item must be STRICTLY excluded from a Neutropenic (Low-Microbial) oncology patient’s tray?',
+    options: [
+      'Well-cooked herb chicken probed at 78°C internal core temperature',
+      'Unopened UHT pasteurized milk tetra-pack',
+      'Fresh raw mixed garden salad with unpeeled berries and soft unpasteurized cheese',
+      'Individually sealed canned peaches in light syrup'
+    ],
+    correctIndex: 2,
+    explanation: 'Immunocompromised neutropenic patients face life-threatening infections from raw unpeeled produce and unpasteurized dairy; all foods must be thoroughly cooked or commercially sterile.',
+    moduleRef: 'Module 4: Clinical Therapeutic Diets'
+  },
+  {
+    id: 'cdm-q11',
+    question: 'Which menu item is ACCEPTABLE on a strict post-operative Clear Liquid diet?',
+    options: [
+      'Strained fat-free clear broth, clear apple juice, plain gelatin, and black tea',
+      'Cream of mushroom soup, whole milk, and vanilla yogurt',
+      'Oatmeal porridge with mashed banana',
+      'Orange juice with thick fruit pulp and blended lentil soup'
+    ],
+    correctIndex: 0,
+    explanation: 'A Clear Liquid diet permits only transparent, residue-free liquids that are liquid at body temperature — zero milk, cream, pulp, or opaque solids.',
+    moduleRef: 'Module 4: Clinical Therapeutic Diets'
+  },
+  {
+    id: 'cdm-q12',
+    question: 'What is the primary operational goal of a Diabetic (Carbohydrate-Controlled) hospital menu?',
+    options: [
+      'Eliminate 100% of all carbohydrates including grains and vegetables',
+      'Deliver consistent, measured complex carbohydrates (typically 45–60 g/meal), high fiber, and zero refined simple sugars aligned with insulin/medication timing',
+      'Double the fat and salt content to replace sugar calories',
+      'Serve all daily calories in one single evening meal'
     ],
     correctIndex: 1,
-    explanation:
-      'During a water contamination alert, ice machines must be disconnected, existing ice discarded, and only bottled or rolling-boiled water used alongside disposable tableware.',
-    moduleRef: 'Module 5: Quality Checks, 72-Hour Food Samples, Emergency Planning & Audits'
+    explanation: 'Consistent measured carbohydrate portions and timely meal delivery prevent dangerous blood glucose spikes and insulin-induced hypoglycemia.',
+    moduleRef: 'Module 4: Clinical Therapeutic Diets'
   },
   {
-    id: 'mfd-q39',
-    question: 'Why is it a serious violation if a kitchen supervisor pre-fills ("fakes") evening chiller temperature logs in the morning?',
+    id: 'cdm-q13',
+    question: 'Under the global IDDSI Framework, which objective kitchen test is used to verify Thickened Drinks (Levels 0 to 3)?',
     options: [
-      'Because falsifying food safety logs hides real equipment failures, puts patients at risk, and leads to an immediate Critical Failure in Food Authority or JCI audits',
-      'Because blue ink should be used instead of black ink',
-      'Pre-filling logs is allowed on weekends',
-      'Logs are only for decoration'
+      'Measuring fluid temperature with a laser gun',
+      'The 10 mL Slip-Tip Syringe Flow Test timed for exactly 10 seconds',
+      'Pouring the beverage through a pasta colander',
+      'Weighing the drinking cup on a receiving scale'
     ],
-    correctIndex: 0,
-    explanation:
-      'Temperature and cleaning logs are legal food safety records; they must be recorded honestly at the exact time the check is performed.',
-    moduleRef: 'Module 5: Quality Checks, 72-Hour Food Samples, Emergency Planning & Audits'
+    correctIndex: 1,
+    explanation: 'The IDDSI 10 mL Syringe Flow Test measures exact liquid remaining after 10 seconds of gravity flow (L0: 0 mL; L1: 1–4 mL; L2: 4–8 mL; L3: > 8 mL).',
+    moduleRef: 'Module 5: Texture-Modified Diets & IDDSI Framework'
   },
   {
-    id: 'mfd-q40',
-    question: 'Within how many hours should a well-managed dietary department be able to trace the supplier batch/lot number of any ingredient used in a meal?',
+    id: 'cdm-q14',
+    question: 'Why must vanilla ice cream and gelatin (jelly) NEVER be served to a dysphagia patient ordered IDDSI Level 2 (Mildly Thick) liquids?',
     options: [
-      'Within 2 to 4 hours using the Daily Receiving Log and Kitchen Production Sheet',
-      'Within 6 months',
-      'Within 30 days',
-      'Ingredient batch numbers never need to be recorded'
+      'They contain too much dietary fiber for dysphagia patients',
+      'They melt inside the warm mouth into thin Level 0 liquid, creating a high risk of silent aspiration pneumonia',
+      'They are too expensive for standard hospital budgets',
+      'They cannot be served on color-coded hospital trays'
+    ],
+    correctIndex: 1,
+    explanation: 'Foods that turn into thin liquid at body temperature (ice cream, gelatin, ice chips) bypass thickened-fluid precautions and can enter the airway.',
+    moduleRef: 'Module 5: Texture-Modified Diets & IDDSI Framework'
+  },
+  {
+    id: 'cdm-q15',
+    question: 'What particle size and fork behavior define an IDDSI Level 5 (Minced & Moist) meal?',
+    options: [
+      'Whole roasted cuts requiring a steak knife',
+      'Soft, moist lumps no larger than 4 mm (adult) that squash easily with light fork pressure and have zero thin liquid separation',
+      'Completely watery thin broth that passes freely through fork tines',
+      'Dry crispy bread cubes of 3 cm size'
+    ],
+    correctIndex: 1,
+    explanation: 'IDDSI Level 5 Minced & Moist requires soft, cohesive particles ≤ 4 mm (fitting between standard fork prongs) with no separate thin liquid draining out.',
+    moduleRef: 'Module 5: Texture-Modified Diets & IDDSI Framework'
+  },
+  {
+    id: 'cdm-q16',
+    question: 'What does the food safety acronym "YOPI" represent in healthcare foodservice?',
+    options: [
+      'Yearly Operational Productivity Index',
+      'Young, Old, Pregnant, and Immunocompromised — the most vulnerable patient groups',
+      'Yield Output Per Ingredient',
+      'Yellow, Orange, Purple, and Indigo cutting boards'
+    ],
+    correctIndex: 1,
+    explanation: 'YOPI patients have immature, weakened, or altered immune defenses, making strict pathogen prevention mandatory in hospital kitchens.',
+    moduleRef: 'Module 6: Hospital Food Safety Hazards & YOPI Patients'
+  },
+  {
+    id: 'cdm-q17',
+    question: 'Which pathogenic bacterium is uniquely hazardous in chilled hospital ready-to-eat foods (sliced meats, soft cheeses, sandwiches) because it can continue multiplying slowly even at +4°C?',
+    options: [
+      'Listeria monocytogenes',
+      'Lactobacillus acidophilus',
+      'Saccharomyces cerevisiae',
+      'Bifidobacterium longum'
     ],
     correctIndex: 0,
-    explanation:
-      'Recording supplier batch/lot numbers at receiving and store issue allows a Manager to trace and isolate any recalled ingredient within 2 to 4 hours.',
-    moduleRef: 'Module 5: Quality Checks, 72-Hour Food Samples, Emergency Planning & Audits'
+    explanation: 'Listeria monocytogenes is psychrotrophic (cold-tolerant) and can cause fatal listeriosis/meningitis in elderly, pregnant, and immunocompromised hospital patients.',
+    moduleRef: 'Module 6: Hospital Food Safety Hazards & YOPI Patients'
+  },
+  {
+    id: 'cdm-q18',
+    question: 'Between which temperatures does the bacterial "Temperature Danger Zone" occur, and what is the stricter hospital maximum ambient exposure rule for perishable patient meals?',
+    options: [
+      '-18°C to 0°C; maximum 12 hours',
+      '5°C to 63°C; discard high-risk hospital food abused beyond 2 hours',
+      '65°C to 95°C; maximum 6 hours',
+      '0°C to 4°C; maximum 30 minutes'
+    ],
+    correctIndex: 1,
+    explanation: 'Pathogens multiply rapidly between 5°C and 63°C; hospitals enforce a strict 2-hour cumulative Danger Zone limit to protect vulnerable YOPI patients.',
+    moduleRef: 'Module 6: Hospital Food Safety Hazards & YOPI Patients'
+  },
+  {
+    id: 'cdm-q19',
+    question: 'Which color-coded cutting board and utensil set is reserved EXCLUSIVELY for Allergen-Free and Celiac (Gluten-Free) patient meal preparation?',
+    options: [
+      'Red board',
+      'Yellow board',
+      'Purple board and dedicated purple-handled tools',
+      'Brown root-vegetable board'
+    ],
+    correctIndex: 2,
+    explanation: 'Purple boards, knives, and pans are internationally recognized for dedicated allergen-free / gluten-free preparation to prevent trace cross-contact.',
+    moduleRef: 'Module 7: Hospital Dietary SOPs & Prerequisite Programmes'
+  },
+  {
+    id: 'cdm-q20',
+    question: 'A kitchen cook reports having acute vomiting and diarrhea early in the morning. When may the Certified Dietary Manager legally allow them to return to food handling?',
+    options: [
+      'Immediately if they wear two pairs of disposable gloves',
+      'After taking an over-the-counter tablet and waiting 4 hours',
+      'Only after being completely symptom-free for at least 48 hours and receiving medical fitness clearance',
+      'The same afternoon if they only wash dishes'
+    ],
+    correctIndex: 2,
+    explanation: 'Food handlers with vomiting or diarrhea (Norovirus/enteric pathogens) must be excluded immediately and remain off duty until at least 48 hours completely symptom-free.',
+    moduleRef: 'Module 7: Hospital Dietary SOPs & Prerequisite Programmes'
+  },
+  {
+    id: 'cdm-q21',
+    question: 'What is the required final sanitizing rinse temperature in a high-temperature commercial hospital dishmachine?',
+    options: [
+      '50°C',
+      '65°C',
+      '≥ 82°C (180°F)',
+      '40°C'
+    ],
+    correctIndex: 2,
+    explanation: 'A final thermal sanitizing rinse of ≥ 82°C ensures dish surface temperature achieves ≥ 71°C for validated pathogen destruction.',
+    moduleRef: 'Module 7: Hospital Dietary SOPs & Prerequisite Programmes'
+  },
+  {
+    id: 'cdm-q22',
+    question: 'After sanitizing patient dishes in a 3-compartment manual sink (Wash → Rinse → Sanitize), how must the clean dishes be dried?',
+    options: [
+      'Wiped quickly with a reusable cotton kitchen towel',
+      'Air-dried completely on clean sanitized slatted racks',
+      'Dried with paper napkins from the cafeteria',
+      'Stacked wet immediately inside closed meal trolleys'
+    ],
+    correctIndex: 1,
+    explanation: 'Cloth towels re-contaminate sanitized tableware with bacteria; air-drying on sanitized drain racks is mandatory.',
+    moduleRef: 'Module 7: Hospital Dietary SOPs & Prerequisite Programmes'
+  },
+  {
+    id: 'cdm-q23',
+    question: 'If a standardized hospital recipe requires 12 kg of Edible Portion (EP) peeled carrots and carrots have an 80% yield, how many kg of As Purchased (AP) carrots must you order?',
+    options: [
+      '9.6 kg',
+      '12.0 kg',
+      '15.0 kg',
+      '18.5 kg'
+    ],
+    correctIndex: 2,
+    explanation: 'AP Weight = EP Weight ÷ Yield % = 12 kg ÷ 0.80 = 15.0 kg As Purchased.',
+    moduleRef: 'Module 8: Cycle Menus, Standardized Recipes & Portion Control'
+  },
+  {
+    id: 'cdm-q24',
+    question: 'On a hospital tray line, how much volume does one level #16 portion scoop (disher) measure?',
+    options: [
+      '2.0 fl oz (1/4 cup / ~60 mL)',
+      '4.0 fl oz (1/2 cup / ~120 mL)',
+      '8.0 fl oz (1 cup / ~240 mL)',
+      '16 fl oz (2 cups / ~480 mL)'
+    ],
+    correctIndex: 0,
+    explanation: 'Scoop number equals scoops per quart (32 fl oz): 32 ÷ 16 = 2 fl oz = 1/4 cup (~60 mL).',
+    moduleRef: 'Module 8: Cycle Menus, Standardized Recipes & Portion Control'
+  },
+  {
+    id: 'cdm-q25',
+    question: 'Why are 14-day or 28-day Cycle Menus preferred over static daily menus in hospitals and long-term care facilities?',
+    options: [
+      'They eliminate the need for therapeutic diets',
+      'They reduce patient menu fatigue, streamline seasonal procurement, standardize labor forecasting, and stabilize PPD food cost',
+      'They allow chefs to improvise recipes daily without written cards',
+      'They avoid the requirement to inspect incoming deliveries'
+    ],
+    correctIndex: 1,
+    explanation: 'Cycle menus balance patient variety with predictable purchasing, consistent standardized recipes, and disciplined budget control.',
+    moduleRef: 'Module 8: Cycle Menus, Standardized Recipes & Portion Control'
+  },
+  {
+    id: 'cdm-q26',
+    question: 'During receiving inspection, a pallet of canned tomato paste includes 6 cans with swollen, bulging lids and deep seam dents. What is the correct decision?',
+    options: [
+      'Accept them and use the swollen cans first under FIFO',
+      'Reject the swollen and seam-dented cans immediately due to Clostridium botulinum (Botulism) risk and log a Supplier NCR',
+      'Open and boil the swollen cans for 5 minutes to remove gas',
+      'Store them in the deep freezer until next month'
+    ],
+    correctIndex: 1,
+    explanation: 'Swollen or seam-dented cans indicate loss of hermetic seal or anaerobic Clostridium botulinum gas/toxin growth — immediate rejection is mandatory.',
+    moduleRef: 'Module 9: Procurement, Receiving & FIFO/FEFO Inventory'
+  },
+  {
+    id: 'cdm-q27',
+    question: 'In a walk-in hospital chiller (+1°C to +4°C), what is the mandatory vertical shelf-stacking hierarchy from TOP to BOTTOM?',
+    options: [
+      'Top: Raw poultry · Middle: Raw red meat · Bottom: Ready-to-eat patient desserts',
+      'Top: Ready-to-Eat cooked meals, salads & dairy · Middle: Washed vegetables · Bottom: Raw meat & poultry in leak-proof drip trays',
+      'All items mixed together alphabetically by supplier name',
+      'Raw meat stored directly on the tiled chiller floor for coldest airflow'
+    ],
+    correctIndex: 1,
+    explanation: 'Storing raw meat/poultry on the bottom shelf in sealed drip trays prevents raw blood or juices from dripping onto ready-to-eat hospital foods.',
+    moduleRef: 'Module 9: Procurement, Receiving & FIFO/FEFO Inventory'
+  },
+  {
+    id: 'cdm-q28',
+    question: 'How high above the floor must dry store shelving be raised in a compliant hospital food store?',
+    options: [
+      'Flush on the floor with cardboard sheets underneath',
+      'At least 15 cm (6 inches) off the floor and 5 cm away from walls',
+      '1 cm off the floor',
+      'Height does not matter if bags are sealed in plastic'
+    ],
+    correctIndex: 1,
+    explanation: 'Maintaining ≥ 15 cm floor clearance and 5 cm wall spacing enables floor mopping, airflow circulation, and rapid visual pest inspection.',
+    moduleRef: 'Module 9: Procurement, Receiving & FIFO/FEFO Inventory'
+  },
+  {
+    id: 'cdm-q29',
+    question: 'What is the minimum validated internal core cooking temperature for poultry, minced meats, and reheated cook-chill hospital meals?',
+    options: [
+      '55°C',
+      '63°C',
+      '≥ 75°C (verified at the thickest thermal center with a sanitized digital probe)',
+      '100°C for 30 minutes'
+    ],
+    correctIndex: 2,
+    explanation: 'An internal core temperature of ≥ 75°C (or validated equivalent 70°C for 2 min) guarantees thermal lethality of vegetative pathogens like Salmonella and Campylobacter.',
+    moduleRef: 'Module 10: Bulk Production, Rapid Cooling & Thermal Control'
+  },
+  {
+    id: 'cdm-q30',
+    question: 'How should frozen raw chicken breasts be safely thawed in a hospital dietary kitchen?',
+    options: [
+      'Submerged in a sink of warm tap water for 4 hours',
+      'Left uncovered on a stainless steel prep table overnight',
+      'Inside a dedicated bottom-shelf thaw chiller maintained at ≤ 4°C in covered drip pans',
+      'Placed near the exhaust hood above the hot cooking range'
+    ],
+    correctIndex: 2,
+    explanation: 'Thawing in a bottom-shelf chiller at ≤ 4°C keeps outer meat surfaces out of the Danger Zone while preventing raw thaw drip onto other foods.',
+    moduleRef: 'Module 10: Bulk Production, Rapid Cooling & Thermal Control'
+  },
+  {
+    id: 'cdm-q31',
+    question: 'When calibrating a digital food probe thermometer using the Ice-Point method (crushed ice + clean water slurry), what exact reading confirms calibration?',
+    options: [
+      '+4.0°C ± 2.0°C',
+      '0.0°C (within ± 0.5°C tolerance)',
+      '-18.0°C ± 1.0°C',
+      '+10.0°C ± 0.5°C'
+    ],
+    correctIndex: 1,
+    explanation: 'An agitated ice-water slurry stabilizes at exactly 0.0°C (32°F); probes deviating beyond ± 0.5°C must be recalibrated or replaced.',
+    moduleRef: 'Module 10: Bulk Production, Rapid Cooling & Thermal Control'
+  },
+  {
+    id: 'cdm-q32',
+    question: 'Before handing a patient their meal tray at the hospital bedside, how must staff verify patient identity per JCI IPSG.1 safety standards?',
+    options: [
+      'Check the room number on the door only',
+      'Verify TWO patient identifiers (Full Patient Name + Medical Record Number / Bed or Date of Birth) against the printed diet ticket',
+      'Ask the visitor in the hallway which bed ordered chicken',
+      'Place the tray silently on the bedside table without checking the wristband'
+    ],
+    correctIndex: 1,
+    explanation: 'Room numbers change frequently; verifying two independent patient identifiers prevents serving a regular or allergen-containing meal to the wrong patient.',
+    moduleRef: 'Module 11: Patient Tray Line & Zero-Error Delivery'
+  },
+  {
+    id: 'cdm-q33',
+    question: 'What is the target hot-holding and cold-holding temperature at the point of patient bedside meal service?',
+    options: [
+      'Hot ≥ 50°C · Cold ≤ 12°C',
+      'Hot ≥ 63°C · Cold ≤ 5°C',
+      'Hot ≥ 45°C · Cold ≤ 15°C',
+      'Temperature does not need checking once plated'
+    ],
+    correctIndex: 1,
+    explanation: 'Hot entrées must remain ≥ 63°C and cold salads/desserts ≤ 5°C through bedside delivery (ideally within ≤ 30 minutes of plating) to stay safely outside the Danger Zone.',
+    moduleRef: 'Module 11: Patient Tray Line & Zero-Error Delivery'
+  },
+  {
+    id: 'cdm-q34',
+    question: 'A patient is temporarily away from their ward for a 90-minute MRI scan during lunch delivery. What is the correct Hold-Tray procedure?',
+    options: [
+      'Leave the hot tray uncovered on the empty bed until the patient comes back',
+      'Discard the patient’s lunch record and wait until dinner',
+      'Hold the meal order in the kitchen and deliver a freshly plated hot tray (≥ 63°C) when the ward nurse confirms the patient has returned',
+      'Give the patient’s therapeutic tray to the neighboring bed'
+    ],
+    correctIndex: 2,
+    explanation: 'Leaving meals unattended on empty beds drops food into the Danger Zone and leaves the returning patient with cold, unsafe food.',
+    moduleRef: 'Module 11: Patient Tray Line & Zero-Error Delivery'
+  },
+  {
+    id: 'cdm-q35',
+    question: 'A hospital kitchen starts the month with Rs. 120,000 in inventory, purchases Rs. 580,000 of food, and ends the month with Rs. 100,000 in closing inventory. What is the Cost of Food Used?',
+    options: [
+      'Rs. 560,000',
+      'Rs. 600,000',
+      'Rs. 700,000',
+      'Rs. 800,000'
+    ],
+    correctIndex: 1,
+    explanation: 'Cost of Food Used = Opening Inventory (120,000) + Purchases (580,000) − Closing Inventory (100,000) = Rs. 600,000.',
+    moduleRef: 'Module 12: Budgeting, Food Cost & Plate Waste'
+  },
+  {
+    id: 'cdm-q36',
+    question: 'During a ward Plate Waste Audit, 100 kg of patient food was served and 24 kg came back uneaten (24% waste vs < 15% benchmark). Which action best addresses the root cause?',
+    options: [
+      'Stop weighing returning waste so the numbers look better',
+      'Analyze which dishes/wards drive the waste, interview patients on flavor, temperature, and portion size, and refine recipes/cycle menus',
+      'Force patients to finish their trays before discharge',
+      'Cut food quality further to offset the wasted weight'
+    ],
+    correctIndex: 1,
+    explanation: 'High plate waste (> 15%) signals palatability, temperature, cultural mismatch, or oversized portions — targeted patient feedback fixes both nutrition and budget.',
+    moduleRef: 'Module 12: Budgeting, Food Cost & Plate Waste'
+  },
+  {
+    id: 'cdm-q37',
+    question: 'Why must kitchen staff NEVER mix Chlorine Bleach with Acid descalers or Ammonia-based floor cleaners?',
+    options: [
+      'The mixture loses its color on white tiles',
+      'It triggers a hazardous chemical reaction releasing lethal toxic chlorine/chloramine gas inside the kitchen',
+      'It makes the floor slightly slippery',
+      'It increases the cost of cleaning supplies by 5%'
+    ],
+    correctIndex: 1,
+    explanation: 'Mixing bleach with acids or ammonia releases highly toxic chlorine or chloramine vapors that cause acute respiratory injury; always follow SDS sheets.',
+    moduleRef: 'Module 13: Human Resources, Rostering & Kitchen Safety'
+  },
+  {
+    id: 'cdm-q38',
+    question: 'For how many hours and at what temperature must a hospital kitchen retain 150 g labeled food samples of every cooked patient meal item?',
+    options: [
+      '12 hours at room temperature (25°C)',
+      '24 hours in the hot-holding cabinet',
+      '72 hours at ≤ 4°C (or frozen) in sealed sterile containers',
+      '30 days in the dry grocery store'
+    ],
+    correctIndex: 2,
+    explanation: 'Retaining 150 g samples of every cooked dish at ≤ 4°C for 72 hours covers standard foodborne illness incubation windows for laboratory root-cause testing.',
+    moduleRef: 'Module 14: Quality Assurance, 72h Samples & Disaster Planning'
+  },
+  {
+    id: 'cdm-q39',
+    question: 'If the hospital experiences a sudden municipal "Boil-Water Alert" due to water main contamination, what must the Certified Dietary Manager do immediately?',
+    options: [
+      'Continue washing raw salads with tap water since sanitizer is unnecessary',
+      'Shut down ice machines and tap-water prep, switch immediately to bottled potable water (≥ 3 L/patient/day reserve), no-cook emergency menus, and single-use disposable tableware',
+      'Serve only dry bread with zero beverages for 48 hours',
+      'Wait for local television news to confirm before taking kitchen action'
+    ],
+    correctIndex: 1,
+    explanation: 'During a boil-water alert, contaminated tap water can taint ice, produce, and dishwashing — bottled water, disposable ware, and disaster menus protect patients immediately.',
+    moduleRef: 'Module 14: Quality Assurance, 72h Samples & Disaster Planning'
+  },
+  {
+    id: 'cdm-q40',
+    question: 'Within what maximum time window should a well-managed hospital dietary department trace any ingredient batch/lot number from supplier delivery to ward service during a recall or outbreak?',
+    options: [
+      'Within 2 to 4 hours using Receiving Lot Logs and Daily Production Records',
+      'Within 30 business days',
+      'Within 6 months during the annual financial audit',
+      'Batch traceability is only required for pharmaceutical drugs, not hospital food'
+    ],
+    correctIndex: 0,
+    explanation: 'Logging supplier lot numbers at receiving and daily production allows a Certified Dietary Manager to isolate recalled ingredients within 2 to 4 hours.',
+    moduleRef: 'Module 15: Accreditation Readiness & Exam Mastery'
   }
 ];
 
@@ -1519,16 +2208,18 @@ export const MANAGER_FOOD_DIETARY_COURSE: InternationalTrainingCourse = {
   id: 'mgr-food-dietary-2026',
   code: 'CDM-CERT',
   title: 'Certified Dietary Manager',
-  levelBadge: 'Professional Certification (05 Modules · 50 Slides · 40 MCQs · 60% Pass)',
+  levelBadge:
+    'Visual Interactive Course (15 Modules · Clinical SOPs, Hospital Docs & Drills · 40 MCQs)',
   accreditationStandard:
-    'Hospital & Institutional Food & Dietary Management • Verified Certification',
-  duration: '05 Presentation Modules (50 Easy Slides) + 40-MCQ Exam',
+    'ANFP / Codex CXC 1-1969 • Certified Dietary Manager (CDM) Professional Standard',
+  duration:
+    '15 Interactive Modules (Clinical SOPs, Controlled Docs & Drills) + 40-MCQ Final Exam',
   certificateFeeRs: 8000,
   passPercentage: 60,
   distinctionPercentage: 75,
   totalExamQuestions: 40,
   description:
-    'A comprehensive, step-by-step Slide Presentation Course designed for Certified Dietary Manager (CDM) roles in hospitals, clinics, corporate cafeterias, and catering operations. Course study material (05 Presentation Modules / 50 Slides) and the 40-MCQ Final Exam are 100% Free for all users, with an official verifiable Portrait PDF Certificate available upon completion (Certificate Fee: Rs. 8,000).',
+    'Comprehensive Certified Dietary Manager (CDM) hospital & institutional foodservice certification featuring custom clinical visual diagrams, interactive Hospital Dietary & Tray-Line SOPs, 12 controlled sample hospital document forms (CDM-DOC-01 to 12), IDDSI dysphagia controls, interactive Germometer, Risk Matrix & Hazard Drills, financial PPD dashboards, and a 40-MCQ final exam.',
   modules: MANAGER_FOOD_DIETARY_MODULES,
   coreExamPool: MANAGER_FOOD_DIETARY_EXAM_MCQS.map((item) => ({
     q: item.question,
@@ -1543,10 +2234,12 @@ export const MANAGER_FOOD_DIETARY_HUB_TRAINING: HubTraining = {
   category: 'International Certification',
   title: 'Certified Dietary Manager',
   standardCode: 'CDM-CERT',
-  subType: '05 Presentation Modules (50 Slides) | 40 MCQs | 60% Pass',
+  accreditationStandard: MANAGER_FOOD_DIETARY_COURSE.accreditationStandard,
+  certificateFeeRs: MANAGER_FOOD_DIETARY_COURSE.certificateFeeRs,
+  subType: MANAGER_FOOD_DIETARY_COURSE.levelBadge,
   description: MANAGER_FOOD_DIETARY_COURSE.description,
   duration: MANAGER_FOOD_DIETARY_COURSE.duration,
-  fees: 'Free Study & Exam | Rs. 8,000 Verified Certificate',
+  fees: 'Free Study & Exam · Rs. 8,000 Certificate',
   enrollLink: '#trainings',
   isActive: true,
   customModules: MANAGER_FOOD_DIETARY_MODULES.map((m) => ({

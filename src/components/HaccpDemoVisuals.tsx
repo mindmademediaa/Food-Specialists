@@ -417,6 +417,213 @@ const SlideSvgArtwork: React.FC<{ type: SlideVisualIllustration }> = ({ type }) 
         </div>
       );
 
+    case 'cdm-care-team':
+      return (
+        <div className="rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] p-3.5 sm:p-4 space-y-3">
+          <div className="rounded-xl bg-[#1A2138] text-white px-4 py-2.5 text-center">
+            <div className="text-[10px] font-black uppercase tracking-wider text-amber-300">
+              Interdisciplinary Clinical Nutrition &amp; Foodservice Care Ecosystem
+            </div>
+            <div className="text-xs sm:text-sm font-bold mt-0.5">
+              Right Diet · Right Texture · Right Temperature · Right Patient
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            {[
+              { step: '1. Physician', role: 'Prescribes medical diet order & NPO status', tone: 'border-sky-300 bg-sky-50/70 text-sky-950' },
+              { step: '2. Clinical Dietitian', role: 'Nutrition assessment, MNT & nutrient targets', tone: 'border-emerald-300 bg-emerald-50/70 text-emerald-950' },
+              { step: '3. Dietary Manager (CDM)', role: 'Menus, recipes, HACCP, tray ops, budget & staff', tone: 'border-[#1673B8] bg-[#EBF4FC] text-[#0C182D] ring-1 ring-[#1673B8]/30' },
+              { step: '4. Chefs & Tray Aides', role: 'Standardized production, IDDSI prep & assembly', tone: 'border-amber-300 bg-amber-50/70 text-amber-950' },
+              { step: '5. Ward Nursing', role: 'Verifies patient ID, assists feeding & logs intake', tone: 'border-violet-300 bg-violet-50/70 text-violet-950' }
+            ].map((node) => (
+              <div key={node.step} className={`rounded-xl border p-2.5 text-center flex flex-col justify-center ${node.tone}`}>
+                <div className="text-xs font-black leading-tight">{node.step}</div>
+                <div className="text-[10.5px] font-semibold opacity-90 mt-1 leading-snug">{node.role}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'cdm-kitchen-zones':
+      return (
+        <div className="rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] p-3.5 sm:p-4 space-y-2.5">
+          <div className="text-[11px] font-black uppercase tracking-wider text-[#105E9A] text-center">
+            Hospital 6-Zone One-Way (Dirty → Clean) Kitchen Layout
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {[
+              { num: 'Zone 1', name: 'Receiving Bay', sub: 'Temp ≤5°C / -18°C & Weighing', cls: 'border-slate-300 bg-white' },
+              { num: 'Zone 2', name: 'Dry & Cold Store', sub: 'FIFO/FEFO · 15 cm Off Floor', cls: 'border-sky-300 bg-sky-50/60' },
+              { num: 'Zone 3', name: 'Segregated Prep', sub: 'Color-Coded Raw vs Veg', cls: 'border-amber-300 bg-amber-50/60' },
+              { num: 'Zone 4', name: 'Hot & Diet Cook', sub: 'Core ≥75°C · Diet Kettles', cls: 'border-orange-300 bg-orange-50/60' },
+              { num: 'Zone 5', name: 'Tray Line & Cart', sub: 'Clean Zone · Ticket Audit', cls: 'border-emerald-400 bg-emerald-50/70' },
+              { num: 'Zone 6', name: 'Isolated Scullery', sub: 'Separate Dirty Return Door', cls: 'border-rose-300 bg-rose-50/60' }
+            ].map((z) => (
+              <div key={z.num} className={`rounded-xl border p-2.5 text-center ${z.cls}`}>
+                <div className="text-[10px] font-black uppercase text-[#1673B8]">{z.num}</div>
+                <div className="text-xs font-black text-[#1A2138] leading-tight mt-0.5">{z.name}</div>
+                <div className="text-[10px] font-semibold text-slate-600 mt-1 leading-snug">{z.sub}</div>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-lg bg-[#1673B8] text-white px-3 py-1.5 text-center text-[11px] font-extrabold">
+            ZERO BACK-TRACKING RULE: Raw ingredients and returning soiled ward carts never cross clean cooked food or plated trays.
+          </div>
+        </div>
+      );
+
+    case 'cdm-therapeutic-diets':
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          {[
+            { name: 'Diabetic (Carb-Controlled)', rule: 'Consistent carbs (45–60 g/meal), zero refined sugar, high fiber, low GI', tone: 'border-sky-200 bg-sky-50/70 text-sky-950' },
+            { name: 'Renal (CKD / Dialysis)', rule: 'Restricted Sodium (<2 g), Potassium (<2 g), Phosphorus & measured fluids', tone: 'border-amber-200 bg-amber-50/70 text-amber-950' },
+            { name: 'Cardiac (DASH / Low-Na)', rule: 'Low Sodium (≤1,500–2,000 mg/day), low saturated fat, lean proteins & herbs', tone: 'border-rose-200 bg-rose-50/70 text-rose-950' },
+            { name: 'High-Protein / Wound Care', rule: '1.2–1.5 g protein/kg, fortified shakes, Vitamin C & Zinc for tissue repair', tone: 'border-emerald-200 bg-emerald-50/70 text-emerald-950' },
+            { name: 'Neutropenic / Low-Microbial', rule: 'Zero raw salads/unpasteurized dairy; thoroughly cooked ≥75°C sealed portions', tone: 'border-violet-200 bg-violet-50/70 text-violet-950' },
+            { name: 'Allergen-Free / Celiac', rule: 'Dedicated purple utensils, strict wheat/gluten/nut isolation & label check', tone: 'border-[#BFD7ED] bg-[#F4F8FD] text-[#1A2138]' }
+          ].map((d) => (
+            <div key={d.name} className={`rounded-xl border p-3 space-y-1 ${d.tone}`}>
+              <div className="text-xs font-black leading-tight">{d.name}</div>
+              <p className="text-[11px] font-medium leading-snug opacity-90">{d.rule}</p>
+            </div>
+          ))}
+        </div>
+      );
+
+    case 'cdm-iddsi-levels':
+      return (
+        <div className="rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] p-3.5 sm:p-4 space-y-2.5">
+          <div className="text-[11px] font-black uppercase tracking-wider text-[#105E9A] text-center">
+            International Dysphagia Diet Standardisation Initiative (IDDSI Levels 0–7)
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="rounded-xl border border-sky-200 bg-white p-3 space-y-1.5">
+              <div className="text-[11px] font-black uppercase text-sky-800">Drinks (Syringe Flow Test — Levels 0 to 4)</div>
+              {[
+                'Level 0 — Thin: Flows like water (0 mL left in 10 mL syringe after 10 sec)',
+                'Level 1 — Slightly Thick: Thicker than water (1–4 mL remaining)',
+                'Level 2 — Mildly Thick: Sip-able nectar thickness (4–8 mL remaining)',
+                'Level 3 — Moderately Thick: Liquidised (>8 mL; slow drip through fork)',
+                'Level 4 — Extremely Thick: Pureed / spoon-thick (holds shape on spoon)'
+              ].map((l) => (
+                <div key={l} className="text-[11px] font-semibold text-slate-700 bg-sky-50/70 px-2.5 py-1 rounded-lg border border-sky-100">
+                  {l}
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl border border-emerald-200 bg-white p-3 space-y-1.5">
+              <div className="text-[11px] font-black uppercase text-emerald-800">Foods (Fork Drip &amp; Spoon Tilt — Levels 3 to 7)</div>
+              {[
+                'Level 3 — Liquidised: Smooth, no lumps, cannot be eaten with fork',
+                'Level 4 — Pureed: Smooth, cohesive, slides cleanly off tilted spoon',
+                'Level 5 — Minced & Moist: Soft 4 mm lumps, squashes easily with fork',
+                'Level 6 — Soft & Bite-Sized: Tender 1.5 cm pieces, no knife needed',
+                'Level 7 — Easy to Chew / Regular: Normal everyday hospital textures'
+              ].map((l) => (
+                <div key={l} className="text-[11px] font-semibold text-slate-700 bg-emerald-50/70 px-2.5 py-1 rounded-lg border border-emerald-100">
+                  {l}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'cdm-tray-accuracy':
+      return (
+        <div className="rounded-xl border border-[#BFD7ED] bg-[#F4F8FD] p-3.5 sm:p-4 space-y-2.5">
+          <div className="text-[11px] font-black uppercase tracking-wider text-[#105E9A] text-center">
+            4-Gate Patient Tray Line Safety &amp; Accuracy Verification
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {[
+              { gate: 'Gate 1: Dual Patient ID', desc: 'Verify Full Name + MRN / Bed Number against live Ward Census before assembly', badge: 'ZERO MIX-UP' },
+              { gate: 'Gate 2: Diet & Allergen Match', desc: 'Confirm therapeutic order, IDDSI level, allergen flags & verify NOT NPO', badge: 'CLINICAL SAFE' },
+              { gate: 'Gate 3: Portion & Visual Check', desc: 'Verify standardized scoops, clean rim, covered dome & complete cutlery', badge: 'PRESENTATION' },
+              { gate: 'Gate 4: Thermal Delivery Check', desc: 'Hot entrée ≥63°C · Cold salad/dessert ≤5°C · Ward delivery ≤30 mins', badge: 'TEMP CONTROL' }
+            ].map((g) => (
+              <div key={g.gate} className="rounded-xl border border-[#D2DEEA] bg-white p-3 space-y-1.5">
+                <span className="inline-block px-2 py-0.5 rounded bg-[#EBF4FC] text-[#105E9A] text-[9.5px] font-black uppercase tracking-wider">
+                  {g.badge}
+                </span>
+                <div className="text-xs font-black text-[#1A2138]">{g.gate}</div>
+                <p className="text-[11px] text-slate-600 leading-snug">{g.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'cdm-inventory-fifo':
+      return (
+        <div className="rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] p-3.5 sm:p-4 space-y-2.5">
+          <div className="text-[11px] font-black uppercase tracking-wider text-[#105E9A] text-center">
+            Hospital Store Control: FIFO / FEFO, Par Levels &amp; Cold-Chain Zoning
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {[
+              { title: 'Dry Store (15°C–21°C)', body: 'RH <60% · Shelving ≥15 cm off floor & 5 cm from walls · Sealed food-grade bins' },
+              { title: 'Chiller (+1°C to +4°C)', body: 'Top: RTE & Dairy · Middle: Veg/Cooked · Bottom: Raw Meat/Poultry in drip trays' },
+              { title: 'Freezer (≤ -18°C)', body: 'Airflow gaps maintained · Frozen solid · Labeled with Delivery & Use-By dates' },
+              { title: 'FIFO / FEFO & Par Stock', body: 'First Expired First Out rotation · Weekly inventory count · Reorder at Par Minimum' }
+            ].map((box) => (
+              <div key={box.title} className="rounded-xl border border-[#D2DEEA] bg-white p-3 space-y-1">
+                <div className="text-xs font-black text-[#105E9A]">{box.title}</div>
+                <p className="text-[11px] text-slate-700 leading-snug">{box.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'cdm-emergency-plan':
+      return (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5 sm:p-4 space-y-2.5">
+          <div className="text-[11px] font-black uppercase tracking-wider text-amber-900 text-center">
+            Hospital 72-Hour Emergency &amp; Disaster Foodservice Contingency Framework
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {[
+              { title: '72-Hour Reserve Stock', desc: 'Shelf-stable UHT milk, canned proteins, crackers, oral nutrition shakes & bottled water (≥3 L/patient/day)' },
+              { title: 'Power Outage Protocol', desc: 'Keep chiller/freezer doors closed; log internal temps every 2h; discard chilled items >5°C for >2–4h' },
+              { title: 'Boil-Water / Utility Failure', desc: 'Switch immediately to bottled water, no-cook disaster menu & single-use disposable plates/cutlery' },
+              { title: 'Foodborne Outbreak Response', desc: 'Preserve 72-hour retained food samples (150 g each), alert Infection Control & trace supplier lot ≤4h' }
+            ].map((item) => (
+              <div key={item.title} className="rounded-xl border border-amber-300 bg-white p-3 space-y-1">
+                <div className="text-xs font-black text-amber-950">{item.title}</div>
+                <p className="text-[11px] text-slate-700 leading-snug">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'cdm-quality-audit':
+      return (
+        <div className="rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] p-3.5 sm:p-4 space-y-2.5">
+          <div className="text-[11px] font-black uppercase tracking-wider text-[#105E9A] text-center">
+            Certified Dietary Manager (CDM) Continuous Quality Improvement (CQI) Benchmarks
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {[
+              { kpi: '≥ 98%', label: 'Tray Accuracy Rate', sub: 'Zero therapeutic / allergen error' },
+              { kpi: '≥ 63°C / ≤ 5°C', label: 'Meal Temp Compliance', sub: 'Verified via daily test tray' },
+              { kpi: '< 15%', label: 'Patient Plate Waste', sub: 'Tracked by ward & recipe' },
+              { kpi: '72 Hours', label: 'Retained Food Samples', sub: '150 g per dish at ≤ 4°C' },
+              { kpi: '≤ 4 Hours', label: 'Batch Traceability', sub: 'Supplier lot to ward tray' }
+            ].map((m) => (
+              <div key={m.label} className="rounded-xl border border-[#1673B8]/35 bg-white p-2.5 text-center">
+                <div className="text-sm font-black text-[#1673B8] tabular-nums">{m.kpi}</div>
+                <div className="text-[11px] font-black text-[#1A2138] mt-0.5 leading-tight">{m.label}</div>
+                <div className="text-[10px] font-medium text-slate-500 mt-0.5 leading-snug">{m.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
     default:
       return null;
   }
@@ -524,11 +731,11 @@ const PrpProcedureShowcase: React.FC<{ items: SlidePrpProcedureItem[] }> = ({ it
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-[#1673B8]" />
           <span className="text-xs font-black uppercase tracking-wider text-[#105E9A]">
-            Interactive PRP Standard Operating Procedures — Select a PRP Below
+            Interactive Standard Operating Procedures (SOPs) — Select a Protocol Below
           </span>
         </div>
         <span className="text-[11px] font-bold text-slate-500">
-          {items.length} Operational Programmes
+          {items.length} Operational SOPs
         </span>
       </div>
 
@@ -1270,7 +1477,7 @@ const DefinitionMatchBlock: React.FC<{
     <div className="rounded-xl border border-[#D2DEEA] bg-[#F4F8FD] p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-black uppercase tracking-wider text-[#105E9A]">
-          Revision Drill — Recall &amp; Reveal Official Codex Definitions
+          Revision Drill — Recall &amp; Reveal Official Definitions
         </span>
         <button
           type="button"
@@ -1292,8 +1499,8 @@ const DefinitionMatchBlock: React.FC<{
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="bg-[#F4F8FD] border-b border-[#D2DEEA] text-left">
-              <th className="p-2.5 font-black text-[#105E9A] w-1/3">HACCP Term</th>
-              <th className="p-2.5 font-black text-[#105E9A]">Codex / Exam Definition</th>
+              <th className="p-2.5 font-black text-[#105E9A] w-1/3">Key Term</th>
+              <th className="p-2.5 font-black text-[#105E9A]">Official / Exam Definition</th>
             </tr>
           </thead>
           <tbody>

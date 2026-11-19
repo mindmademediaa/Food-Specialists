@@ -380,7 +380,7 @@ export function hasLegacyMcqFormat(mcq: {
 }
 
 // Detects whether a persisted HubTraining record (e.g., from Firestore) holds stale pre-upgrade
-// 5-module metadata/syllabus for visual interactive HACCP courses (cert-2026-haccp-level-03 / cert-2026-intro-haccp).
+// 5-module metadata/syllabus for visual interactive courses (HACCP Level 03, Intro HACCP, Certified Dietary Manager).
 export function isLegacyHaccpVisualDoc(
   tr: {
     id?: string;
@@ -392,17 +392,30 @@ export function isLegacyHaccpVisualDoc(
   expectedModuleCount: number
 ): boolean {
   const id = tr.id || '';
-  if (id !== 'cert-2026-haccp-level-03' && id !== 'cert-2026-intro-haccp') {
+  if (
+    id !== 'cert-2026-haccp-level-03' &&
+    id !== 'cert-2026-intro-haccp' &&
+    id !== 'mgr-food-dietary-2026'
+  ) {
     return false;
   }
   const mods = tr.customModules || [];
   if (mods.length === 0 || mods.length < expectedModuleCount) return true;
-  if (mods.some((m) => (m.id || '').startsWith('haccp3-mod-'))) return true;
+  if (
+    mods.some(
+      (m) =>
+        (m.id || '').startsWith('haccp3-mod-') ||
+        (m.id || '').startsWith('mfd-mod-')
+    )
+  ) {
+    return true;
+  }
   const sub = (tr.subType || '').toLowerCase();
   const dur = (tr.duration || '').toLowerCase();
   if (
     sub.includes('simple presentation course') ||
     sub.includes('05 modules') ||
+    sub.includes('05 presentation modules') ||
     dur.includes('05 presentation modules') ||
     (tr.title || '').toLowerCase().includes('demo')
   ) {

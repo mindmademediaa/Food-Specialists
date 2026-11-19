@@ -51,7 +51,15 @@ export type SlideVisualIllustration =
   | 'verification-audit'
   | 'documentation-records'
   | 'failure-causes'
-  | 'exam-technique';
+  | 'exam-technique'
+  | 'cdm-care-team'
+  | 'cdm-kitchen-zones'
+  | 'cdm-therapeutic-diets'
+  | 'cdm-iddsi-levels'
+  | 'cdm-tray-accuracy'
+  | 'cdm-inventory-fifo'
+  | 'cdm-emergency-plan'
+  | 'cdm-quality-audit';
 
 export interface SlideTableBlock {
   caption?: string;
