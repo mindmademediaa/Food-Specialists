@@ -1,5 +1,5 @@
 const CACHE_NAME = 'food-science-portal-__BUILD_VERSION__';
-const CORE_SHELL_URLS = ['./', './index.html', './manifest.json'];
+const CORE_SHELL_URLS = ['/', '/index.html', '/manifest.json'];
 const SHARE_TARGET_DB_NAME = 'fsp_share_target_db';
 const SHARE_TARGET_STORE_NAME = 'shared_items';
 
@@ -214,27 +214,55 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 1. HTML Navigations & index.html: STRICT NETWORK-FIRST (cache: 'no-store') with 3.5s offline fallback
-  // Guarantees every pushed deploy reflects immediately on the very first load/refresh!
+  // 1. HTML Navigations & index.html:
+  // - Installed Mobile App launch (/?source=pwa): Instant Stale-While-Revalidate (<30ms shell boot)
+  //   so Android hands straight into the standalone splash without stalling on Chrome's loading frame.
+  // - Regular browser tabs: Fast Network-First (1.8s timeout) so newly pushed deploys reflect immediately.
   if (
     event.request.mode === 'navigate' ||
     url.pathname === '/' ||
     url.pathname.endsWith('/index.html')
   ) {
+    const isInstalledPwaLaunch = url.searchParams.get('source') === 'pwa';
+
+    if (isInstalledPwaLaunch) {
+      event.respondWith(
+        caches.open(CACHE_NAME).then((cache) =>
+          cache.match('/index.html').then((cached) => {
+            const bgUpdate = fetch('/index.html', { cache: 'no-store' })
+              .then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                  cache.put('/index.html', networkResponse.clone()).catch(() => {});
+                }
+                return networkResponse;
+              })
+              .catch(() => null);
+
+            if (cached) {
+              event.waitUntil(bgUpdate);
+              return cached;
+            }
+            return bgUpdate.then((res) => res || fetch(event.request));
+          })
+        )
+      );
+      return;
+    }
+
     event.respondWith(
-      fetchWithTimeout(event.request, { cache: 'no-store' }, 3500)
+      fetchWithTimeout(event.request, { cache: 'no-store' }, 1800)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const copy = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put('./index.html', copy).catch(() => {});
+              cache.put('/index.html', copy).catch(() => {});
             });
           }
           return networkResponse;
         })
         .catch(() =>
           caches.open(CACHE_NAME).then((cache) =>
-            cache.match('./index.html').then((cached) => cached || cache.match('./') || Response.error())
+            cache.match('/index.html').then((cached) => cached || cache.match('/') || Response.error())
           )
         )
     );

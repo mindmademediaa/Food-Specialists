@@ -2088,9 +2088,13 @@ export default function App() {
   );
   const [isStandaloneApp, setIsStandaloneApp] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
     return (
       Boolean(window.__fspAppInstalled) ||
+      params.get('source') === 'pwa' ||
       window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
       (window.navigator as any).standalone === true
     );
   });
@@ -2139,11 +2143,42 @@ export default function App() {
       setShowInstallAppModal(false);
     };
     syncPromptFromWindow();
+
+    // Cleanly strip ?source=pwa query marker after standalone PWA boot without triggering a reload
+    try {
+      const launchParams = new URLSearchParams(window.location.search);
+      if (launchParams.has('source')) {
+        if (launchParams.get('source') === 'pwa') {
+          setIsStandaloneApp(true);
+        }
+        launchParams.delete('source');
+        const nextQuery = launchParams.toString();
+        const cleanedUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+        window.history.replaceState({}, '', cleanedUrl);
+      }
+    } catch {
+      // Ignore history API restrictions
+    }
+
+    const standaloneMediaQuery =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(display-mode: standalone)')
+        : null;
+    const handleDisplayModeChange = (ev: MediaQueryListEvent) => {
+      if (ev.matches) setIsStandaloneApp(true);
+    };
+    if (standaloneMediaQuery && typeof standaloneMediaQuery.addEventListener === 'function') {
+      standaloneMediaQuery.addEventListener('change', handleDisplayModeChange);
+    }
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('fsp-install-prompt-ready', syncPromptFromWindow);
     window.addEventListener('appinstalled', handleAppInstalled);
     window.addEventListener('fsp-app-installed', handleAppInstalled);
     return () => {
+      if (standaloneMediaQuery && typeof standaloneMediaQuery.removeEventListener === 'function') {
+        standaloneMediaQuery.removeEventListener('change', handleDisplayModeChange);
+      }
       window.removeEventListener(
         'beforeinstallprompt',
         handleBeforeInstallPrompt
@@ -9908,7 +9943,7 @@ export default function App() {
                           2
                         </span>
                         <span>
-                          Tap <strong>&ldquo;Install app&rdquo;</strong> or <strong>&ldquo;Add to Home screen&rdquo;</strong> — it installs immediately as an Android app.
+                          Tap <strong>&ldquo;Install app&rdquo;</strong> (or <strong>&ldquo;Add to Home screen&rdquo; &rarr; &ldquo;Install&rdquo;</strong> — avoid &ldquo;Create shortcut&rdquo;) so it opens directly as a standalone Android app.
                         </span>
                       </li>
                     </ol>

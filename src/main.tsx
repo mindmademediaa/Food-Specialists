@@ -100,7 +100,7 @@ if (typeof window !== 'undefined') {
           if (!force && now - lastVersionCheckMs < 45000) return;
           lastVersionCheckMs = now;
           try {
-            const res = await fetch(`./version.json?t=${now}`, {
+            const res = await fetch(`/version.json?t=${now}`, {
               cache: 'no-store',
               headers: {'Cache-Control': 'no-cache'},
             });
@@ -122,7 +122,7 @@ if (typeof window !== 'undefined') {
 
         window.addEventListener('load', () => {
           navigator.serviceWorker
-            .register('./sw.js', {updateViaCache: 'none'})
+            .register('/sw.js', {scope: '/', updateViaCache: 'none'})
             .then((reg) => {
               swReg = reg;
               if (reg.waiting) {
