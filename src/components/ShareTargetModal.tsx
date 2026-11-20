@@ -375,7 +375,7 @@ export const ShareTargetModal: React.FC<ShareTargetModalProps> = ({
         organization: (
           organization.trim() ||
           (section === 'job'
-            ? 'Verified Food Industry Employer'
+            ? ''
             : 'Global Academic & Research Institute')
         ).slice(0, 200),
         location: (

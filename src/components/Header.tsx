@@ -441,13 +441,12 @@ export const Header: React.FC<HeaderProps> = ({
                             <p className="text-xs font-extrabold text-[#1A2138] truncate mt-1">
                               {job.title}
                             </p>
-                            <p className="text-[11px] font-semibold text-slate-600 truncate">
-                              {job.company}
-                            </p>
-                            <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500 mt-0.5">
-                              <MapPin className="w-3 h-3 text-[#1673B8] shrink-0" />
-                              <span className="truncate">{job.location}</span>
-                            </div>
+                            {job.location && (
+                              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500 mt-0.5">
+                                <MapPin className="w-3 h-3 text-[#1673B8] shrink-0" />
+                                <span className="truncate">{job.location}</span>
+                              </div>
+                            )}
                           </div>
                           {isUnread && (
                             <span className="w-2 h-2 rounded-full bg-[#1673B8] shrink-0 mt-2" />

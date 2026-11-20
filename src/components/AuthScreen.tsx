@@ -340,19 +340,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           </div>
         )}
 
-        {/* Top-Mid Centered Brand Logo & Title */}
+        {/* Top-Mid Centered Brand Logo */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-60 sm:w-68 rounded-2xl bg-white px-4 py-3 shadow-[0_14px_38px_rgba(0,0,0,0.32)] ring-4 ring-white/20 flex items-center justify-center overflow-hidden mb-3.5">
+          <div className="w-60 sm:w-68 rounded-2xl bg-white px-4 py-3 shadow-[0_14px_38px_rgba(0,0,0,0.32)] ring-4 ring-white/20 flex items-center justify-center overflow-hidden mb-3">
             <img
               src={FS_PORTAL_LOGO_WIDE_DATA_URI}
               alt="Food Science Portal Logo"
               className="w-full h-auto object-contain select-none"
             />
           </div>
-          <h1 className="text-[24px] sm:text-[26px] font-black tracking-tight text-white leading-none">
-            Food Science <span className="text-[#38BDF8]">Portal</span>
-          </h1>
-          <p className="text-[11.5px] sm:text-xs font-semibold text-sky-100/95 mt-2 max-w-[330px] leading-relaxed">
+          <p className="text-[11.5px] sm:text-xs font-semibold text-sky-100/95 max-w-[330px] leading-relaxed">
             The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings
           </p>
         </div>

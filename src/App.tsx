@@ -93,6 +93,12 @@ import {
   FS_PORTAL_LOGO_DATA_URI,
   FS_PORTAL_LOGO_WIDE_DATA_URI
 } from './lib/brandLogo';
+import {
+  MAIN_SCROLL_ELEMENT_ID,
+  savePortalScroll,
+  restorePortalScroll,
+  setPortalScrollTop
+} from './lib/scrollManager';
 import { preloadUserAvatarForPdf } from './lib/pdfBranding';
 import {
   HubUser,
@@ -1674,7 +1680,7 @@ export default function App() {
               const newest = newPostedJobs[0];
               void showPortalPushNotification(
                 `New Job: ${newest.title}`,
-                `${newest.company} · ${newest.location}`,
+                newest.location || newest.country || 'Tap to view details',
                 '/?section=jobs'
               );
               applyJobsList(fsJobs, true);
@@ -2286,8 +2292,20 @@ export default function App() {
     }
   }, [route.name, activeTrainingsSubTab]);
 
+  // Ensure detail pages open at the top while list/hub routes preserve & restore scroll on Back
+  useEffect(() => {
+    if (
+      route.name === 'job-detail' ||
+      route.name === 'scholarship-detail' ||
+      route.name === 'community-member' ||
+      route.name === 'training-detail'
+    ) {
+      setPortalScrollTop(0, false);
+    }
+  }, [route.name]);
+
   const handleNavigateWebsiteSection = (section: WebsiteNavSection) => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setPortalScrollTop(0, false);
     if (section === 'home') setRoute({ name: 'home' });
     if (section === 'jobs') navigateToJobs('All');
     if (section === 'scholarships') navigateToScholarships('All');
@@ -2319,7 +2337,7 @@ export default function App() {
   };
 
   const handleSelectBottomTab = (tab: NavTab) => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setPortalScrollTop(0, false);
     if (tab === 'home') setRoute({ name: 'home' });
     if (tab === 'tools') {
       setActiveToolSection('hub');
@@ -2342,13 +2360,13 @@ export default function App() {
   const navigateToJobs = (category = 'All') => {
     setJobCategoryFilter(category);
     setRoute({ name: 'jobs', categoryFilter: category });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setPortalScrollTop(0, false);
   };
 
   const navigateToScholarships = (funding = 'All') => {
     setSchFundingFilter(funding);
     setRoute({ name: 'scholarships', fundingFilter: funding });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setPortalScrollTop(0, false);
   };
 
   const handleToggleAppliedJob = (jobId: string, e?: React.MouseEvent) => {
@@ -2768,9 +2786,9 @@ export default function App() {
     const matchedJobs = visibleJobs.filter(
       (j) =>
         !q ||
-        j.title.toLowerCase().includes(q) ||
-        j.company.toLowerCase().includes(q) ||
-        j.location.toLowerCase().includes(q) ||
+        (j.title || '').toLowerCase().includes(q) ||
+        (j.company || '').toLowerCase().includes(q) ||
+        (j.location || '').toLowerCase().includes(q) ||
         (j.category && j.category.toLowerCase().includes(q)) ||
         (j.description && j.description.toLowerCase().includes(q))
     );
@@ -4260,11 +4278,8 @@ export default function App() {
     } else if (!detectedCompany && firstLine.includes(' - ')) {
       detectedCompany = firstLine.split(' - ')[1]?.trim() || '';
     }
-    if (!detectedCompany) {
-      detectedCompany =
-        lines[1] && lines[1].length <= 70
-          ? lines[1]
-          : 'Verified Food Industry Employer';
+    if (/^verified food industry employer$/i.test(detectedCompany)) {
+      detectedCompany = '';
     }
     detectedCompany = detectedCompany.slice(0, 180);
 
@@ -4362,7 +4377,11 @@ export default function App() {
       title: (updatedJob.title || 'Food Specialist Opportunity')
         .trim()
         .slice(0, 180),
-      company: (updatedJob.company || 'Verified Food Industry Employer')
+      company: (
+        /^verified food industry employer$/i.test((updatedJob.company || '').trim())
+          ? ''
+          : updatedJob.company || ''
+      )
         .trim()
         .slice(0, 180),
       location: (updatedJob.location || updatedJob.country || 'Pakistan')
@@ -4564,8 +4583,12 @@ export default function App() {
       id,
       title: (payload.title || `${cat} Opening`).slice(0, 180),
       company: (
-        payload.organization || 'Verified Food Industry Employer'
-      ).slice(0, 180),
+        /^verified food industry employer$/i.test((payload.organization || '').trim())
+          ? ''
+          : payload.organization || ''
+      )
+        .trim()
+        .slice(0, 180),
       location: (payload.location || payload.country || 'Pakistan').slice(
         0,
         180
@@ -5365,21 +5388,40 @@ export default function App() {
               setActiveToolSection('hub');
               setToolsResetKey((k) => k + 1);
               setRoute({ name: 'tools', initialSection: 'hub' });
-            } else if (route.name === 'job-detail') setRoute({ name: 'jobs' });
-            else if (route.name === 'scholarship-detail')
+              restorePortalScroll('tools-hub');
+              return;
+            }
+            if (route.name === 'job-detail') {
+              setRoute({ name: 'jobs' });
+              restorePortalScroll('route:jobs');
+              return;
+            }
+            if (route.name === 'scholarship-detail') {
               setRoute({ name: 'scholarships' });
-            else if (route.name === 'community-member')
+              restorePortalScroll('route:scholarships');
+              return;
+            }
+            if (route.name === 'community-member') {
               setRoute({ name: 'communities' });
-            else if (route.name === 'training-detail')
-              setRoute({ name: 'trainings' });
-            else if (
+              restorePortalScroll('route:communities');
+              return;
+            }
+            if (
+              route.name === 'training-detail' ||
               route.name === 'trainings-highfield' ||
               route.name === 'trainings-lead-auditor-hub'
-            )
+            ) {
               setRoute({ name: 'trainings' });
-            else if (route.name === 'admin') setRoute({ name: 'profile' });
-            else setRoute({ name: 'home' });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+              restorePortalScroll('route:trainings');
+              return;
+            }
+            if (route.name === 'admin') {
+              setRoute({ name: 'profile' });
+              restorePortalScroll('route:profile');
+              return;
+            }
+            setRoute({ name: 'home' });
+            restorePortalScroll('route:home');
           }}
           onHomeClick={() => setRoute({ name: 'home' })}
           onSearchClick={() => {
@@ -5468,21 +5510,40 @@ export default function App() {
                 setActiveToolSection('hub');
                 setToolsResetKey((k) => k + 1);
                 setRoute({ name: 'tools', initialSection: 'hub' });
-              } else if (route.name === 'job-detail') setRoute({ name: 'jobs' });
-              else if (route.name === 'scholarship-detail')
+                restorePortalScroll('tools-hub');
+                return;
+              }
+              if (route.name === 'job-detail') {
+                setRoute({ name: 'jobs' });
+                restorePortalScroll('route:jobs');
+                return;
+              }
+              if (route.name === 'scholarship-detail') {
                 setRoute({ name: 'scholarships' });
-              else if (route.name === 'community-member')
+                restorePortalScroll('route:scholarships');
+                return;
+              }
+              if (route.name === 'community-member') {
                 setRoute({ name: 'communities' });
-              else if (route.name === 'training-detail')
-                setRoute({ name: 'trainings' });
-              else if (
+                restorePortalScroll('route:communities');
+                return;
+              }
+              if (
+                route.name === 'training-detail' ||
                 route.name === 'trainings-highfield' ||
                 route.name === 'trainings-lead-auditor-hub'
-              )
+              ) {
                 setRoute({ name: 'trainings' });
-              else if (route.name === 'admin') setRoute({ name: 'profile' });
-              else setRoute({ name: 'home' });
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+                restorePortalScroll('route:trainings');
+                return;
+              }
+              if (route.name === 'admin') {
+                setRoute({ name: 'profile' });
+                restorePortalScroll('route:profile');
+                return;
+              }
+              setRoute({ name: 'home' });
+              restorePortalScroll('route:home');
             }}
             aria-label="Go Back"
             title="Go Back"
@@ -5494,7 +5555,25 @@ export default function App() {
         )}
 
         {/* MIDDLE SCROLLABLE PAGE CONTENT AREA — FULL SCREEN WITH CENTERED 1440PX WEBSITE CONTAINER */}
-        <main className="flex-1 overflow-y-auto overscroll-contain w-full flex flex-col justify-between">
+        <main
+          id={MAIN_SCROLL_ELEMENT_ID}
+          onScroll={(e) => {
+            const top = e.currentTarget.scrollTop;
+            if (route.name === 'tools' && activeToolSection === 'hub') {
+              savePortalScroll('tools-hub', top);
+            } else if (
+              route.name === 'home' ||
+              route.name === 'jobs' ||
+              route.name === 'scholarships' ||
+              route.name === 'communities' ||
+              route.name === 'trainings' ||
+              route.name === 'profile'
+            ) {
+              savePortalScroll(`route:${route.name}`, top);
+            }
+          }}
+          className="flex-1 overflow-y-auto overscroll-contain w-full flex flex-col justify-between pb-24 md:pb-0"
+        >
           <div className="max-w-[1440px] mx-auto w-full p-3 sm:p-6 lg:px-10 lg:py-7 space-y-4 sm:space-y-6">
           {/* LAST 5 DAYS PREMIUM EXPIRY COUNTDOWN BANNER */}
           {globalPremiumCountdown && (
@@ -5608,10 +5687,11 @@ export default function App() {
                           ? `${storageConfig.frontPageConfig.heroCustomGreeting.trim()}, ${firstName}`
                           : `${timeOfDayGreeting}, ${firstName}`}
                       </h1>
-                      <p className="text-xs sm:text-sm text-sky-100/90 font-medium max-w-2xl leading-relaxed">
-                        {storageConfig.frontPageConfig?.heroSubtitle?.trim() ||
-                          'Your unified platform for verified Food Safety & QA/QC jobs, international scholarships, Halal E-Number lookup, laboratory calculators, and accredited trainings.'}
-                      </p>
+                      {storageConfig.frontPageConfig?.heroSubtitle?.trim() && (
+                        <p className="text-xs sm:text-sm text-sky-100/90 font-medium max-w-2xl leading-relaxed">
+                          {storageConfig.frontPageConfig.heroSubtitle.trim()}
+                        </p>
+                      )}
                     </div>
 
                     {/* Desktop & Tablet Integrated Hero Search Bar */}
@@ -5698,9 +5778,6 @@ export default function App() {
                       <p className="text-xs font-extrabold text-sky-100">
                         Verified Job Roles
                       </p>
-                      <p className="text-[10.5px] text-sky-200/80">
-                        Production, QA/QC &amp; R&amp;D
-                      </p>
                     </button>
 
                     <button
@@ -5716,9 +5793,6 @@ export default function App() {
                       </p>
                       <p className="text-xs font-extrabold text-sky-100">
                         Global Scholarships
-                      </p>
-                      <p className="text-[10.5px] text-sky-200/80">
-                        MSc, PhD &amp; Fellowships
                       </p>
                     </button>
 
@@ -5738,9 +5812,6 @@ export default function App() {
                       <p className="text-xs font-extrabold text-sky-100">
                         Verified Specialists
                       </p>
-                      <p className="text-[10.5px] text-sky-200/80">
-                        Premium Directory &amp; CVs
-                      </p>
                     </button>
 
                     <button
@@ -5756,9 +5827,6 @@ export default function App() {
                       </p>
                       <p className="text-xs font-extrabold text-sky-100">
                         Courses &amp; Certificates
-                      </p>
-                      <p className="text-[10.5px] text-sky-200/80">
-                        Online QR Registry
                       </p>
                     </button>
                   </div>
@@ -5804,7 +5872,7 @@ export default function App() {
                           <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                         </div>
 
-                        <div className="space-y-1 min-w-0 flex-1">
+                        <div className="min-w-0 flex-1 self-center">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h2 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
                               Jobs &amp; Career Openings
@@ -5813,9 +5881,6 @@ export default function App() {
                               {activeJobs.length} Active
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500 font-medium">
-                            Verified QA/QC, Food Safety, Production &amp; R&amp;D roles
-                          </p>
                         </div>
                       </div>
                     </div>
@@ -5859,9 +5924,6 @@ export default function App() {
                               <p className="text-xs font-extrabold text-[#1A2138] truncate">
                                 {j.title}
                               </p>
-                              <p className="text-[11px] font-medium text-slate-500 truncate">
-                                {j.company} • {j.location || j.country}
-                              </p>
                             </div>
                             <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
                           </button>
@@ -5898,7 +5960,7 @@ export default function App() {
                           <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                         </div>
 
-                        <div className="space-y-1 min-w-0 flex-1">
+                        <div className="min-w-0 flex-1 self-center">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h2 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
                               Global Scholarships &amp; Grants
@@ -5907,9 +5969,6 @@ export default function App() {
                               {activeScholarships.length} Open
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500 font-medium">
-                            International MSc, PhD fellowships &amp; research funding
-                          </p>
                         </div>
                       </div>
                     </div>
@@ -5987,14 +6046,9 @@ export default function App() {
               {/* SECTION C: SPECIALIST TOOLS SUITE (4 INTERACTIVE CARDS ON DESKTOP, 2x2 ON MOBILE) */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between px-0.5">
-                  <div>
-                    <h2 className="text-sm sm:text-base font-extrabold text-[#1A2138] tracking-tight">
-                      Food Science Tools &amp; Lab Calculators
-                    </h2>
-                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-                      Direct access to exam preparation, E-number safety lookup, laboratory formulas &amp; compliance planners
-                    </p>
-                  </div>
+                  <h2 className="text-sm sm:text-base font-extrabold text-[#1A2138] tracking-tight">
+                    Food Science Tools &amp; Lab Calculators
+                  </h2>
                   <button
                     type="button"
                     onClick={() => {
@@ -6023,17 +6077,9 @@ export default function App() {
                       <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
                         <BookOpen className="w-5 h-5 stroke-[2.2]" />
                       </div>
-                      <div>
-                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
-                          Food Science / Global
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug mt-0.5">
-                          Exam Prep &amp; PDF Notes
-                        </h3>
-                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1 hidden sm:block">
-                          Subject-wise Food Science MCQs, mock tests &amp; 5-page revision PDF generator.
-                        </p>
-                      </div>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                        Exam Prep &amp; PDF Notes
+                      </h3>
                     </div>
                     <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
                       <span>Start Prep</span>
@@ -6055,17 +6101,9 @@ export default function App() {
                       <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
                         <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
                       </div>
-                      <div>
-                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
-                          Codex &amp; Halal Status
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug mt-0.5">
-                          E-Numbers &amp; Additives
-                        </h3>
-                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1 hidden sm:block">
-                          Instant INS/E-code search with Halal status, ADI limits &amp; regulatory safety notes.
-                        </p>
-                      </div>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                        E-Numbers &amp; Additives
+                      </h3>
                     </div>
                     <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
                       <span>Search E-Codes</span>
@@ -6090,17 +6128,9 @@ export default function App() {
                       <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
                         <FlaskConical className="w-5 h-5 stroke-[2.2]" />
                       </div>
-                      <div>
-                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
-                          QA/QC Lab Suite
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug mt-0.5">
-                          Food Lab Calculators
-                        </h3>
-                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1 hidden sm:block">
-                          Dilution, Pearson Square, molarity, moisture &amp; batch formulation calculators.
-                        </p>
-                      </div>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                        Food Lab Calculators
+                      </h3>
                     </div>
                     <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
                       <span>Open Calculators</span>
@@ -6125,17 +6155,9 @@ export default function App() {
                       <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
                         <Activity className="w-5 h-5 stroke-[2.2]" />
                       </div>
-                      <div>
-                        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
-                          Dietetics &amp; Macros
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug mt-0.5">
-                          Nutrition &amp; Diet Planner
-                        </h3>
-                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1 hidden sm:block">
-                          BMR, TDEE, BMI, daily meal planner &amp; clinical macro tracker.
-                        </p>
-                      </div>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                        Nutrition &amp; Diet Planner
+                      </h3>
                     </div>
                     <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
                       <span>Open Nutrition</span>
@@ -6150,68 +6172,51 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setRoute({ name: 'trainings' })}
-                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-3.5"
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 text-left transition-all shadow-2xs cursor-pointer flex items-center justify-between gap-3"
                 >
-                  <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                    <Award className="w-5 h-5 stroke-[2.2]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
-                      Accredited Learning &amp; QR Registry
-                    </span>
-                    <p className="text-sm font-extrabold text-[#1A2138] mt-0.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                      <Award className="w-5 h-5 stroke-[2.2]" />
+                    </div>
+                    <p className="text-sm font-extrabold text-[#1A2138] leading-snug">
                       Trainings &amp; Certificate Portal
                     </p>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
-                      {mergedLiveCourses.length > 0
-                        ? `${mergedLiveCourses.length} Accredited Courses • Official QR Verification Registry`
-                        : 'Study Food Safety modules & verify official QR certificates'}
-                    </p>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setRoute({ name: 'communities' })}
-                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-3.5"
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 text-left transition-all shadow-2xs cursor-pointer flex items-center justify-between gap-3"
                 >
-                  <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                    <Users className="w-5 h-5 stroke-[2.2]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
-                      Professional Network
-                    </span>
-                    <p className="text-sm font-extrabold text-[#1A2138] mt-0.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                      <Users className="w-5 h-5 stroke-[2.2]" />
+                    </div>
+                    <p className="text-sm font-extrabold text-[#1A2138] leading-snug">
                       {paidCommunityMembers.length > 0
                         ? `Specialist Community (${paidCommunityMembers.length})`
                         : 'Specialist Community Directory'}
                     </p>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
-                      Connect with verified Food Technologists, QA Managers &amp; R&amp;D Specialists.
-                    </p>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setRoute({ name: 'profile' })}
-                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 text-left transition-all shadow-2xs cursor-pointer flex items-start gap-3.5"
+                  className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 text-left transition-all shadow-2xs cursor-pointer flex items-center justify-between gap-3"
                 >
-                  <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                    <FileText className="w-5 h-5 stroke-[2.2]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
-                      Career Portfolio
-                    </span>
-                    <p className="text-sm font-extrabold text-[#1A2138] mt-0.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5 stroke-[2.2]" />
+                    </div>
+                    <p className="text-sm font-extrabold text-[#1A2138] leading-snug">
                       ATS CV Builder &amp; Profile
                     </p>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">
-                      Generate executive ATS-ready Food Science CVs and manage privacy settings.
-                    </p>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
                 </button>
               </div>
 
@@ -6255,22 +6260,14 @@ export default function App() {
 
                   return (
                     <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] border border-[#1673B8]/40 rounded-2xl p-4 sm:p-5 shadow-sm text-white flex flex-col justify-between space-y-3">
-                      <div className="flex items-start gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/25 text-white flex items-center justify-center shrink-0">
                           <MessageSquare className="w-5 h-5 stroke-[2.2]" />
                         </div>
 
-                        <div className="min-w-0 flex-1">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-200 block">
-                            Official Community Updates
-                          </span>
-                          <h2 className="text-sm sm:text-base font-extrabold text-white leading-snug break-words">
-                            Food Science Portal WhatsApp Channel
-                          </h2>
-                          <p className="text-xs text-sky-100/90 font-medium mt-0.5 leading-snug break-words">
-                            Receive instant alerts for daily food industry jobs, global scholarships &amp; training announcements.
-                          </p>
-                        </div>
+                        <h2 className="text-sm sm:text-base font-extrabold text-white leading-snug break-words min-w-0 flex-1">
+                          Food Science Portal WhatsApp Channel
+                        </h2>
                       </div>
 
                       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -6305,7 +6302,7 @@ export default function App() {
                 {/* INSTALL MOBILE APP CARD ON WEBSITE HOME PAGE */}
                 {!isStandaloneApp && (
                   <div className="bg-white border border-[#1673B8]/35 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between space-y-3">
-                    <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className="w-11 h-11 rounded-xl bg-[#F0F6FC] border border-[#1673B8]/30 p-1 flex items-center justify-center shrink-0">
                         <img
                           src={FS_PORTAL_LOGO_DATA_URI}
@@ -6313,17 +6310,9 @@ export default function App() {
                           className="w-full h-full object-contain"
                         />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8] block">
-                          Website + Mobile App Synced
-                        </span>
-                        <h2 className="text-sm sm:text-base font-extrabold text-[#1A2138] leading-snug">
-                          Install Food Science Portal Mobile App
-                        </h2>
-                        <p className="text-xs text-slate-600 font-medium mt-0.5 leading-snug">
-                          Download the app on your Android or iPhone for instant 1-tap access with real-time cloud synchronization.
-                        </p>
-                      </div>
+                      <h2 className="text-sm sm:text-base font-extrabold text-[#1A2138] leading-snug min-w-0 flex-1">
+                        Install Food Science Portal Mobile App
+                      </h2>
                     </div>
 
                     <button
@@ -6549,8 +6538,17 @@ export default function App() {
                 job.requirements
               );
 
+              const cleanJobCompany =
+                job.company &&
+                !/^verified food industry employer$/i.test(job.company.trim())
+                  ? job.company.trim()
+                  : '';
+
               const emailSubject =
-                job.emailSubject || `Application for ${job.title} — ${job.company}`;
+                job.emailSubject ||
+                (cleanJobCompany
+                  ? `Application for ${job.title} — ${cleanJobCompany}`
+                  : `Application for ${job.title}`);
 
               const displayCategory = job.category || job.specialization || '';
               const displayCountry =
@@ -6577,9 +6575,6 @@ export default function App() {
                       <h1 className="text-[16.5px] sm:text-[19px] font-extrabold text-[#1A2138] leading-snug pt-1 break-words">
                         {job.title}
                       </h1>
-                      <p className="text-[12.5px] sm:text-sm font-semibold text-gray-600 break-words">
-                        {job.company}
-                      </p>
                     </div>
 
                     {/* Share Job Button */}
@@ -6588,7 +6583,9 @@ export default function App() {
                       onClick={() =>
                         handleShareOpportunity(
                           job.title,
-                          `Company: ${job.company} • Location: ${job.location || displayCountry}`
+                          job.location || displayCountry
+                            ? `Location: ${job.location || displayCountry}`
+                            : job.title
                         )
                       }
                       className="px-3.5 py-1.5 rounded-full bg-[#EBF4FC] hover:bg-[#D2DEEA] text-[#1673B8] font-extrabold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 mt-0.5"

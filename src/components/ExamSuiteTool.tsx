@@ -279,8 +279,9 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
 
   useEffect(() => {
     let mounted = true;
-    const LEADERBOARD_CACHE_KEY = 'fsp_exam_leaderboard_cache_v1';
+    const LEADERBOARD_CACHE_KEY = 'fsp_exam_leaderboard_cache_v2';
     const LEADERBOARD_CACHE_TTL_MS = 10 * 60 * 1000;
+    const LEADERBOARD_MIN_EXCLUSIVE_PCT = 60;
 
     async function fetchRealUsersLeaderboard() {
       try {
@@ -304,8 +305,11 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               Array.isArray(parsed.entries) &&
               Date.now() - parsed.ts < LEADERBOARD_CACHE_TTL_MS
             ) {
+              const qualifiedCached = parsed.entries
+                .filter((e) => Number(e.bestScorePct) > LEADERBOARD_MIN_EXCLUSIVE_PCT)
+                .slice(0, 10);
               if (mounted) {
-                setLiveLeaderboardEntries(parsed.entries);
+                setLiveLeaderboardEntries(qualifiedCached);
                 setIsLoadingLeaderboard(false);
               }
               return;
@@ -330,11 +334,13 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           const summary = data.examLeaderboardSummary;
           const legacyAttempts = data.toolsData?.examAttempts || [];
           if (summary && summary.optIn !== false && summary.totalAttempts > 0) {
+            const bestScorePct = Math.min(100, Math.round(summary.bestScorePct || 0));
+            if (bestScorePct <= LEADERBOARD_MIN_EXCLUSIVE_PCT) return;
             entries.push({
               uid: docSnap.id,
               name: data.name,
               role: data.currentRole || data.title || summary.track || 'Food Specialist',
-              bestScorePct: Math.min(100, Math.round(summary.bestScorePct || 0)),
+              bestScorePct,
               avgScorePct: Math.min(100, Math.round(summary.avgScorePct || 0)),
               totalAttempts: summary.totalAttempts || 1,
               track: summary.track || 'All Tracks'
@@ -345,6 +351,8 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
             legacyAttempts.length > 0
           ) {
             const best = Math.max(...legacyAttempts.map((a) => Number(a.percentage) || 0));
+            const bestScorePct = Math.min(100, Math.round(best));
+            if (bestScorePct <= LEADERBOARD_MIN_EXCLUSIVE_PCT) return;
             const avg = Math.round(
               legacyAttempts.reduce((sum, a) => sum + (Number(a.percentage) || 0), 0) /
                 legacyAttempts.length
@@ -353,7 +361,7 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
               uid: docSnap.id,
               name: data.name,
               role: data.currentRole || data.title || 'Food Specialist',
-              bestScorePct: Math.min(100, Math.round(best)),
+              bestScorePct,
               avgScorePct: Math.min(100, Math.round(avg)),
               totalAttempts: legacyAttempts.length,
               track: legacyAttempts[0]?.setTitle || 'Food Science'
@@ -718,6 +726,13 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           }),
           { merge: true }
         );
+        if (typeof window !== 'undefined') {
+          try {
+            window.sessionStorage.removeItem('fsp_exam_leaderboard_cache_v2');
+          } catch {
+            // Ignore storage restrictions
+          }
+        }
       } catch (err) {
         console.error('Failed to persist exam result summary to Firestore:', err);
       }
@@ -854,6 +869,13 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
           }),
           { merge: true }
         );
+        if (typeof window !== 'undefined') {
+          try {
+            window.sessionStorage.removeItem('fsp_exam_leaderboard_cache_v2');
+          } catch {
+            // Ignore storage restrictions
+          }
+        }
       } catch (err) {
         console.error('Failed to update exam leaderboard opt-in:', err);
       }
@@ -1547,13 +1569,16 @@ export const ExamSuiteTool: React.FC<ExamSuiteToolProps> = ({
                   <div className="p-4 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-xs font-semibold text-[#5A6C84] text-center">
                     Loading live leaderboard scores...
                   </div>
-                ) : liveLeaderboardEntries.length === 0 ? (
+                ) : liveLeaderboardEntries.filter((e) => e.bestScorePct > 60).length === 0 ? (
                   <div className="p-4 rounded-xl bg-[#F4F8FD] border border-[#D2DEEA] text-xs font-semibold text-[#5A6C84] text-center">
-                    No opted-in exam scores recorded yet. Complete any 30-MCQ exam to claim Rank #1!
+                    No exam scores above 60% recorded yet. Score above 60% in any 30-MCQ exam to claim Rank #1!
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {liveLeaderboardEntries.map((scorer, idx) => {
+                    {liveLeaderboardEntries
+                      .filter((e) => e.bestScorePct > 60)
+                      .slice(0, 10)
+                      .map((scorer, idx) => {
                       const rank = idx + 1;
                       const isMe = Boolean(user?.uid && scorer.uid === user.uid);
                       return (

@@ -44,13 +44,10 @@ export const JobCard: React.FC<JobCardProps> = ({
             <CategoryBadgeIcon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
           </div>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 self-center">
             <h3 className="text-[14px] sm:text-[15px] font-extrabold text-[#1A2138] leading-snug break-words">
               {job.title}
             </h3>
-            <p className="text-[11.5px] sm:text-[12.5px] font-medium text-slate-600 mt-0.5 leading-snug break-words">
-              {job.company}
-            </p>
           </div>
         </div>
 

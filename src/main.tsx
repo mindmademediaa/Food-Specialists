@@ -1,8 +1,13 @@
+import {Suspense} from 'react';
 import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
 import {AppLaunchSplash} from './components/AppLaunchSplash';
 import {SectionErrorBoundary} from './components/SectionErrorBoundary';
+import {lazyWithRetry} from './lib/lazyWithRetry';
 import './index.css';
+
+// Start loading App + Firebase in parallel while AppLaunchSplash mounts immediately on frame 1
+const preloadAppModule = import('./App.tsx');
+const App = lazyWithRetry(() => preloadAppModule);
 
 declare const __APP_BUILD_VERSION__: string;
 const APP_BUILD_VERSION =
@@ -163,7 +168,9 @@ createRoot(document.getElementById('root')!).render(
   <>
     <AppLaunchSplash />
     <SectionErrorBoundary sectionName="Food Science Portal">
-      <App />
+      <Suspense fallback={<div className="min-h-screen bg-white" />}>
+        <App />
+      </Suspense>
     </SectionErrorBoundary>
   </>
 );

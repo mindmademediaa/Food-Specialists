@@ -642,7 +642,7 @@ export const CertificateBundleOffersCard: React.FC<
             Official QR-Verified Certificate Packages &amp; Bundle Offers
           </h2>
           <p className="text-xs text-slate-600 max-w-2xl">
-            Study all 05 presentation modules and pass the 40-MCQ exam (60% passing score) for free. Select your desired certificates below — multi-certificate bundles automatically apply a <strong>25% discount</strong> on the actual course fees (including Certified Dietary Manager or any custom course fee set in the Control Panel).
+            Study courses and pass the 40-MCQ exam (60% passing score) for free. Multi-certificate bundles automatically include a <strong>25% discount</strong>.
           </p>
         </div>
 

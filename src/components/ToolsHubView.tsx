@@ -1,6 +1,11 @@
-import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { lazyWithRetry } from '../lib/lazyWithRetry';
 import { SectionErrorBoundary } from './SectionErrorBoundary';
+import {
+  savePortalScroll,
+  restorePortalScroll,
+  setPortalScrollTop
+} from '../lib/scrollManager';
 import {
   Activity,
   Award,
@@ -355,8 +360,17 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     }
   }, [resetTrigger]);
 
+  const prevActiveSectionRef = useRef<ActiveToolSection>(activeSection);
+
   useEffect(() => {
+    const prev = prevActiveSectionRef.current;
+    prevActiveSectionRef.current = activeSection;
     onActiveSectionChange?.(activeSection);
+
+    // When returning from any specialist tool back to Tools Hub, restore exact previous scroll offset
+    if (prev !== 'hub' && activeSection === 'hub') {
+      restorePortalScroll('tools-hub');
+    }
   }, [activeSection, onActiveSectionChange]);
 
   // Nutrition Local Editable State
@@ -445,11 +459,18 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       'interview',
       'authority-limits'
     ];
+    // Save current Tools Hub scroll position before opening a specialist tool
+    if (activeSection === 'hub' && targetSection !== 'hub') {
+      savePortalScroll('tools-hub');
+    }
+
     // All free open tools & live preview tools open without login/paywall
     if (!hasExpiredPremium || FREE_OPEN_TOOLS.includes(targetSection)) {
       setActiveSection(targetSection);
       if (afterUnlock) afterUnlock();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (targetSection !== 'hub') {
+        setPortalScrollTop(0, false);
+      }
       return;
     }
     if (!isUserPaid) {
@@ -459,7 +480,9 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     }
     setActiveSection(targetSection);
     if (afterUnlock) afterUnlock();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (targetSection !== 'hub') {
+      setPortalScrollTop(0, false);
+    }
   };
 
   // Start or Load Next 30 Different Exam MCQs from the 2,000-MCQ Bank
@@ -1031,7 +1054,6 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
             type="button"
             onClick={() => {
               setActiveSection('hub');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#EBF4FC] border border-[#1673B8]/40 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors shrink-0"
           >
