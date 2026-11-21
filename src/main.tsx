@@ -85,50 +85,7 @@ if (typeof window !== 'undefined') {
           })
           .catch(() => {});
       } else {
-        let reloadingForUpdate = false;
-        const reloadOnceForVersion = (targetVersion: string) => {
-          if (reloadingForUpdate) return;
-          try {
-            if (window.sessionStorage.getItem('fsp_reloaded_for_version') === targetVersion) {
-              return;
-            }
-            window.sessionStorage.setItem('fsp_reloaded_for_version', targetVersion);
-          } catch {
-            // Ignore sessionStorage restrictions
-          }
-          reloadingForUpdate = true;
-          purgeStaleBrowserCaches(targetVersion).finally(() => {
-            window.location.reload();
-          });
-        };
-
         let swReg: ServiceWorkerRegistration | null = null;
-        let lastVersionCheckMs = 0;
-
-        const checkRemoteDeployVersion = async (force = false) => {
-          const now = Date.now();
-          if (!force && now - lastVersionCheckMs < 45000) return;
-          lastVersionCheckMs = now;
-          try {
-            const res = await fetch(`/version.json?t=${now}`, {
-              cache: 'no-store',
-              headers: {'Cache-Control': 'no-cache'},
-            });
-            if (!res.ok) return;
-            const data = (await res.json()) as {version?: string};
-            if (data?.version && data.version !== APP_BUILD_VERSION) {
-              if (swReg) {
-                swReg.update().catch(() => {});
-                if (swReg.waiting) {
-                  swReg.waiting.postMessage({type: 'SKIP_WAITING'});
-                }
-              }
-              reloadOnceForVersion(data.version);
-            }
-          } catch {
-            // Offline or preview without version.json — silently skip
-          }
-        };
 
         window.addEventListener('load', () => {
           navigator.serviceWorker
@@ -138,28 +95,15 @@ if (typeof window !== 'undefined') {
               if (reg.waiting) {
                 reg.waiting.postMessage({type: 'SKIP_WAITING'});
               }
-              reg.addEventListener('updatefound', () => {
-                const installing = reg.installing;
-                if (!installing) return;
-                installing.addEventListener('statechange', () => {
-                  if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-                    installing.postMessage({type: 'SKIP_WAITING'});
-                  }
-                });
-              });
               reg.update().catch(() => {});
             })
             .catch(() => {});
-
-          // Check right after boot in case an older cached HTML booted right as a new deploy landed
-          checkRemoteDeployVersion(true);
         });
 
-        // When user switches back to an already-open tab, detect any fresh push immediately (never reloads unless a NEW version deployed)
+        // Silently check for updated Service Worker when returning to an open tab
         document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') {
-            if (swReg) swReg.update().catch(() => {});
-            checkRemoteDeployVersion(false);
+          if (document.visibilityState === 'visible' && swReg) {
+            swReg.update().catch(() => {});
           }
         });
       }
