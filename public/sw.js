@@ -33,10 +33,18 @@ async function saveSharedTargetToIdb(record) {
   });
 }
 
-function fetchWithTimeout(request, options, timeoutMs) {
+function fetchFreshUrl(urlString, cacheMode) {
+  return fetch(urlString, {
+    cache: cacheMode || 'no-store',
+    credentials: 'same-origin',
+    redirect: 'follow',
+  });
+}
+
+function raceWithTimeout(promise, timeoutMs) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Network timeout')), timeoutMs);
-    fetch(request, options)
+    promise
       .then((res) => {
         clearTimeout(timer);
         resolve(res);
@@ -48,6 +56,16 @@ function fetchWithTimeout(request, options, timeoutMs) {
   });
 }
 
+function offlineFallbackHtmlResponse() {
+  return new Response(
+    '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Food Science Portal — Offline</title><style>body{font-family:system-ui,-apple-system,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;background:#f8fafc;color:#0f172a;padding:24px;text-align:center}.card{max-width:380px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:28px 24px;box-shadow:0 12px 30px rgba(15,23,42,.08)}h1{font-size:18px;margin:0 0 8px}p{font-size:14px;color:#475569;margin:0 0 18px;line-height:1.5}button{background:#1673b8;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer}</style></head><body><div class="card"><h1>Connection Interrupted</h1><p>Please check your internet connection and tap reload to open Food Science Portal.</p><button onclick="location.reload()">Reload Page</button></div></body></html>',
+    {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    }
+  );
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
@@ -55,7 +73,7 @@ self.addEventListener('install', (event) => {
       .then((cache) =>
         Promise.all(
           CORE_SHELL_URLS.map((url) =>
-            fetch(url, { cache: 'no-store' })
+            fetchFreshUrl(url, 'no-store')
               .then((res) => (res && res.status === 200 ? cache.put(url, res) : null))
               .catch(() => null)
           )
@@ -95,7 +113,7 @@ self.addEventListener('message', (event) => {
     caches.open(CACHE_NAME).then((cache) =>
       Promise.all(
         data.urls.map((url) =>
-          fetch(url)
+          fetchFreshUrl(url, 'no-cache')
             .then((res) => (res && res.status === 200 ? cache.put(url, res) : null))
             .catch(() => null)
         )
@@ -127,7 +145,7 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Handle Android/Chrome Web Share Target POST (/share-target) + Fresh Network-First HTML + Immutable Hashed Asset Cache
+// Handle Android/Chrome Web Share Target POST (/share-target) + Reliable Navigation + Immutable Hashed Asset Cache
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
@@ -215,56 +233,67 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 1. HTML Navigations & index.html:
-  // - Installed Mobile App launch (/?source=pwa): Instant Stale-While-Revalidate (<30ms shell boot)
-  //   so Android hands straight into the standalone splash without stalling on Chrome's loading frame.
-  // - Regular browser tabs: Fast Network-First (1.8s timeout) so newly pushed deploys reflect immediately.
+  // Never pass RequestInit to a mode:'navigate' Request (causes Chrome ERR_FAILED).
+  // Always fetch by clean string URL with redirect:'follow' and only apply a short timeout when a cached fallback exists.
   if (
     event.request.mode === 'navigate' ||
     url.pathname === '/' ||
     url.pathname.endsWith('/index.html')
   ) {
     const isInstalledPwaLaunch = url.searchParams.get('source') === 'pwa';
-
-    if (isInstalledPwaLaunch) {
-      event.respondWith(
-        caches.open(CACHE_NAME).then((cache) =>
-          cache.match('/index.html').then((cached) => {
-            const bgUpdate = fetch('/index.html', { cache: 'no-store' })
-              .then((networkResponse) => {
-                if (networkResponse && networkResponse.status === 200) {
-                  cache.put('/index.html', networkResponse.clone()).catch(() => {});
-                }
-                return networkResponse;
-              })
-              .catch(() => null);
-
-            if (cached) {
-              event.waitUntil(bgUpdate);
-              return cached;
-            }
-            return bgUpdate.then((res) => res || fetch(event.request));
-          })
-        )
-      );
-      return;
-    }
+    const isRootOrSpaNav =
+      url.pathname === '/' ||
+      url.pathname.endsWith('/index.html') ||
+      !/\.[a-z0-9]+$/i.test(url.pathname);
+    const targetFetchUrl = isRootOrSpaNav ? '/index.html' : url.href;
 
     event.respondWith(
-      fetchWithTimeout(event.request, { cache: 'no-store' }, 1800)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const copy = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put('/index.html', copy).catch(() => {});
-            });
+      (async () => {
+        const cache = await caches.open(CACHE_NAME).catch(() => null);
+        const cachedShell = cache
+          ? (await cache.match('/index.html')) || (await cache.match('/'))
+          : null;
+
+        const doFreshFetch = async () => {
+          const networkResponse = await fetchFreshUrl(targetFetchUrl, 'no-store');
+          if (networkResponse && networkResponse.status === 200 && isRootOrSpaNav && cache) {
+            cache.put('/index.html', networkResponse.clone()).catch(() => {});
+          }
+          if (networkResponse && networkResponse.ok) {
+            return networkResponse;
+          }
+          if (isRootOrSpaNav && targetFetchUrl !== '/') {
+            const rootRes = await fetchFreshUrl('/', 'no-store');
+            if (rootRes && rootRes.status === 200 && cache) {
+              cache.put('/index.html', rootRes.clone()).catch(() => {});
+            }
+            if (rootRes && rootRes.ok) return rootRes;
           }
           return networkResponse;
-        })
-        .catch(() =>
-          caches.open(CACHE_NAME).then((cache) =>
-            cache.match('/index.html').then((cached) => cached || cache.match('/') || Response.error())
-          )
-        )
+        };
+
+        // Installed Mobile App launch (/?source=pwa): Instant Stale-While-Revalidate (<30ms shell boot)
+        if (isInstalledPwaLaunch && cachedShell) {
+          event.waitUntil(doFreshFetch().catch(() => null));
+          return cachedShell;
+        }
+
+        // Regular browser tabs & reloads: Network-First.
+        // Only race a timeout when cachedShell is ready so a slow network never triggers ERR_FAILED.
+        try {
+          if (cachedShell) {
+            return await raceWithTimeout(doFreshFetch(), 4500);
+          }
+          return await doFreshFetch();
+        } catch {
+          if (cachedShell) return cachedShell;
+          try {
+            return await fetch(event.request);
+          } catch {
+            return offlineFallbackHtmlResponse();
+          }
+        }
+      })()
     );
     return;
   }
@@ -292,10 +321,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Manifest, favicons, and other unhashed static files: NETWORK-FIRST so icon/manifest updates show immediately
+  // 3. Manifest, favicons, and other unhashed static files: Safe Network-First with cache fallback
   event.respondWith(
-    fetchWithTimeout(event.request, { cache: 'no-cache' }, 3000)
-      .then((networkResponse) => {
+    (async () => {
+      const cached = await caches.match(event.request).catch(() => null);
+      try {
+        const reqPromise = fetchFreshUrl(event.request.url, 'no-cache');
+        const networkResponse = cached ? await raceWithTimeout(reqPromise, 4500) : await reqPromise;
         if (networkResponse && networkResponse.status === 200) {
           const cloned = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -303,7 +335,10 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      })
-      .catch(() => caches.match(event.request).then((cached) => cached || Response.error()))
+      } catch {
+        if (cached) return cached;
+        return fetch(event.request);
+      }
+    })()
   );
 });

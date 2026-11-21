@@ -20,11 +20,16 @@ declare global {
   }
 }
 
-async function purgeAllBrowserCaches(): Promise<void> {
+async function purgeStaleBrowserCaches(keepVersion?: string): Promise<void> {
   if (typeof window === 'undefined' || !('caches' in window)) return;
   try {
+    const keepKey = keepVersion ? `food-science-portal-${keepVersion}` : '';
     const keys = await caches.keys();
-    await Promise.all(keys.map((key) => caches.delete(key).catch(() => false)));
+    await Promise.all(
+      keys
+        .filter((key) => !keepKey || key !== keepKey)
+        .map((key) => caches.delete(key).catch(() => false))
+    );
   } catch {
     // Ignore cache API restrictions
   }
@@ -51,7 +56,7 @@ if (typeof window !== 'undefined') {
       const last = Number(window.sessionStorage.getItem(key) || '0');
       if (Date.now() - last > 15000) {
         window.sessionStorage.setItem(key, String(Date.now()));
-        purgeAllBrowserCaches().finally(() => {
+        purgeStaleBrowserCaches().finally(() => {
           window.location.reload();
         });
       }
@@ -64,7 +69,7 @@ if (typeof window !== 'undefined') {
     const prevVersion = window.localStorage.getItem('fsp_app_build_version');
     if (prevVersion && prevVersion !== APP_BUILD_VERSION) {
       window.localStorage.setItem('fsp_app_build_version', APP_BUILD_VERSION);
-      purgeAllBrowserCaches();
+      purgeStaleBrowserCaches(APP_BUILD_VERSION);
     } else if (!prevVersion) {
       window.localStorage.setItem('fsp_app_build_version', APP_BUILD_VERSION);
     }
@@ -92,7 +97,7 @@ if (typeof window !== 'undefined') {
             // Ignore sessionStorage restrictions
           }
           reloadingForUpdate = true;
-          purgeAllBrowserCaches().finally(() => {
+          purgeStaleBrowserCaches(targetVersion).finally(() => {
             window.location.reload();
           });
         };
