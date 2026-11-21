@@ -1029,6 +1029,37 @@ export default function App() {
     return 'Guest';
   }, [myProfile.isPaid, myProfile.isPremium, myProfile.name, hasSavedProfile]);
 
+  const [legalModalTab, setLegalModalTab] = useState<LegalTabType | null>(null);
+
+  const resetSessionStateToGuest = useCallback((navigateHome: boolean) => {
+    clearPersistedAuthUser();
+    setAuthUser(null);
+    setMyProfile({ ...DEFAULT_CURRENT_USER_PROFILE });
+    setHasSavedProfile(false);
+    setAdminPreviewUserMode(false);
+    setPaymentRequests([]);
+    setCustomTrainingRegistrations([]);
+    setSupportTickets([]);
+    setShowPremiumUpgradeModal(false);
+    setShowApplicationStatusModal(false);
+    setLegalModalTab(null);
+    setAdminStatusBanner(null);
+    setProfileSaveMsg(null);
+    setUploadStatusMsg(null);
+    if (navigateHome) {
+      setShowGuestAuthModal(false);
+      setRoute({ name: 'home' });
+      try {
+        window.localStorage.removeItem(FSP_NAV_STATE_KEY);
+        window.localStorage.removeItem('fsp_admin_active_tab');
+        if (window.location.search || window.location.hash) {
+          window.history.replaceState({ route: { name: 'home' } }, '', '/');
+        }
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      } catch {}
+    }
+  }, []);
+
   // Monitor real-time Firebase Authentication state and auto-persist user record in Firestore
   useEffect(() => {
     // Fast fallback timer so the loading screen never hangs on slow mobile connections
@@ -1037,14 +1068,18 @@ export default function App() {
     }, 1200);
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (rawFirebaseUser) => {
-      if (rawFirebaseUser) {
-        savePersistedAuthUser(rawFirebaseUser);
-      }
-      const firebaseUser = rawFirebaseUser || loadPersistedAuthUser();
-      setAuthUser(firebaseUser);
       // Clear auth loading IMMEDIATELY so the user enters the app right away without waiting for Firestore network calls
       setAuthLoading(false);
       clearTimeout(fastFallback);
+
+      if (!rawFirebaseUser) {
+        resetSessionStateToGuest(false);
+        return;
+      }
+
+      savePersistedAuthUser(rawFirebaseUser);
+      const firebaseUser = rawFirebaseUser;
+      setAuthUser(firebaseUser);
 
       if (firebaseUser) {
         const displayName =
@@ -1209,6 +1244,9 @@ export default function App() {
                 publicData.toolsData ||
                 DEFAULT_USER_TOOLS_DATA
             };
+            if (!auth.currentUser || auth.currentUser.uid !== firebaseUser.uid) {
+              return;
+            }
             setMyProfile(mergedProfile);
             setHasSavedProfile(true);
             await Promise.all([
@@ -1218,12 +1256,18 @@ export default function App() {
               })
             ]);
           } else {
+            if (!auth.currentUser || auth.currentUser.uid !== firebaseUser.uid) {
+              return;
+            }
             await Promise.all([
               setDoc(privateVaultRef, baseUserRecord, { merge: true }),
               setDoc(userDocRef, buildSanitizedPublicUser(baseUserRecord), {
                 merge: true
               })
             ]);
+            if (!auth.currentUser || auth.currentUser.uid !== firebaseUser.uid) {
+              return;
+            }
             setMyProfile(baseUserRecord);
             setHasSavedProfile(true);
           }
@@ -1243,20 +1287,13 @@ export default function App() {
       clearTimeout(fastFallback);
       unsubscribeAuth();
     };
-  }, []);
-
-  const [legalModalTab, setLegalModalTab] = useState<LegalTabType | null>(null);
+  }, [resetSessionStateToGuest]);
 
   const handleSignOut = async () => {
-    clearPersistedAuthUser();
-    setAuthUser(null);
-    try {
-      window.localStorage.removeItem(FSP_NAV_STATE_KEY);
-      window.localStorage.removeItem('fsp_admin_active_tab');
-    } catch {}
+    // Immediately clear local React + admin/user session state so UI exits Admin Panel / User Session right away
+    resetSessionStateToGuest(true);
     try {
       await signOut(auth);
-      setRoute({ name: 'home' });
     } catch (err) {
       console.error('Sign out error:', err);
     }
@@ -1286,14 +1323,12 @@ export default function App() {
       if (auth.currentUser) {
         await auth.currentUser.delete().catch(() => {});
       }
-      setAuthUser(null);
+      resetSessionStateToGuest(true);
       await signOut(auth).catch(() => {});
-      setRoute({ name: 'home' });
     } catch (err) {
       console.error('Account deletion error:', err);
-      setAuthUser(null);
+      resetSessionStateToGuest(true);
       await signOut(auth).catch(() => {});
-      setRoute({ name: 'home' });
     }
   };
 
@@ -2486,11 +2521,12 @@ export default function App() {
     return true;
   };
 
-  // Is Current User a Premium/Paid Member? (Driven by their Profile record or Admin status)
+  // Is Current User a Premium/Paid Member? (Always requires an active authenticated session)
   const isCurrentUserPaid = Boolean(
-    isMemberPremiumActive(myProfile) ||
-      myProfile.isAdmin ||
-      authUser?.email?.toLowerCase() === 'mindmademedia9@gmail.com'
+    authUser &&
+      (isMemberPremiumActive(myProfile) ||
+        myProfile.isAdmin ||
+        authUser.email?.toLowerCase() === 'mindmademedia9@gmail.com')
   );
 
   // Detect if user previously had Paid Premium Membership that has now expired
@@ -3073,8 +3109,9 @@ export default function App() {
   };
 
   const isUserAdmin = Boolean(
-    myProfile.isAdmin ||
-      authUser?.email?.toLowerCase() === 'mindmademedia9@gmail.com'
+    authUser &&
+      (myProfile.isAdmin ||
+        authUser.email?.toLowerCase() === 'mindmademedia9@gmail.com')
   );
 
   const handleUploadAvatarFile = async (file: File) => {
@@ -5443,12 +5480,14 @@ export default function App() {
           }}
           isAdmin={isUserAdmin}
           pendingAdminCount={pendingPaymentRequestsCount}
-          onSignOutClick={handleSignOut}
+          onSignOutClick={authUser ? handleSignOut : undefined}
           onOpenLegal={(tab) => setLegalModalTab(tab)}
           userEmail={authUser?.email || null}
           userInitial={userInitial}
           userAvatarUrl={
-            myProfile.profilePicUrl || authUser?.photoURL || undefined
+            authUser
+              ? myProfile.profilePicUrl || authUser.photoURL || undefined
+              : undefined
           }
           activeWebsiteNav={activeWebsiteNav}
           onNavigateWebsiteSection={handleNavigateWebsiteSection}
@@ -10011,7 +10050,7 @@ export default function App() {
                 setRoute({ name: 'profile' });
                 window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
               }}
-              onSignOutApp={handleSignOut}
+              onSignOutApp={authUser ? handleSignOut : undefined}
               monthlyFeeRs={liveGateway.monthlyFeeRs}
               yearlyFeeRs={liveGateway.yearlyFeeRs}
               monthlyFeeUsd={liveGateway.monthlyFeeUsd}
