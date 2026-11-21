@@ -5,9 +5,21 @@ import {SectionErrorBoundary} from './components/SectionErrorBoundary';
 import {lazyWithRetry} from './lib/lazyWithRetry';
 import './index.css';
 
-// Start loading App + Firebase in parallel while AppLaunchSplash mounts immediately on frame 1
-const preloadAppModule = import('./App.tsx');
-const App = lazyWithRetry(() => preloadAppModule);
+// Start loading App + Firebase in parallel while AppLaunchSplash mounts immediately on frame 1.
+// Clear the preloaded promise on failure so lazyWithRetry performs a real fresh import on retry.
+let pendingAppModule: Promise<typeof import('./App.tsx')> | null = import('./App.tsx');
+pendingAppModule.catch(() => {
+  pendingAppModule = null;
+});
+
+const App = lazyWithRetry(() => {
+  if (pendingAppModule) {
+    const firstTry = pendingAppModule;
+    pendingAppModule = null;
+    return firstTry;
+  }
+  return import('./App.tsx');
+});
 
 declare const __APP_BUILD_VERSION__: string;
 const APP_BUILD_VERSION =

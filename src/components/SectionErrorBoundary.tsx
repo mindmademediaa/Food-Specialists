@@ -38,6 +38,17 @@ export class SectionErrorBoundary extends React.Component<
   }
 
   private handleRetry = () => {
+    const msg = (this.state.errorMessage || '').toLowerCase();
+    const isDynamicImportError =
+      msg.includes('failed to fetch dynamically imported module') ||
+      msg.includes('importing a module script failed') ||
+      msg.includes('error loading dynamically imported module') ||
+      msg.includes('chunkloaderror') ||
+      msg.includes('loading chunk');
+    if (isDynamicImportError) {
+      this.handleHardReload();
+      return;
+    }
     this.setState({ hasError: false, errorMessage: '' });
   };
 
