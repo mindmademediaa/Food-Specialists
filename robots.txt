@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /?section=home
+Allow: /?section=tools
+Allow: /?section=trainings
+Allow: /?section=jobs
+Allow: /?section=scholarships
+Allow: /?section=communities
+
+Sitemap: https://foodscienceportal.com/sitemap.xml
