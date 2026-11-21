@@ -176,8 +176,8 @@ export async function showPortalPushNotification(
       if (reg && 'showNotification' in reg) {
         await reg.showNotification(title, {
           body,
-          icon: '/pwa-192x192.png?v=fsp-20261119-v11',
-          badge: '/favicon.png?v=fsp-20261119-v11',
+          icon: '/pwa-192x192.png?v=fsp-20261121-v14',
+          badge: '/favicon.png?v=fsp-20261121-v14',
           data: { url: targetUrl }
         });
         return;
@@ -185,7 +185,7 @@ export async function showPortalPushNotification(
     }
     new Notification(title, {
       body,
-      icon: '/pwa-192x192.png?v=fsp-20261119-v11'
+      icon: '/pwa-192x192.png?v=fsp-20261121-v14'
     });
   } catch {
     // Ignore restricted notification contexts
