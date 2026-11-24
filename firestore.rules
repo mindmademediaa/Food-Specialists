@@ -137,6 +137,10 @@ service cloud.firestore {
         (!('cloudinaryUploadPreset' in data) || (data.cloudinaryUploadPreset is string && data.cloudinaryUploadPreset.size() <= 120)) &&
         (!('whatsappChannelUrl' in data) || (data.whatsappChannelUrl is string && data.whatsappChannelUrl.size() <= 500)) &&
         (!('whatsappChannelButtonText' in data) || (data.whatsappChannelButtonText is string && data.whatsappChannelButtonText.size() <= 120)) &&
+        (!('facebookPageUrl' in data) || (data.facebookPageUrl is string && data.facebookPageUrl.size() <= 500)) &&
+        (!('facebookButtonText' in data) || (data.facebookButtonText is string && data.facebookButtonText.size() <= 120)) &&
+        (!('linkedinPageUrl' in data) || (data.linkedinPageUrl is string && data.linkedinPageUrl.size() <= 500)) &&
+        (!('linkedinButtonText' in data) || (data.linkedinButtonText is string && data.linkedinButtonText.size() <= 120)) &&
         (!('paymentGateway' in data) || data.paymentGateway is map) &&
         (!('customAds' in data) || (data.customAds is list && data.customAds.size() <= 50)) &&
         (!('frontPageConfig' in data) || data.frontPageConfig is map) &&

@@ -753,6 +753,10 @@ export default function App() {
     updatedAt: '2026-11-03T11:45:00Z',
     whatsappChannelUrl: 'https://whatsapp.com/channel/0029VaFoodSpecialists',
     whatsappChannelButtonText: 'Follow WhatsApp Channel',
+    facebookPageUrl: 'https://www.facebook.com/foodscienceportal',
+    facebookButtonText: 'Follow on Facebook',
+    linkedinPageUrl: 'https://www.linkedin.com/company/foodscienceportal',
+    linkedinButtonText: 'Follow on LinkedIn',
     paymentGateway: {
       jazzCashTitle: 'Muneeb Khan',
       jazzCashNumber: '0324-0906384',
@@ -1348,6 +1352,18 @@ export default function App() {
       whatsappChannelButtonText:
         data.whatsappChannelButtonText?.trim() ||
         'Follow WhatsApp Channel',
+      facebookPageUrl:
+        data.facebookPageUrl?.trim() ||
+        'https://www.facebook.com/foodscienceportal',
+      facebookButtonText:
+        data.facebookButtonText?.trim() ||
+        'Follow on Facebook',
+      linkedinPageUrl:
+        data.linkedinPageUrl?.trim() ||
+        'https://www.linkedin.com/company/foodscienceportal',
+      linkedinButtonText:
+        data.linkedinButtonText?.trim() ||
+        'Follow on LinkedIn',
       paymentGateway: {
         jazzCashTitle:
           data.paymentGateway?.jazzCashTitle || 'Muneeb Khan',
@@ -4938,15 +4954,24 @@ export default function App() {
 
   const handleSaveStorageConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    const rawWaLink = (
-      storageConfig.whatsappChannelUrl ||
+    const normalizeSocialUrl = (raw: string | undefined, fallback: string) => {
+      const trimmed = (raw || '').trim();
+      if (!trimmed) return fallback;
+      return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    };
+
+    const normalizedWaLink = normalizeSocialUrl(
+      storageConfig.whatsappChannelUrl,
       'https://whatsapp.com/channel/0029VaFoodSpecialists'
-    ).trim();
-    const normalizedWaLink = rawWaLink
-      ? /^https?:\/\//i.test(rawWaLink)
-        ? rawWaLink
-        : `https://${rawWaLink}`
-      : 'https://whatsapp.com/channel/0029VaFoodSpecialists';
+    );
+    const normalizedFbLink = normalizeSocialUrl(
+      storageConfig.facebookPageUrl,
+      'https://www.facebook.com/foodscienceportal'
+    );
+    const normalizedLiLink = normalizeSocialUrl(
+      storageConfig.linkedinPageUrl,
+      'https://www.linkedin.com/company/foodscienceportal'
+    );
 
     const updated: CloudStorageConfig = {
       ...storageConfig,
@@ -4981,6 +5006,18 @@ export default function App() {
       )
         .trim()
         .slice(0, 110),
+      facebookPageUrl: normalizedFbLink.slice(0, 490),
+      facebookButtonText: (
+        storageConfig.facebookButtonText || 'Follow on Facebook'
+      )
+        .trim()
+        .slice(0, 110),
+      linkedinPageUrl: normalizedLiLink.slice(0, 490),
+      linkedinButtonText: (
+        storageConfig.linkedinButtonText || 'Follow on LinkedIn'
+      )
+        .trim()
+        .slice(0, 110),
       updatedAt: new Date().toISOString().slice(0, 19) + 'Z'
     };
     const cleanUpdated: CloudStorageConfig = stripUndefinedDeep({
@@ -4996,7 +5033,7 @@ export default function App() {
         merge: true
       });
       setAdminStatusBanner(
-        'Settings, Payment Gateway & Official WhatsApp Channel Link saved — Live on App!'
+        'Settings, Payment Gateway & Official Social Media Links (WhatsApp, Facebook & LinkedIn) saved — Live on App!'
       );
       setTimeout(() => setAdminStatusBanner(null), 4000);
     } catch (error) {
@@ -6284,42 +6321,54 @@ export default function App() {
                 } gap-4`}
               >
                 {(() => {
-                  const rawWaUrl = (
-                    storageConfig.whatsappChannelUrl ||
+                  const toHref = (raw: string | undefined, fallback: string) => {
+                    const trimmed = (raw || '').trim();
+                    if (!trimmed) return fallback;
+                    return /^https?:\/\//i.test(trimmed)
+                      ? trimmed
+                      : `https://${trimmed}`;
+                  };
+
+                  const waHref = toHref(
+                    storageConfig.whatsappChannelUrl,
                     'https://whatsapp.com/channel/0029VaFoodSpecialists'
-                  ).trim();
-                  const waHref = rawWaUrl
-                    ? /^https?:\/\//i.test(rawWaUrl)
-                      ? rawWaUrl
-                      : `https://${rawWaUrl}`
-                    : 'https://whatsapp.com/channel/0029VaFoodSpecialists';
+                  );
                   const waButtonLabel =
                     storageConfig.whatsappChannelButtonText?.trim() ||
                     'Follow WhatsApp Channel';
 
+                  const fbHref = toHref(
+                    storageConfig.facebookPageUrl,
+                    'https://www.facebook.com/foodscienceportal'
+                  );
+                  const fbButtonLabel =
+                    storageConfig.facebookButtonText?.trim() ||
+                    'Facebook Page';
+
+                  const liHref = toHref(
+                    storageConfig.linkedinPageUrl,
+                    'https://www.linkedin.com/company/foodscienceportal'
+                  );
+                  const liButtonLabel =
+                    storageConfig.linkedinButtonText?.trim() ||
+                    'LinkedIn Page';
+
                   return (
                     <div className="bg-gradient-to-r from-[#1A2138] via-[#105E9A] to-[#1673B8] border border-[#1673B8]/40 rounded-2xl p-4 sm:p-5 shadow-sm text-white flex flex-col justify-between space-y-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/25 text-white flex items-center justify-center shrink-0">
-                          <MessageSquare className="w-5 h-5 stroke-[2.2]" />
+                      <div className="flex items-center justify-between gap-2 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/25 text-white flex items-center justify-center shrink-0">
+                            <Globe className="w-5 h-5 stroke-[2.2]" />
+                          </div>
+                          <div>
+                            <h2 className="text-sm sm:text-base font-extrabold text-white leading-snug break-words">
+                              Official Channels &amp; Social Community
+                            </h2>
+                            <p className="text-[11px] text-sky-100 font-medium">
+                              Join Food Science Portal on WhatsApp, LinkedIn &amp; Facebook
+                            </p>
+                          </div>
                         </div>
-
-                        <h2 className="text-sm sm:text-base font-extrabold text-white leading-snug break-words min-w-0 flex-1">
-                          Food Science Portal WhatsApp Channel
-                        </h2>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <a
-                          href={waHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full sm:w-auto flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-sky-50 text-[#1A2138] font-extrabold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.3] shrink-0" />
-                          <span>{waButtonLabel}</span>
-                          <ExternalLink className="w-3.5 h-3.5 text-[#1673B8] stroke-[2.4] shrink-0" />
-                        </a>
 
                         {isUserAdmin && (
                           <button
@@ -6328,11 +6377,50 @@ export default function App() {
                               setAdminPreviewUserMode(false);
                               setRoute({ name: 'admin' });
                             }}
-                            className="px-3 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-extrabold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
+                            className="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[11px] font-extrabold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
                           >
-                            Edit Link
+                            Edit Links
                           </button>
                         )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <a
+                          href={waHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2.5 px-3 rounded-xl bg-white hover:bg-sky-50 text-[#1A2138] font-extrabold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-[#25D366] stroke-[2.4] shrink-0" />
+                          <span className="truncate">{waButtonLabel}</span>
+                          <ExternalLink className="w-3 h-3 text-[#1673B8] stroke-[2.4] shrink-0" />
+                        </a>
+
+                        <a
+                          href={liHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2.5 px-3 rounded-xl bg-[#0A66C2] hover:bg-[#0855a1] border border-white/25 text-white font-extrabold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                          </svg>
+                          <span className="truncate">{liButtonLabel}</span>
+                          <ExternalLink className="w-3 h-3 text-sky-200 stroke-[2.4] shrink-0" />
+                        </a>
+
+                        <a
+                          href={fbHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2.5 px-3 rounded-xl bg-[#1877F2] hover:bg-[#1464cc] border border-white/25 text-white font-extrabold text-xs shadow-2xs inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z" />
+                          </svg>
+                          <span className="truncate">{fbButtonLabel}</span>
+                          <ExternalLink className="w-3 h-3 text-sky-200 stroke-[2.4] shrink-0" />
+                        </a>
                       </div>
                     </div>
                   );
@@ -8693,218 +8781,357 @@ export default function App() {
           )}
           </div>
 
-          {/* FULL-WIDTH DESKTOP & TABLET WEBSITE FOOTER (Visible on md+ screens) */}
-          <footer className="hidden md:block w-full bg-[#0C182D] text-white border-t border-[#1C3257] mt-10 shrink-0">
-            <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-8 lg:py-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-8 border-b border-white/10">
-                {/* Col 1: Brand & Mission */}
-                <div className="space-y-3">
-                  <div className="inline-flex items-center rounded-xl bg-white px-3 py-1.5 shadow-sm">
-                    <img
-                      src={FS_PORTAL_LOGO_WIDE_DATA_URI}
-                      alt="Food Science Portal"
-                      className="h-9 sm:h-10 w-auto max-w-[190px] object-contain select-none"
-                    />
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings.
-                  </p>
-                </div>
+          {/* MOBILE APP COMPACT SOCIAL & COMMUNITY FOOTER BAR (Visible on mobile/app screens across routes) */}
+          {(() => {
+            const toHref = (raw: string | undefined, fallback: string) => {
+              const trimmed = (raw || '').trim();
+              if (!trimmed) return fallback;
+              return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+            };
+            const waHref = toHref(
+              storageConfig.whatsappChannelUrl,
+              'https://whatsapp.com/channel/0029VaFoodSpecialists'
+            );
+            const fbHref = toHref(
+              storageConfig.facebookPageUrl,
+              'https://www.facebook.com/foodscienceportal'
+            );
+            const liHref = toHref(
+              storageConfig.linkedinPageUrl,
+              'https://www.linkedin.com/company/foodscienceportal'
+            );
+            const fbLabel =
+              storageConfig.facebookButtonText?.trim() || 'Facebook';
+            const liLabel =
+              storageConfig.linkedinButtonText?.trim() || 'LinkedIn';
+            const waLabel =
+              storageConfig.whatsappChannelButtonText?.trim() || 'WhatsApp';
 
-                {/* Col 2: Portal Navigation */}
-                <div className="space-y-2.5">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
-                    Portal Sections
-                  </h3>
-                  <ul className="space-y-2 text-xs font-semibold text-slate-300">
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => handleNavigateWebsiteSection('home')}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        Home Dashboard
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => handleNavigateWebsiteSection('jobs')}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        Browse Food Industry Jobs ({activeJobs.length})
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleNavigateWebsiteSection('scholarships')
-                        }
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        Global Scholarships &amp; Grants ({activeScholarships.length})
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleNavigateWebsiteSection('communities')
-                        }
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        Specialist Community Directory ({paidCommunityMembers.length})
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => handleNavigateWebsiteSection('profile')}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        ATS CV Builder &amp; Profile
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Col 3: Specialist Tools & Academy */}
-                <div className="space-y-2.5">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
-                    Tools &amp; Academy
-                  </h3>
-                  <ul className="space-y-2 text-xs font-semibold text-slate-300">
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveToolSection('exam');
-                          setRoute({
-                            name: 'tools',
-                            initialSection: 'exam'
-                          });
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        Food Science Exam Prep &amp; PDF Notes
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveToolSection('e-numbers');
-                          setRoute({
-                            name: 'tools',
-                            initialSection: 'e-numbers'
-                          });
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        E-Numbers &amp; Halal Additive Finder
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveToolSection('lab-formula');
-                          setRoute({
-                            name: 'tools',
-                            initialSection: 'lab-formula'
-                          });
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        QA/QC Food Lab Calculators
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleNavigateWebsiteSection('trainings')
-                        }
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        International Trainings &amp; QR Verification
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Col 4: Legal Compliance & Mobile App */}
-                <div className="space-y-2.5">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
-                    Policies &amp; Mobile App
-                  </h3>
-                  <ul className="space-y-2 text-xs font-semibold text-slate-300">
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => setLegalModalTab('privacy')}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        Privacy Policy
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => setLegalModalTab('terms')}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        Terms &amp; Conditions
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => setLegalModalTab('ads')}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        AdMob &amp; Ads Compliance Policy
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => setLegalModalTab('deletion')}
-                        className="hover:text-white transition-colors cursor-pointer"
-                      >
-                        Data &amp; Account Deletion Policy
-                      </button>
-                    </li>
-                  </ul>
-                  {!isStandaloneApp && (
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={handleTriggerNativeAppInstall}
-                        className="w-full py-2.5 px-3.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <Smartphone className="w-4 h-4 text-sky-200" />
-                        <span>Install Mobile App</span>
-                      </button>
+            return (
+              <>
+                <div className="md:hidden max-w-6xl mx-auto px-3 sm:px-5 mt-6 mb-2">
+                  <div className="bg-[#0C182D] text-white border border-[#1C3257] rounded-2xl p-3.5 space-y-2.5 shadow-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
+                        Connect With Food Science Portal
+                      </span>
+                      {isUserAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdminPreviewUserMode(false);
+                            setRoute({ name: 'admin' });
+                          }}
+                          className="text-[10.5px] font-extrabold text-amber-300 hover:underline cursor-pointer"
+                        >
+                          Edit Social Links
+                        </button>
+                      )}
                     </div>
-                  )}
+                    <div className="grid grid-cols-3 gap-2">
+                      <a
+                        href={liHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2 px-2.5 rounded-xl bg-[#0A66C2] hover:bg-[#0855a1] text-white text-[11px] font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                        </svg>
+                        <span className="truncate">{liLabel}</span>
+                      </a>
+                      <a
+                        href={fbHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2 px-2.5 rounded-xl bg-[#1877F2] hover:bg-[#1464cc] text-white text-[11px] font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z" />
+                        </svg>
+                        <span className="truncate">{fbLabel}</span>
+                      </a>
+                      <a
+                        href={waHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2 px-2.5 rounded-xl bg-[#25D366] hover:bg-[#1fb858] text-[#0C182D] text-[11px] font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 stroke-[2.4] shrink-0" />
+                        <span className="truncate">{waLabel}</span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400 font-medium">
-                <p>
-                  © {new Date().getFullYear()} Food Science Portal. All rights reserved.
-                </p>
-                <p>
-                  Synchronized Web Portal &amp; Google Play Store Compatible PWA
-                </p>
-              </div>
-            </div>
-          </footer>
+                {/* FULL-WIDTH DESKTOP & TABLET WEBSITE FOOTER (Visible on md+ screens) */}
+                <footer className="hidden md:block w-full bg-[#0C182D] text-white border-t border-[#1C3257] mt-10 shrink-0">
+                  <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-8 lg:py-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-8 border-b border-white/10">
+                      {/* Col 1: Brand, Mission & Official Social Media Buttons */}
+                      <div className="space-y-3.5">
+                        <div className="inline-flex items-center rounded-xl bg-white px-3 py-1.5 shadow-sm">
+                          <img
+                            src={FS_PORTAL_LOGO_WIDE_DATA_URI}
+                            alt="Food Science Portal"
+                            className="h-9 sm:h-10 w-auto max-w-[190px] object-contain select-none"
+                          />
+                        </div>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings.
+                        </p>
+                        <div className="pt-1 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
+                              Official Social Pages
+                            </p>
+                            {isUserAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAdminPreviewUserMode(false);
+                                  setRoute({ name: 'admin' });
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="text-[10.5px] font-extrabold text-amber-300 hover:underline cursor-pointer"
+                              >
+                                Edit in Admin
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <a
+                              href={liHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-2 rounded-xl bg-[#0A66C2] hover:bg-[#0855a1] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                              </svg>
+                              <span>{liLabel}</span>
+                            </a>
+                            <a
+                              href={fbHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-2 rounded-xl bg-[#1877F2] hover:bg-[#1464cc] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z" />
+                              </svg>
+                              <span>{fbLabel}</span>
+                            </a>
+                            <a
+                              href={waHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-2 rounded-xl bg-[#25D366] hover:bg-[#1fb858] text-[#0C182D] text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5 stroke-[2.4] shrink-0" />
+                              <span>{waLabel}</span>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Col 2: Portal Navigation */}
+                      <div className="space-y-2.5">
+                        <h3 className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
+                          Portal Sections
+                        </h3>
+                        <ul className="space-y-2 text-xs font-semibold text-slate-300">
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => handleNavigateWebsiteSection('home')}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              Home Dashboard
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => handleNavigateWebsiteSection('jobs')}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              Browse Food Industry Jobs ({activeJobs.length})
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleNavigateWebsiteSection('scholarships')
+                              }
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              Global Scholarships &amp; Grants ({activeScholarships.length})
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleNavigateWebsiteSection('communities')
+                              }
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              Specialist Community Directory ({paidCommunityMembers.length})
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => handleNavigateWebsiteSection('profile')}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              ATS CV Builder &amp; Profile
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Col 3: Specialist Tools & Academy */}
+                      <div className="space-y-2.5">
+                        <h3 className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
+                          Tools &amp; Academy
+                        </h3>
+                        <ul className="space-y-2 text-xs font-semibold text-slate-300">
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveToolSection('exam');
+                                setRoute({
+                                  name: 'tools',
+                                  initialSection: 'exam'
+                                });
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              Food Science Exam Prep &amp; PDF Notes
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveToolSection('e-numbers');
+                                setRoute({
+                                  name: 'tools',
+                                  initialSection: 'e-numbers'
+                                });
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              E-Numbers &amp; Halal Additive Finder
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveToolSection('lab-formula');
+                                setRoute({
+                                  name: 'tools',
+                                  initialSection: 'lab-formula'
+                                });
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              QA/QC Food Lab Calculators
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleNavigateWebsiteSection('trainings')
+                              }
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              International Trainings &amp; QR Verification
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Col 4: Legal Compliance & Mobile App */}
+                      <div className="space-y-2.5">
+                        <h3 className="text-xs font-extrabold uppercase tracking-wider text-sky-300">
+                          Policies &amp; Mobile App
+                        </h3>
+                        <ul className="space-y-2 text-xs font-semibold text-slate-300">
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => setLegalModalTab('privacy')}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              Privacy Policy
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => setLegalModalTab('terms')}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              Terms &amp; Conditions
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => setLegalModalTab('ads')}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              AdMob &amp; Ads Compliance Policy
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => setLegalModalTab('deletion')}
+                              className="hover:text-white transition-colors cursor-pointer"
+                            >
+                              Data &amp; Account Deletion Policy
+                            </button>
+                          </li>
+                        </ul>
+                        {!isStandaloneApp && (
+                          <div className="pt-2">
+                            <button
+                              type="button"
+                              onClick={handleTriggerNativeAppInstall}
+                              className="w-full py-2.5 px-3.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Smartphone className="w-4 h-4 text-sky-200" />
+                              <span>Install Mobile App</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400 font-medium">
+                      <p>
+                        © {new Date().getFullYear()} Food Science Portal. All rights reserved.
+                      </p>
+                      <p>
+                        Synchronized Web Portal &amp; Google Play Store Compatible PWA
+                      </p>
+                    </div>
+                  </div>
+                </footer>
+              </>
+            );
+          })()}
         </main>
 
         {/* ==================== HIRE / CONTACT MEMBER MODAL ==================== */}

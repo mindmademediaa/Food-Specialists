@@ -1041,6 +1041,10 @@ export interface CloudStorageConfig {
   updatedAt: string;
   whatsappChannelUrl?: string;
   whatsappChannelButtonText?: string;
+  facebookPageUrl?: string;
+  facebookButtonText?: string;
+  linkedinPageUrl?: string;
+  linkedinButtonText?: string;
   paymentGateway?: PaymentGatewayConfig;
   customAds?: CustomAdBannerItem[];
   frontPageConfig?: FrontPageContentConfig;

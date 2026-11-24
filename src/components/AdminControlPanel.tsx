@@ -17,6 +17,7 @@ import {
   EyeOff,
   ExternalLink,
   FileText,
+  Globe,
   GraduationCap,
   Headset,
   Image as ImageIcon,
@@ -3169,28 +3170,29 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
             {/* OFFICIAL WHATSAPP CHANNEL BUTTON & LINK CONTROL (HOME SCREEN) */}
             <form
               onSubmit={onSaveStorageConfig}
-              className="bg-white border-2 border-[#1673B8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-3.5"
+              className="bg-white border-2 border-[#1673B8] rounded-[24px] p-4 sm:p-5 shadow-xs space-y-4"
             >
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D2DEEA] pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-2xs">
-                    <MessageSquare className="w-5 h-5 stroke-[2.3]" />
+                  <div className="w-10 h-10 rounded-xl bg-[#1673B8] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <Globe className="w-5 h-5 stroke-[2.3]" />
                   </div>
                   <div>
                     <h3 className="text-sm sm:text-base font-extrabold text-[#1A2138]">
-                      Home Screen WhatsApp Channel Button &amp; Link Control
+                      Official Social Media Links (WhatsApp Channel, Facebook Page &amp; LinkedIn Page)
                     </h3>
                     <p className="text-[11.5px] text-[#4A5568] font-medium">
-                      Edit or amend the official WhatsApp Channel URL and button text shown on the Home front page.
+                      Control the official WhatsApp Channel, Facebook Page, and LinkedIn Page links &amp; buttons shown on the Home page, App view, and Website Footer.
                     </p>
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-full bg-[#EBF4FC] text-[#105E9A] text-[11px] font-extrabold">
-                  Live on Home Screen
+                  Live on App &amp; Website Footer
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* 1. WhatsApp Channel */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-2xl bg-[#F8FBFF] border border-[#D2DEEA]">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
                     Official WhatsApp Channel Link (URL)
@@ -3208,13 +3210,13 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       })
                     }
                     placeholder="https://whatsapp.com/channel/..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
-                    Button Text on Home Page
+                    WhatsApp Button Text
                   </label>
                   <input
                     type="text"
@@ -3229,43 +3231,183 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       })
                     }
                     placeholder="Follow WhatsApp Channel"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F0F6FC] border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                  />
+                </div>
+              </div>
+
+              {/* 2. Facebook Page */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-2xl bg-[#F8FBFF] border border-[#D2DEEA]">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                    Official Facebook Page Link (URL)
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      storageConfig.facebookPageUrl ??
+                      'https://www.facebook.com/foodscienceportal'
+                    }
+                    onChange={(e) =>
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        facebookPageUrl: e.target.value
+                      })
+                    }
+                    placeholder="https://www.facebook.com/yourpage"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                    Facebook Button Text
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      storageConfig.facebookButtonText ??
+                      'Follow on Facebook'
+                    }
+                    onChange={(e) =>
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        facebookButtonText: e.target.value
+                      })
+                    }
+                    placeholder="Follow on Facebook"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                  />
+                </div>
+              </div>
+
+              {/* 3. LinkedIn Page */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-2xl bg-[#F8FBFF] border border-[#D2DEEA]">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                    Official LinkedIn Page Link (URL)
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      storageConfig.linkedinPageUrl ??
+                      'https://www.linkedin.com/company/foodscienceportal'
+                    }
+                    onChange={(e) =>
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        linkedinPageUrl: e.target.value
+                      })
+                    }
+                    placeholder="https://www.linkedin.com/company/yourpage"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-[#1A2138] mb-1">
+                    LinkedIn Button Text
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      storageConfig.linkedinButtonText ??
+                      'Follow on LinkedIn'
+                    }
+                    onChange={(e) =>
+                      onChangeStorageConfig({
+                        ...storageConfig,
+                        linkedinButtonText: e.target.value
+                      })
+                    }
+                    placeholder="Follow on LinkedIn"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138] focus:outline-none focus:border-[#1673B8]"
                   />
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <a
-                  href={
-                    (
-                      storageConfig.whatsappChannelUrl ||
-                      'https://whatsapp.com/channel/0029VaFoodSpecialists'
-                    )
-                      .trim()
-                      .match(/^https?:\/\//i)
-                      ? (
-                          storageConfig.whatsappChannelUrl ||
-                          'https://whatsapp.com/channel/0029VaFoodSpecialists'
-                        ).trim()
-                      : `https://${(
-                          storageConfig.whatsappChannelUrl ||
-                          'https://whatsapp.com/channel/0029VaFoodSpecialists'
-                        ).trim()}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3.5 py-2 rounded-xl bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#105E9A] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Test Current Channel Link</span>
-                </a>
+                <div className="flex flex-wrap items-center gap-2">
+                  <a
+                    href={
+                      (
+                        storageConfig.whatsappChannelUrl ||
+                        'https://whatsapp.com/channel/0029VaFoodSpecialists'
+                      )
+                        .trim()
+                        .match(/^https?:\/\//i)
+                        ? (
+                            storageConfig.whatsappChannelUrl ||
+                            'https://whatsapp.com/channel/0029VaFoodSpecialists'
+                          ).trim()
+                        : `https://${(
+                            storageConfig.whatsappChannelUrl ||
+                            'https://whatsapp.com/channel/0029VaFoodSpecialists'
+                          ).trim()}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-xl bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#105E9A] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Test WhatsApp</span>
+                  </a>
+                  <a
+                    href={
+                      (
+                        storageConfig.facebookPageUrl ||
+                        'https://www.facebook.com/foodscienceportal'
+                      )
+                        .trim()
+                        .match(/^https?:\/\//i)
+                        ? (
+                            storageConfig.facebookPageUrl ||
+                            'https://www.facebook.com/foodscienceportal'
+                          ).trim()
+                        : `https://${(
+                            storageConfig.facebookPageUrl ||
+                            'https://www.facebook.com/foodscienceportal'
+                          ).trim()}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-xl bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#105E9A] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Test Facebook</span>
+                  </a>
+                  <a
+                    href={
+                      (
+                        storageConfig.linkedinPageUrl ||
+                        'https://www.linkedin.com/company/foodscienceportal'
+                      )
+                        .trim()
+                        .match(/^https?:\/\//i)
+                        ? (
+                            storageConfig.linkedinPageUrl ||
+                            'https://www.linkedin.com/company/foodscienceportal'
+                          ).trim()
+                        : `https://${(
+                            storageConfig.linkedinPageUrl ||
+                            'https://www.linkedin.com/company/foodscienceportal'
+                          ).trim()}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-xl bg-[#EBF4FC] hover:bg-[#DCE9F6] text-[#105E9A] text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Test LinkedIn</span>
+                  </a>
+                </div>
 
                 <button
                   type="submit"
                   className="px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
                 >
                   <Check className="w-4 h-4 stroke-[2.5]" />
-                  <span>Save WhatsApp Channel Link</span>
+                  <span>Save All Social Media Links</span>
                 </button>
               </div>
             </form>
@@ -8474,11 +8616,11 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                 </div>
               </div>
 
-              {/* 4. OFFICIAL WHATSAPP CHANNEL BUTTON & LINK CONTROL (HOME SCREEN) */}
-              <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] space-y-3">
+              {/* 4. OFFICIAL SOCIAL MEDIA LINKS (WHATSAPP, FACEBOOK & LINKEDIN) */}
+              <div className="p-4 rounded-2xl bg-[#F0F6FC] border-2 border-[#1673B8] space-y-3.5">
                 <div className="text-xs font-extrabold text-[#1A2138] uppercase tracking-wider flex items-center gap-1.5">
-                  <MessageSquare className="w-4 h-4 text-[#1673B8]" />
-                  <span>4. Home Screen WhatsApp Channel Link &amp; Button</span>
+                  <Globe className="w-4 h-4 text-[#1673B8]" />
+                  <span>4. Official Social Media Links (WhatsApp Channel, Facebook Page &amp; LinkedIn Page)</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -8503,7 +8645,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#1A2138] mb-1">
-                      WhatsApp Button Label on Home Page
+                      WhatsApp Button Label
                     </label>
                     <input
                       type="text"
@@ -8521,6 +8663,86 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
+                      Official Facebook Page URL
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.facebookPageUrl ??
+                        'https://www.facebook.com/foodscienceportal'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          facebookPageUrl: e.target.value
+                        })
+                      }
+                      placeholder="https://www.facebook.com/yourpage"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
+                      Facebook Button Label
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.facebookButtonText ??
+                        'Follow on Facebook'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          facebookButtonText: e.target.value
+                        })
+                      }
+                      placeholder="Follow on Facebook"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
+                      Official LinkedIn Page URL
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.linkedinPageUrl ??
+                        'https://www.linkedin.com/company/foodscienceportal'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          linkedinPageUrl: e.target.value
+                        })
+                      }
+                      placeholder="https://www.linkedin.com/company/yourpage"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#1A2138] mb-1">
+                      LinkedIn Button Label
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        storageConfig.linkedinButtonText ??
+                        'Follow on LinkedIn'
+                      }
+                      onChange={(e) =>
+                        onChangeStorageConfig({
+                          ...storageConfig,
+                          linkedinButtonText: e.target.value
+                        })
+                      }
+                      placeholder="Follow on LinkedIn"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#94B8D7] text-xs font-semibold text-[#1A2138]"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -8530,7 +8752,7 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
               >
                 <Check className="w-4 h-4 stroke-[2.5]" />
                 <span>
-                  Save Payment Gateway &amp; WhatsApp Channel Link (Live on App)
+                  Save Payment Gateway &amp; Official Social Media Links (Live on App)
                 </span>
               </button>
             </form>
