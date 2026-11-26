@@ -125,6 +125,17 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Never intercept inside Google AI Studio preview containers (.run.app) or AI Studio auth/iframe endpoints
+  if (
+    self.location.hostname.endsWith('.run.app') ||
+    url.pathname.startsWith('/_aistudio') ||
+    url.pathname.startsWith('/__aistudio') ||
+    url.pathname.startsWith('/__cookie_check') ||
+    url.searchParams.has('__aistudio_auth_token')
+  ) {
+    return;
+  }
+
   // Intercept Web Share Target multipart/form-data image shares from WhatsApp / Gallery / Chrome
   if (
     event.request.method === 'POST' &&

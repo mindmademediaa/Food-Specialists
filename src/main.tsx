@@ -1,25 +1,9 @@
 import {Suspense} from 'react';
 import {createRoot} from 'react-dom/client';
+import App from './App.tsx';
 import {AppLaunchSplash} from './components/AppLaunchSplash';
 import {SectionErrorBoundary} from './components/SectionErrorBoundary';
-import {lazyWithRetry} from './lib/lazyWithRetry';
 import './index.css';
-
-// Start loading App + Firebase in parallel while AppLaunchSplash mounts immediately on frame 1.
-// Clear the preloaded promise on failure so lazyWithRetry performs a real fresh import on retry.
-let pendingAppModule: Promise<typeof import('./App.tsx')> | null = import('./App.tsx');
-pendingAppModule.catch(() => {
-  pendingAppModule = null;
-});
-
-const App = lazyWithRetry(() => {
-  if (pendingAppModule) {
-    const firstTry = pendingAppModule;
-    pendingAppModule = null;
-    return firstTry;
-  }
-  return import('./App.tsx');
-});
 
 declare const __APP_BUILD_VERSION__: string;
 const APP_BUILD_VERSION =
@@ -78,6 +62,9 @@ if (typeof window !== 'undefined') {
   });
 
   try {
+    const isAiStudioPreview =
+      window.location.hostname.endsWith('.run.app') || window.self !== window.top;
+
     const prevVersion = window.localStorage.getItem('fsp_app_build_version');
     if (prevVersion && prevVersion !== APP_BUILD_VERSION) {
       window.localStorage.setItem('fsp_app_build_version', APP_BUILD_VERSION);
@@ -87,7 +74,7 @@ if (typeof window !== 'undefined') {
     }
 
     if ('serviceWorker' in navigator) {
-      if (import.meta.env.DEV) {
+      if (import.meta.env.DEV || isAiStudioPreview) {
         navigator.serviceWorker
           .getRegistrations()
           .then((registrations) => {
@@ -96,6 +83,9 @@ if (typeof window !== 'undefined') {
             });
           })
           .catch(() => {});
+        if (isAiStudioPreview) {
+          purgeStaleBrowserCaches().catch(() => {});
+        }
       } else {
         let swReg: ServiceWorkerRegistration | null = null;
 

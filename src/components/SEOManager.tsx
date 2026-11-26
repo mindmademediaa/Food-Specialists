@@ -273,6 +273,13 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
         nextParams.set('section', ROUTE_SEO_METADATA[routeName].sectionParam!);
       }
 
+      // Preserve any platform/iframe internal parameters (e.g., __aistudio_*, __session_index)
+      params.forEach((val, key) => {
+        if (key.startsWith('__')) {
+          nextParams.set(key, val);
+        }
+      });
+
       const queryString = nextParams.toString();
       const cleanUrl = `${window.location.origin}${window.location.pathname}${
         queryString ? `?${queryString}` : ''
@@ -281,7 +288,7 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
       upsertMetaTag('property', 'og:url', cleanUrl);
 
       try {
-        window.history.replaceState({}, '', cleanUrl);
+        window.history.replaceState(window.history.state || {}, '', cleanUrl);
       } catch {
         // Ignore history errors in restricted iframes
       }
