@@ -689,13 +689,19 @@ export default function App() {
       if (section === 'tools' || toolParam) {
         return { name: 'tools', initialSection: toolParam || 'hub' };
       }
-      if (section === 'jobs') return { name: 'jobs' };
-      if (section === 'scholarships') return { name: 'scholarships' };
       if (section === 'communities') return { name: 'communities' };
       if (section === 'search' || params.get('q')) return { name: 'search' };
 
       const saved = loadSavedNavSnapshot();
       if (saved?.route && typeof saved.route.name === 'string') {
+        if (
+          saved.route.name === 'jobs' ||
+          saved.route.name === 'job-detail' ||
+          saved.route.name === 'scholarships' ||
+          saved.route.name === 'scholarship-detail'
+        ) {
+          return { name: 'home' };
+        }
         const hasAuth = Boolean(auth.currentUser || loadPersistedAuthUser());
         if (saved.route.name !== 'profile' || hasAuth) {
           return saved.route;
@@ -2408,15 +2414,13 @@ export default function App() {
     if (tab === 'profile') setRoute({ name: 'profile' });
   };
 
-  const navigateToJobs = (category = 'All') => {
-    setJobCategoryFilter(category);
-    setRoute({ name: 'jobs', categoryFilter: category });
+  const navigateToJobs = (_category = 'All') => {
+    setRoute({ name: 'home' });
     setPortalScrollTop(0, false);
   };
 
-  const navigateToScholarships = (funding = 'All') => {
-    setSchFundingFilter(funding);
-    setRoute({ name: 'scholarships', fundingFilter: funding });
+  const navigateToScholarships = (_funding = 'All') => {
+    setRoute({ name: 'home' });
     setPortalScrollTop(0, false);
   };
 
@@ -5783,7 +5787,7 @@ export default function App() {
                               setRoute({ name: 'search' });
                             }
                           }}
-                          placeholder="Search jobs, scholarships, E-numbers, trainings or specialists..."
+                          placeholder="Search tools, E-numbers, trainings or specialists..."
                           className="w-full py-2 text-xs sm:text-sm font-medium text-[#1A2138] placeholder:text-slate-400 focus:outline-none bg-transparent"
                         />
                       </div>
@@ -5800,30 +5804,30 @@ export default function App() {
                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                       <button
                         type="button"
-                        onClick={() => navigateToJobs('All')}
-                        className="px-3 py-1.5 rounded-xl bg-white text-[#0C182D] hover:bg-sky-50 text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-                      >
-                        <Briefcase className="w-3.5 h-3.5 text-[#1673B8]" />
-                        <span>Browse Jobs ({activeJobs.length})</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigateToScholarships('All')}
-                        className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <GraduationCap className="w-3.5 h-3.5 text-sky-200" />
-                        <span>Scholarships ({activeScholarships.length})</span>
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => {
                           setActiveToolSection('hub');
                           setRoute({ name: 'tools', initialSection: 'hub' });
                         }}
+                        className="px-3 py-1.5 rounded-xl bg-white text-[#0C182D] hover:bg-sky-50 text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <Wrench className="w-3.5 h-3.5 text-[#1673B8]" />
+                        <span>Open Tools</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRoute({ name: 'trainings' })}
                         className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        <Wrench className="w-3.5 h-3.5 text-sky-200" />
-                        <span>Open Tools</span>
+                        <BookOpen className="w-3.5 h-3.5 text-sky-200" />
+                        <span>Trainings ({mergedLiveCourses.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRoute({ name: 'communities' })}
+                        className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-[11px] sm:text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Users className="w-3.5 h-3.5 text-sky-200" />
+                        <span>Communities</span>
                       </button>
                       {!isStandaloneApp && (
                         <button
@@ -5842,33 +5846,38 @@ export default function App() {
                   <div className="hidden lg:grid lg:col-span-5 grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => navigateToJobs('All')}
+                      onClick={() => {
+                        setActiveToolSection('hub');
+                        setRoute({ name: 'tools', initialSection: 'hub' });
+                      }}
                       className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-left transition-all cursor-pointer space-y-1"
                     >
                       <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-sky-200">
-                        <Briefcase className="w-4 h-4" />
+                        <Wrench className="w-4 h-4" />
                       </div>
                       <p className="text-2xl font-black text-white tabular-nums pt-1">
-                        {activeJobs.length}
+                        16+
                       </p>
                       <p className="text-xs font-extrabold text-sky-100">
-                        Verified Job Roles
+                        Tools &amp; Lab Calculators
                       </p>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => navigateToScholarships('All')}
+                      onClick={() =>
+                        handleNavigateWebsiteSection('verify-certificate')
+                      }
                       className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-left transition-all cursor-pointer space-y-1"
                     >
                       <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-sky-200">
-                        <GraduationCap className="w-4 h-4" />
+                        <ShieldCheck className="w-4 h-4" />
                       </div>
                       <p className="text-2xl font-black text-white tabular-nums pt-1">
-                        {activeScholarships.length}
+                        QR
                       </p>
                       <p className="text-xs font-extrabold text-sky-100">
-                        Global Scholarships
+                        Verify Certificates
                       </p>
                     </button>
 
@@ -5921,7 +5930,7 @@ export default function App() {
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-600 font-medium leading-snug">
-                      Review payment slips, post new jobs/scholarships &amp; issue certificates.
+                      Review payment slips, manage courses &amp; issue certificates.
                     </p>
                   </div>
                   <button
@@ -5936,188 +5945,6 @@ export default function App() {
                   </button>
                 </div>
               )}
-
-              {/* SECTION B: PRIMARY OPPORTUNITY HUB (JOBS & SCHOLARSHIPS — 2 COLUMNS ON DESKTOP) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                {/* CARD 1 - JOBS */}
-                <div className="bg-white border border-[#D2DEEA] hover:border-[#1673B8]/60 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs transition-all flex flex-col justify-between space-y-3.5">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                          <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                        </div>
-
-                        <div className="min-w-0 flex-1 self-center">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h2 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
-                              Jobs &amp; Career Openings
-                            </h2>
-                            <span className="px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#1673B8] text-[10.5px] font-extrabold">
-                              {activeJobs.length} Active
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Specialization Tags */}
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none"
-                    >
-                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
-                        Production
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
-                        R&amp;D Lab
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
-                        Quality &amp; Safety
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
-                        HACCP / ISO 22000
-                      </span>
-                    </div>
-
-                    {/* Live Preview of Recent Jobs (If Available) */}
-                    {activeJobs.length > 0 ? (
-                      <div className="space-y-1.5 pt-1 border-t border-slate-100">
-                        <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
-                          Latest Posted Roles
-                        </p>
-                        {activeJobs.slice(0, 2).map((j) => (
-                          <button
-                            key={j.id}
-                            type="button"
-                            onClick={() => {
-                              setRoute({ name: 'job-detail', jobId: j.id });
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="w-full p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F0F6FC] border border-[#E2ECF5] flex items-center justify-between gap-2 text-left transition-colors cursor-pointer"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-xs font-extrabold text-[#1A2138] truncate">
-                                {j.title}
-                              </p>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2ECF5] flex items-center justify-between gap-2">
-                        <div className="text-xs text-slate-600 font-medium">
-                          Instant bell notifications enabled whenever new industry jobs are posted.
-                        </div>
-                        <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10px] font-extrabold shrink-0">
-                          Live Alerts
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigateToJobs('All')}
-                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white text-xs sm:text-[13.5px] font-extrabold text-center shadow-2xs transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
-                  >
-                    <span>Browse Jobs</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* CARD 2 - SCHOLARSHIPS */}
-                <div className="bg-white border border-[#D2DEEA] hover:border-[#1673B8]/60 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs transition-all flex flex-col justify-between space-y-3.5">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
-                          <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                        </div>
-
-                        <div className="min-w-0 flex-1 self-center">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h2 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1A2138] leading-snug tracking-tight">
-                              Global Scholarships &amp; Grants
-                            </h2>
-                            <span className="px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#1673B8] text-[10.5px] font-extrabold">
-                              {activeScholarships.length} Open
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Funding Tags */}
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex flex-wrap items-center gap-1.5 select-none cursor-default pointer-events-none"
-                    >
-                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
-                        Fellowships
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
-                        International Grants
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-[#F0F6FC] border border-[#D2DEEA] text-[#105E9A] text-[10.5px] sm:text-[11px] font-bold">
-                        MSc &amp; PhD Food Science
-                      </span>
-                    </div>
-
-                    {/* Live Preview of Recent Scholarships (If Available) */}
-                    {activeScholarships.length > 0 ? (
-                      <div className="space-y-1.5 pt-1 border-t border-slate-100">
-                        <p className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
-                          Featured Programs
-                        </p>
-                        {activeScholarships.slice(0, 2).map((s) => (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => {
-                              setRoute({
-                                name: 'scholarship-detail',
-                                scholarshipId: s.id
-                              });
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="w-full p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F0F6FC] border border-[#E2ECF5] flex items-center justify-between gap-2 text-left transition-colors cursor-pointer"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-xs font-extrabold text-[#1A2138] truncate">
-                                {s.title}
-                              </p>
-                              <p className="text-[11px] font-medium text-slate-500 truncate">
-                                {s.organization} • {s.country}
-                              </p>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2ECF5] flex items-center justify-between gap-2">
-                        <div className="text-xs text-slate-600 font-medium">
-                          Verified international fellowships, Erasmus+ &amp; food research grants updated regularly.
-                        </div>
-                        <span className="px-2 py-0.5 rounded-md bg-[#EBF4FC] text-[#1673B8] text-[10px] font-extrabold shrink-0">
-                          Global
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigateToScholarships('All')}
-                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-white hover:bg-[#F0F6FC] border-[1.5px] border-[#1673B8] text-[#1673B8] text-xs sm:text-[13.5px] font-extrabold text-center transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
-                  >
-                    <span>Explore Grants</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
 
               {/* SECTION C: SPECIALIST TOOLS SUITE (4 INTERACTIVE CARDS ON DESKTOP, 2x2 ON MOBILE) */}
               <div className="space-y-2.5">
@@ -6527,7 +6354,7 @@ export default function App() {
           )}
 
           {/* ==================== 2. JOBS PAGE (/jobs) ==================== */}
-          {route.name === 'jobs' && (
+          {route.name === 'jobs' && Boolean(0) && (
             <div className="space-y-3.5 px-0.5">
               <div className="flex items-center justify-between pt-0.5">
                 <div>
@@ -6631,6 +6458,7 @@ export default function App() {
 
           {/* ==================== JOB DETAIL PAGE (/jobs/[id]) ==================== */}
           {route.name === 'job-detail' &&
+            Boolean(0) &&
             (() => {
               const job =
                 jobs.find((j) => j.id === route.jobId) || activeJobs[0];
@@ -7004,7 +6832,7 @@ export default function App() {
             })()}
 
           {/* ==================== 3. SCHOLARSHIPS PAGE (/scholarships) ==================== */}
-          {route.name === 'scholarships' && (
+          {route.name === 'scholarships' && Boolean(0) && (
             <div className="space-y-3.5 px-0.5">
               <div className="flex items-center justify-between pt-0.5">
                 <div>
@@ -7228,6 +7056,7 @@ export default function App() {
 
           {/* ==================== SCHOLARSHIP DETAIL PAGE (/scholarships/[id]) ==================== */}
           {route.name === 'scholarship-detail' &&
+            Boolean(0) &&
             (() => {
               const sch =
                 scholarships.find((s) => s.id === route.scholarshipId) ||
@@ -7592,7 +7421,7 @@ export default function App() {
                       Global Portal Search
                     </h1>
                     <p className="text-xs text-slate-600 font-medium">
-                      Search across Food Science Tools, Calculators, Jobs, Scholarships, Trainings &amp; Verified Specialists
+                      Search across Food Science Tools, Calculators, Trainings &amp; Verified Specialists
                     </p>
                   </div>
                   {!isCurrentUserPaid && !isUserAdmin && (
@@ -7609,7 +7438,7 @@ export default function App() {
                     autoFocus
                     value={globalSearchQuery}
                     onChange={(e) => setGlobalSearchQuery(e.target.value)}
-                    placeholder="Search tools, E-numbers, jobs, scholarships, trainings, specialists..."
+                    placeholder="Search tools, E-numbers, trainings, specialists..."
                     className="w-full pl-10 pr-9 py-3.5 text-sm font-medium bg-[#F8FAFC] border-[1.5px] border-[#BBD6EE] rounded-[20px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#1673B8] focus:bg-white shadow-2xs"
                   />
                   {globalSearchQuery && (
@@ -7628,8 +7457,6 @@ export default function App() {
                     [
                       'All',
                       'Tools',
-                      'Jobs',
-                      'Scholarships',
                       'Trainings',
                       'Members'
                     ] as const
@@ -7689,72 +7516,6 @@ export default function App() {
                       </div>
                     </div>
                   )}
-
-                {/* 2. JOBS */}
-                {(searchTab === 'All' || searchTab === 'Jobs') && (
-                  <div className="space-y-3">
-                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A] px-1">
-                      Jobs ({searchResults.jobs.length})
-                    </h2>
-                    {searchResults.jobs.length === 0 ? (
-                      <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 text-xs text-slate-500 font-medium">
-                        No matching job postings found.
-                      </div>
-                    ) : (
-                      searchResults.jobs.map((j) => (
-                        <JobCard
-                          key={j.id}
-                          job={j}
-                          isApplied={appliedJobIds.includes(j.id)}
-                          onToggleApplied={handleToggleAppliedJob}
-                          onClick={(job) =>
-                            setRoute({ name: 'job-detail', jobId: job.id })
-                          }
-                        />
-                      ))
-                    )}
-                  </div>
-                )}
-
-                {/* 3. SCHOLARSHIPS */}
-                {(searchTab === 'All' || searchTab === 'Scholarships') && (
-                  <div className="space-y-3">
-                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#105E9A] px-1">
-                      Scholarships ({searchResults.scholarships.length})
-                    </h2>
-                    {searchResults.scholarships.length === 0 ? (
-                      <div className="bg-white border border-[#D2DEEA] rounded-2xl p-4 text-xs text-slate-500 font-medium">
-                        No matching scholarships found.
-                      </div>
-                    ) : (
-                      searchResults.scholarships.map((s) => (
-                        <div
-                          key={s.id}
-                          onClick={() =>
-                            setRoute({
-                              name: 'scholarship-detail',
-                              scholarshipId: s.id
-                            })
-                          }
-                          className="bg-white border border-[#D2DEEA] rounded-[24px] p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-[#1673B8] shadow-xs"
-                        >
-                          <div>
-                            <div className="text-[11px] font-bold text-[#1673B8]">
-                              {s.fundingType} • {s.country}
-                            </div>
-                            <div className="text-base font-bold text-[#1A2138]">
-                              {s.title}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {s.organization}
-                            </div>
-                          </div>
-                          <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
 
                 {/* 4. TRAININGS */}
                 {(searchTab === 'All' || searchTab === 'Trainings') && (
@@ -8247,7 +8008,7 @@ export default function App() {
                   Cloud Storage &amp; Data Vault
                 </h1>
                 <p className="text-xs text-sky-100 leading-relaxed">
-                  Manage high-traffic storage for User Profiles, Avatars, CVs, Payment Receipts, Jobs &amp; Scholarships.
+                  Manage high-traffic storage for User Profiles, Avatars, CVs &amp; Payment Receipts.
                 </p>
               </div>
 
@@ -8264,16 +8025,15 @@ export default function App() {
                 </div>
               )}
 
-              {/* 3 Admin Navigation Tabs */}
-              <div className="grid grid-cols-3 gap-1.5">
+              {/* 2 Admin Navigation Tabs */}
+              <div className="grid grid-cols-2 gap-1.5">
                 {(
                   [
                     { id: 'storage', label: '1. Cloud Storage' },
                     {
                       id: 'receipts',
                       label: `2. Receipts (${adminAllPaymentRequests.length})`
-                    },
-                    { id: 'opportunities', label: '3. Jobs & Scholars' }
+                    }
                   ] as const
                 ).map((t) => (
                   <button
@@ -8305,7 +8065,7 @@ export default function App() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2.5 text-xs">
+                    <div className="grid grid-cols-2 gap-2.5 text-xs">
                       <div className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
                         <div className="text-gray-500 font-semibold">
                           User Profiles &amp; Pics
@@ -8327,18 +8087,6 @@ export default function App() {
                         </div>
                         <div className="text-[10.5px] text-[#1673B8] font-bold">
                           /paymentRequests
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA]">
-                        <div className="text-gray-500 font-semibold">
-                          Jobs &amp; Scholarships
-                        </div>
-                        <div className="text-lg font-extrabold text-[#1A2138] mt-0.5">
-                          {jobs.length + scholarships.length} Posts
-                        </div>
-                        <div className="text-[10.5px] text-[#1673B8] font-bold">
-                          {jobs.length} Jobs • {scholarships.length} Scholarships
                         </div>
                       </div>
                     </div>
@@ -8878,7 +8626,7 @@ export default function App() {
                           />
                         </div>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                          The only platform for Food Science related Jobs, Scholarships, Tools, Communities, Trainings.
+                          The complete platform for Food Science Tools, Lab Calculators, Communities, and Accredited Trainings.
                         </p>
                         <div className="pt-1 space-y-2">
                           <div className="flex items-center justify-between gap-2">
@@ -8953,21 +8701,21 @@ export default function App() {
                           <li>
                             <button
                               type="button"
-                              onClick={() => handleNavigateWebsiteSection('jobs')}
+                              onClick={() => handleNavigateWebsiteSection('tools')}
                               className="hover:text-white transition-colors cursor-pointer"
                             >
-                              Browse Food Industry Jobs ({activeJobs.length})
+                              Food Science Tools &amp; Lab Calculators
                             </button>
                           </li>
                           <li>
                             <button
                               type="button"
                               onClick={() =>
-                                handleNavigateWebsiteSection('scholarships')
+                                handleNavigateWebsiteSection('verify-certificate')
                               }
                               className="hover:text-white transition-colors cursor-pointer"
                             >
-                              Global Scholarships &amp; Grants ({activeScholarships.length})
+                              Verify Certificate Portal
                             </button>
                           </li>
                           <li>

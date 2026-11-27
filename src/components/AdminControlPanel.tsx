@@ -2420,65 +2420,51 @@ export const AdminControlPanel: React.FC<AdminControlPanelProps> = ({
                       icon: Users
                     },
                     {
-                      id: 'jobs' as AdminSectionTab,
-                      title: '4. Post Jobs (1-Box) & WhatsApp Share',
-                      desc: 'Paste & publish new jobs, manage listings & share directly to WhatsApp groups',
-                      badge: `${jobs.length} Jobs`,
-                      icon: Briefcase
-                    },
-                    {
-                      id: 'scholarships' as AdminSectionTab,
-                      title: '5. Scholarships (1-Box) & WhatsApp Share',
-                      desc: 'Paste & publish fellowships, international grants & share to WhatsApp',
-                      badge: `${scholarships.length} Grants`,
-                      icon: GraduationCap
-                    },
-                    {
                       id: 'certificates' as AdminSectionTab,
-                      title: '6. Direct Certificate Generator',
+                      title: '4. Direct Certificate Generator',
                       desc: 'Generate Portrait PDF Certificates with auto qualification code & approve fee requests',
                       badge: `${certificates.length} Issued`,
                       icon: Award
                     },
                     {
                       id: 'trainings' as AdminSectionTab,
-                      title: '7. Trainings, Topics, Prices & Content',
+                      title: '5. Trainings, Topics, Prices & Content',
                       desc: 'Change any course topic, price (e.g. Rs. 8,000), modules, MCQs & bundle pricing',
                       badge: `${trainings.length} Courses`,
                       icon: FileText
                     },
                     {
                       id: 'payments' as AdminSectionTab,
-                      title: '8. Payment Gateway & Subscription Fees',
+                      title: '6. Payment Gateway & Subscription Fees',
                       desc: 'Update Bank Account, JazzCash, EasyPaisa & membership pricing',
                       badge: `Rs. ${liveMonthlyFee}/Mo`,
                       icon: CreditCard
                     },
                     {
                       id: 'storage' as AdminSectionTab,
-                      title: '9. Cloud Storage & Full Backup',
+                      title: '7. Cloud Storage & Full Backup',
                       desc: 'Configure cloud storage endpoints & export full JSON backup',
                       badge: 'Cloud Sync',
                       icon: Database
                     },
                     {
                       id: 'support' as AdminSectionTab,
-                      title: '10. Support Issues & Custom Opinions',
+                      title: '8. Support Issues & Custom Opinions',
                       desc: 'Review user issue highlights, personal custom opinions/ratings, AI chat context & reply directly to users',
                       badge: `${supportTickets.filter((t) => t.status !== 'resolved').length} Open (${supportTickets.length})`,
                       icon: Headset
                     },
                     {
                       id: 'social' as AdminSectionTab,
-                      title: '11. Social Media Tool & Page Publisher',
+                      title: '9. Social Media Tool & Page Publisher',
                       desc: 'Share any tool, calculator, course, or page on LinkedIn/Facebook with Interface + Benefits Card (PNG)',
-                      badge: '16 Tools + 8 Pages',
+                      badge: '16 Tools + 6 Pages',
                       icon: Share2
                     },
                     {
                       id: 'flyer' as AdminSectionTab,
-                      title: '12. Website Launch Ad & Promotional Flyer',
-                      desc: 'Create & download high-res Website Launch Flyer (PNG) showcasing Jobs, Scholarships, Tools, Study & Free vs Paid Membership',
+                      title: '10. Website Launch Ad & Promotional Flyer',
+                      desc: 'Create & download high-res Website Launch Flyer (PNG) showcasing Tools, Study & Free vs Paid Membership',
                       badge: 'Launch Flyer PNG',
                       icon: Megaphone
                     }

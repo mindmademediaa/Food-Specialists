@@ -121,23 +121,9 @@ const ROUTE_SEO_METADATA: Record<
 > = {
   home: {
     title:
-      'Food Science Portal — QA/QC Calculators, HACCP & ISO Trainings, Jobs & Scholarships',
+      'Food Science Portal — QA/QC Calculators, HACCP & ISO Trainings, Specialist Community & Certificates',
     description:
-      'Food Science Portal — Free Food Safety & QA/QC Calculators (Pearson Square, Brix Acid Ratio, Molarity, OEE Yield, ANOVA), 13 Accredited HACCP/ISO/BRCGS Certifications, Jobs & Scholarships.'
-  },
-  jobs: {
-    title:
-      'Food Science, QA/QC, Production & Nutritionist Jobs Portal | Food Science Portal',
-    description:
-      'Browse verified Food Technologist, QA/QC Officer, Food Safety Auditor, R&D, Production Supervisor, and Nutritionist jobs across Pakistan, Gulf, UK & Europe.',
-    sectionParam: 'jobs'
-  },
-  scholarships: {
-    title:
-      'Fully Funded Food Science, Agriculture & Nutrition Scholarships (MSc/PhD) | Food Science Portal',
-    description:
-      'Explore Erasmus Mundus, Fulbright, CSC, DAAD, Commonwealth, and global fully funded MSc & PhD scholarships in Food Science and Nutrition.',
-    sectionParam: 'scholarships'
+      'Food Science Portal — Free Food Safety & QA/QC Calculators (Pearson Square, Brix Acid Ratio, Molarity, OEE Yield, ANOVA), 13 Accredited HACCP/ISO/BRCGS Certifications & Specialist Community.'
   },
   trainings: {
     title:
@@ -155,9 +141,9 @@ const ROUTE_SEO_METADATA: Record<
   },
   search: {
     title:
-      'Search Food Science Calculators, Trainings, Jobs & Scholarships | Food Science Portal',
+      'Search Food Science Calculators, Trainings & Specialists | Food Science Portal',
     description:
-      'Search across all Food Science Portal tools, accredited certification trainings, jobs, scholarships, and verified specialists.',
+      'Search across all Food Science Portal tools, accredited certification trainings, and verified specialists.',
     sectionParam: 'search'
   }
 };
@@ -446,37 +432,13 @@ export const SEODirectoryFooter: React.FC<SEODirectoryFooterProps> = ({
           </ul>
         </div>
 
-        {/* Column 3: Career Portal, Scholarships & Verification */}
+        {/* Column 3: Community & Verification Registry */}
         <div className="space-y-2">
           <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1673B8] flex items-center gap-1.5">
             <Briefcase className="w-3.5 h-3.5" />
-            <span>Careers, Global Grants &amp; Registry</span>
+            <span>Community &amp; Certificate Registry</span>
           </h3>
           <ul className="space-y-1.5 text-xs font-semibold text-slate-700">
-            <li>
-              <a
-                href="?section=jobs"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onNavigateSection('jobs');
-                }}
-                className="hover:text-[#1673B8] hover:underline block"
-              >
-                • Food Technologist, QA/QC &amp; Nutritionist Jobs Portal
-              </a>
-            </li>
-            <li>
-              <a
-                href="?section=scholarships"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onNavigateSection('scholarships');
-                }}
-                className="hover:text-[#1673B8] hover:underline block"
-              >
-                • Fully Funded MSc &amp; PhD Food Science Scholarships
-              </a>
-            </li>
             <li>
               <a
                 href="?section=trainings"
