@@ -267,12 +267,17 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     };
   }, [user.toolsData]);
 
-  // Allow opening any specialist tool if !hasExpiredPremium or isUserPaid
+  // All 15 specialist tools open 100% free on-screen; Pro membership only gates Cloud Save & Official PDF Export
   const [activeSection, setActiveSection] = useState<ActiveToolSection>(() =>
-    isUserPaid || (initialSection !== 'hub' && !hasExpiredPremium)
-      ? initialSection
-      : 'hub'
+    initialSection || 'hub'
   );
+  const [toolCategoryFilter, setToolCategoryFilter] = useState<
+    | 'all'
+    | 'lab-production'
+    | 'quality-audit'
+    | 'nutrition-labeling'
+    | 'career-research'
+  >('all');
   const [showPaywallPrompt, setShowPaywallPrompt] = useState<boolean>(false);
   const [paywallFeatureTitle, setPaywallFeatureTitle] = useState<string>(
     'Premium Specialist Tool'
@@ -342,16 +347,14 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     }
   };
 
-  // Sync activeSection when initialSection changes
+  // Sync activeSection when initialSection changes (all tools open freely on-screen)
   useEffect(() => {
     if (initialSection === 'hub') {
       setActiveSection('hub');
-    } else if (initialSection && (isUserPaid || !hasExpiredPremium)) {
+    } else if (initialSection) {
       setActiveSection(initialSection);
-    } else if (!isUserPaid && hasExpiredPremium) {
-      setActiveSection('hub');
     }
-  }, [initialSection, isUserPaid, hasExpiredPremium]);
+  }, [initialSection]);
 
   // Whenever the user clicks the main "Tools" tab in navbar or bottom bar, reset back to 'hub'
   useEffect(() => {
@@ -442,7 +445,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
     }, 4000);
   };
 
-  // Gatekeeper for Free or Expired Premium users
+  // Gatekeeper: All 15 tools open 100% Free on screen; Paywall only triggers for explicit Pro Cloud/PDF actions
   const handleSelectToolOrAction = (
     targetSection: ActiveToolSection,
     featureName: string,
@@ -450,21 +453,28 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
   ) => {
     const FREE_OPEN_TOOLS: ActiveToolSection[] = [
       'hub',
+      'nutrition',
+      'exam',
+      'interview',
       'lab-formula',
       'pearson-square',
       'molarity-normality',
       'moisture-ash',
+      'production-floor',
       'e-numbers',
+      'job-cover-letter',
       'citation-generator',
-      'interview',
-      'authority-limits'
+      'nutrition-label',
+      'templates-vault',
+      'authority-limits',
+      'complaint-handling'
     ];
     // Save current Tools Hub scroll position before opening a specialist tool
     if (activeSection === 'hub' && targetSection !== 'hub') {
       savePortalScroll('tools-hub');
     }
 
-    // All free open tools & live preview tools open without login/paywall
+    // All tools open freely on-screen without login or paywall popup
     if (!hasExpiredPremium || FREE_OPEN_TOOLS.includes(targetSection)) {
       setActiveSection(targetSection);
       if (afterUnlock) afterUnlock();
@@ -1082,7 +1092,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
       )}
 
       {/* =====================================================================
-          VIEW 0: TOOLS HUB — CLEAN ICON + TOOL NAME BUTTONS ONLY
+          VIEW 0: TOOLS HUB — CATEGORIZED & SCANNABLE (FREE USE · PRO EXPORT)
          ===================================================================== */}
       {activeSection === 'hub' && (
         <div className="bg-white border-[1.5px] border-[#D2DEEA] rounded-[24px] p-5 sm:p-6 shadow-xs space-y-4">
@@ -1092,8 +1102,8 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 Specialist Lab, Industrial &amp; Research Tools
               </h1>
               <p className="text-[11.5px] text-[#5A6C84] font-medium mt-0.5">
-                <strong>Free Tier (No Login Required):</strong> Live on-screen calculation &amp; preview across all tools •{' '}
-                <strong className="text-[#1673B8]">Paid Premium (Login + Membership Required):</strong> Save to Cloud Directory, Templates Vault &amp; Official PDF Reports
+                <strong className="text-emerald-700">100% Free On-Screen Use:</strong> All 15 calculators, authority lookups &amp; study banks open without login ·{' '}
+                <strong className="text-[#1673B8]">Paid Pro Export:</strong> Cloud Save, Branded Audit PDFs &amp; Packaging Labels
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-auto">
@@ -1101,7 +1111,7 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 type="button"
                 onClick={handleEnableFactoryOfflinePack}
                 disabled={isSavingOfflinePack}
-                className="px-3 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] border border-[#1673B8]/40 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-2 rounded-xl bg-[#F0F6FC] hover:bg-[#DCE9F6] border border-[#1673B8]/40 text-[#1A2138] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                 title="Save calculators, Food Authority limits & 13 course modules for offline Factory Floor use"
               >
                 <Wifi className={`w-3.5 h-3.5 ${isOnline ? 'text-emerald-600' : 'text-amber-600'}`} />
@@ -1117,300 +1127,231 @@ export const ToolsHubView: React.FC<ToolsHubViewProps> = ({
                 <button
                   type="button"
                   onClick={onOpenPremiumModal}
-                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1A2138] to-[#1673B8] text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap"
                 >
                   <Crown className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Unlock Paid Cloud &amp; PDF Features</span>
+                  <span>Unlock Pro PDF &amp; Cloud</span>
                 </button>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
-            {/* TOOL 1: HEALTH & NUTRITION TOOL */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'nutrition',
-                  'Daily Personal Health & Nutrition Tracker'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Activity className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Health &amp; Nutrition Tool
-              </span>
-            </button>
+          {/* 4 CATEGORY FILTER TABS + ALL TOOLS */}
+          <div className="flex flex-wrap items-center gap-1.5 pb-1">
+            {[
+              { id: 'all' as const, label: 'All Tools (15)' },
+              { id: 'lab-production' as const, label: '1. Lab & Production (5)' },
+              { id: 'quality-audit' as const, label: '2. Quality & Audit (4)' },
+              { id: 'nutrition-labeling' as const, label: '3. Nutrition & Labeling (2)' },
+              { id: 'career-research' as const, label: '4. Exam, Career & Research (4)' }
+            ].map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setToolCategoryFilter(cat.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer whitespace-nowrap ${
+                  toolCategoryFilter === cat.id
+                    ? 'bg-[#1673B8] text-white border-[#1673B8] shadow-2xs'
+                    : 'bg-[#F0F6FC] text-[#1A2138] border-[#D2DEEA] hover:border-[#1673B8]'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
 
-            {/* TOOL 2: EXAM PREPARATION */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'exam',
-                  'Food Science Exam Preparation (30 MCQs)'
-                )
+          {/* SCANNABLE TOOL CARDS GRID (Icon + Title + 1 Short Line + Tier Indicator + Open) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {[
+              {
+                id: 'pearson-square' as ActiveToolSection,
+                category: 'lab-production' as const,
+                title: 'Pearson Square Calculator',
+                subtitle: 'Standardize milk fat, SNF & batch blending ratios.',
+                tier: '100% FREE' as const,
+                icon: Scale,
+                darkIcon: true
+              },
+              {
+                id: 'lab-formula' as ActiveToolSection,
+                category: 'lab-production' as const,
+                title: 'Lab & Formula Calculator',
+                subtitle: 'Acidity, Brix-acid ratio, Kjeldahl protein & salt %.',
+                tier: '100% FREE' as const,
+                icon: Calculator,
+                darkIcon: false
+              },
+              {
+                id: 'molarity-normality' as ActiveToolSection,
+                category: 'lab-production' as const,
+                title: 'Lab Solution & Molarity / Normality',
+                subtitle: 'Prepare molar, normal, ppm & C1V1=C2V2 dilutions.',
+                tier: '100% FREE' as const,
+                icon: FlaskConical,
+                darkIcon: false
+              },
+              {
+                id: 'moisture-ash' as ActiveToolSection,
+                category: 'lab-production' as const,
+                title: 'Moisture, Ash & Yield % Calculator',
+                subtitle: 'Wet/dry basis moisture, total ash & dry matter %.',
+                tier: '100% FREE' as const,
+                icon: Beaker,
+                darkIcon: true
+              },
+              {
+                id: 'production-floor' as ActiveToolSection,
+                category: 'lab-production' as const,
+                title: 'Production Yield & Efficiency Tool',
+                subtitle: 'Line OEE, syrup batch yield & labor output.',
+                tier: '100% FREE' as const,
+                icon: Factory,
+                darkIcon: false
+              },
+              {
+                id: 'templates-vault' as ActiveToolSection,
+                category: 'quality-audit' as const,
+                title: 'QA/QC, ISO 9001 & FSSC Document Vault',
+                subtitle: 'Ready-to-audit SOPs, CCP logs & branded PDF forms.',
+                tier: 'FREE USE · PRO PDF/CLOUD' as const,
+                icon: FileText,
+                darkIcon: true
+              },
+              {
+                id: 'authority-limits' as ActiveToolSection,
+                category: 'quality-audit' as const,
+                title: 'Food Authority Limits Lookup',
+                subtitle: 'Compare PFA, PSQCA, SFDA & Codex limits instantly.',
+                tier: '100% FREE' as const,
+                icon: ShieldCheck,
+                darkIcon: false
+              },
+              {
+                id: 'complaint-handling' as ActiveToolSection,
+                category: 'quality-audit' as const,
+                title: 'Complaint Handling & QR CAPA',
+                subtitle: 'Customer QR portal, root-cause & 8D CAPA reports.',
+                tier: 'FREE USE · PRO PDF/CLOUD' as const,
+                icon: QrCode,
+                darkIcon: true
+              },
+              {
+                id: 'e-numbers' as ActiveToolSection,
+                category: 'quality-audit' as const,
+                title: 'E-Numbers & Additives Finder',
+                subtitle: 'Instant Halal status, INS code & Codex ADI limits.',
+                tier: '100% FREE' as const,
+                icon: ShieldCheck,
+                darkIcon: true
+              },
+              {
+                id: 'nutrition' as ActiveToolSection,
+                category: 'nutrition-labeling' as const,
+                title: 'Health & Nutrition Diet Suite',
+                subtitle: 'BMR, TDEE, clinical macros & printable diet charts.',
+                tier: 'FREE USE · PRO PDF/CLOUD' as const,
+                icon: Activity,
+                darkIcon: false
+              },
+              {
+                id: 'nutrition-label' as ActiveToolSection,
+                category: 'nutrition-labeling' as const,
+                title: 'Nutrition Label (FDA / GCC / PSQCA)',
+                subtitle: 'Generate compliant packaging Nutrition Facts panels.',
+                tier: 'FREE USE · PRO PDF/CLOUD' as const,
+                icon: Scale,
+                darkIcon: true
+              },
+              {
+                id: 'exam' as ActiveToolSection,
+                category: 'career-research' as const,
+                title: 'Exam Preparation (2,000+ MCQ Bank)',
+                subtitle: 'Practice 30-MCQ timed sets & export 5-page notes.',
+                tier: 'FREE USE · PRO PDF/CLOUD' as const,
+                icon: Award,
+                darkIcon: true
+              },
+              {
+                id: 'interview' as ActiveToolSection,
+                category: 'career-research' as const,
+                title: 'Interview Q&A Prep (2,000+ Bank)',
+                subtitle: 'Model technical answers for QA, HACCP & R&D roles.',
+                tier: '100% FREE' as const,
+                icon: Briefcase,
+                darkIcon: false
+              },
+              {
+                id: 'citation-generator' as ActiveToolSection,
+                category: 'career-research' as const,
+                title: 'Citation, Reference & ANOVA Suite',
+                subtitle: 'APA/Harvard citations, thesis formatting & ANOVA.',
+                tier: 'FREE USE · PRO PDF/CLOUD' as const,
+                icon: BookOpen,
+                darkIcon: true
+              },
+              {
+                id: 'job-cover-letter' as ActiveToolSection,
+                category: 'career-research' as const,
+                title: 'SOP & Professional Email / Cover Letter Writer',
+                subtitle: 'Draft QA/QC executive emails, SOP letters & intros.',
+                tier: '100% FREE' as const,
+                icon: Mail,
+                darkIcon: false
               }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Award className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Exam Preparation
-              </span>
-            </button>
+            ]
+              .filter(
+                (item) =>
+                  toolCategoryFilter === 'all' ||
+                  item.category === toolCategoryFilter
+              )
+              .map((item) => {
+                const IconComp = item.icon;
+                const isPureFree = item.tier === '100% FREE';
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() =>
+                      handleSelectToolOrAction(item.id, item.title)
+                    }
+                    className="group bg-[#F8FBFF] hover:bg-[#EBF4FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-4 flex flex-col justify-between text-left gap-3 transition-all shadow-2xs hover:shadow-sm cursor-pointer"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`w-11 h-11 rounded-xl ${
+                          item.darkIcon
+                            ? 'bg-[#1A2138] group-hover:bg-[#1673B8]'
+                            : 'bg-[#1673B8] group-hover:bg-[#105E9A]'
+                        } text-white flex items-center justify-center shrink-0 shadow-2xs transition-colors`}
+                      >
+                        <IconComp className="w-5 h-5 stroke-[2.2]" />
+                      </div>
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
+                          {item.title}
+                        </h3>
+                        <p className="text-[11.5px] text-[#5A6C84] font-medium leading-snug line-clamp-1">
+                          {item.subtitle}
+                        </p>
+                      </div>
+                    </div>
 
-            {/* TOOL 3: LAB & FORMULA CALCULATOR */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'lab-formula',
-                  'Lab & Formula Calculator'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Calculator className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Lab &amp; Formula Calculator
-              </span>
-            </button>
-
-            {/* TOOL 4: PEARSON SQUARE & BATCH STANDARDIZATION */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'pearson-square',
-                  'Pearson Square & Batch Standardization Calculator'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Scale className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Pearson Square Calculator
-              </span>
-            </button>
-
-            {/* TOOL 5: LAB SOLUTION & MOLARITY / NORMALITY CALCULATOR */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'molarity-normality',
-                  'Lab Solution & Molarity / Normality Calculator'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <FlaskConical className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Lab Solution &amp; Molarity / Normality
-              </span>
-            </button>
-
-            {/* TOOL 6: MOISTURE, ASH & YIELD % CALCULATOR */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'moisture-ash',
-                  'Moisture, Ash & Proximate Analysis % Calculator'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Beaker className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Moisture, Ash &amp; Yield % Calculator
-              </span>
-            </button>
-
-            {/* TOOL 7: PRODUCTION YIELD & EFFICIENCY TOOL */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'production-floor',
-                  'Production Yield & Efficiency Tool'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Factory className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Production Yield &amp; Efficiency Tool
-              </span>
-            </button>
-
-            {/* TOOL 8: E-NUMBERS & FOOD ADDITIVES INSTANT FINDER */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'e-numbers',
-                  'E-Numbers & Food Additives Instant Finder'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                E-Numbers &amp; Additives Finder
-              </span>
-            </button>
-
-            {/* TOOL 9: JOB APPLICATION EMAIL & COVER LETTER GENERATOR */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'job-cover-letter',
-                  'Job Application Email & Cover Letter Generator'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Mail className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Job Email &amp; Cover Letter Generator
-              </span>
-            </button>
-
-            {/* TOOL 10: CITATION & REFERENCE GENERATOR */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'citation-generator',
-                  'Citation & Reference Generator (HEC & International Journals)'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Citation &amp; Reference Generator
-              </span>
-            </button>
-
-            {/* TOOL 11: INTERVIEW Q&A PREPARATION (2,000+ BANK) */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'interview',
-                  'Food Industry Job Interview Q&A Preparation (2,000+ Bank)'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Briefcase className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Interview Q&amp;A Prep (2,000+ Bank)
-              </span>
-            </button>
-
-            {/* TOOL 12: NUTRITION FACTS LABEL GENERATOR (FDA / GCC / PSQCA) */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'nutrition-label',
-                  'Nutrition Facts Label Generator (FDA / GCC / PSQCA)'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <Scale className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Nutrition Label (FDA / GCC / PSQCA)
-              </span>
-            </button>
-
-            {/* TOOL 13: QA/QC, ISO 9001, FSSC 22000 & HACCP DOCUMENT VAULT */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'templates-vault',
-                  'QA/QC, ISO 9001, FSSC 22000 & HACCP Document Vault'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <FileText className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                QA/QC, ISO 9001 &amp; FSSC Document Vault
-              </span>
-            </button>
-
-            {/* TOOL 15: FOOD AUTHORITY LIMITS QUICK LOOKUP (PFA / PSQCA / SFDA / CODEX) */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'authority-limits',
-                  'Food Authority Limits Lookup (PFA / PSQCA / SFDA / Codex)'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1673B8] group-hover:bg-[#105E9A] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Food Authority Limits Lookup
-              </span>
-            </button>
-
-            {/* TOOL 16: COMPLAINT HANDLING & QR CAPA DIRECTORY */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectToolOrAction(
-                  'complaint-handling',
-                  'Complaint Handling, QR Portal & CAPA Directory'
-                )
-              }
-              className="group bg-[#F0F6FC] hover:bg-[#EBF4FC] border-2 border-[#D2DEEA] hover:border-[#1673B8] rounded-[22px] p-4 sm:p-5 flex flex-col items-center justify-center text-center gap-3 transition-all shadow-2xs hover:shadow-md cursor-pointer"
-            >
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#1A2138] group-hover:bg-[#1673B8] text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                <QrCode className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                Complaint Handling &amp; QR CAPA
-              </span>
-            </button>
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#D2DEEA]/70">
+                      <span
+                        className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                          isPureFree ? 'text-emerald-700' : 'text-[#1673B8]'
+                        }`}
+                      >
+                        {item.tier}
+                      </span>
+                      <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                        <span>Open</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
           </div>
         </div>
       )}

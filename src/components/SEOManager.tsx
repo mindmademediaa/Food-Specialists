@@ -85,9 +85,9 @@ const TOOL_SEO_METADATA: Record<
   },
   'job-cover-letter': {
     title:
-      'Food Technologist & QA/QC Job Application Email & Cover Letter Generator | Food Science Portal',
+      'SOP & Professional Email / Cover Letter Writer | Food Science Portal',
     description:
-      'Generate tailored job application emails and cover letters for QA/QC Officer, Food Technologist, R&D, and HSE roles.'
+      'Generate tailored QA/QC executive emails, SOP cover letters, and professional introductions for Food Technologist, R&D, and HSE roles.'
   },
   'nutrition-label': {
     title:
@@ -340,7 +340,7 @@ export const SEODirectoryFooter: React.FC<SEODirectoryFooterProps> = ({
     },
     {
       id: 'job-cover-letter',
-      label: 'Food Industry Job Email & Cover Letter Generator'
+      label: 'SOP & Professional Email / Cover Letter Writer'
     },
     {
       id: 'nutrition-label',

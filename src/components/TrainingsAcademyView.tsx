@@ -2788,22 +2788,25 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                 return (
                   <div
                     key={course.id}
-                    className="rounded-2xl border border-[#D2DEEA] bg-white p-4 sm:p-5 shadow-2xs hover:shadow-md hover:border-[#1673B8]/50 transition flex flex-col justify-between gap-3.5"
+                    className="rounded-2xl border border-[#D2DEEA] bg-white p-4 sm:p-5 shadow-2xs hover:shadow-md hover:border-[#1673B8]/50 transition flex flex-col justify-between gap-3"
                   >
                     <div
                       onClick={() =>
                         handleOpenCourse(course, hasStarted ? prog.lastModuleIndex : 0)
                       }
-                      className="space-y-2 cursor-pointer"
+                      className="space-y-1.5 cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-2.5">
                         <h3 className="text-[15px] sm:text-base font-black text-[#1A2138] leading-snug">
                           {course.title}
                         </h3>
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-extrabold shrink-0 whitespace-nowrap">
-                          {courseLocFee.formatted}
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-extrabold shrink-0 whitespace-nowrap tabular-nums">
+                          Cert: {courseLocFee.formatted}
                         </span>
                       </div>
+                      <p className="text-xs font-semibold text-[#5A6C84]">
+                        <span className="text-emerald-700 font-extrabold">Free 05-Module Study &amp; 40-MCQ Exam</span> · Pay Only for Official QR Certificate
+                      </p>
                     </div>
 
                     <button
@@ -2811,10 +2814,12 @@ export const TrainingsAcademyView: React.FC<TrainingsAcademyViewProps> = ({
                       onClick={() =>
                         handleOpenCourse(course, hasStarted ? prog.lastModuleIndex : 0)
                       }
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs transition cursor-pointer"
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1673B8] hover:bg-[#105E9A] text-white font-bold text-xs transition cursor-pointer whitespace-nowrap"
                     >
-                      <PlayCircle className="w-4 h-4" />
-                      <span>Start Course Study</span>
+                      <PlayCircle className="w-4 h-4 shrink-0" />
+                      <span>
+                        {hasStarted ? 'Resume Free Course Study' : 'Start Free Course Study'}
+                      </span>
                     </button>
                   </div>
                 );

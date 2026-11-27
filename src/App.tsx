@@ -154,9 +154,6 @@ import type { FlyerPublishPayload } from './components/ShareTargetModal';
 import { ScrollingAdBanner } from './components/ScrollingAdBanner';
 import { SEOManager, SEODirectoryFooter } from './components/SEOManager';
 import {
-  CertificateBundleOffersCard
-} from './components/PricingAndBundlesSection';
-import {
   OfflineIndicator,
   buildConfirmationAlertLinks,
   getPushAlertsEnabled,
@@ -2813,10 +2810,10 @@ export default function App() {
       },
       {
         id: 'job-cover-letter' as const,
-        title: 'Food Industry Job Application Email & Cover Letter Generator',
-        category: 'Career Tools',
+        title: 'SOP & Professional Email / Cover Letter Writer',
+        category: 'Career & Executive Writing',
         description:
-          'Generate tailored QA/QC, Food Safety, Production, and R&D cover letters and HR application emails.'
+          'Draft QA/QC executive emails, SOP cover letters, and professional introductions instantly.'
       },
       {
         id: 'citation-generator' as const,
@@ -5948,73 +5945,30 @@ export default function App() {
 
               {/* SECTION C: SPECIALIST TOOLS SUITE (4 INTERACTIVE CARDS ON DESKTOP, 2x2 ON MOBILE) */}
               <div className="space-y-2.5">
-                <div className="flex items-center justify-between px-0.5">
-                  <h2 className="text-sm sm:text-base font-extrabold text-[#1A2138] tracking-tight">
-                    Food Science Tools &amp; Lab Calculators
-                  </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 px-0.5">
+                  <div>
+                    <h2 className="text-sm sm:text-base font-extrabold text-[#1A2138] tracking-tight">
+                      Food Science Tools &amp; Lab Calculators
+                    </h2>
+                    <p className="text-[11.5px] text-[#5A6C84] font-medium">
+                      <span className="text-emerald-700 font-extrabold">100% Free On-Screen Use</span> across all 15 tools · <span className="text-[#1673B8] font-extrabold">Pro Membership</span> for Cloud Save &amp; Official PDF Exports
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
                       setActiveToolSection('hub');
                       setRoute({ name: 'tools', initialSection: 'hub' });
                     }}
-                    className="text-xs font-extrabold text-[#1673B8] hover:underline inline-flex items-center gap-1 cursor-pointer shrink-0"
+                    className="text-xs font-extrabold text-[#1673B8] hover:underline inline-flex items-center gap-1 cursor-pointer shrink-0 self-start sm:self-auto"
                   >
-                    <span>All Tools</span>
+                    <span>All 15 Tools (4 Categories)</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {/* Tool 1: Exam Prep & 5-Page PDF Notes */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveToolSection('exam');
-                      setRoute({ name: 'tools', initialSection: 'exam' });
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
-                  >
-                    <div className="space-y-2">
-                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
-                        <BookOpen className="w-5 h-5 stroke-[2.2]" />
-                      </div>
-                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                        Exam Prep &amp; PDF Notes
-                      </h3>
-                    </div>
-                    <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
-                      <span>Start Prep</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </span>
-                  </button>
-
-                  {/* Tool 2: E-Numbers & Halal Additive Finder */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveToolSection('e-numbers');
-                      setRoute({ name: 'tools', initialSection: 'e-numbers' });
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
-                  >
-                    <div className="space-y-2">
-                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
-                        <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
-                      </div>
-                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                        E-Numbers &amp; Additives
-                      </h3>
-                    </div>
-                    <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
-                      <span>Search E-Codes</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </span>
-                  </button>
-
-                  {/* Tool 3: Food Lab & Process Calculators */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {/* Tool 1: Food Lab & Process Calculators */}
                   <button
                     type="button"
                     onClick={() => {
@@ -6027,13 +5981,21 @@ export default function App() {
                     }}
                     className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
                   >
-                    <div className="space-y-2">
-                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
-                        <FlaskConical className="w-5 h-5 stroke-[2.2]" />
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
+                          <FlaskConical className="w-5 h-5 stroke-[2.2]" />
+                        </div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">
+                          100% FREE
+                        </span>
                       </div>
-                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                        Food Lab Calculators
+                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug pt-0.5">
+                        Lab &amp; Production Calculators
                       </h3>
+                      <p className="text-[11px] text-[#5A6C84] font-medium leading-snug line-clamp-1">
+                        Pearson Square, Molarity, Moisture &amp; OEE.
+                      </p>
                     </div>
                     <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
                       <span>Open Calculators</span>
@@ -6041,29 +6003,101 @@ export default function App() {
                     </span>
                   </button>
 
-                  {/* Tool 4: Clinical Nutrition & Diet Suite */}
+                  {/* Tool 2: Quality, Authority Limits & E-Numbers */}
                   <button
                     type="button"
                     onClick={() => {
-                      setActiveToolSection('nutrition');
+                      setActiveToolSection('authority-limits');
+                      setRoute({ name: 'tools', initialSection: 'authority-limits' });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
+                          <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+                        </div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">
+                          100% FREE
+                        </span>
+                      </div>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug pt-0.5">
+                        Authority Limits &amp; E-Numbers
+                      </h3>
+                      <p className="text-[11px] text-[#5A6C84] font-medium leading-snug line-clamp-1">
+                        PFA, PSQCA, SFDA, Codex &amp; Halal additive checks.
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
+                      <span>Check Limits</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+
+                  {/* Tool 3: QA/QC Document Vault & CAPA */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveToolSection('templates-vault');
+                      setRoute({ name: 'tools', initialSection: 'templates-vault' });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
+                          <FileText className="w-5 h-5 stroke-[2.2]" />
+                        </div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8]">
+                          FREE USE · PRO PDF
+                        </span>
+                      </div>
+                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug pt-0.5">
+                        ISO / FSSC / HACCP Vault
+                      </h3>
+                      <p className="text-[11px] text-[#5A6C84] font-medium leading-snug line-clamp-1">
+                        Audit SOPs, CCP logs &amp; branded PDF export.
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
+                      <span>Open Vault</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+
+                  {/* Tool 4: Exam Prep & Nutrition Suite */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveToolSection('exam');
                       setRoute({
                         name: 'tools',
-                        initialSection: 'nutrition'
+                        initialSection: 'exam'
                       });
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className="bg-white hover:bg-[#F0F6FC] border border-[#D2DEEA] hover:border-[#1673B8] rounded-2xl p-3.5 sm:p-4 text-left transition-all shadow-2xs cursor-pointer flex flex-col justify-between space-y-2.5 group"
                   >
-                    <div className="space-y-2">
-                      <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
-                        <Activity className="w-5 h-5 stroke-[2.2]" />
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-[#F0F6FC] group-hover:bg-[#1673B8] border border-[#D2DEEA] text-[#1673B8] group-hover:text-white flex items-center justify-center transition-colors">
+                          <BookOpen className="w-5 h-5 stroke-[2.2]" />
+                        </div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1673B8]">
+                          FREE USE · PRO PDF
+                        </span>
                       </div>
-                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug">
-                        Nutrition &amp; Diet Planner
+                      <h3 className="text-xs sm:text-sm font-extrabold text-[#1A2138] leading-snug pt-0.5">
+                        Exam &amp; Interview Prep (4,000+ Bank)
                       </h3>
+                      <p className="text-[11px] text-[#5A6C84] font-medium leading-snug line-clamp-1">
+                        Free 30-MCQ mock tests &amp; 5-page PDF notes.
+                      </p>
                     </div>
                     <span className="text-[11px] font-extrabold text-[#1673B8] inline-flex items-center gap-1">
-                      <span>Open Nutrition</span>
+                      <span>Start Free Prep</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </button>
@@ -6081,9 +6115,14 @@ export default function App() {
                     <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
                       <Award className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <p className="text-sm font-extrabold text-[#1A2138] leading-snug">
-                      Trainings &amp; Certificate Portal
-                    </p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-extrabold text-[#1A2138] leading-snug">
+                        Trainings &amp; Certificates ({mergedLiveCourses.length})
+                      </p>
+                      <p className="text-[11px] text-emerald-700 font-bold truncate">
+                        Free 05-Module Study &amp; Exam · Pay Only for Certificate
+                      </p>
+                    </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
                 </button>
@@ -6097,11 +6136,16 @@ export default function App() {
                     <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
                       <Users className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <p className="text-sm font-extrabold text-[#1A2138] leading-snug">
-                      {paidCommunityMembers.length > 0
-                        ? `Specialist Community (${paidCommunityMembers.length})`
-                        : 'Specialist Community Directory'}
-                    </p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-extrabold text-[#1A2138] leading-snug">
+                        {paidCommunityMembers.length > 0
+                          ? `Specialist Community (${paidCommunityMembers.length})`
+                          : 'Specialist Community Directory'}
+                      </p>
+                      <p className="text-[11px] text-[#5A6C84] font-medium truncate">
+                        Free Directory Browse · Pro Direct Contact
+                      </p>
+                    </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
                 </button>
@@ -6115,9 +6159,14 @@ export default function App() {
                     <div className="w-11 h-11 rounded-2xl bg-[#F0F6FC] border border-[#D2DEEA] text-[#1673B8] flex items-center justify-center shrink-0">
                       <FileText className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <p className="text-sm font-extrabold text-[#1A2138] leading-snug">
-                      ATS CV Builder &amp; Profile
-                    </p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-extrabold text-[#1A2138] leading-snug">
+                        ATS CV Builder &amp; Profile
+                      </p>
+                      <p className="text-[11px] text-[#5A6C84] font-medium truncate">
+                        Free Live CV Editor · Pro ATS PDF Export
+                      </p>
+                    </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-[#1673B8] shrink-0" />
                 </button>
@@ -6280,50 +6329,6 @@ export default function App() {
                   </div>
                 )}
               </div>
-
-              {/* CERTIFICATE BUNDLE OFFERS SECTION */}
-              <CertificateBundleOffersCard
-                courses={mergedLiveCourses}
-                paymentGatewayConfig={liveGateway}
-                isGuest={!authUser}
-                onRequireSignIn={() => setShowGuestAuthModal(true)}
-                onOpenCourseCatalog={() => {
-                  setRoute({ name: 'trainings' });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                onSubmitBundleRequest={async ({
-                  bundle,
-                  selectedCourses,
-                  paymentMethod,
-                  transactionId,
-                  receiptImageUrl,
-                  notes,
-                  localizedAmountLabel
-                }) => {
-                  const firstCourse = selectedCourses[0];
-                  const courseNames = selectedCourses
-                    .map((c) => `${c.title} (${c.code})`)
-                    .join(', ');
-                  const cleanUid = (authUser?.uid || myProfile.uid || 'USR')
-                    .replace(/[^a-zA-Z0-9]/g, '')
-                    .toUpperCase()
-                    .slice(0, 5);
-                  const certNo = `FSP-${(firstCourse?.code || 'BUNDLE').replace(/[^a-zA-Z0-9]/g, '')}-${cleanUid}`;
-                  await handleSubmitCertificatePaymentRequest({
-                    courseId: firstCourse?.id || 'bundle-pass',
-                    courseTitle: `${bundle.title}: ${courseNames}`,
-                    certificateNumber: certNo,
-                    scorePercentage: 80,
-                    distinction: true,
-                    paymentMethod,
-                    transactionId,
-                    receiptImageUrl,
-                    amountRs: bundle.priceRs,
-                    localizedAmountLabel,
-                    notes: `${bundle.title} (${localizedAmountLabel || `Rs. ${bundle.priceRs.toLocaleString()}`}) — Courses: ${courseNames}${notes ? ` | Note: ${notes}` : ''}`
-                  });
-                }}
-              />
 
               {/* SEO DIRECTORY & SITEMAP FOOTER (Crawlable links for all Tools, Calculators & 13 Certifications) */}
               <SEODirectoryFooter
